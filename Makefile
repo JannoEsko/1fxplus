@@ -33,6 +33,12 @@ endif
 ifndef BUILD_GT_DEM
   BUILD_GT_DEM     =
 endif
+ifndef BUILD_GT_HNS
+  BUILD_GT_HNS     =
+endif
+ifndef BUILD_GT_HNZ
+  BUILD_GT_HNZ     =
+endif
 
 #############################################################################
 #
@@ -139,6 +145,8 @@ GTCTFDIR=$(MOUNT_DIR)/gametype/gt_ctf
 GTINFDIR=$(MOUNT_DIR)/gametype/gt_inf
 GTELIMDIR=$(MOUNT_DIR)/gametype/gt_elim
 GTDEMDIR=$(MOUNT_DIR)/gametype/gt_dem
+GTHNSDIR=$(MOUNT_DIR)/gametype/gt_hns
+GTHNZDIR=$(MOUNT_DIR)/gametype/gt_hnz
 
 EXTDIR=$(MOUNT_DIR)/ext
 
@@ -525,6 +533,14 @@ ifneq ($(BUILD_GT_DEM),0)
   TARGETS += $(B)/gt_dem$(SHLIBNAME)
 endif
 
+ifneq ($(BUILD_GT_HNS),0)
+  TARGETS += $(B)/gt_hns$(SHLIBNAME)
+endif
+
+ifneq ($(BUILD_GT_HNZ),0)
+  TARGETS += $(B)/gt_hnz$(SHLIBNAME)
+endif
+
 ifeq ("$(CC)", $(findstring "$(CC)", "clang" "clang++"))
   BASE_CFLAGS += -Qunused-arguments
 endif
@@ -692,6 +708,8 @@ makedirs:
 	@$(MKDIR) $(B)/gametype/gt_inf
 	@$(MKDIR) $(B)/gametype/gt_elim
 	@$(MKDIR) $(B)/gametype/gt_dem
+	@$(MKDIR) $(B)/gametype/gt_hns
+	@$(MKDIR) $(B)/gametype/gt_hnz
 	@$(MKDIR) $(B)/qcommon
 
 #############################################################################
@@ -855,6 +873,42 @@ $(B)/gt_dem$(SHLIBNAME): $(GTDEMOBJ)
 	$(Q)$(CC) $(CFLAGS) $(SHLIBLDFLAGS) -o $@ $(GTDEMOBJ)
 
 #############################################################################
+# GT hns MODULE
+#############################################################################
+
+GTHNSOBJ_ = \
+  $(B)/gametype/gt_hns/gt_main.o \
+  \
+  $(B)/gametype/gt_shared.o \
+  \
+  $(B)/qcommon/q_math.o \
+  $(B)/qcommon/q_shared.o
+
+GTHNSOBJ = $(GTHNSOBJ_) $(B)/gametype/gt_syscalls.o
+
+$(B)/gt_hns$(SHLIBNAME): $(GTHNSOBJ)
+	$(echo_cmd) "LD $@"
+	$(Q)$(CC) $(CFLAGS) $(SHLIBLDFLAGS) -o $@ $(GTHNSOBJ)
+
+#############################################################################
+# GT hnz MODULE
+#############################################################################
+
+GTHNZOBJ_ = \
+  $(B)/gametype/gt_hnz/gt_main.o \
+  \
+  $(B)/gametype/gt_shared.o \
+  \
+  $(B)/qcommon/q_math.o \
+  $(B)/qcommon/q_shared.o
+
+GTHNZOBJ = $(GTHNZOBJ_) $(B)/gametype/gt_syscalls.o
+
+$(B)/gt_hnz$(SHLIBNAME): $(GTHNZOBJ)
+	$(echo_cmd) "LD $@"
+	$(Q)$(CC) $(CFLAGS) $(SHLIBLDFLAGS) -o $@ $(GTHNZOBJ)
+
+#############################################################################
 ## MAIN RULES
 #############################################################################
 
@@ -889,6 +943,12 @@ $(B)/gametype/gt_elim/%.o: $(GTELIMDIR)/%.c
 $(B)/gametype/gt_dem/%.o: $(GTDEMDIR)/%.c
 	$(DO_GT_CC)
 
+$(B)/gametype/gt_hns/%.o: $(GTHNSDIR)/%.c
+	$(DO_GT_CC)
+
+$(B)/gametype/gt_hnz/%.o: $(GTHNZDIR)/%.c
+	$(DO_GT_CC)
+
 #############################################################################
 # MISC
 #############################################################################
@@ -915,6 +975,8 @@ clean2:
 	@rm -f $(GTINFOBJ)
 	@rm -f $(GTELIMOBJ)
 	@rm -f $(GTDEMOBJ)
+	@rm -f $(GTHNSOBJ)
+	@rm -f $(GTHNZOBJ)
 	@rm -f $(TARGETS)
 
 distclean: clean

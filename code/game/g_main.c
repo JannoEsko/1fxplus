@@ -503,8 +503,10 @@ void G_UpdateAvailableWeapons ( void )
 qboolean G_IsGametypeSupported() {
     // only add the DLL/SO's being built over here.
     return
-        //Q_stricmp(g_gametype.string, "h&s") == 0 ? qtrue : qfalse ||
-        //Q_stricmp(g_gametype.string, "h&z") == 0 ? qtrue : qfalse ||
+        Q_stricmp(g_gametype.string, "h&s") == 0 ? qtrue : qfalse ||
+        Q_stricmp(g_gametype.string, "h&z") == 0 ? qtrue : qfalse ||
+        Q_stricmp(g_gametype.string, "hns") == 0 ? qtrue : qfalse ||
+        Q_stricmp(g_gametype.string, "hnz") == 0 ? qtrue : qfalse ||
         Q_stricmp(g_gametype.string, "inf") == 0 ? qtrue : qfalse ||
         Q_stricmp(g_gametype.string, "dm") == 0 ? qtrue : qfalse ||
         Q_stricmp(g_gametype.string, "elim") == 0 ? qtrue : qfalse ||
@@ -530,18 +532,18 @@ void G_SetRealGametype() {
         trap_Cvar_Set("g_gametype", "inf");
         trap_Cvar_Set("g_realGametype", "inf");
         trap_Cvar_Update(&g_gametype);
-    } else if (!Q_stricmp(g_gametype.string, "h&s")) {
+    } else if (!Q_stricmp(g_gametype.string, "h&s") || !Q_stricmp(g_gametype.string, "hns")) {
         trap_Cvar_Set("g_gametype", "inf");
-        trap_Cvar_Set("g_realGametype", "h&s");
+        trap_Cvar_Set("g_realGametype", "hns");
         trap_Cvar_Update(&g_gametype);
         // Boe!Man 10/4/12: Reset g_gametype to set the gt latched, so it will remain effective upon the next /rcon map switch..
-        trap_SendConsoleCommand(EXEC_APPEND, "g_gametype h&s\n");
-    } else if (!Q_stricmp(g_gametype.string, "h&z")) {
+        trap_SendConsoleCommand(EXEC_APPEND, "g_gametype hns\n");
+    } else if (!Q_stricmp(g_gametype.string, "h&z") || !Q_stricmp(g_gametype.string, "hnz")) {
         trap_Cvar_Set("g_gametype", "inf");
-        trap_Cvar_Set("g_realGametype", "h&z");
+        trap_Cvar_Set("g_realGametype", "hnz");
         trap_Cvar_Update(&g_gametype);
         // Boe!Man 10/4/12: Reset g_gametype to set the gt latched, so it will remain effective upon the next /rcon map switch..
-        trap_SendConsoleCommand(EXEC_APPEND, "g_gametype h&z\n");
+        trap_SendConsoleCommand(EXEC_APPEND, "g_gametype hnz\n");
     } else {
         trap_Cvar_Set("g_realGametype", Q_strlwr(g_gametype.string));
     }
@@ -595,7 +597,7 @@ void G_SetGametype ( const char* gametype )
         level.gametype = BG_FindGametype ( gametype );
 
         trap_Cvar_Update( &g_gametype );
-        trap_Cvar_Update( &g_realGametype );
+        G_SetRealGametype();
     }
 
     level.gametypeData = &bg_gametypeData[level.gametype];
