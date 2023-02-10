@@ -91,6 +91,7 @@ vmCvar_t    RMG;
 vmCvar_t    g_debugRMG;
 
 vmCvar_t    g_realGametype;
+vmCvar_t    g_logToDatabase;
 
 // SQLite3 tables.
 sqlite3* gameDb; // will hold anything related to the game itself: admins, bans, aliases and so on.
@@ -223,6 +224,7 @@ static cvarTable_t gameCvarTable[] =
 
     { &g_voiceTalkingGhosts,    "g_voiceTalkingGhosts",     "1",        CVAR_ARCHIVE,   0.0f,   0.0f,   0,  qfalse },
     { &g_realGametype,          "g_realGametype",           "dm",       CVAR_ROM | CVAR_LATCH,  0.0f,   0.0f,   0,  qfalse },
+    { &g_logToDatabase,         "g_logToDatabase",          "1",        CVAR_ARCHIVE | CVAR_LATCH,  0.0f,   0.0f,   0, qfalse },
 };
 
 // bk001129 - made static to avoid aliasing

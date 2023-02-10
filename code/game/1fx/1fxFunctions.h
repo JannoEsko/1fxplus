@@ -46,3 +46,13 @@ void logDamage();
 void logObjective();
 void logLogin(char* player, char* ip, int level, int method, char* reference);
 
+// db aliases of above functions.
+
+void dbLogGame();
+void dbLogSystem(int faultLevel, char* message);
+void dbLogAdmin();
+void dbLogRcon(char* ip, char* action);
+void dbLogDamage();
+void dbLogObjective();
+void dbLogLogin(char* player, char* ip, int level, int method, char* reference);
+

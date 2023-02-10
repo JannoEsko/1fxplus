@@ -928,6 +928,7 @@ extern  vmCvar_t    g_voiceFloodPenalty;
 extern  vmCvar_t    g_voiceTalkingGhosts;
 extern  vmCvar_t    g_suddenDeath;
 extern  vmCvar_t    g_realGametype;
+extern  vmCvar_t    g_logToDatabase;
 
 void    trap_Print( const char *text );
 void    trap_Error( const char *text ) __attribute__((noreturn));
