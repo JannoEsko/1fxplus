@@ -140,6 +140,8 @@ GTINFDIR=$(MOUNT_DIR)/gametype/gt_inf
 GTELIMDIR=$(MOUNT_DIR)/gametype/gt_elim
 GTDEMDIR=$(MOUNT_DIR)/gametype/gt_dem
 
+EXTDIR=$(MOUNT_DIR)/ext
+
 bin_path=$(shell which $(1) 2> /dev/null)
 
 # Add git version info
@@ -161,7 +163,7 @@ EXTRA_FILES=
 
 ifneq (,$(findstring "$(PLATFORM)", "linux" "gnu_kfreebsd" "kfreebsd-gnu" "gnu"))
   BASE_CFLAGS = -Wall -fno-strict-aliasing -Wimplicit -Wstrict-prototypes \
-    -pipe -DARCH_STRING=\\\"$(ARCH)\\\"
+    -pipe -DARCH_STRING=\\\"$(ARCH)\\\" -pthread
 
   OPTIMIZE = -O3
 
@@ -183,7 +185,7 @@ ifneq (,$(findstring "$(PLATFORM)", "linux" "gnu_kfreebsd" "kfreebsd-gnu" "gnu")
   SHLIBCFLAGS=-fPIC -fvisibility=hidden
   SHLIBLDFLAGS=-shared $(LDFLAGS)
 
-  LIBS=-ldl -lm
+  LIBS=-ldl -lm -pthread
 
   ifeq ($(ARCH),x86)
     # linux32 make ...
@@ -305,7 +307,7 @@ ifdef MINGW
   endif
 
   BASE_CFLAGS = -Wall -fno-strict-aliasing -Wimplicit -Wstrict-prototypes \
-    -DUSE_ICON
+    -DUSE_ICON -pthread
 
   ifeq ($(ARCH),x86_64)
     OPTIMIZE = -O3
@@ -317,7 +319,7 @@ ifdef MINGW
   SHLIBEXT=dll
   SHLIBCFLAGS=
   SHLIBLDFLAGS=-shared $(LDFLAGS)
-  LIBS= -lws2_32 -lwinmm -lpsapi
+  LIBS= -lws2_32 -lwinmm -lpsapi -pthread
 
   ifeq ($(ARCH),x86)
     # build 32bit
@@ -337,7 +339,7 @@ ifeq ($(PLATFORM),freebsd)
   # flags
   BASE_CFLAGS = \
     -Wall -fno-strict-aliasing -Wimplicit -Wstrict-prototypes \
-    -DUSE_ICON -DMAP_ANONYMOUS=MAP_ANON
+    -DUSE_ICON -DMAP_ANONYMOUS=MAP_ANON -pthread
   OPTIMIZE =
   
   SHLIBEXT=so
@@ -345,7 +347,7 @@ ifeq ($(PLATFORM),freebsd)
   SHLIBLDFLAGS=-shared $(LDFLAGS)
 
   # don't need -ldl (FreeBSD)
-  LIBS=-lm
+  LIBS=-lm -pthread
 
   # cross-compiling tweaks
   ifeq ($(ARCH),x86)
@@ -368,7 +370,7 @@ else # ifeq freebsd
 ifeq ($(PLATFORM),openbsd)
 
   BASE_CFLAGS = -Wall -fno-strict-aliasing -Wimplicit -Wstrict-prototypes \
-    -pipe -DUSE_ICON -DMAP_ANONYMOUS=MAP_ANON
+    -pipe -DUSE_ICON -DMAP_ANONYMOUS=MAP_ANON -pthread
 
   OPTIMIZE = -O3
 
@@ -390,7 +392,7 @@ ifeq ($(PLATFORM),openbsd)
   SHLIBCFLAGS=-fPIC
   SHLIBLDFLAGS=-shared $(LDFLAGS)
 
-  LIBS=-lm
+  LIBS=-lm -pthread
 
 else # ifeq openbsd
 
@@ -400,11 +402,11 @@ else # ifeq openbsd
 
 ifeq ($(PLATFORM),netbsd)
 
-  LIBS=-lm
+  LIBS=-lm -pthread
   SHLIBEXT=so
   SHLIBCFLAGS=-fPIC
   SHLIBLDFLAGS=-shared $(LDFLAGS)
-  BASE_CFLAGS = -Wall -fno-strict-aliasing -Wimplicit -Wstrict-prototypes
+  BASE_CFLAGS = -Wall -fno-strict-aliasing -Wimplicit -Wstrict-prototypes -pthread
 
 else # ifeq netbsd
 
@@ -418,13 +420,13 @@ ifeq ($(PLATFORM),irix64)
   CC = c99
 
   BASE_CFLAGS=-Dstricmp=strcasecmp -Xcpluscomm -woff 1185 \
-    -I. -I$(ROOT)/usr/include
+    -I. -I$(ROOT)/usr/include -pthread
   
   SHLIBEXT=so
   SHLIBCFLAGS=
   SHLIBLDFLAGS=-shared
 
-  LIBS=-ldl -lm -lgen
+  LIBS=-ldl -lm -lgen -pthread
 
 else # ifeq IRIX
 
@@ -446,7 +448,7 @@ ifeq ($(PLATFORM),sunos)
   endif
 
   BASE_CFLAGS = -Wall -fno-strict-aliasing -Wimplicit -Wstrict-prototypes \
-    -pipe -DUSE_ICON
+    -pipe -DUSE_ICON -pthread
   OPTIMIZE = -O3 -funroll-loops
 
   ifeq ($(ARCH),sparc)
@@ -463,7 +465,7 @@ ifeq ($(PLATFORM),sunos)
   SHLIBEXT=so
   SHLIBCFLAGS=-fPIC
   SHLIBLDFLAGS=-shared $(LDFLAGS)
-  LIBS=-lsocket -lnsl -ldl -lm
+  LIBS=-lsocket -lnsl -ldl -lm -pthread
 
 else # ifeq sunos
 
@@ -679,7 +681,10 @@ endif
 
 makedirs:
 	@$(MKDIR) $(BUILD_DIR)
+	@$(MKDIR) $(B)/ext
+	@$(MKDIR) $(B)/ext/sqlite
 	@$(MKDIR) $(B)/game
+	@$(MKDIR) $(B)/game/1fx
 	@$(MKDIR) $(B)/gametype
 	@$(MKDIR) $(B)/gametype/gt_dm
 	@$(MKDIR) $(B)/gametype/gt_tdm
@@ -727,6 +732,10 @@ SOF2GOBJ_ = \
   $(B)/game/g_trigger.o \
   $(B)/game/g_utils.o \
   $(B)/game/g_weapon.o \
+  $(B)/ext/sqlite/sqlite3.o \
+  $(B)/game/1fx/logger.o \
+  $(B)/game/1fx/database.o \
+  $(B)/game/1fx/adminCommands.o \
   \
   $(B)/qcommon/q_math.o \
   $(B)/qcommon/q_shared.o
@@ -853,6 +862,10 @@ $(B)/qcommon/%.o: $(CMDIR)/%.c
 	$(DO_SHLIB_CC)
 
 $(B)/game/%.o: $(GDIR)/%.c
+	$(DO_GAME_CC)
+$(B)/ext/sqlite/%.o: $(EXTDIR)/sqlite/%.c
+	$(DO_GAME_CC)
+$(B)/game/1fx/%.o: $(GDIR)/1fx/%.c
 	$(DO_GAME_CC)
 
 $(B)/gametype/%.o: $(GTDIR)/%.c

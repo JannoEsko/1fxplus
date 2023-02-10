@@ -2,6 +2,7 @@
 //
 
 #include "g_local.h"
+#include "1fx/1fxFunctions.h"
 
 level_locals_t  level;
 
@@ -88,6 +89,11 @@ vmCvar_t    g_voiceTalkingGhosts;           // Allow ghosts to talk to alive pla
 
 vmCvar_t    RMG;
 vmCvar_t    g_debugRMG;
+
+// SQLite3 tables.
+sqlite3* gameDb; // will hold anything related to the game itself: admins, bans, aliases and so on.
+sqlite3* logDb; // will hold all the log tables (RCON, admin, game etc)
+char sqlTempName[16];
 
 static cvarTable_t gameCvarTable[] =
 {
@@ -286,7 +292,7 @@ Q_EXPORT intptr_t vmMain( int command, intptr_t arg0, intptr_t arg1, intptr_t ar
             return 0;
         case GAME_RCON_LOG:
             //Com_Printf("Ip: %s\nArg1: %s\n", arg0, arg1);
-
+            logRcon(arg0, arg1);
             return 0;
     }
 
@@ -683,6 +689,10 @@ void G_InitGame( int levelTime, int randomSeed, int restart )
     G_FindTeams();
 
     SaveRegisteredItems();
+
+    // check databases.
+    Com_Printf ("Checking database integrity...\n");
+    checkDatabaseIntegrity();
 
     Com_Printf ("-----------------------------------\n");
 
