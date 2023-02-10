@@ -284,6 +284,10 @@ Q_EXPORT intptr_t vmMain( int command, intptr_t arg0, intptr_t arg1, intptr_t ar
                 G_SpawnGEntityFromSpawnVars(qfalse);
             }
             return 0;
+        case GAME_RCON_LOG:
+            //Com_Printf("Ip: %s\nArg1: %s\n", arg0, arg1);
+
+            return 0;
     }
 
     return -1;
