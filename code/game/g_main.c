@@ -90,6 +90,8 @@ vmCvar_t    g_voiceTalkingGhosts;           // Allow ghosts to talk to alive pla
 vmCvar_t    RMG;
 vmCvar_t    g_debugRMG;
 
+vmCvar_t    g_realGametype;
+
 // SQLite3 tables.
 sqlite3* gameDb; // will hold anything related to the game itself: admins, bans, aliases and so on.
 sqlite3* logDb; // will hold all the log tables (RCON, admin, game etc)
@@ -220,6 +222,7 @@ static cvarTable_t gameCvarTable[] =
     { &g_suddenDeath,           "g_suddenDeath",            "1",        CVAR_ARCHIVE,   0.0f,   0.0f,   0,  qfalse },
 
     { &g_voiceTalkingGhosts,    "g_voiceTalkingGhosts",     "1",        CVAR_ARCHIVE,   0.0f,   0.0f,   0,  qfalse },
+    { &g_realGametype,          "g_realGametype",           "dm",       CVAR_ROM | CVAR_LATCH,  0.0f,   0.0f,   0,  qfalse },
 };
 
 // bk001129 - made static to avoid aliasing
@@ -497,6 +500,55 @@ void G_UpdateAvailableWeapons ( void )
     trap_Cvar_Update ( &g_availableWeapons );
 }
 
+qboolean G_IsGametypeSupported() {
+    // only add the DLL/SO's being built over here.
+    return
+        //Q_stricmp(g_gametype.string, "h&s") == 0 ? qtrue : qfalse ||
+        //Q_stricmp(g_gametype.string, "h&z") == 0 ? qtrue : qfalse ||
+        Q_stricmp(g_gametype.string, "inf") == 0 ? qtrue : qfalse ||
+        Q_stricmp(g_gametype.string, "dm") == 0 ? qtrue : qfalse ||
+        Q_stricmp(g_gametype.string, "elim") == 0 ? qtrue : qfalse ||
+        Q_stricmp(g_gametype.string, "dem") == 0 ? qtrue : qfalse ||
+        Q_stricmp(g_gametype.string, "tdm") == 0 ? qtrue : qfalse ||
+        Q_stricmp(g_gametype.string, "ctf") == 0 ? qtrue : qfalse
+
+        ;
+
+}
+
+void G_SetRealGametype() {
+
+    // check whether the g_gametype is a supported gametype.
+    if (!G_IsGametypeSupported()) {
+        Com_Printf("Gametype %s is not supported by 1fxplus. Gametype defaulted to deathmatch.\n", g_gametype.string);
+        trap_Cvar_Set("g_gametype", "dm");
+        trap_Cvar_Update(&g_gametype);
+
+    }
+
+    if (!Q_stricmp(g_gametype.string, "inf")) {
+        trap_Cvar_Set("g_gametype", "inf");
+        trap_Cvar_Set("g_realGametype", "inf");
+        trap_Cvar_Update(&g_gametype);
+    } else if (!Q_stricmp(g_gametype.string, "h&s")) {
+        trap_Cvar_Set("g_gametype", "inf");
+        trap_Cvar_Set("g_realGametype", "h&s");
+        trap_Cvar_Update(&g_gametype);
+        // Boe!Man 10/4/12: Reset g_gametype to set the gt latched, so it will remain effective upon the next /rcon map switch..
+        trap_SendConsoleCommand(EXEC_APPEND, "g_gametype h&s\n");
+    } else if (!Q_stricmp(g_gametype.string, "h&z")) {
+        trap_Cvar_Set("g_gametype", "inf");
+        trap_Cvar_Set("g_realGametype", "h&z");
+        trap_Cvar_Update(&g_gametype);
+        // Boe!Man 10/4/12: Reset g_gametype to set the gt latched, so it will remain effective upon the next /rcon map switch..
+        trap_SendConsoleCommand(EXEC_APPEND, "g_gametype h&z\n");
+    } else {
+        trap_Cvar_Set("g_realGametype", Q_strlwr(g_gametype.string));
+    }
+
+    trap_Cvar_Update(&g_realGametype);
+}
+
 /*
 ===============
 G_SetGametype
@@ -538,10 +590,12 @@ void G_SetGametype ( const char* gametype )
 
         gametype = bg_gametypeData[i].name;
         trap_Cvar_Set( "g_gametype", gametype );
+        trap_Cvar_Set( "g_realGametype", gametype );
         trap_Cvar_Set( "RMG_mission", gametype );
         level.gametype = BG_FindGametype ( gametype );
 
         trap_Cvar_Update( &g_gametype );
+        trap_Cvar_Update( &g_realGametype );
     }
 
     level.gametypeData = &bg_gametypeData[level.gametype];
@@ -594,6 +648,7 @@ void G_InitGame( int levelTime, int randomSeed, int restart )
     BG_BuildGametypeList ( );
 
     // Set the current gametype
+    G_SetRealGametype();
     G_SetGametype(g_gametype.string);
 
     // Sets the available weapons cvar from the disable_ cvars.
@@ -714,7 +769,9 @@ void G_InitGame( int levelTime, int randomSeed, int restart )
     G_RemapTeamShaders();
 
     // Initialize the gametype
-    trap_GT_Init ( g_gametype.string, restart );
+    // as we're now able to load gametype DLL's, separate h&s/h&z/....? from other gametypes,
+    // load the gametype from realGametype string.
+    trap_GT_Init ( g_realGametype.string, restart );
 
     // Music
     if ( RMG.integer )
