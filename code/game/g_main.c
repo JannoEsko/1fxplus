@@ -98,6 +98,7 @@ vmCvar_t    g_badmin;
 vmCvar_t    g_admin;
 vmCvar_t    g_sadmin;
 vmCvar_t    g_maxBanDuration;
+vmCvar_t    g_maxAliases;
 
 // SQLite3 tables.
 sqlite3* gameDb; // will hold anything related to the game itself: admins, bans, aliases and so on.
@@ -236,6 +237,7 @@ static cvarTable_t gameCvarTable[] =
     { &g_admin,             "g_admin",              "3",        CVAR_ARCHIVE,               0.0f,   0.0f,   0, qfalse },
     { &g_sadmin,             "g_sadmin",              "4",        CVAR_ARCHIVE,               0.0f,   0.0f,   0, qfalse },
     { &g_maxBanDuration,           "g_maxBanDuration",  "365",      CVAR_ARCHIVE,               0.0f,   0.0f,   0, qfalse },
+    { &g_maxAliases,            "g_maxAliases",                 "10",                   CVAR_ARCHIVE,                       0.0f,   0.0f,   0,  qfalse},
 };
 
 // bk001129 - made static to avoid aliasing

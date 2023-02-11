@@ -321,14 +321,43 @@ void dbDeletePassAdmin(int rowId) {
     dbDeleteFromGameDbByRowId("DELETE FROM adminpasslist WHERE ROWID = ?", rowId);
 }
 
-void dbGetAliases(char* ip) {
+void dbClearOldAliases(char* ip) {
+    // for every alias call, we will check whether the alias list exceeds g_maxAliases.integer
+    // if it does, by rowId, clean up the old rows.
+    sqlite3* db;
+    sqlite3_stmt *stmt;
+    int rows = 0; rc = 0;
 
+    db = gameDb;
+
+    char* query = "SELECT ROWID FROM aliases WHERE ip = ? ORDER BY ROWID DESC";
+
+    sqlite3_prepare(db, query, -1, &stmt, 0);
+
+    sqlite3_bind_text(stmt, 1, ip, sizeof(ip), SQLITE_STATIC);
+
+    while ((rc = sqlite3_step(stmt)) == SQLITE_OK) {
+        if (rows > g_maxAliases.integer) {
+            dbDeleteFromGameDbByRowId("DELETE FROM aliases WHERE ROWID = ?", sqlite3_column_int(stmt, 1));
+        }
+        rows++;
+    }
+
+    if (rows > g_maxAliases.integer) {
+        sqlite3_exec(db, "VACUUM", 0, 0, 0);
+    }
+
+}
+
+void dbGetAliases(char* ip) {
+    sqlite3* db
 }
 
 // only pass confirmed additions here.
 void dbAddAlias(char* alias, char* ip) {
     sqlite3* db;
     sqlite3_stmt* stmt;
+
 
     db = gameDb;
 
@@ -341,6 +370,7 @@ void dbAddAlias(char* alias, char* ip) {
 
     sqlite3_step(stmt);
     sqlite3_finalize(stmt);
+    dbClearOldAliases(ip);
 }
 
 void dbDeleteBan(int rowId) {

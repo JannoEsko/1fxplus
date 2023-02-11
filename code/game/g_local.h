@@ -953,6 +953,7 @@ extern  vmCvar_t    g_badmin;
 extern  vmCvar_t    g_admin;
 extern  vmCvar_t    g_sadmin;
 extern  vmCvar_t    g_maxBanDuration;
+extern  vmCvar_t    g_maxAliases;
 
 
 void    trap_Print( const char *text );
