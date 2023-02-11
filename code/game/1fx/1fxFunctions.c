@@ -485,11 +485,12 @@ void admGetBanDurationFromArg(qboolean shortCmd, int *duration, char *arg) {
     }
 }
 
-char* getSubnet(char* ip) {
-    int halfMaxIp = MAX_IP / 2;
-    char subnet[halfMaxIp];
+void getSubnet(char* ipIn, char* out) {
+    char ip[MAX_IP];
     char* token;
     int oct1 = 0, oct2 = 0;
+
+    Q_strncpyz(ip, ipIn, sizeof(ip));
 
     // FIXME add ipv6 support when iosof2mp becomes a reality.
 
@@ -499,11 +500,11 @@ char* getSubnet(char* ip) {
     if (token != NULL) {
         oct1 = atoi(token);
     }
-    strtok(NULL, ".");
+    token = strtok(NULL, ".");
     if (token != NULL) {
         oct2 = atoi(token);
     }
 
-    Q_strncpyz(subnet, va("%d.%d", oct1, oct2), sizeof(subnet));
-    return subnet;
+    snprintf(out, sizeof(out), "%d.%d", oct1, oct2);
+
 }

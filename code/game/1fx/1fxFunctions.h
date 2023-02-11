@@ -61,7 +61,7 @@ void truncateGameDbTable(char* tableName);
 void dbDeleteFromGameDbByRowId(char* query, int rowId);
 void dbDeleteAdmin(int rowId);
 void dbDeletePassAdmin(int rowId);
-char* getSubnet(char* ip);
+void getSubnet(char* ipIn, char* out);
 void admGetBanDurationFromArg(qboolean shortCmd, int *duration, char *arg);
 
 

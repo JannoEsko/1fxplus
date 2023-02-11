@@ -290,6 +290,7 @@ typedef struct
     int                 firemode[MAX_WEAPONS];      // weapon firemodes
     char                ip[MAX_IP];
     char                cleanName[MAX_NETNAME];
+    char                subnet[MAX_IP];
 
 } clientPersistant_t;
 

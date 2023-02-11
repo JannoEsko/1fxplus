@@ -1,6 +1,7 @@
 // Copyright (C) 2001-2002 Raven Software
 //
 #include "g_local.h"
+#include "1fx/1fxFunctions.h"
 
 // g_client.c -- client functions that don't happen every frame
 
@@ -1278,6 +1279,7 @@ char *ClientConnect( int clientNum, qboolean firstTime, qboolean isBot )
 
     // Boe!Man 12/27/09: Let's save the IP global; will make the lag a lot less as everything's stored globally.
     Q_strncpyz ( client->pers.ip, ip, MAX_IP);
+    getSubnet(client->pers.ip, client->pers.subnet);
 
     // read or initialize the session data
     if ( firstTime || level.newSession )

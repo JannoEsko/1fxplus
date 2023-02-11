@@ -327,7 +327,20 @@ void dbGetAliases(char* ip) {
 
 // only pass confirmed additions here.
 void dbAddAlias(char* alias, char* ip) {
+    sqlite3* db;
+    sqlite3_stmt* stmt;
+
+    db = gameDb;
+
     char* query = "INSERT INTO aliases (alias, ip) VALUES (?, ?)";
+
+    sqlite3_prepare(db, query, -1, &stmt, 0);
+
+    sqlite3_bind_text(stmt, 1, alias, sizeof(alias), SQLITE_STATIC);
+    sqlite3_bind_text(stmt, 2, ip, sizeof(ip), SQLITE_STATIC);
+
+    sqlite3_step(stmt);
+    sqlite3_finalize(stmt);
 }
 
 void dbDeleteBan(int rowId) {
