@@ -291,3 +291,74 @@ void dbAddPassAdmin(char* adminname, int adminlevel, char* addedby, char* passwo
     sqlite3_finalize(stmt);
 }
 
+void truncateGameDbTable(char* tableName) {
+    dbDeleteFromGameDbByRowId(va("DELETE FROM %s", tableName), -1);
+}
+
+void dbDeleteFromGameDbByRowId(char* query, int rowId) {
+    sqlite3* db;
+    sqlite3_stmt* stmt;
+
+    db = gameDb;
+
+    sqlite3_prepare(db, query, -1, &stmt, 0);
+
+    if (rowId >= 0) {
+        sqlite3_bind_int(stmt, 1, rowId);
+    }
+
+    sqlite3_step(stmt);
+    sqlite3_finalize(stmt);
+
+    sqlite3_exec(db, "VACUUM", 0, 0, 0);
+}
+
+void dbDeleteAdmin(int rowId) {
+    dbDeleteFromGameDbByRowId("DELETE FROM adminlist WHERE ROWID = ?", rowId);
+}
+
+void dbDeletePassAdmin(int rowId) {
+    dbDeleteFromGameDbByRowId("DELETE FROM adminpasslist WHERE ROWID = ?", rowId);
+}
+
+void dbGetAliases(char* ip) {
+
+}
+
+// only pass confirmed additions here.
+void dbAddAlias(char* alias, char* ip) {
+    char* query = "INSERT INTO aliases (alias, ip) VALUES (?, ?)";
+}
+
+void dbDeleteBan(int rowId) {
+    dbDeleteFromGameDbByRowId("DELETE FROM banlist WHERE ROWID = ?", rowId);
+}
+
+void dbDeleteSubnetBan(int rowId) {
+    dbDeleteFromGameDbByRowId("DELETE FROM subnetbanlist WHERE ROWID = ?", rowId);
+}
+
+void dbClearOutdatedBans() {
+    dbDeleteFromGameDbByRowId("DELETE FROM banlist WHERE endofmap = 1 OR banneduntil <= datetime('now')", -1);
+    dbDeleteFromGameDbByRowId("DELETE FROM subnetbanlist WHERE endofmap = 1 OR banneduntil <= datetime('now')", -1);
+}
+
+void dbAddBan(char* playername, char* ip, char* adminname, int endofmap, int days, int hours, int minutes) {
+
+
+    char* query = "INSERT INTO banlist (playername, ip, adminname, banneduntil, endofmap) VALUES (?, ?, ?, ?, ?)";
+}
+
+void dbAddSubnetban(char* playername, char* ip, char* adminname, int endofmap, int days, int hours, int minutes) {
+    char* query = "INSERT INTO subnetbanlist (playername, ip, adminname, banneduntil, endofmap) VALUES (?, ?, ?, ?, ?)";
+}
+
+void dbGetAdminlist(int maxAdminLevel) {
+    char* query;
+    if (maxAdminLevel < LEVEL_BADMIN) {
+        query = "SELECT * FROM adminlist";
+    } else {
+        query = "SELECT * FROM adminlist WHERE adminlevel <= ?";
+    }
+}
+

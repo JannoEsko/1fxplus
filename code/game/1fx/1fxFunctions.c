@@ -1,3 +1,5 @@
+#include "../g_local.h"
+#include "1fxFunctions.h"
 
 
 /*
@@ -45,7 +47,7 @@ void QDECL G_printInfoMessage(gentity_t *ent, const char *msg, ...)
     if(ent && ent->client){
         trap_SendServerCommand(ent-g_entities, text);
     }else{
-        trap_Printf(text);
+        trap_Print(text);
     }
 }
 
@@ -200,9 +202,9 @@ int G_clientNumFromArg(gentity_t *ent, int argNum, const char *action,
     // Check if the executing Admin is doing this,
     // and not RCON. If so, perform some extra checks.
     if(ent && ent->client
-       && ent->client->sess.admin && g_entities[clientID].client->sess.admin){
+       && ent->client->sess.adminLevel && g_entities[clientID].client->sess.adminLevel){
         // Don't allow to execute the command on higher level Admins.
-        if(g_entities[clientID].client->sess.admin > ent->client->sess.admin
+        if(g_entities[clientID].client->sess.adminLevel > ent->client->sess.adminLevel
            && !higherLvlAdmins)
         {
             G_printInfoMessage(ent,
@@ -220,8 +222,8 @@ int G_clientNumFromArg(gentity_t *ent, int argNum, const char *action,
         // Perform an additional check for when a non-Admin calls this function,
         // and this action is not allowed on Admins.
 
-    else if(!otherAdmins && ent && ent->client && !ent->client->sess.admin
-            && g_entities[clientID].client->sess.admin)
+    else if(!otherAdmins && ent && ent->client && !ent->client->sess.adminLevel
+            && g_entities[clientID].client->sess.adminLevel)
     {
         G_printInfoMessage(ent, "You cannot %s an Admin.", action);
         return -1;
@@ -356,7 +358,7 @@ char *G_GetChatArgument(int argNum)
     }
 
     // Remove colors from arg.
-    RemoveColorEscapeSequences(newArg);
+    G_RemoveColorEscapeSequences(newArg);
 
     return newArg;
 }
@@ -386,11 +388,11 @@ char *G_GetArg(int argNum,qboolean shortCmd)
 
 /*
 ==============
-RemoveColorEscapeSequences
+G_RemoveColorEscapeSequences
 ==============
 */
 
-void RemoveColorEscapeSequences(char *text) {
+void G_RemoveColorEscapeSequences(char *text) {
     int i, l;
 
     l = 0;
@@ -430,4 +432,78 @@ void G_RemoveAdditionalCarets(char *text)
     }
 
     text[l] = '\0';
+}
+
+
+void admGetBanDurationFromArg(qboolean shortCmd, int *duration, char *arg) {
+
+    if (strlen(arg)) {
+        if(Q_stricmp(arg,"eom") != 0) {
+            int d = 0, h = 0, m = 0, tmp = 0, totalDays = 0;
+            for (int i = 0; i < strlen(arg); i++) {
+                if (arg[i] == 'd' || arg[i] == 'D') {
+                    d += tmp;
+                    tmp = 0;
+                } else if (arg[i] == 'h' || arg[i] == 'H') {
+                    h += tmp;
+                    tmp = 0;
+                } else if (arg[i] == 'm' || arg[i] == 'M') {
+                    m += tmp;
+                    tmp = 0;
+                } else if (isdigit(arg[i])) {
+                    tmp = tmp * 10;
+                    tmp += arg[i] - '0';
+                } else {
+                    tmp = 0;
+                }
+            }
+
+            h += m / 60;
+            d += h / 24;
+            h = h % 24;
+            m = m % 60;
+            totalDays = d + h / 24 + m / (60 * 24);
+
+            if ((h == 0 && d == 0 && m == 0) || totalDays > g_maxBanDuration.integer) {
+                duration[0] = -1;
+            }
+            else {
+                duration[0] = 1;
+                duration[1] = d;
+                duration[2] = h;
+                duration[3] = m;
+            }
+        }
+        else
+        {
+            duration[0] = 0;
+        }
+
+    }
+    else {
+        duration[0] = -1;
+    }
+}
+
+char* getSubnet(char* ip) {
+    int halfMaxIp = MAX_IP / 2;
+    char subnet[halfMaxIp];
+    char* token;
+    int oct1 = 0, oct2 = 0;
+
+    // FIXME add ipv6 support when iosof2mp becomes a reality.
+
+    token = strtok(ip, ".");
+
+    // I only want 2 tokens.
+    if (token != NULL) {
+        oct1 = atoi(token);
+    }
+    strtok(NULL, ".");
+    if (token != NULL) {
+        oct2 = atoi(token);
+    }
+
+    Q_strncpyz(subnet, va("%d.%d", oct1, oct2), sizeof(subnet));
+    return subnet;
 }

@@ -57,6 +57,13 @@ void dbLogObjective();
 void dbLogLogin(char* player, char* ip, int level, int method, char* reference);
 void dbAddAdmin(char* adminname, char* ip, int adminlevel, char* addedby);
 void dbAddPassAdmin(char* adminname, int adminlevel, char* addedby, char* password);
+void truncateGameDbTable(char* tableName);
+void dbDeleteFromGameDbByRowId(char* query, int rowId);
+void dbDeleteAdmin(int rowId);
+void dbDeletePassAdmin(int rowId);
+char* getSubnet(char* ip);
+void admGetBanDurationFromArg(qboolean shortCmd, int *duration, char *arg);
+
 
 // admin commands
 int admAdminList(int argNum, gentity_t* adm, qboolean shortCmd);
@@ -77,4 +84,4 @@ char *G_GetArg(int argNum,qboolean shortCmd);
 char *G_GetChatArgument(int argNum);
 int G_GetChatArgumentCount();
 void G_RemoveAdditionalCarets(char *text);
-void RemoveColorEscapeSequences(char *text);
+void G_RemoveColorEscapeSequences(char *text);

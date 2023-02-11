@@ -1042,7 +1042,7 @@ void ClientUserinfoChanged( int clientNum )
     Q_strncpyz ( oldname, client->pers.netname, sizeof( oldname ) );
     s = Info_ValueForKey (userinfo, "name");
     G_ClientCleanName( s, client->pers.netname, sizeof(client->pers.netname), level.gametypeData->teams?qfalse:qtrue );
-
+    G_ClientCleanName( s, client->pers.cleanName, sizeof(client->pers.cleanName), qfalse );
     if ( client->sess.team == TEAM_SPECTATOR )
     {
         if ( client->sess.spectatorState == SPECTATOR_SCOREBOARD )
@@ -1222,6 +1222,7 @@ char *ClientConnect( int clientNum, qboolean firstTime, qboolean isBot )
     char        ip[128];
     char        guid[64];
     gentity_t   *ent;
+    int         n = 0;
 
     ent = &g_entities[ clientNum ];
 
@@ -1233,6 +1234,23 @@ char *ClientConnect( int clientNum, qboolean firstTime, qboolean isBot )
     // check to see if they are on the banned IP list
     value = Info_ValueForKey (userinfo, "ip");
     Com_sprintf ( ip, sizeof(ip), value );
+
+    if ( *value && !( isBot ) && (strcmp(value, "localhost") != 0))
+    {
+        n = 0;
+
+        while(value[n] && (value[n] != ':'))
+        {
+            n++;
+        }
+        value[n] = '\0';
+
+        Q_strncpyz ( ip, value, MAX_IP );
+    }
+    else if(isBot)
+    {
+        Q_strncpyz ( ip, "bot", MAX_IP );
+    }
 
     // we don't check password for bots and local client
     // NOTE: local client <-> "ip" "localhost"
@@ -1257,6 +1275,9 @@ char *ClientConnect( int clientNum, qboolean firstTime, qboolean isBot )
     client->pers.connected = CON_CONNECTING;
 
     client->sess.team = TEAM_SPECTATOR;
+
+    // Boe!Man 12/27/09: Let's save the IP global; will make the lag a lot less as everything's stored globally.
+    Q_strncpyz ( client->pers.ip, ip, MAX_IP);
 
     // read or initialize the session data
     if ( firstTime || level.newSession )

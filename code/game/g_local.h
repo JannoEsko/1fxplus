@@ -33,6 +33,7 @@
 #define FL_NO_HUMANS                0x00004000  // spawn point just for bots
 
 #define MAX_SPAWNS                  128
+#define MAX_IP                      40          // ipv6 theoretical max
 
 // movers are things like doors, plats, buttons, etc
 typedef enum
@@ -287,11 +288,14 @@ typedef struct
     playerTeamState_t   teamState;                  // status in teamplay games
     int                 voteCount;                  // to prevent people from constantly calling votes
     int                 firemode[MAX_WEAPONS];      // weapon firemodes
+    char                ip[MAX_IP];
+    char                cleanName[MAX_NETNAME];
 
 } clientPersistant_t;
 
 #define MAX_SERVER_FPS      40
 #define MAX_ANTILAG         MAX_SERVER_FPS
+
 
 // Antilag information
 typedef struct gantilag_s
@@ -947,6 +951,7 @@ extern  vmCvar_t    g_adminList;
 extern  vmCvar_t    g_badmin;
 extern  vmCvar_t    g_admin;
 extern  vmCvar_t    g_sadmin;
+extern  vmCvar_t    g_maxBanDuration;
 
 
 void    trap_Print( const char *text );
