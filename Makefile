@@ -754,6 +754,7 @@ SOF2GOBJ_ = \
   $(B)/game/1fx/logger.o \
   $(B)/game/1fx/database.o \
   $(B)/game/1fx/adminCommands.o \
+  $(B)/game/1fx/1fxFunctions.o \
   \
   $(B)/qcommon/q_math.o \
   $(B)/qcommon/q_shared.o

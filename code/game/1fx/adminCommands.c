@@ -13,9 +13,9 @@ static admCmd_t adminCommands[] =
     {"!adr",    "adminremove",      &minimumAdmLevel,           &admRemoveAdmin,               "Remove an Admin from the list",    "<line #>",         NULL,qtrue},
     {"!adl",    "adminlist",        &g_adminList.integer,       &admAdminList,                 "Show the Adminlist",               "",                 NULL,qtrue},
     {"!al",     "adminlist",        &g_adminList.integer,       &admAdminList,                 "Show the Adminlist",               "",                 NULL,qtrue},
-    {"!ab",     "addbadmin",        &g_badmin.integer,          &admAddAdmin,                  "Basic Admin",                      "<i/n>",            NULL,qtrue},
-    {"!aa",     "addadmin",         &g_admin.integer,           &admAddAdmin,                  "Admin",                            "<i/n>",            NULL,qtrue},
-    {"!as",     "addsadmin",        &g_sadmin.integer,          &admAddAdmin,                  "Server Admin",                     "<i/n>",            NULL,qtrue},
+    {"!ab",     "addbadmin",        &g_badmin.integer,          &admHandleAddBadmin,                  "Basic Admin",                      "<i/n>",            NULL,qtrue},
+    {"!aa",     "addadmin",         &g_admin.integer,           &admHandleAddAdmin,                  "Admin",                            "<i/n>",            NULL,qtrue},
+    {"!as",     "addsadmin",        &g_sadmin.integer,          &admHandleAddSadmin,                  "Server Admin",                     "<i/n>",            NULL,qtrue},
         /*{"!sl",     "scorelimit",       &g_sl.integer,              &adm_scoreLimit,                "Change the scorelimit",            "<time>",           NULL,qtrue},
         {"!tl",     "timelimit",        &g_tl.integer,              &adm_timeLimit,                 "Change the timelimit",             "<time>",           NULL,qtrue},
         {"!sw",     "swapteams",        &g_swapteams.integer,       &adm_swapTeams,                 "Swap the players from team",       "",                 NULL,qfalse},
@@ -114,8 +114,43 @@ int admRemoveAdmin(int argNum, gentity_t* adm, qboolean shortCmd) {
 
 }
 
-int admAddAdmin(int argNum, gentity_t* adm, qboolean shortCmd) {
+int admHandleAddBadmin(int argNum, gentity_t* adm, qboolean shortCmd) {
+    return admAddAdmin(argNum, adm, shortCmd, LEVEL_BADMIN);
+}
 
+int admHandleAddAdmin(int argNum, gentity_t* adm, qboolean shortCmd) {
+    return admAddAdmin(argNum, adm, shortCmd, LEVEL_ADMIN);
+}
+
+int admHandleAddSadmin(int argNum, gentity_t* adm, qboolean shortCmd) {
+    return admAddAdmin(argNum, adm, shortCmd, LEVEL_SADMIN);
+}
+
+int admAddAdmin(int argNum, gentity_t* adm, qboolean shortCmd, int adminLevel) {
+    int idNum = -1;
+    gentity_t* recipient;
+    char* arg;
+
+    idNum = G_clientNumFromArg(adm, argNum, "do this to", qfalse, qtrue, qfalse, shortCmd);
+
+    if (idNum < 0) {
+        return -1;
+    }
+
+    recipient = g_entities + idNum;
+
+    arg = G_GetArg(argNum + 1, shortCmd);
+
+    if (!Q_stricmp(arg, "pass")) {
+        recipient->client->sess.adminPassRegistration = adminLevel;
+        // nothing else to do here. User has to run /adm pass password to register himself into the adminlist
+        // and after that /adm login to get powers.
+    } else {
+        recipient->client->sess.adminLevel = adminLevel;
+    }
+
+
+    return idNum;
 }
 
 // not called by RCON, only in clientcmd.
@@ -125,7 +160,7 @@ qboolean canClientRunAdminCommand(gentity_t* adm, int adminCommandId) {
             && adminCommandId < adminCommandsSize
             && adm
             && adm->client
-            && (int) adm->client->sess.adminLevel >= *adminCommands[adminCommandId].adminLevel
+            && adm->client->sess.adminLevel >= *adminCommands[adminCommandId].adminLevel
     ) {
         return qtrue;
     }
@@ -135,9 +170,10 @@ qboolean canClientRunAdminCommand(gentity_t* adm, int adminCommandId) {
 
 int cmdIsAdminCmd(char* cmd, qboolean shortCmd) {
 
+    Q_strlwr(cmd);
     for (int i = 0; i < adminCommandsSize; i++) {
-        if (shortCmd && !Q_stricmp(cmd, adminCommands[i].shortCmd)) {
-
+        if (shortCmd && (!Q_stricmp(cmd, adminCommands[i].shortCmd) || !Q_stricmp(cmd, va("!%s", adminCommands[i].adminCmd)))) {
+            return i;
         } else if (!Q_stricmp(cmd, adminCommands[i].adminCmd)) {
             return i;
         }

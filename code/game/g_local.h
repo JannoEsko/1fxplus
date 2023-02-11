@@ -44,13 +44,11 @@ typedef enum
 
 } moverState_t;
 
-typedef enum {
-    LEVEL_NOADMIN,
-    LEVEL_BADMIN,
-    LEVEL_ADMIN,
-    LEVEL_SADMIN,
-    LEVEL_RCON
-} adminLevel_t;
+#define LEVEL_NOADMIN 0
+#define LEVEL_BADMIN 1
+#define LEVEL_ADMIN 2
+#define LEVEL_SADMIN 3
+#define LEVEL_RCON 4
 
 typedef struct gentity_s gentity_t;
 typedef struct gclient_s gclient_t;
@@ -252,9 +250,13 @@ typedef struct
     int                 teamkillForgiveTime;    // time when team damage will be forgivin
     qboolean            noTeamChange;           // cant change teams when this is true (rt_none only)
     int                 chatIgnoreClients[2];   // Clients which are ignoring this client. [0] = (0-31)  [1] = (32-63)
-    qboolean            muted; // FIXME alter muting system to 1fx-like version.
+    qboolean            muted;                  // FIXME alter muting system to 1fx-like version.
 
-    adminLevel_t        adminLevel;
+    int                 adminLevel;
+    int                 adminPassRegistration;  // if != 0, then the user has been added to the password list
+                                                // yet they have not yet set a password.
+                                                // the int value is also the admin value, so after successfully setting the password,
+                                                // set this value to adminLevel.
 
 
 } clientSession_t;

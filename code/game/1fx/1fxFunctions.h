@@ -55,14 +55,26 @@ void dbLogRcon(char* ip, char* action);
 void dbLogDamage();
 void dbLogObjective();
 void dbLogLogin(char* player, char* ip, int level, int method, char* reference);
+void dbAddAdmin(char* adminname, char* ip, int adminlevel, char* addedby);
+void dbAddPassAdmin(char* adminname, int adminlevel, char* addedby, char* password);
 
 // admin commands
 int admAdminList(int argNum, gentity_t* adm, qboolean shortCmd);
 int admRemoveAdmin(int argNum, gentity_t* adm, qboolean shortCmd);
-int admAddAdmin(int argNum, gentity_t* adm, qboolean shortCmd);
-
+int admAddAdmin(int argNum, gentity_t* adm, qboolean shortCmd, int adminLevel);
+int admHandleAddBadmin(int argNum, gentity_t* adm, qboolean shortCmd);
+int admHandleAddAdmin(int argNum, gentity_t* adm, qboolean shortCmd);
+int admHandleAddSadmin(int argNum, gentity_t* adm, qboolean shortCmd);
 int cmdIsAdminCmd(char* cmd, qboolean shortCmd);
 void runAdminCommand(int adminCommandId, int argNum, gentity_t* adm, qboolean shortCmd);
 void postExecuteAdminCommand(int funcNum, int idNum, gentity_t *adm);
 
+void QDECL G_printInfoMessage(gentity_t *ent, const char *msg, ...) __attribute__ ((format (printf, 2, 3)));
+void QDECL G_printInfoMessageToAll(const char *msg, ...) __attribute__ ((format (printf, 1, 2)));
+int G_clientNumFromArg(gentity_t *ent, int argNum, const char *action, qboolean aliveOnly, qboolean otherAdmins, qboolean higherLvlAdmins, qboolean shortCmd);
 
+char *G_GetArg(int argNum,qboolean shortCmd);
+char *G_GetChatArgument(int argNum);
+int G_GetChatArgumentCount();
+void G_RemoveAdditionalCarets(char *text);
+void RemoveColorEscapeSequences(char *text);

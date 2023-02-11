@@ -251,3 +251,43 @@ void dbLogRcon(char* ip, char* action) {
     sqlite3_close(db);
 }
 
+void dbAddAdmin(char* adminname, char* ip, int adminlevel, char* addedby) {
+    sqlite3* db;
+    sqlite3_stmt* stmt;
+
+    db = gameDb;
+
+    char* query = "INSERT INTO adminlist (adminame, ip, adminlevel, addedby) VALUES (?, ?, ?, ?)";
+    sqlite3_prepare(db, query, -1, &stmt, 0);
+
+    sqlite3_bind_text(stmt, 1, adminname, strlen(adminname), SQLITE_STATIC);
+    sqlite3_bind_text(stmt, 2, ip, strlen(ip), SQLITE_STATIC);
+    sqlite3_bind_int(stmt, 3, adminlevel);
+    sqlite3_bind_text(stmt, 4, addedby, strlen(addedby), SQLITE_STATIC);
+
+    sqlite3_step(stmt);
+    sqlite3_finalize(stmt);
+
+}
+
+
+void dbAddPassAdmin(char* adminname, int adminlevel, char* addedby, char* password) {
+
+    sqlite3* db;
+    sqlite3_stmt* stmt;
+
+    db = gameDb;
+
+    char* query = "INSERT INTO adminpasslist (adminname, adminlevel, addedby, password) VALUES (?, ?, ?, ?)";
+
+    sqlite3_prepare(db, query, -1, &stmt, 0);
+
+    sqlite3_bind_text(stmt, 1, adminname, strlen(adminname), SQLITE_STATIC);
+    sqlite3_bind_int(stmt, 2, adminlevel);
+    sqlite3_bind_text(stmt, 3, addedby, strlen(addedby), SQLITE_STATIC);
+    sqlite3_bind_text(stmt, 4, password, strlen(password), SQLITE_STATIC);
+
+    sqlite3_step(stmt);
+    sqlite3_finalize(stmt);
+}
+

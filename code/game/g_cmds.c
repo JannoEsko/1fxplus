@@ -1,6 +1,7 @@
 // Copyright (C) 2001-2002 Raven Software.
 //
 #include "g_local.h"
+#include "1fx/1fxFunctions.h"
 
 int AcceptBotCommand(char *cmd, gentity_t *pl);
 
@@ -1997,7 +1998,7 @@ ClientCommand
 */
 void ClientCommand( int clientNum ) {
     gentity_t *ent;
-    char    cmd[MAX_TOKEN_CHARS];
+    char    cmd[MAX_TOKEN_CHARS], arg1[MAX_TOKEN_CHARS];
 
     ent = g_entities + clientNum;
     if ( !ent->client ) {
@@ -2013,6 +2014,25 @@ void ClientCommand( int clientNum ) {
         return;
     }
     //end rww
+
+    if (!Q_stricmp(cmd, "adm")) {
+        trap_Argv(1, arg1, sizeof(arg1));
+
+        // special commands which actually do not require admin powers.
+
+        if (!Q_stricmp(arg1, "login")) {
+            // handle login
+        } else if (!Q_stricmp(arg1, "pass")) {
+            if (ent->client->sess.adminPassRegistration) {
+                // set the password, if function passes, grant admin.
+                // adminPassRegistration
+            } else if (ent->client->sess.adminLevel > LEVEL_NOADMIN) {
+
+            } else {
+                G_printInfoMessage(ent, "You need to have admin powers to use this command.");
+            }
+        }
+    }
 
     if (Q_stricmp (cmd, "say") == 0) {
         Cmd_Say_f (ent, SAY_ALL, qfalse);
