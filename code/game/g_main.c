@@ -93,6 +93,11 @@ vmCvar_t    g_debugRMG;
 vmCvar_t    g_realGametype;
 vmCvar_t    g_logToDatabase;
 
+vmCvar_t    g_adminList;
+vmCvar_t    g_badmin;
+vmCvar_t    g_admin;
+vmCvar_t    g_sadmin;
+
 // SQLite3 tables.
 sqlite3* gameDb; // will hold anything related to the game itself: admins, bans, aliases and so on.
 sqlite3* logDb; // will hold all the log tables (RCON, admin, game etc)
@@ -225,6 +230,10 @@ static cvarTable_t gameCvarTable[] =
     { &g_voiceTalkingGhosts,    "g_voiceTalkingGhosts",     "1",        CVAR_ARCHIVE,   0.0f,   0.0f,   0,  qfalse },
     { &g_realGametype,          "g_realGametype",           "dm",       CVAR_ROM | CVAR_LATCH,  0.0f,   0.0f,   0,  qfalse },
     { &g_logToDatabase,         "g_logToDatabase",          "1",        CVAR_ARCHIVE | CVAR_LATCH,  0.0f,   0.0f,   0, qfalse },
+    { &g_adminList,             "g_adminList",              "3",        CVAR_ARCHIVE,               0.0f,   0.0f,   0, qfalse },
+    { &g_badmin,             "g_badmin",              "3",        CVAR_ARCHIVE,               0.0f,   0.0f,   0, qfalse },
+    { &g_admin,             "g_admin",              "3",        CVAR_ARCHIVE,               0.0f,   0.0f,   0, qfalse },
+    { &g_sadmin,             "g_sadmin",              "4",        CVAR_ARCHIVE,               0.0f,   0.0f,   0, qfalse },
 };
 
 // bk001129 - made static to avoid aliasing

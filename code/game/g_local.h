@@ -44,6 +44,14 @@ typedef enum
 
 } moverState_t;
 
+typedef enum {
+    LEVEL_NOADMIN,
+    LEVEL_BADMIN,
+    LEVEL_ADMIN,
+    LEVEL_SADMIN,
+    LEVEL_RCON
+} adminLevel_t;
+
 typedef struct gentity_s gentity_t;
 typedef struct gclient_s gclient_t;
 
@@ -244,7 +252,10 @@ typedef struct
     int                 teamkillForgiveTime;    // time when team damage will be forgivin
     qboolean            noTeamChange;           // cant change teams when this is true (rt_none only)
     int                 chatIgnoreClients[2];   // Clients which are ignoring this client. [0] = (0-31)  [1] = (32-63)
-    qboolean            muted;
+    qboolean            muted; // FIXME alter muting system to 1fx-like version.
+
+    adminLevel_t        adminLevel;
+
 
 } clientSession_t;
 
@@ -929,6 +940,12 @@ extern  vmCvar_t    g_voiceTalkingGhosts;
 extern  vmCvar_t    g_suddenDeath;
 extern  vmCvar_t    g_realGametype;
 extern  vmCvar_t    g_logToDatabase;
+
+extern  vmCvar_t    g_adminList;
+extern  vmCvar_t    g_badmin;
+extern  vmCvar_t    g_admin;
+extern  vmCvar_t    g_sadmin;
+
 
 void    trap_Print( const char *text );
 void    trap_Error( const char *text ) __attribute__((noreturn));

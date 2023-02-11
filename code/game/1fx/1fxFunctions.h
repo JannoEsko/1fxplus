@@ -56,3 +56,13 @@ void dbLogDamage();
 void dbLogObjective();
 void dbLogLogin(char* player, char* ip, int level, int method, char* reference);
 
+// admin commands
+int admAdminList(int argNum, gentity_t* adm, qboolean shortCmd);
+int admRemoveAdmin(int argNum, gentity_t* adm, qboolean shortCmd);
+int admAddAdmin(int argNum, gentity_t* adm, qboolean shortCmd);
+
+int cmdIsAdminCmd(char* cmd, qboolean shortCmd);
+void runAdminCommand(int adminCommandId, int argNum, gentity_t* adm, qboolean shortCmd);
+void postExecuteAdminCommand(int funcNum, int idNum, gentity_t *adm);
+
+

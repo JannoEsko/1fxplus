@@ -4,6 +4,7 @@
 // this file holds commands that can be executed by the server console, but not remote clients
 
 #include "g_local.h"
+#include "1fx/1fxFunctions.h"
 
 char    *ConcatArgs( int start );
 
@@ -229,6 +230,11 @@ qboolean ConsoleCommand( void )
     char cmd[MAX_TOKEN_CHARS];
 
     trap_Argv( 0, cmd, sizeof( cmd ) );
+    int adminCommand = -1;
+    if ((adminCommand = cmdIsAdminCmd(cmd, qfalse)) != -1) {
+        runAdminCommand(adminCommand, 1, NULL, qfalse);
+        return qtrue;
+    }
 
     if ( Q_stricmp (cmd, "entitylist") == 0 )
     {
