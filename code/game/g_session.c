@@ -22,7 +22,7 @@ void G_WriteClientSessionData( gclient_t *client )
     const char  *s;
     const char  *var;
 
-    s = va("%i", client->sess.team );
+    s = va("%i %i", client->sess.team, client->sess.adminLevel );
 
     var = va( "session%i", client - level.clients );
 
@@ -40,15 +40,16 @@ void G_ReadSessionData( gclient_t *client )
 {
     char        s[MAX_STRING_CHARS];
     const char  *var;
-    int         sessionTeam;
+    int         sessionTeam, adminLevel;
 
     var = va( "session%i", client - level.clients );
     trap_Cvar_VariableStringBuffer( var, s, sizeof(s) );
 
-    sscanf( s, "%i", &sessionTeam );
+    sscanf( s, "%i %i", &sessionTeam, &adminLevel );
 
     // bk001205 - format issues
     client->sess.team = (team_t)sessionTeam;
+    client->sess.adminLevel = adminLevel;
 }
 
 

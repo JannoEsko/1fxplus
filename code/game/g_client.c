@@ -1827,6 +1827,11 @@ void ClientDisconnect( int clientNum )
         BotAIShutdownClient( clientNum, qfalse );
     }
 #endif
+
+    // Boe!Man 5/30/13: If the player count hits 0, backup *critical* in-memory databases to disk.
+    if (!level.numConnectedClients) {
+        backupInMemoryDatabases("game.db", gameDb);
+    }
 }
 
 /*

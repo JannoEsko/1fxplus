@@ -107,7 +107,8 @@ static int adminCommandsSize = sizeof(adminCommands) / sizeof(adminCommands[0]);
 // End
 
 int admAdminList(int argNum, gentity_t* adm, qboolean shortCmd) {
-
+    dbGetAdminlist(adm, qfalse);
+    dbGetAdminlist(adm, qtrue);
 }
 
 int admRemoveAdmin(int argNum, gentity_t* adm, qboolean shortCmd) {
@@ -145,12 +146,19 @@ int admAddAdmin(int argNum, gentity_t* adm, qboolean shortCmd, int adminLevel) {
         recipient->client->sess.adminPassRegistration = adminLevel;
         // nothing else to do here. User has to run /adm pass password to register himself into the adminlist
         // and after that /adm login to get powers.
+        // broadcast over here instead of having ambiguous broadcast at postAdm (as we don't send whether it's a passadmin etc there).
     } else {
         recipient->client->sess.adminLevel = adminLevel;
+        Com_Printf("Player %s is now a %s.\n", recipient->client->pers.netname, getAdminNameByLevel(recipient->client->sess.adminLevel));
+        dbAddAdmin(recipient->client->pers.cleanName, recipient->client->pers.ip, adminLevel, adm && adm->client ? adm->client->pers.cleanName : "RCON");
+
     }
 
+    G_printInfoMessageToAll("%s was added to the %s's list by %s", recipient->client->pers.netname, getAdminNameByLevel(adminLevel), adm && adm->client ? adm->client->pers.netname : "RCON");
 
-    return idNum;
+
+
+    return -1;
 }
 
 // not called by RCON, only in clientcmd.
@@ -193,5 +201,32 @@ void runAdminCommand(int adminCommandId, int argNum, gentity_t* adm, qboolean sh
 void postExecuteAdminCommand(int funcNum, int idNum, gentity_t *adm) {
     if (idNum < 0) {
         return;
+    }
+}
+
+char* getAdminNameByLevel(int adminLevel) {
+    switch (adminLevel) {
+        case LEVEL_BADMIN:
+            return "B-Admin";
+        case LEVEL_ADMIN:
+            return "Admin";
+        case LEVEL_SADMIN:
+            return "S-Admin";
+        default:
+            return "Not admin";
+    }
+}
+
+char* getAdminPrefixByLevel(int adminLevel) {
+    switch (adminLevel) {
+        case LEVEL_BADMIN:
+            return g_badminChatPrefix.string;
+        case LEVEL_ADMIN:
+            return g_adminChatPrefix.string;
+        case LEVEL_SADMIN:
+            return g_sadminChatPrefix.string;
+        default:
+            return "";
+
     }
 }

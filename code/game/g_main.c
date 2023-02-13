@@ -100,6 +100,11 @@ vmCvar_t    g_sadmin;
 vmCvar_t    g_maxBanDuration;
 vmCvar_t    g_maxAliases;
 
+vmCvar_t    g_rconChatPrefix;
+vmCvar_t    g_badminChatPrefix;
+vmCvar_t    g_adminChatPrefix;
+vmCvar_t    g_sadminChatPrefix;
+
 // SQLite3 tables.
 sqlite3* gameDb; // will hold anything related to the game itself: admins, bans, aliases and so on.
 sqlite3* logDb; // will hold all the log tables (RCON, admin, game etc)
@@ -238,6 +243,10 @@ static cvarTable_t gameCvarTable[] =
     { &g_sadmin,             "g_sadmin",              "4",        CVAR_ARCHIVE,               0.0f,   0.0f,   0, qfalse },
     { &g_maxBanDuration,           "g_maxBanDuration",  "365",      CVAR_ARCHIVE,               0.0f,   0.0f,   0, qfalse },
     { &g_maxAliases,            "g_maxAliases",                 "10",                   CVAR_ARCHIVE,                       0.0f,   0.0f,   0,  qfalse},
+    { &g_rconChatPrefix,        "g_rconChatPrefix",                 "server",       CVAR_ARCHIVE,   0.0f,   0.0f,   0 ,  qfalse },
+    { &g_badminChatPrefix,        "g_badminChatPrefix",                 "badmin",       CVAR_ARCHIVE,   0.0f,   0.0f,   0 ,  qfalse },
+    { &g_adminChatPrefix,        "g_adminChatPrefix",                 "admin",       CVAR_ARCHIVE,   0.0f,   0.0f,   0 ,  qfalse },
+    { &g_sadminChatPrefix,        "g_sadminChatPrefix",                 "sadmin",       CVAR_ARCHIVE,   0.0f,   0.0f,   0 ,  qfalse },
 };
 
 // bk001129 - made static to avoid aliasing
@@ -764,8 +773,8 @@ void G_InitGame( int levelTime, int randomSeed, int restart )
     SaveRegisteredItems();
 
     // check databases.
-    Com_Printf ("Checking database integrity...\n");
-    checkDatabaseIntegrity();
+    Com_Printf ("Loading databases...\n");
+    loadDatabases();
 
     Com_Printf ("-----------------------------------\n");
 
@@ -790,6 +799,11 @@ void G_InitGame( int levelTime, int randomSeed, int restart )
     // as we're now able to load gametype DLL's, separate h&s/h&z/....? from other gametypes,
     // load the gametype from realGametype string.
     trap_GT_Init ( g_realGametype.string, restart );
+
+    // Boe!Man 1/30/14: If we're not in a game that has rounds and the user wishes to have automatic backups (enabled by default), do this every 5 minutes.
+    if(level.gametypeData->respawnType == RT_INTERVAL){
+        level.sqlBackupTime = level.time + 50000;
+    }
 
     // Music
     if ( RMG.integer )
@@ -819,6 +833,8 @@ void G_ShutdownGame( int restart )
         G_LogPrintf("------------------------------------------------------------\n" );
         trap_FS_FCloseFile( level.logFile );
     }
+    Com_Printf("Unloading and backing up in-memory databases.\n");
+    unloadInMemoryDatabases();
 
     // write all the client session data so we can get it back
     G_WriteSessionData();
@@ -1935,6 +1951,13 @@ void G_RunFrame( int levelTime )
         {
             ClientEndFrame( ent );
         }
+    }
+
+    // Boe!Man 5/27/13: The automatic in-memory to disk backup. Note this only happens when playing a game which doesn't have a round limit.
+    if(level.sqlBackupTime && level.time >= level.sqlBackupTime){
+        backupInMemoryDatabases("game.db", gameDb);
+        // Do this again in the next 5 minutes.
+        level.sqlBackupTime = level.time + 50000;
     }
 
     // Check warmup rules

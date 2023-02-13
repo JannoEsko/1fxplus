@@ -14,13 +14,14 @@ extern char sqlTempName[16];
 #define LOGLEVEL_FATAL 3
 #define LOGLEVEL_FATAL_DB 4 // this is used if we have a fatal DB-related error (most likely not usable DB), which means that if db logging is turned on, game will not try to log it into the DB because, well..., the DB part failed...
 
+#define MAX_PACKET_BUF 1000
 
-void checkDatabaseIntegrity();
+void loadDatabases();
 void migrateGameDatabase(sqlite3* db, int migrationLevel);
 void migrateLogsDatabase(sqlite3* db, int migrationLevel);
 
-int process_ddl_row(void* pData, int nColumns, char** values, char** columns);
-int process_dml_row(void* pData, int nColumns, char** values, char** columns);
+int processTableStructure(void* pData, int nColumns, char** values, char** columns);
+int processTableData(void* pData, int nColumns, char** values, char** columns);
 
 
 // struct from 1fxmod
@@ -57,12 +58,17 @@ void dbLogObjective();
 void dbLogLogin(char* player, char* ip, int level, int method, char* reference);
 void dbAddAdmin(char* adminname, char* ip, int adminlevel, char* addedby);
 void dbAddPassAdmin(char* adminname, int adminlevel, char* addedby, char* password);
-void truncateGameDbTable(char* tableName);
+qboolean dbTruncateGameDbTable(char* tableName);
 void dbDeleteFromGameDbByRowId(char* query, int rowId);
 void dbDeleteAdmin(int rowId);
 void dbDeletePassAdmin(int rowId);
+void dbGetAdminlist(gentity_t* ent, qboolean passlist);
 void getSubnet(char* ipIn, char* out);
 void admGetBanDurationFromArg(qboolean shortCmd, int *duration, char *arg);
+void unloadInMemoryDatabases();
+void backupInMemoryDatabases(char* dbName, sqlite3* db);
+char* getAdminNameByLevel(int adminLevel);
+char* getAdminPrefixByLevel(int adminLevel);
 
 
 // admin commands

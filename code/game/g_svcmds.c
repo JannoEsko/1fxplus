@@ -295,16 +295,26 @@ qboolean ConsoleCommand( void )
         return qtrue;
     }
 
+    // clearing a database table is not going to be an admin command, therefore defining them here.
+
+    if (!Q_stricmp(cmd, "clear")) {
+        char tableToClear[MAX_TOKEN_CHARS];
+
+        trap_Argv( 1, tableToClear, sizeof( tableToClear ) );
+        dbTruncateGameDbTable(tableToClear);
+        return qtrue;
+    }
+
     if (g_dedicated.integer)
     {
         if (Q_stricmp (cmd, "say") == 0)
         {
-            trap_SendServerCommand( -1, va("chat -1 \"server: %s\n\"", ConcatArgs(1) ) );
+            trap_SendServerCommand( -1, va("chat -1 \"%s: %s\n\"", g_rconChatPrefix.string, ConcatArgs(1) ) );
             return qtrue;
         }
 
         // everything else will also be printed as a say command
-        trap_SendServerCommand( -1, va("chat -1 \"server: %s\n\"", ConcatArgs(0) ) );
+        trap_SendServerCommand( -1, va("chat -1 \"%s: %s\n\"", g_rconChatPrefix.string, ConcatArgs(0) ) );
         return qtrue;
     }
 

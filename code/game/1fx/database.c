@@ -9,7 +9,7 @@
 #endif
 
 
-void checkDatabaseIntegrity() {
+void loadDatabases() {
     sqlite3* db;
     sqlite3_stmt* stmt;
     int              rc, gameMigrationLevel = 0, logMigrationLevel = 0;
@@ -64,7 +64,7 @@ void checkDatabaseIntegrity() {
     sqlite3_open(":memory:", &gameDb);
 
     sqlite3_exec(db, "BEGIN", NULL, NULL, NULL);
-    sqlite3_exec(db, "SELECT sql FROM sqlite_master WHERE sql NOT NULL", &process_ddl_row, gameDb, NULL);
+    sqlite3_exec(db, "SELECT sql FROM sqlite_master WHERE sql NOT NULL", &processTableStructure, gameDb, NULL);
     sqlite3_exec(db, "COMMIT", NULL, NULL, NULL);
 
     sqlite3_close(db);
@@ -73,7 +73,7 @@ void checkDatabaseIntegrity() {
 
     sqlite3_exec(gameDb, "ATTACH DATABASE './1fx/databases/game.db' as game", NULL, NULL, NULL);
     sqlite3_exec(gameDb, "BEGIN", NULL, NULL, NULL);
-    sqlite3_exec(gameDb, "SELECT name FROM country.sqlite_master WHERE type='table'", &process_dml_row, gameDb, NULL);
+    sqlite3_exec(gameDb, "SELECT name FROM game.sqlite_master WHERE type='table'", &processTableData, gameDb, NULL);
     sqlite3_exec(gameDb, "COMMIT", NULL, NULL, NULL);
 
     Com_Printf(" done.\n");
@@ -107,7 +107,7 @@ void checkDatabaseIntegrity() {
 
     sqlite3_finalize(stmt);
 
-    if (SQL_GAME_MIGRATION_LEVEL != gameMigrationLevel) {
+    if (SQL_LOG_MIGRATION_LEVEL != logMigrationLevel) {
         Com_Printf("Migrating logsDb from level %d to level %d.\n", logMigrationLevel, SQL_LOG_MIGRATION_LEVEL);
         migrateLogsDatabase(db, logMigrationLevel);
     } else {
@@ -184,7 +184,7 @@ void migrateLogsDatabase(sqlite3* db, int migrationLevel) {
 
 
 // Boe!Man 5/27/13: Misc. SQLite functions.
-int process_ddl_row(void* pData, int nColumns,
+int processTableStructure(void* pData, int nColumns,
     char** values, char** columns)
 {
     sqlite3* db;
@@ -198,7 +198,7 @@ int process_ddl_row(void* pData, int nColumns,
     return 0;
 }
 
-int process_dml_row(void* pData, int nColumns,
+int processTableData(void* pData, int nColumns,
     char** values, char** columns)
 {
     sqlite3* db;
@@ -257,9 +257,8 @@ void dbAddAdmin(char* adminname, char* ip, int adminlevel, char* addedby) {
 
     db = gameDb;
 
-    char* query = "INSERT INTO adminlist (adminame, ip, adminlevel, addedby) VALUES (?, ?, ?, ?)";
+    char* query = "INSERT INTO adminlist (adminname, ip, adminlevel, addedby) VALUES (?, ?, ?, ?)";
     sqlite3_prepare(db, query, -1, &stmt, 0);
-
     sqlite3_bind_text(stmt, 1, adminname, strlen(adminname), SQLITE_STATIC);
     sqlite3_bind_text(stmt, 2, ip, strlen(ip), SQLITE_STATIC);
     sqlite3_bind_int(stmt, 3, adminlevel);
@@ -267,7 +266,6 @@ void dbAddAdmin(char* adminname, char* ip, int adminlevel, char* addedby) {
 
     sqlite3_step(stmt);
     sqlite3_finalize(stmt);
-
 }
 
 
@@ -291,8 +289,26 @@ void dbAddPassAdmin(char* adminname, int adminlevel, char* addedby, char* passwo
     sqlite3_finalize(stmt);
 }
 
-void truncateGameDbTable(char* tableName) {
-    dbDeleteFromGameDbByRowId(va("DELETE FROM %s", tableName), -1);
+qboolean dbTruncateGameDbTable(char* tableName) {
+
+    if (!Q_stricmp(tableName, "adminlist")) {
+        dbDeleteFromGameDbByRowId("DELETE FROM adminlist", -1);
+    } else if (!Q_stricmp(tableName, "adminpasslist")) {
+        dbDeleteFromGameDbByRowId("DELETE FROM adminpasslist", -1);
+    } else if (!Q_stricmp(tableName, "aliases")) {
+        dbDeleteFromGameDbByRowId("DELETE FROM aliases", -1);
+    } else if (!Q_stricmp(tableName, "banlist")) {
+        dbDeleteFromGameDbByRowId("DELETE FROM banlist", -1);
+    } else if (!Q_stricmp(tableName, "subnetbanlist")) {
+        dbDeleteFromGameDbByRowId("DELETE FROM subnetbanlist", -1);
+    } else {
+        // yet again I do not want to printf from here, but it just makes sense to do it here
+        // here I can also specify the tables I do have, otherwise jump around in different files when you add 1 more table.
+        Com_Printf("^3Info:^7 Invalid choice '%s'. Tables you can clear: adminlist, adminpasslist, aliases, banlist, subnetbanlist.\n", tableName);
+        return qfalse;
+    }
+    Com_Printf("^3Info:^7 Table %s has been successfully cleared.\n", tableName);
+    return qtrue;
 }
 
 void dbDeleteFromGameDbByRowId(char* query, int rowId) {
@@ -326,7 +342,7 @@ void dbClearOldAliases(char* ip) {
     // if it does, by rowId, clean up the old rows.
     sqlite3* db;
     sqlite3_stmt *stmt;
-    int rows = 0; rc = 0;
+    int rows = 0, rc = 0;
 
     db = gameDb;
 
@@ -336,7 +352,7 @@ void dbClearOldAliases(char* ip) {
 
     sqlite3_bind_text(stmt, 1, ip, sizeof(ip), SQLITE_STATIC);
 
-    while ((rc = sqlite3_step(stmt)) == SQLITE_OK) {
+    while ((rc = sqlite3_step(stmt)) != SQLITE_DONE) {
         if (rows > g_maxAliases.integer) {
             dbDeleteFromGameDbByRowId("DELETE FROM aliases WHERE ROWID = ?", sqlite3_column_int(stmt, 1));
         }
@@ -350,7 +366,7 @@ void dbClearOldAliases(char* ip) {
 }
 
 void dbGetAliases(char* ip) {
-    sqlite3* db
+    sqlite3* db;
 }
 
 // only pass confirmed additions here.
@@ -388,20 +404,161 @@ void dbClearOutdatedBans() {
 
 void dbAddBan(char* playername, char* ip, char* adminname, int endofmap, int days, int hours, int minutes) {
 
+    sqlite3* db;
+    sqlite3_stmt* stmt;
+    char banDurationString[MAX_STRING_CHARS];
 
-    char* query = "INSERT INTO banlist (playername, ip, adminname, banneduntil, endofmap) VALUES (?, ?, ?, ?, ?)";
+    db = gameDb;
+
+    if (endofmap) {
+        strncpy(banDurationString, va("datetime('now', '+%d day', '+%d hour', '+%d minute')", 365, 0, 0), sizeof(banDurationString));
+    } else {
+        strncpy(banDurationString, va("datetime('now', '+%d day', '+%d hour', '+%d minute')", days, hours, minutes), sizeof(banDurationString));
+    }
+
+    char* query = va("INSERT INTO banlist (playername, ip, adminname, banneduntil, endofmap) VALUES (?, ?, ?, %s, ?)", banDurationString);
+
+    sqlite3_prepare(db, query, -1, &stmt, 0);
+
+    sqlite3_bind_text(stmt, 1, playername, sizeof(playername), SQLITE_STATIC);
+    sqlite3_bind_text(stmt, 2, ip, sizeof(ip), SQLITE_STATIC);
+    sqlite3_bind_text(stmt, 3, adminname, sizeof(adminname), SQLITE_STATIC);
+    sqlite3_bind_int(stmt, 4, endofmap);
+
+    sqlite3_step(stmt);
+    sqlite3_finalize(stmt);
+
 }
 
 void dbAddSubnetban(char* playername, char* ip, char* adminname, int endofmap, int days, int hours, int minutes) {
-    char* query = "INSERT INTO subnetbanlist (playername, ip, adminname, banneduntil, endofmap) VALUES (?, ?, ?, ?, ?)";
+
+    sqlite3* db;
+    sqlite3_stmt* stmt;
+    char banDurationString[MAX_STRING_CHARS];
+
+    db = gameDb;
+
+    if (endofmap) {
+        strncpy(banDurationString, va("datetime('now', '+%d day', '+%d hour', '+%d minute')", 365, 0, 0), sizeof(banDurationString));
+    } else {
+        strncpy(banDurationString, va("datetime('now', '+%d day', '+%d hour', '+%d minute')", days, hours, minutes), sizeof(banDurationString));
+    }
+
+    char* query = va("INSERT INTO subnetbanlist (playername, ip, adminname, banneduntil, endofmap) VALUES (?, ?, ?, %s, ?)", banDurationString);
+
+    sqlite3_prepare(db, query, -1, &stmt, 0);
+
+    sqlite3_bind_text(stmt, 1, playername, sizeof(playername), SQLITE_STATIC);
+    sqlite3_bind_text(stmt, 2, ip, sizeof(ip), SQLITE_STATIC);
+    sqlite3_bind_text(stmt, 3, adminname, sizeof(adminname), SQLITE_STATIC);
+    sqlite3_bind_int(stmt, 4, endofmap);
+
+    sqlite3_step(stmt);
+    sqlite3_finalize(stmt);
+
 }
 
-void dbGetAdminlist(int maxAdminLevel) {
-    char* query;
-    if (maxAdminLevel < LEVEL_BADMIN) {
-        query = "SELECT * FROM adminlist";
+// whilst I would prefer that this function gives you an admin list and another one does the printing,
+// it simply does not make sense to do so in C considering that the admin list can quite often be large.
+// plus the fact that I would be looping over the contents anyhow to print them, I would just end up creating more of an headache
+void dbGetAdminlist(gentity_t* ent, qboolean passlist) {
+
+    sqlite3* db;
+    sqlite3_stmt* stmt;
+    int rc;
+    char buf[MAX_PACKET_BUF];
+
+    memset(buf, 0, sizeof(buf));
+
+    db = gameDb;
+
+    char* query = va("SELECT ROWID, adminlevel, %s, adminname, addedby FROM admin%slist", passlist ? "''" : "ip", passlist ? "pass" : "");
+    if (ent && ent->client) {
+        Q_strcat(buf, sizeof(buf), va("^3 %-6s%-5s%-16s%-22sBy\n^7------------------------------------------------------------------------\n", "#", "Lvl", "IP", "Name"));
     } else {
-        query = "SELECT * FROM adminlist WHERE adminlevel <= ?";
+        Com_Printf("^3 %-6s%-5s%-16s%-22sBy\n", "#", "Lvl", "IP", "Name");
+        Com_Printf("^7------------------------------------------------------------------------\n");
     }
+
+    if (sqlite3_prepare(db, query, -1, &stmt, 0) == SQLITE_OK) {
+        while ((rc = sqlite3_step(stmt)) != SQLITE_DONE) {
+            if (rc == SQLITE_ROW) {
+                if(ent && ent->client){
+                    // Boe!Man 11/04/11: Put packet through to clients if char size would exceed 1000 and reset buf2.
+                    if((strlen(buf) +
+                        strlen(
+                                va("[^3%-3.3i^7]  [^3%i^7]  %-15.15s %-21.21s %-21.21s\n",
+                                   sqlite3_column_int(stmt, 0), // ROWID
+                                   sqlite3_column_int(stmt, 1), // adminlevel
+                                   sqlite3_column_text(stmt, 2), // ip
+                                   sqlite3_column_text(stmt, 3), // adminname
+                                   sqlite3_column_text(stmt, 4) // addedby
+                                   )
+                               )
+                       ) > MAX_PACKET_BUF){
+                        trap_SendServerCommand( ent-g_entities, va("print \"%s\"", buf));
+                        memset(buf, 0, sizeof(buf)); // Boe!Man 11/04/11: Properly empty the buffer.
+                    }
+                    Q_strcat(buf, sizeof(buf), va("[^3%-3.3i^7]  [^3%i^7]  %-15.15s %-21.21s %-21.21s\n",
+                                                  sqlite3_column_int(stmt, 0),
+                                                  sqlite3_column_int(stmt, 1),
+                                                  sqlite3_column_text(stmt, 2),
+                                                  sqlite3_column_text(stmt, 3),
+                                                  sqlite3_column_text(stmt, 4)
+                                                )
+                    );
+                }else{
+                    Com_Printf("[^3%-3.3i^7%-3s[^3%i^7%-3s%-15.15s %-21.21s %-21.21s\n", sqlite3_column_int(stmt, 0), "]", sqlite3_column_int(stmt, 1), "]", sqlite3_column_text(stmt, 2), sqlite3_column_text(stmt, 3), sqlite3_column_text(stmt, 4));
+                }
+            }
+        }
+    }
+
+    sqlite3_finalize(stmt);
+    // Boe!Man 11/04/11: Fix for RCON not properly showing footer of banlist.
+    if(ent && ent->client){
+        trap_SendServerCommand( ent-g_entities, va("print \"%s\nUse ^3[Page Up] ^7and ^3[Page Down] ^7keys to scroll\n\n\"", buf)); // Boe!Man 11/04/11: Also send the last buf2 (that wasn't filled as a whole yet).
+    } else {
+        Com_Printf("\nUse ^3[Page Up] ^7and ^3[Page Down] ^7keys to scroll\n\n");
+    }
+}
+
+void unloadInMemoryDatabases() {
+    backupInMemoryDatabases("game.db", gameDb);
+    sqlite3_exec(gameDb, "DETACH DATABASE game", NULL, NULL, NULL);
+    sqlite3_close(gameDb);
+}
+
+void backupInMemoryDatabases(char* dbName, sqlite3* db) {
+    sqlite3_backup  *pBackup;    // Boe!Man 5/27/13: Backup handle used to copy data.
+    sqlite3         *pFile;
+    int             rc;
+
+    rc = sqlite3_open(va("./1fx/databases/%s", dbName), &pFile);
+
+    if (rc){
+        logSystem(LOGLEVEL_ERROR, va("Critical error backing up in-memory database %s: %s\n", dbName, sqlite3_errmsg(pFile)));
+        return;
+    }
+
+    // Boe!Man 7/1/13: Fixed the backup being very slow when databases are relatively full, can especially be noted when restarting the map.
+    sqlite3_exec(pFile, "PRAGMA synchronous = OFF", NULL, NULL, NULL);
+    sqlite3_exec(pFile, "BEGIN TRANSACTION", NULL, NULL, NULL);
+
+    pBackup = sqlite3_backup_init(pFile, "main", db, "main");
+
+    if(pBackup){
+        sqlite3_backup_step(pBackup, -1);
+        // Boe!Man 5/27/13: Release resources allocated by backup_init().
+        sqlite3_backup_finish(pBackup);
+    }
+
+    rc = sqlite3_errcode(pFile);
+    if(rc){
+        logSystem(LOGLEVEL_ERROR, va("SQLite3 error while backing up data in %s: %s\n", dbName, sqlite3_errmsg(pFile)));
+    }
+
+    sqlite3_exec(pFile, "COMMIT", NULL, NULL, NULL);
+    sqlite3_close(pFile);
 }
 

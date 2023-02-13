@@ -6,6 +6,7 @@
 #include "../qcommon/q_shared.h"
 #include "g_team.h"
 #include "inv.h"
+#include "1fx/1fxFunctions.h"
 
 #define MAX_GAMETYPE_SPAWN_POINTS   32
 
@@ -471,6 +472,10 @@ void G_ResetGametype ( qboolean fullRestart )
             }
 
             trap_SetConfigstring ( CS_GAMETYPE_TIMER, va("%i", level.gametypeRoundTime) );
+
+            // write the db changes.
+            backupInMemoryDatabases("game.db", gameDb);
+
             break;
     }
 

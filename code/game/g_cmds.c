@@ -1153,44 +1153,49 @@ void Cmd_FollowCycle_f( gentity_t *ent, int dir )
 /*
 ==================
 G_SayTo
+Mostly copy-pasted from 1fxmod
 ==================
 */
 static void G_SayTo( gentity_t *ent, gentity_t *other, int mode, const char *name, const char *message )
 {
     qboolean     ghost = qfalse;
     qboolean     spec  = qfalse;
-    const char*  type;
+    qboolean     beep  = qfalse;
+    char    type[128];
+    char    admin[128];
+    char    star[128];
+    int i;
 
     if (!other)
     {
         return;
     }
 
-    if (!other->inuse)
-    {
+    if (!other->inuse) {
+        return;
+    } else if (!other->client) {
+        return;
+    } else if ( other->client->pers.connected != CON_CONNECTED ) {
+        return;
+    } else if ( mode == SAY_TEAM  && !OnSameTeam(ent, other) ) {
         return;
     }
 
-    if (!other->client)
-    {
+    // Boe!Man 1/17/10: We do not wish to send the chat when it's Admin/Clan only..
+    /*if ( mode == ADM_CHAT  && !other->client->sess.adminLevel )
         return;
-    }
-
-    if ( other->client->pers.connected != CON_CONNECTED )
-    {
+    else if (mode == REF_CHAT && !other->client->sess.referee && !other->client->sess.admin && !isDev)
         return;
-    }
-
-    if ( mode == SAY_TEAM  && !OnSameTeam(ent, other) )
-    {
+    else if ( mode == SADM_CHAT  && other->client->sess.admin != 4 && !isDev)
         return;
-    }
-
-    if ( ent->client->sess.muted || G_IsClientChatIgnored ( other->s.number, ent->s.number ) )
-    {
+    else if (mode == CLAN_CHAT && !other->client->sess.clanMember && !isDev)
         return;
-    }
-
+    else if (mode == CLAN_TALK && !other->client->sess.clanMember && !isDev)
+        return;
+        // Boe!Man 9/26/10: Hey Admin! chat needs to be visible for admins AND the one saying it.
+    else if (mode == CADM_CHAT && ent->s.number != other->s.number && other->client->sess.admin < 2 && !isDev)
+        return;
+    */ // FIXME implement different chat modes
     if ( !level.intermissiontime && !level.intermissionQueued )
     {
         // Spectators cant talk to alive people
@@ -1207,29 +1212,187 @@ static void G_SayTo( gentity_t *ent, gentity_t *other, int mode, const char *nam
                 ghost = qtrue;
             }
 
+            // Boe!Man 1/17/10: Admins need to be heard, even if they're dead/spec.
+            /*if(mode >= ADM_TALK && mode <= CADM_CHAT)
+            {
+                ghost = qfalse;
+                spec = qfalse;
+            }*/ // FIXME implement different chat modes
+
             // If the client we are talking to is alive then a check
             // must be made to see if this talker is alowed to speak to this person
             if ( ent->s.number != other->s.number && !G_IsClientDead ( other->client ) && !G_IsClientSpectating( other->client) && (ghost || spec))
             {
                 return;
             }
+
         }
     }
 
-    type = "";
-    if ( ghost )
-    {
-        type = "*ghost* ";
+    /*
+    for(i=0;i<ent->client->sess.IgnoredClientCount;i++){
+        if(ent->client->sess.IgnoredClients[i] == other->s.number){
+            return;
+        }
     }
-    else if ( spec )
-    {
-        type = "*spec* ";
+*/ // FIXME add ignoreclients
+    strcpy(admin, ""); // Boe!Man 1/18/10: Clean the Admin data.
+
+    if (mode != SAY_TELL){
+        // Boe!Man 1/7/10: Team prefixes.
+        if (ghost)
+        {
+            strcpy(type, "^7[^Cg^7] ");
+        }
+        else if (spec)
+        {
+            strcpy(type, "^7[^Cs^7] ");
+        }
+            // Boe!Man 4/5/10: We delete the team prefixes.
+            // Boe!Man 2/8/11: And we re-add them for Hide&Seek lol.
+/*
+        else if (ent->client->sess.team == TEAM_RED && current_gametype.value == GT_HS)
+        {
+            strcpy(type, "^7[^1h^7] ");
+        }
+        else if (ent->client->sess.team == TEAM_BLUE && current_gametype.value == GT_HS)
+        {
+            strcpy(type, "^7[^ys^7] ");
+        }
+        else if (ent->client->sess.team == TEAM_RED && current_gametype.value == GT_HZ)
+        {
+            strcpy(type, "^7[^1h^7] ");
+        }
+        else if (ent->client->sess.team == TEAM_BLUE && current_gametype.value == GT_HZ)
+        {
+            strcpy(type, "^7[^yz^7] ");
+        }
+*/ // FIXME different team prefixes for different gametypes
+            // Boe!Man 4/6/10: And replace the type with something, well nothing.
+        else{
+            strcpy(type, "");
+        }
+    }else{
+        strcpy(type, "");
     }
 
-    trap_SendServerCommand( other-g_entities, va("%s %d \"%s%s%s\"",
-                            mode == SAY_TEAM ? "tchat" : "chat",
-                            ent->s.number,
-                            type, name, message));
+    // Boe!Man 1/17/10: Admin Talk/Chat.
+    /*if(mode >= ADM_TALK && mode <= CADM_CHAT){ // Henk 03/05/10 -> Optimized so cpu can calculate faster FIXME
+        strcpy(star, server_starprefix.string);
+        strcpy(admin, "");
+    }else */if(mode != SAY_TELL){
+        strcpy(star, "");
+        // Boe!Man 1/6/10: Admin prefixes. - Update 1/18/10: New CVARs for prefixes if the hoster wishes to change the values.
+
+
+        strncpy(admin, getAdminPrefixByLevel(ent->client->sess.adminLevel), sizeof(admin));
+
+        // Boe!Man 11/5/12: Fix for space in chat when *adminprefix CVAR was empty but the client was still an Admin.
+        if(strlen(admin) > 0){
+            Q_strcat(admin, sizeof(admin), " ");
+        }
+    }else{
+        strcpy(star, "");
+        strcpy(admin, "");
+    }
+
+    // Boe!Man 1/17/10: Different kinds of Talking 'Modes'.
+
+
+/*
+    switch(mode)
+    {
+        case ADM_CHAT:
+            strcpy(type, server_acprefix.string);
+            if (beep == qtrue && g_specialChatSound.integer){
+#ifndef _DEMO
+                Boe_ClientSound(other, G_SoundIndex("sound/misc/c4/beep.mp3", qtrue));
+#else
+                Boe_ClientSound(other, level.actionSoundIndex);
+#endif // not _DEMO
+            }
+            break;
+        case SADM_CHAT:
+            strcpy(type, server_scprefix.string);
+            if (beep == qtrue && g_specialChatSound.integer){
+#ifndef _DEMO
+                Boe_ClientSound(other, G_SoundIndex("sound/misc/c4/beep.mp3", qtrue));
+#else
+                Boe_ClientSound(other, level.actionSoundIndex);
+#endif // not _DEMO
+            }
+            break;
+        case ADM_TALK:
+            if(ent->client->sess.admin == 2){
+                strcpy(type, server_badminprefix.string);
+            }else if(ent->client->sess.admin == 3){
+                strcpy(type, server_adminprefix.string);
+            }else if(ent->client->sess.admin == 4){
+                strcpy(type, server_sadminprefix.string);
+            }
+            if (beep == qtrue){
+#ifndef _DEMO
+                Boe_ClientSound(other, G_SoundIndex("sound/misc/c4/beep.mp3", qtrue));
+#else
+                Boe_ClientSound(other, level.actionSoundIndex);
+#endif // not _DEMO
+            }
+            break;
+        case CADM_CHAT:
+            strcpy(type, server_caprefix.string);
+            if (beep == qtrue && g_specialChatSound.integer){
+#ifndef _DEMO
+                Boe_ClientSound(other, G_SoundIndex("sound/misc/c4/beep.mp3", qtrue));
+#else
+                Boe_ClientSound(other, level.actionSoundIndex);
+#endif // not _DEMO
+            }
+            break;
+        case CLAN_CHAT:
+            strcpy(type, server_ccprefix.string);
+            if (beep == qtrue && g_specialChatSound.integer){
+#ifndef _DEMO
+                Boe_ClientSound(other, G_SoundIndex("sound/misc/c4/beep.mp3", qtrue));
+#else
+                Boe_ClientSound(other, level.actionSoundIndex);
+#endif // not _DEMO
+            }
+            break;
+        case CLAN_TALK:
+            strcpy(type, server_ctprefix.string);
+            if (beep == qtrue){
+#ifndef _DEMO
+                Boe_ClientSound(other, G_SoundIndex("sound/misc/c4/beep.mp3", qtrue));
+#else
+                Boe_ClientSound(other, level.actionSoundIndex);
+#endif // not _DEMO
+            }
+            break;
+        default:
+            break;
+    }*/ // FIXME chat modes
+
+
+    // Boe!Man 1/6/10 - Update 2/8/11: Finally fixing these space issues. This would be the best way for it.
+    /*if(ent->client->sess.adminLevel > 0 && mode >= ADM_TALK && mode <= SADM_CHAT || mode == CLAN_CHAT || mode == CADM_CHAT || mode == CLAN_TALK){ // Henk 13/02/11 -> Fixed.
+        trap_SendServerCommand( other-g_entities, va("%s %d \"%s %s %s%s %s\"", // Boe!Man 1/6/10: Adding prefixes. - Update 1/17/10: Adding Admin Talk/Chat prefixes. - Update 5/8/10: Solved message problem.
+                                                     mode == SAY_TEAM ? "tchat" : "chat",
+                                                     ent->s.number,
+                // Boe!Man 1/6/10: Adding the Admin prefix in front of the chat. - Update 1/17/10.
+                                                     star, type, name, message, star)); // Boe!Man 1/17/10: Adding stars.
+    }else */if(ent->client->sess.adminLevel > 0){
+        trap_SendServerCommand( other-g_entities, va("%s %d \"%s%s%s%s\"", // Boe!Man 1/6/10: Adding prefixes. - Update 1/17/10: Adding Admin Talk/Chat prefixes. - Update 5/8/10: Solved message problem.
+                                                     mode == SAY_TEAM ? "tchat" : "chat",
+                                                     ent->s.number,
+                // Boe!Man 1/6/10: Adding the Admin prefix in front of the chat. - Update 1/17/10.
+                                                     type, admin, name, message));
+    }else{
+        trap_SendServerCommand( other-g_entities, va("%s %d \"%s%s%s\"", // Boe!Man 1/6/10: Adding prefixes. - Update 1/17/10: Adding Admin Talk/Chat prefixes. - Update 5/8/10: Solved message problem.
+                                                     mode == SAY_TEAM ? "tchat" : "chat",
+                                                     ent->s.number,
+                // Boe!Man 1/6/10: Adding the Admin prefix in front of the chat. - Update 1/17/10.
+                                                     type, name, message));
+    }
 }
 
 /*

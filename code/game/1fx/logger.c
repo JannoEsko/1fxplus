@@ -9,7 +9,7 @@ void logGame() {
 }
 
 void logSystem(int faultLevel, char* message) {
-
+    Com_Printf("logSystem faultLevel %d message %s\n", faultLevel, message);
 }
 
 void logAdmin() {

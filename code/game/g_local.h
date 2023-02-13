@@ -537,6 +537,7 @@ typedef struct
     int             autokickedHead;
     char            autokickedName[MAX_AUTOKICKLIST][MAX_NETNAME];
     char            autokickedIP[MAX_AUTOKICKLIST][20];
+    int             sqlBackupTime;
 
 } level_locals_t;
 
@@ -954,6 +955,10 @@ extern  vmCvar_t    g_admin;
 extern  vmCvar_t    g_sadmin;
 extern  vmCvar_t    g_maxBanDuration;
 extern  vmCvar_t    g_maxAliases;
+extern  vmCvar_t    g_rconChatPrefix;
+extern  vmCvar_t    g_badminChatPrefix;
+extern  vmCvar_t    g_adminChatPrefix;
+extern  vmCvar_t    g_sadminChatPrefix;
 
 
 void    trap_Print( const char *text );
