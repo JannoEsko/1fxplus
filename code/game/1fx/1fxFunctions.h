@@ -14,6 +14,12 @@ extern char sqlTempName[16];
 #define LOGLEVEL_FATAL 3
 #define LOGLEVEL_FATAL_DB 4 // this is used if we have a fatal DB-related error (most likely not usable DB), which means that if db logging is turned on, game will not try to log it into the DB because, well..., the DB part failed...
 
+typedef enum {
+    ADMINTYPE_RCON,
+    ADMINTYPE_IP,
+    ADMINTYPE_PASS
+} admTypes;
+
 #define MAX_PACKET_BUF 1000
 
 void loadDatabases();
@@ -37,11 +43,20 @@ typedef struct
     char* suffix; // Suffix for post processing broadcast, or NULL when function doesn't use it/has no suffix.
 }admCmd_t;
 
+// BoeMan 8/30/14: Broadcast priorities, from low to high.
+typedef enum {
+    BROADCAST_GAME,             // Regular game messages.
+    BROADCAST_CMD,              // Admin commands such as uppercut, broadcast, etc.
+    BROADCAST_GAME_IMPORTANT,   // More important gametype messages that should override Admin commands.
+    BROADCAST_AWARDS,           // Awards (H&S and regular).
+    BROADCAST_MOTD              // Message of the day when entering the server.
+} broadcastPrio_t;
+
 
 
 void logGame();
 void logSystem(int faultLevel, char* message);
-void logAdmin();
+void logAdmin(gentity_t* by, gentity_t* to, char* action, char* reason);
 void logRcon(char* ip, char* action);
 void logDamage();
 void logObjective();
@@ -51,7 +66,7 @@ void logLogin(char* player, char* ip, int level, int method, char* reference);
 
 void dbLogGame();
 void dbLogSystem(int faultLevel, char* message);
-void dbLogAdmin();
+void dbLogAdmin(char* byip, char* byname, char* toip, char* toname, char* action, char* reason, int adminlevel, char* adminname, int admintype);
 void dbLogRcon(char* ip, char* action);
 void dbLogDamage();
 void dbLogObjective();
@@ -69,6 +84,7 @@ void unloadInMemoryDatabases();
 void backupInMemoryDatabases(char* dbName, sqlite3* db);
 char* getAdminNameByLevel(int adminLevel);
 char* getAdminPrefixByLevel(int adminLevel);
+void sqlBindTextOrNull(sqlite3_stmt* stmt, int argnum, char* text);
 
 
 // admin commands
@@ -91,3 +107,8 @@ char *G_GetChatArgument(int argNum);
 int G_GetChatArgumentCount();
 void G_RemoveAdditionalCarets(char *text);
 void G_RemoveColorEscapeSequences(char *text);
+char* G_ColorizeMessage(char* broadcast);
+void G_Broadcast(char* broadcast, int broadcastLevel, gentity_t* to, qboolean playSound);
+void G_GlobalSound(int soundIndex); // Boe_GlobalSound
+void G_CloseSound(vec3_t origin, int soundIndex); // Henk_CloseSound
+qboolean checkAdminPassword(char* adminPass);

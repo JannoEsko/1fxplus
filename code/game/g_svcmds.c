@@ -307,7 +307,7 @@ qboolean ConsoleCommand( void )
 
     if (g_dedicated.integer)
     {
-        if (Q_stricmp (cmd, "say") == 0)
+        if (Q_stricmp (cmd, "say") == 0) // 140223 say command is now sent to the game module.
         {
             trap_SendServerCommand( -1, va("chat -1 \"%s: %s\n\"", g_rconChatPrefix.string, ConcatArgs(1) ) );
             return qtrue;

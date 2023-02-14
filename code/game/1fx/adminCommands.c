@@ -109,6 +109,7 @@ static int adminCommandsSize = sizeof(adminCommands) / sizeof(adminCommands[0]);
 int admAdminList(int argNum, gentity_t* adm, qboolean shortCmd) {
     dbGetAdminlist(adm, qfalse);
     dbGetAdminlist(adm, qtrue);
+    return -1;
 }
 
 int admRemoveAdmin(int argNum, gentity_t* adm, qboolean shortCmd) {
@@ -140,6 +141,17 @@ int admAddAdmin(int argNum, gentity_t* adm, qboolean shortCmd, int adminLevel) {
 
     recipient = g_entities + idNum;
 
+    if (recipient->client->sess.adminLevel) {
+        G_printInfoMessage(adm, "%s is already an admin.", recipient->client->pers.netname);
+        return -1;
+    }
+
+    if (recipient->client->sess.adminPassRegistration) {
+        G_printInfoMessage(adm, "%s is already added to the passlist, but has not yet registered his password.", recipient->client->pers.netname);
+        return -1;
+    }
+
+
     arg = G_GetArg(argNum + 1, shortCmd);
 
     if (!Q_stricmp(arg, "pass")) {
@@ -147,16 +159,26 @@ int admAddAdmin(int argNum, gentity_t* adm, qboolean shortCmd, int adminLevel) {
         // nothing else to do here. User has to run /adm pass password to register himself into the adminlist
         // and after that /adm login to get powers.
         // broadcast over here instead of having ambiguous broadcast at postAdm (as we don't send whether it's a passadmin etc there).
+        logAdmin(adm, recipient, va("Add %s with pass", getAdminNameByLevel(adminLevel)), NULL); // no reason for adding admin needed.
+
+        // inform the client what they need to do...
+
+        char* info = G_ColorizeMessage("\\Info:");
+        trap_SendServerCommand(recipient->s.number, va("chat -1 \"%s You need to login every time you enter the server.\n\"", info));
+        trap_SendServerCommand(recipient->s.number, va("chat -1 \"%s In order to do this, you need to set your own password.\n\"", info));
+        trap_SendServerCommand(recipient->s.number, va("chat -1 \"%s Do this by executing the following command: /adm pass yourpassword.\n\"", info));
+        trap_SendServerCommand(recipient->s.number, va("chat -1 \"%s Please do not use any arabic letters, as SoF does not understand those.\n\"", info));
+        Q_strncpyz(recipient->client->sess.adminPassAddedBy, adm && adm->client ? adm->client->pers.netname : "RCON", sizeof(recipient->client->sess.adminPassAddedBy));
     } else {
         recipient->client->sess.adminLevel = adminLevel;
-        Com_Printf("Player %s is now a %s.\n", recipient->client->pers.netname, getAdminNameByLevel(recipient->client->sess.adminLevel));
         dbAddAdmin(recipient->client->pers.cleanName, recipient->client->pers.ip, adminLevel, adm && adm->client ? adm->client->pers.cleanName : "RCON");
+        logAdmin(adm, recipient, va("Add %s", getAdminNameByLevel(adminLevel)), NULL); // no reason for adding admin needed.
 
     }
 
-    G_printInfoMessageToAll("%s was added to the %s's list by %s", recipient->client->pers.netname, getAdminNameByLevel(adminLevel), adm && adm->client ? adm->client->pers.netname : "RCON");
+    G_printInfoMessageToAll("%s was added to the %s's %slist by %s", recipient->client->pers.netname, getAdminNameByLevel(adminLevel), !Q_stricmp(arg, "pass") ? "pass" : "", adm && adm->client ? adm->client->pers.netname : "RCON");
 
-
+    G_Broadcast(va("%s \nwas added to the \\%s's %slist \nby %s", recipient->client->pers.netname, getAdminNameByLevel(adminLevel), !Q_stricmp(arg, "pass") ? "pass" : "", adm && adm->client ? adm->client->pers.netname : "RCON"), BROADCAST_GAME_IMPORTANT, NULL, qtrue);
 
     return -1;
 }

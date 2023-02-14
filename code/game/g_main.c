@@ -104,6 +104,7 @@ vmCvar_t    g_rconChatPrefix;
 vmCvar_t    g_badminChatPrefix;
 vmCvar_t    g_adminChatPrefix;
 vmCvar_t    g_sadminChatPrefix;
+vmCvar_t    g_serverColors;
 
 // SQLite3 tables.
 sqlite3* gameDb; // will hold anything related to the game itself: admins, bans, aliases and so on.
@@ -243,10 +244,11 @@ static cvarTable_t gameCvarTable[] =
     { &g_sadmin,             "g_sadmin",              "4",        CVAR_ARCHIVE,               0.0f,   0.0f,   0, qfalse },
     { &g_maxBanDuration,           "g_maxBanDuration",  "365",      CVAR_ARCHIVE,               0.0f,   0.0f,   0, qfalse },
     { &g_maxAliases,            "g_maxAliases",                 "10",                   CVAR_ARCHIVE,                       0.0f,   0.0f,   0,  qfalse},
-    { &g_rconChatPrefix,        "g_rconChatPrefix",                 "server",       CVAR_ARCHIVE,   0.0f,   0.0f,   0 ,  qfalse },
-    { &g_badminChatPrefix,        "g_badminChatPrefix",                 "badmin",       CVAR_ARCHIVE,   0.0f,   0.0f,   0 ,  qfalse },
-    { &g_adminChatPrefix,        "g_adminChatPrefix",                 "admin",       CVAR_ARCHIVE,   0.0f,   0.0f,   0 ,  qfalse },
-    { &g_sadminChatPrefix,        "g_sadminChatPrefix",                 "sadmin",       CVAR_ARCHIVE,   0.0f,   0.0f,   0 ,  qfalse },
+    { &g_rconChatPrefix,        "g_rconChatPrefix",                 "^CS^be^kr^+v^7er",       CVAR_ARCHIVE,   0.0f,   0.0f,   0 ,  qfalse },
+    { &g_badminChatPrefix,        "g_badminChatPrefix",                 "^GB-^gA^Kdm^7in",       CVAR_ARCHIVE,   0.0f,   0.0f,   0 ,  qfalse },
+    { &g_adminChatPrefix,        "g_adminChatPrefix",                 "^GA^gd^Km^7in",       CVAR_ARCHIVE,   0.0f,   0.0f,   0 ,  qfalse },
+    { &g_sadminChatPrefix,        "g_sadminChatPrefix",                 "^GS-^gA^Kdm^7in",       CVAR_ARCHIVE,   0.0f,   0.0f,   0 ,  qfalse },
+    { &g_serverColors,        "g_serverColors",                 "GgKk+7",       CVAR_ARCHIVE,   0.0f,   0.0f,   0 ,  qfalse },
 };
 
 // bk001129 - made static to avoid aliasing
@@ -780,8 +782,8 @@ void G_InitGame( int levelTime, int randomSeed, int restart )
 
     if( trap_Cvar_VariableIntegerValue( "com_buildScript" ) )
     {
-        G_SoundIndex( "sound/player/gurp1.wav" );
-        G_SoundIndex( "sound/player/gurp2.wav" );
+        G_SoundIndex( "sound/player/gurp1.wav", qtrue );
+        G_SoundIndex( "sound/player/gurp2.wav", qtrue );
     }
 
 #ifdef _SOF2_BOTS
@@ -804,6 +806,8 @@ void G_InitGame( int levelTime, int randomSeed, int restart )
     if(level.gametypeData->respawnType == RT_INTERVAL){
         level.sqlBackupTime = level.time + 50000;
     }
+
+    level.actionSoundIndex = G_SoundIndex("sound/misc/menus/click.wav", qtrue);
 
     // Music
     if ( RMG.integer )

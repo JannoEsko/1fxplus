@@ -51,6 +51,10 @@ typedef enum
 #define LEVEL_SADMIN 3
 #define LEVEL_RCON 4
 
+#define MAX_NETNAME         36
+#define MAX_IDENTITY        64
+#define MAX_VOTE_COUNT      3
+
 typedef struct gentity_s gentity_t;
 typedef struct gclient_s gclient_t;
 
@@ -259,13 +263,16 @@ typedef struct
                                                 // the int value is also the admin value, so after successfully setting the password,
                                                 // set this value to adminLevel.
 
+    char                adminName[MAX_NETNAME]; // the name the player initially had when they got admin. 
+    int                 adminType;              // admintype from admin types enum. At the start we only have RCON, IP admin or pass admin, but if we want to add forumlogin, OTP etc, easy to manage and they get logged.
+    int                 lastMessagePriority;
+    int                 lastMessage;
+    char                adminPassAddedBy[MAX_NETNAME];
 
 } clientSession_t;
 
 //
-#define MAX_NETNAME         36
-#define MAX_IDENTITY        64
-#define MAX_VOTE_COUNT      3
+
 
 // client data that stays across multiple respawns, but is cleared
 // on each level change or team change at ClientBegin()
@@ -538,6 +545,8 @@ typedef struct
     char            autokickedName[MAX_AUTOKICKLIST][MAX_NETNAME];
     char            autokickedIP[MAX_AUTOKICKLIST][20];
     int             sqlBackupTime;
+    qboolean        pause;
+    int             actionSoundIndex;
 
 } level_locals_t;
 
@@ -604,7 +613,7 @@ void SaveRegisteredItems( void );
 // g_utils.c
 //
 int     G_ModelIndex        ( char *name );
-int     G_SoundIndex        ( char *name );
+int     G_SoundIndex        ( char *name, qboolean staticSound );
 int     G_AmbientSoundSetIndex( char *name );
 int     G_BSPIndex          ( char *name );
 int     G_IconIndex         ( char *name );
@@ -959,6 +968,7 @@ extern  vmCvar_t    g_rconChatPrefix;
 extern  vmCvar_t    g_badminChatPrefix;
 extern  vmCvar_t    g_adminChatPrefix;
 extern  vmCvar_t    g_sadminChatPrefix;
+extern  vmCvar_t    g_serverColors;
 
 
 void    trap_Print( const char *text );

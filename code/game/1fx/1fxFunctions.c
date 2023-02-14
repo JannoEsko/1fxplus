@@ -376,7 +376,7 @@ char *G_GetArg(int argNum,qboolean shortCmd)
     memset(arg, 0, sizeof(arg));
 
     if(!shortCmd && !G_GetChatArgumentCount()) {
-        argNum++;
+        //argNum++; if I use it in admin commands, I already have the correct argnum in play. Therefore this will actually mess it up.
         trap_Argv(argNum,arg,sizeof(arg));
     }
     else {
@@ -507,4 +507,251 @@ void getSubnet(char* ipIn, char* out) {
 
     snprintf(out, sizeof(out), "%d.%d", oct1, oct2);
 
+}
+
+/*
+==================
+G_ColorizeMessage
+Adds server colors into a broadcast message (if required).
+==================
+*/
+#define MAX_BROADCAST_LINE 48
+
+char* G_ColorizeMessage(char* broadcast)
+{
+    int i, newWordLength;
+    char* tempBroadcast;
+    static char newBroadcast[MAX_STRING_CHARS];
+    char line[128], remainingLine[128];
+    int lineLength;
+    int newWordPosition = 0;
+    qboolean parseLine = qtrue;
+    char* tempNewline = broadcast;
+
+    // Reset broadcast buffer.
+    memset(newBroadcast, 0, sizeof(newBroadcast));
+
+    // Loop through whole broadcast.
+    while (parseLine) {
+        // Properly reset line to avoid having to NULL terminate it everywhere.
+        memset(line, 0, sizeof(line));
+
+        // Check for more lines.
+        tempNewline = strstr(broadcast, "\n");
+        if (tempNewline == NULL) {
+            lineLength = strlen(broadcast);
+
+            // Last line, don't go further after this.
+            parseLine = qfalse;
+        }
+        else {
+            lineLength = tempNewline - broadcast + 1;
+        }
+
+        // Check if line is too big to copy.
+        if (lineLength >= sizeof(line)) {
+            lineLength = sizeof(line) - 1;
+        }
+
+        // Copy line.
+        strncpy(line, broadcast, lineLength);
+
+        // First we check the line. Should colours be applied to it?
+        // A backslash can never be applied to any command in-game, like broadcast. Use that to determine what word should be highlighted.
+        tempBroadcast = strstr(line, "\\");
+        if (tempBroadcast != NULL) {
+            // OK, a word is in the line. Find position in actual broadcast.
+            tempBroadcast = strstr(broadcast, "\\");
+
+            // A word is found that should be highlighted.
+            // First determine the start position of the word in the broadcast.
+            newWordPosition = (int)(tempBroadcast - broadcast);
+
+            // Now determine the length of the string.
+            strncpy(remainingLine, tempBroadcast, strlen(line) - newWordPosition);
+            remainingLine[strlen(line) - newWordPosition] = '\0';
+            tempBroadcast = strstr(remainingLine, " ");
+            if (tempBroadcast == NULL) {
+                // Word is as long as the remaining string.
+                newWordLength = strlen(remainingLine) - 1;
+            }
+            else {
+                // Make sure we properly get the address.
+                char* c = broadcast;
+                c += newWordPosition + 1;
+
+                // Word ends somewhere.
+                newWordLength = strstr(c, " ") - (broadcast + newWordPosition) - 1;
+            }
+
+            // Now we apply the colors to the broadcast if there are colors to apply it to.
+            // Do check the size of the line, if it's getting too big simply cut some colors to make room for the line to fit.
+            if (newWordLength > 0 && newWordLength < 64) {
+                // Check how many colors there are available to use.
+                int availableColors = strlen(g_serverColors.string);
+                strncat(newBroadcast, broadcast, newWordPosition);
+
+                if (!availableColors) {
+                    // Copy the string to it, excluding backslash.
+                    strncat(newBroadcast, broadcast + newWordPosition + 1, strlen(broadcast) - newWordPosition);
+                }
+                else {
+                    // Apply colors.
+                    char wordToCopy[64];
+                    int color, newLineLen;
+
+                    // Check how many colors we can copy.
+                    if (newWordLength >= availableColors) {
+                        color = 0;
+                    }
+                    else {
+                        color = availableColors - newWordLength;
+                    }
+
+                    // Check if everything fits properly.
+                    newLineLen = lineLength - 1 + ((availableColors - color) * 2); // Exclude the \ character and add the colors.
+
+                    while (newLineLen > MAX_BROADCAST_LINE) {
+                        color++;
+                        if (color >= availableColors)
+                            break; // Line will never fit.
+
+                        if ((lineLength - 1 + ((availableColors - color) * 2)) <= MAX_BROADCAST_LINE) {
+                            newLineLen = lineLength - 1 + ((availableColors - color) * 2);
+                            break;
+                        }
+                    }
+
+                    // Copy each individual char to the new buffer, plus the color associated to it.
+                    strncpy(wordToCopy, broadcast + newWordPosition + 1, newWordLength);
+                    for (i = 0; i < newWordLength; i++) {
+                        if (color < availableColors) {
+                            strcat(newBroadcast, va("^%c%c", g_serverColors.string[color], wordToCopy[i]));
+                            color++;
+                        }
+                        else {
+                            strcat(newBroadcast, va("%c", wordToCopy[i]));
+                        }
+                    }
+
+                    // Copy a trailing ^7 so all text won't be messed up if the colors aren't set to fade out correctly.
+                    strcat(newBroadcast, "^7");
+
+                    // Is there a remaining string in the line?
+                    if (tempBroadcast) {
+                        strncat(newBroadcast, broadcast + newWordPosition + newWordLength + 1, strlen(line) - newWordLength - newWordPosition - 1);
+                    }
+                }
+            }
+        }
+        else {
+            strncat(newBroadcast, line, strlen(line));
+        }
+
+        // Advance broadcast.
+        broadcast += (int)(tempNewline - broadcast) + 1;
+    }
+
+    // Boe!Man 3/13/15: Replace newlines with spaces when the game is paused.
+    if (level.pause) {
+        for (i = 0; i < strlen(newBroadcast); i++) {
+            if (newBroadcast[i] == '\n') {
+                newBroadcast[i] = ' ';
+            }
+        }
+    }
+
+    return newBroadcast;
+}
+
+/*
+==================
+G_Broadcast
+
+Broadcasts a message to clients that are supposed to receive it.
+Additional param playSound which also sends G_GlobalSound with level.actionSoundIndex only if param to is null.
+==================
+*/
+void G_Broadcast(char* broadcast, int broadcastLevel, gentity_t* to, qboolean playSound)
+{
+    int i;
+    char* newBroadcast;
+
+    newBroadcast = G_ColorizeMessage(broadcast);
+
+    // If to is NULL, we're dealing with a global message (equals old way of broadcasting to -1).
+    if (to == NULL) {
+
+        if (playSound) {
+            G_GlobalSound(level.actionSoundIndex);
+        }
+
+        if (!level.pause) {
+            for (i = 0; i < level.numConnectedClients; i++) {
+                gentity_t* other = &g_entities[level.sortedClients[i]];
+
+                // Skip any client that isn't connected.
+                if (other->client->pers.connected != CON_CONNECTED) {
+                    continue;
+                }
+                // Skip any client that received a more important message in the last 5 seconds.
+                if (other->client->sess.lastMessagePriority > broadcastLevel && level.time < (other->client->sess.lastMessage + 4000)) {
+                    continue;
+                }
+
+                trap_SendServerCommand(other - g_entities, va("cp \"@%s\n\"", newBroadcast));
+                other->client->sess.lastMessagePriority = broadcastLevel;
+                other->client->sess.lastMessage = level.time;
+            }
+        }
+        else {
+            // Boe!Man 3/13/15: In order to print messages during pause we need to call a different function.
+            trap_SetConfigstring(CS_GAMETYPE_MESSAGE, va("%i,@%s", level.time + 5000, newBroadcast));
+        }
+    }
+    else if (broadcastLevel >= to->client->sess.lastMessagePriority || level.time > (to->client->sess.lastMessage + 4000)) {
+        trap_SendServerCommand(to - g_entities, va("cp \"@%s\n\"", newBroadcast));
+        to->client->sess.lastMessagePriority = broadcastLevel;
+        to->client->sess.lastMessage = level.time;
+    }
+}
+
+/*
+=============
+Boe_GlobalSound in 1fx. Mod
+=============
+*/
+void G_GlobalSound (int soundIndex) {
+    gentity_t* tent;
+
+    tent = G_TempEntity(vec3_origin, EV_GLOBAL_SOUND);
+    tent->s.eventParm = soundIndex;
+    tent->r.svFlags = SVF_BROADCAST;
+}
+
+/*
+=============
+Henk_CloseSound in 1fx. Mod
+=============
+*/
+void G_CloseSound (vec3_t origin, int soundIndex) {
+    gentity_t* tent;
+    float radius = 100.0f;
+    tent = G_TempEntity(origin, EV_GENERAL_SOUND); 
+    tent->r.svFlags |= SVF_BROADCAST;
+    tent->s.time2 = (int)(radius * 1000.0f);
+    G_AddEvent(tent, EV_GENERAL_SOUND, soundIndex);
+}
+
+qboolean checkAdminPassword(char* adminPass) {
+    // currently just check that it does not consist of the exact same characters.
+    int passwordLength;
+    char* sameChar;
+
+    passwordLength = strlen(adminPass);
+    sameChar = malloc(passwordLength + 1);
+    memset(sameChar, adminPass[0], passwordLength);
+    sameChar[passwordLength] = '\0';
+
+    return Q_stricmp(sameChar, adminPass);
 }

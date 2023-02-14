@@ -2161,7 +2161,7 @@ ClientCommand
 */
 void ClientCommand( int clientNum ) {
     gentity_t *ent;
-    char    cmd[MAX_TOKEN_CHARS], arg1[MAX_TOKEN_CHARS];
+    char    cmd[MAX_TOKEN_CHARS], arg1[MAX_TOKEN_CHARS], arg2[MAX_TOKEN_CHARS];
 
     ent = g_entities + clientNum;
     if ( !ent->client ) {
@@ -2188,13 +2188,25 @@ void ClientCommand( int clientNum ) {
         } else if (!Q_stricmp(arg1, "pass")) {
             if (ent->client->sess.adminPassRegistration) {
                 // set the password, if function passes, grant admin.
-                // adminPassRegistration
+                trap_Argv(2, arg2, sizeof(arg2));
+                if (checkAdminPassword(arg2)) {
+                    ent->client->sess.adminLevel = ent->client->sess.adminPassRegistration;
+                    ent->client->sess.adminPassRegistration = 0;
+                    Q_strncpyz(ent->client->sess.adminName, ent->client->pers.cleanName, sizeof(ent->client->sess.adminName));
+                    dbAddPassAdmin(ent->client->pers.cleanName, ent->client->sess.adminLevel, ent->client->sess.adminPassAddedBy, arg2);
+                    G_printInfoMessageToAll("%s has been granted %s.", ent->client->pers.cleanName, getAdminNameByLevel(ent->client->sess.adminLevel));
+                }
+                else {
+                    G_printInfoMessage(ent, "The password is not safe enough (consists only of the same characters) or local language characters not known by SoF were used.");
+                }
             } else if (ent->client->sess.adminLevel > LEVEL_NOADMIN) {
 
             } else {
                 G_printInfoMessage(ent, "You need to have admin powers to use this command.");
             }
         }
+
+        return;
     }
 
     if (Q_stricmp (cmd, "say") == 0) {

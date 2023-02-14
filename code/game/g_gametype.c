@@ -849,7 +849,7 @@ intptr_t G_GametypeCommand(int command, intptr_t arg0, intptr_t arg1, intptr_t a
             break;
 
         case GT_REGISTERSOUND:
-            return G_SoundIndex ( (char*) arg0 );
+            return G_SoundIndex ( (char*) arg0, qtrue );
 
         case GT_STARTGLOBALSOUND:
         {

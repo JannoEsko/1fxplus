@@ -164,7 +164,7 @@ void migrateLogsDatabase(sqlite3* db, int migrationLevel) {
     if (migrationLevel < 1) {
         // fresh database, create all tables.
         char* migration = "CREATE TABLE IF NOT EXISTS rconlog (dt TIMESTAMP DEFAULT CURRENT_TIMESTAMP, ip VARCHAR(50), action VARCHAR(1024));" // ip varchar50 because of IPv6, action 1024 because of a theoretical maximum of the rcon cvar.
-                "CREATE TABLE IF NOT EXISTS adminlog (dt TIMESTAMP DEFAULT CURRENT_TIMESTAMP, byip VARCHAR(50), byname VARCHAR(64), toip VARCHAR(50), toname VARCHAR(64), action VARCHAR(100), reason VARCHAR(1024), adminlevel INTEGER, adminName VARCHAR(64), admintype INTEGER);"
+                "CREATE TABLE IF NOT EXISTS adminlog (dt TIMESTAMP DEFAULT CURRENT_TIMESTAMP, byip VARCHAR(50), byname VARCHAR(64), toip VARCHAR(50), toname VARCHAR(64), action VARCHAR(100), reason VARCHAR(1024), adminlevel INTEGER, adminname VARCHAR(64), admintype INTEGER);"
                 "CREATE TABLE IF NOT EXISTS loginlog (dt TIMESTAMP DEFAULT CURRENT_TIMESTAMP, byip VARCHAR(50), byname VARCHAR(64), adminlevel INTEGER, admintype INTEGER);"
                 "CREATE TABLE IF NOT EXISTS gameslog (dt TIMESTAMP DEFAULT CURRENT_TIMESTAMP, byip VARCHAR(50), byname VARCHAR(64), toip VARCHAR(50), toname VARCHAR(64), action VARCHAR(1024));"
                 "DELETE FROM migrationlevel;"
@@ -233,18 +233,9 @@ void dbLogRcon(char* ip, char* action) {
     }
 
     sqlite3_prepare(db, query, -1, &stmt, 0);
-    if (ip) {
-        sqlite3_bind_text(stmt, 1, ip, strlen(ip), SQLITE_STATIC);
-    }
-    else {
-        sqlite3_bind_null(stmt, 1);
-    }
 
-    if (action) {
-        sqlite3_bind_text(stmt, 2, action, strlen(action), SQLITE_STATIC);
-    } else {
-        sqlite3_bind_null(stmt, 2);
-    }
+    sqlBindTextOrNull(stmt, 1, ip);
+    sqlBindTextOrNull(stmt, 2, action);
 
     sqlite3_step(stmt);
     sqlite3_finalize(stmt);
@@ -259,10 +250,10 @@ void dbAddAdmin(char* adminname, char* ip, int adminlevel, char* addedby) {
 
     char* query = "INSERT INTO adminlist (adminname, ip, adminlevel, addedby) VALUES (?, ?, ?, ?)";
     sqlite3_prepare(db, query, -1, &stmt, 0);
-    sqlite3_bind_text(stmt, 1, adminname, strlen(adminname), SQLITE_STATIC);
-    sqlite3_bind_text(stmt, 2, ip, strlen(ip), SQLITE_STATIC);
+    sqlBindTextOrNull(stmt, 1, adminname);
+    sqlBindTextOrNull(stmt, 2, ip);
     sqlite3_bind_int(stmt, 3, adminlevel);
-    sqlite3_bind_text(stmt, 4, addedby, strlen(addedby), SQLITE_STATIC);
+    sqlBindTextOrNull(stmt, 4, addedby);
 
     sqlite3_step(stmt);
     sqlite3_finalize(stmt);
@@ -280,10 +271,10 @@ void dbAddPassAdmin(char* adminname, int adminlevel, char* addedby, char* passwo
 
     sqlite3_prepare(db, query, -1, &stmt, 0);
 
-    sqlite3_bind_text(stmt, 1, adminname, strlen(adminname), SQLITE_STATIC);
+    sqlBindTextOrNull(stmt, 1, adminname);
     sqlite3_bind_int(stmt, 2, adminlevel);
-    sqlite3_bind_text(stmt, 3, addedby, strlen(addedby), SQLITE_STATIC);
-    sqlite3_bind_text(stmt, 4, password, strlen(password), SQLITE_STATIC);
+    sqlBindTextOrNull(stmt, 3, addedby);
+    sqlBindTextOrNull(stmt, 4, password);
 
     sqlite3_step(stmt);
     sqlite3_finalize(stmt);
@@ -350,7 +341,7 @@ void dbClearOldAliases(char* ip) {
 
     sqlite3_prepare(db, query, -1, &stmt, 0);
 
-    sqlite3_bind_text(stmt, 1, ip, sizeof(ip), SQLITE_STATIC);
+    sqlBindTextOrNull(stmt, 1, ip);
 
     while ((rc = sqlite3_step(stmt)) != SQLITE_DONE) {
         if (rows > g_maxAliases.integer) {
@@ -381,8 +372,8 @@ void dbAddAlias(char* alias, char* ip) {
 
     sqlite3_prepare(db, query, -1, &stmt, 0);
 
-    sqlite3_bind_text(stmt, 1, alias, sizeof(alias), SQLITE_STATIC);
-    sqlite3_bind_text(stmt, 2, ip, sizeof(ip), SQLITE_STATIC);
+    sqlBindTextOrNull(stmt, 1, alias);
+    sqlBindTextOrNull(stmt, 2, ip);
 
     sqlite3_step(stmt);
     sqlite3_finalize(stmt);
@@ -420,9 +411,9 @@ void dbAddBan(char* playername, char* ip, char* adminname, int endofmap, int day
 
     sqlite3_prepare(db, query, -1, &stmt, 0);
 
-    sqlite3_bind_text(stmt, 1, playername, sizeof(playername), SQLITE_STATIC);
-    sqlite3_bind_text(stmt, 2, ip, sizeof(ip), SQLITE_STATIC);
-    sqlite3_bind_text(stmt, 3, adminname, sizeof(adminname), SQLITE_STATIC);
+    sqlBindTextOrNull(stmt, 1, playername);
+    sqlBindTextOrNull(stmt, 2, ip);
+    sqlBindTextOrNull(stmt, 3, adminname);
     sqlite3_bind_int(stmt, 4, endofmap);
 
     sqlite3_step(stmt);
@@ -448,9 +439,9 @@ void dbAddSubnetban(char* playername, char* ip, char* adminname, int endofmap, i
 
     sqlite3_prepare(db, query, -1, &stmt, 0);
 
-    sqlite3_bind_text(stmt, 1, playername, sizeof(playername), SQLITE_STATIC);
-    sqlite3_bind_text(stmt, 2, ip, sizeof(ip), SQLITE_STATIC);
-    sqlite3_bind_text(stmt, 3, adminname, sizeof(adminname), SQLITE_STATIC);
+    sqlBindTextOrNull(stmt, 1, playername);
+    sqlBindTextOrNull(stmt, 2, ip);
+    sqlBindTextOrNull(stmt, 3, adminname);
     sqlite3_bind_int(stmt, 4, endofmap);
 
     sqlite3_step(stmt);
@@ -562,3 +553,74 @@ void backupInMemoryDatabases(char* dbName, sqlite3* db) {
     sqlite3_close(pFile);
 }
 
+void dbLogAdmin(char* byip, char* byname, char* toip, char* toname, char* action, char* reason, int adminlevel, char* adminname, int admintype) {
+
+    sqlite3* db;
+    sqlite3_stmt* stmt;
+
+    int rc;
+
+    char* query = "INSERT INTO adminlog (byip, byname, toip, toname, action, reason, adminlevel, adminname, admintype) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+    rc = sqlite3_open_v2("./1fx/databases/logs.db", &db, SQLITE_OPEN_READWRITE, NULL);
+
+    if (rc) {
+        Com_Printf("Failed to open logs.db file to log admin!\nerr: %s\n", sqlite3_errmsg(db));
+        logSystem(LOGLEVEL_WARNING, "Failed to open logs.db file to log admin!\n");
+        return;
+    }
+
+    sqlite3_prepare(db, query, -1, &stmt, 0);
+    
+    sqlBindTextOrNull(stmt, 1, byip);
+    sqlBindTextOrNull(stmt, 2, byname);
+    sqlBindTextOrNull(stmt, 3, toip);
+    sqlBindTextOrNull(stmt, 4, toname);
+    sqlBindTextOrNull(stmt, 5, action);
+    sqlBindTextOrNull(stmt, 6, reason);
+    sqlite3_bind_int(stmt, 7, adminlevel);
+    sqlBindTextOrNull(stmt, 8, adminname);
+    sqlite3_bind_int(stmt, 9, admintype);
+
+    sqlite3_step(stmt);
+    sqlite3_finalize(stmt);
+    sqlite3_close(db);
+}
+
+void sqlBindTextOrNull(sqlite3_stmt* stmt, int argnum, char* text) {
+
+    if (text) {
+        sqlite3_bind_text(stmt, argnum, text, strlen(text), SQLITE_STATIC);
+    }
+    else {
+        sqlite3_bind_null(stmt, argnum);
+    }
+
+}
+
+void dbLogLogin(char* player, char* ip, int level, int method, char* reference) {
+
+    sqlite3* db;
+    sqlite3_stmt* stmt;
+
+    int rc;
+
+    char* query = "INSERT INTO loginlog (byip, byname, adminlevel, admintype) VALUES (?, ?, ?, ?)";
+    rc = sqlite3_open_v2("./1fx/databases/logs.db", &db, SQLITE_OPEN_READWRITE, NULL);
+
+    if (rc) {
+        Com_Printf("Failed to open logs.db file to log rcon!\nerr: %s\n", sqlite3_errmsg(db));
+        logSystem(LOGLEVEL_WARNING, "Failed to open logs.db file to log login!\n");
+        return;
+    }
+
+    sqlite3_prepare(db, query, -1, &stmt, 0);
+
+    sqlBindTextOrNull(stmt, 1, ip);
+    sqlBindTextOrNull(stmt, 2, player);
+    sqlite3_bind_int(stmt, 3, level);
+    sqlite3_bind_int(stmt, 4, method);
+
+    sqlite3_step(stmt);
+    sqlite3_finalize(stmt);
+    sqlite3_close(db);
+}
