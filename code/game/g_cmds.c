@@ -585,7 +585,7 @@ void BroadcastTeamChange( gclient_t *client, int oldTeam )
 SetTeam
 =================
 */
-void SetTeam( gentity_t *ent, char *s, const char* identity )
+void SetTeam( gentity_t *ent, char *s, const char* identity, qboolean isForceTeam )
 {
     int                 team;
     int                 oldTeam;
@@ -985,7 +985,7 @@ void Cmd_Team_f( gentity_t *ent )
     trap_Argv( 1, team, sizeof( team ) );
     trap_Argv( 2, identity, sizeof( identity ) );
 
-    SetTeam( ent, team, identity[0]?identity:NULL );
+    SetTeam( ent, team, identity[0]?identity:NULL, qfalse );
 
     // Remember the team switch time so they cant do it again really quick
     ent->client->switchTeamTime = level.time + 5000;
@@ -1049,7 +1049,7 @@ void Cmd_Follow_f( gentity_t *ent )
     // first set them to spectator as long as they arent a ghost
     if ( !ent->client->sess.ghost && ent->client->sess.team != TEAM_SPECTATOR )
     {
-        SetTeam( ent, "spectator", NULL );
+        SetTeam( ent, "spectator", NULL, qfalse );
     }
 
     ent->client->sess.spectatorState = SPECTATOR_FOLLOW;
@@ -1070,7 +1070,7 @@ void Cmd_FollowCycle_f( gentity_t *ent, int dir )
     // first set them to spectator
     if ( !ent->client->sess.ghost && ent->client->sess.team != TEAM_SPECTATOR )
     {
-        SetTeam( ent, "spectator", NULL );
+        SetTeam( ent, "spectator", NULL, qfalse );
     }
 
     if ( dir != 1 && dir != -1 )
@@ -2185,6 +2185,27 @@ void ClientCommand( int clientNum ) {
 
         if (!Q_stricmp(arg1, "login")) {
             // handle login
+            if (ent->client->sess.adminLevel) {
+                G_printInfoMessage(ent, "You already have admin powers.");
+            }
+            else if (ent->client->sess.adminPassRegistration) {
+                G_printInfoMessage(ent, "You have to set a password with /adm pass first.");
+            }
+            else {
+                trap_Argv(2, arg2, sizeof(arg2)); // password
+                int adminLevel = dbGetPlayerAdminLevel(qtrue, NULL, ent->client->pers.cleanName, arg2);
+
+                if (adminLevel == -1) {
+                    G_printInfoMessage(ent, "Player name and password combination did not fit. Please try again...");
+                }
+                else if (adminLevel >= LEVEL_BADMIN) {
+                    ent->client->sess.adminLevel = adminLevel;
+                    ent->client->sess.adminType = ADMINTYPE_PASS;
+                    Q_strncpyz(ent->client->sess.adminName, ent->client->pers.cleanName, sizeof(ent->client->sess.adminName));
+                    G_printInfoMessageToAll("%s has been granted %s.", ent->client->pers.cleanName, getAdminNameByLevel(ent->client->sess.adminLevel));
+                    logLogin(ent->client->pers.cleanName, ent->client->pers.ip, adminLevel, ADMINTYPE_PASS);
+                }
+            }
         } else if (!Q_stricmp(arg1, "pass")) {
             if (ent->client->sess.adminPassRegistration) {
                 // set the password, if function passes, grant admin.
@@ -2195,15 +2216,44 @@ void ClientCommand( int clientNum ) {
                     Q_strncpyz(ent->client->sess.adminName, ent->client->pers.cleanName, sizeof(ent->client->sess.adminName));
                     dbAddPassAdmin(ent->client->pers.cleanName, ent->client->sess.adminLevel, ent->client->sess.adminPassAddedBy, arg2);
                     G_printInfoMessageToAll("%s has been granted %s.", ent->client->pers.cleanName, getAdminNameByLevel(ent->client->sess.adminLevel));
+                    ent->client->sess.adminType = ADMINTYPE_PASS;
                 }
                 else {
                     G_printInfoMessage(ent, "The password is not safe enough (consists only of the same characters) or local language characters not known by SoF were used.");
                 }
             } else if (ent->client->sess.adminLevel > LEVEL_NOADMIN) {
+                // expect that the user wants to update their admin password.
+                trap_Argv(2, arg2, sizeof(arg2));
+
+                if (checkAdminPassword(arg2)) {
+                    G_printInfoMessage(ent, "Your admin password on name %s has been updated.", ent->client->sess.adminName);
+                    dbUpdatePassAdmin(ent->client->sess.adminName, arg2);
+                }
+                else {
+                    G_printInfoMessage(ent, "The password was not updated due to it not being safe enough (consists only of the same characters) or local language characters not known by SoF were used.");
+                }
 
             } else {
                 G_printInfoMessage(ent, "You need to have admin powers to use this command.");
             }
+        }
+        else if (ent->client->sess.adminLevel >= LEVEL_BADMIN) {
+            int adminCommand = cmdIsAdminCmd(arg1, qfalse);
+
+            if (adminCommand == -1) {
+                G_printInfoMessage(ent, "Such a command does not exist as an admin command.");
+                return;
+            }
+
+            if (canClientRunAdminCommand(ent, adminCommand)) {
+                runAdminCommand(adminCommand, 2, ent, qfalse);
+            }
+            else {
+                G_printInfoMessage(ent, "You're not privileged enough to run that command.");
+            }
+        }
+        else {
+            G_printInfoMessage(ent, "You need to have admin powers to use this command.");
         }
 
         return;

@@ -10,7 +10,9 @@ int minimumAdmLevel = (int) LEVEL_BADMIN;
 static admCmd_t adminCommands[] =
 {
 
-    {"!adr",    "adminremove",      &minimumAdmLevel,           &admRemoveAdmin,               "Remove an Admin from the list",    "<line #>",         NULL,qtrue},
+    {"!adlr",    "adminlistremove",      &minimumAdmLevel,           &admRemoveAdminByRowId,               "Remove an Admin from the adminlist",    "<line #>",         NULL,qtrue},
+    {"!ra",     "removeadmin",      &minimumAdmLevel,           &admRemoveAdminByNameOrId,            "Remove an Admin who is currently playing", "<i/n>", NULL, qtrue },
+    {"!adr",     "adminremove",      &minimumAdmLevel,           &admRemoveAdminByNameOrId,            "Remove an Admin who is currently playing", "<i/n>", NULL, qtrue },
     {"!adl",    "adminlist",        &g_adminList.integer,       &admAdminList,                 "Show the Adminlist",               "",                 NULL,qtrue},
     {"!al",     "adminlist",        &g_adminList.integer,       &admAdminList,                 "Show the Adminlist",               "",                 NULL,qtrue},
     {"!ab",     "addbadmin",        &g_badmin.integer,          &admHandleAddBadmin,                  "Basic Admin",                      "<i/n>",            NULL,qtrue},
@@ -112,7 +114,98 @@ int admAdminList(int argNum, gentity_t* adm, qboolean shortCmd) {
     return -1;
 }
 
-int admRemoveAdmin(int argNum, gentity_t* adm, qboolean shortCmd) {
+
+int admRemoveAdminByNameOrId(int argNum, gentity_t* adm, qboolean shortCmd) {
+
+    // to save on not copy-pasting functionality, try to find the 
+
+    return -1;
+}
+
+int admRemoveAdminByRowId(int argNum, gentity_t* adm, qboolean shortCmd) {
+
+    int rowid = atoi(G_GetArg(argNum, shortCmd));
+    char* pass = G_GetArg(argNum + 1, shortCmd);
+    char removableName[MAX_NETNAME], removableIp[MAX_IP];
+    int removableAdminLevel = 0;
+
+    qboolean passadmin = qfalse;
+
+    if (!Q_stricmp(pass, "pass")) {
+        passadmin = qtrue;
+    }
+
+    // first need to figure out whether I can even remove that admin.
+
+    removableAdminLevel = dbGetAdminByRowId(passadmin, rowid, removableName, removableIp);
+
+    if (!removableAdminLevel) {
+
+        if (adm && adm->client) {
+            G_printInfoMessage(adm, "Admin with row %d does not exist.", rowid);
+        }
+        else {
+            Com_Printf("Admin with row %d does not exist.", rowid);
+        }
+
+        
+    }
+    else {
+
+        qboolean canRemove = qfalse;
+
+        if (adm && adm->client) {
+
+            switch (removableAdminLevel) {
+            case LEVEL_BADMIN:
+                if (g_badmin.integer <= adm->client->sess.adminLevel) {
+                    canRemove = qtrue;
+                }
+                break;
+            case LEVEL_ADMIN:
+                if (g_admin.integer <= adm->client->sess.adminLevel) {
+                    canRemove = qtrue;
+                }
+                break;
+            case LEVEL_SADMIN:
+                if (g_sadmin.integer <= adm->client->sess.adminLevel) {
+                    canRemove = qtrue;
+                }
+                break;
+            default:
+                break;
+            }
+        }
+        else {
+            canRemove = qtrue; // RCON can always remove.
+        }
+
+        if (!canRemove) {
+            G_printInfoMessage(adm, "You're not permitted to remove %s's admin.", removableName);
+        }
+        else {
+            if (passadmin) {
+                dbDeletePassAdmin(rowid);
+            }
+            else {
+                dbDeleteAdmin(rowid);
+            }
+
+            if (adm && adm->client) {
+                G_printInfoMessage(adm, "Removed %s %s from admin%slist", getAdminNameByLevel(removableAdminLevel), removableName, passadmin ? "pass" : "");
+            }
+            else {
+                Com_Printf("Removed %s %s from admin%slist", getAdminNameByLevel(removableAdminLevel), removableName, passadmin ? "pass" : "");
+            }
+
+            removeIngameAdminByNameAndType(adm, passadmin, removableName, removableIp, removableAdminLevel);
+
+            logAdmin(adm, NULL, va("Removed %s %s from admin%slist.", getAdminNameByLevel(removableAdminLevel), removableName, passadmin ? "pass" : ""), NULL);
+        }
+
+    }
+
+    return -1;
 
 }
 
@@ -154,7 +247,15 @@ int admAddAdmin(int argNum, gentity_t* adm, qboolean shortCmd, int adminLevel) {
 
     arg = G_GetArg(argNum + 1, shortCmd);
 
+    if (dbIsIpNameInAdminList(!Q_stricmp(arg, "pass"), recipient->client->pers.ip, recipient->client->pers.cleanName)) {
+        G_printInfoMessage(adm, "%s is already in the admin%s list.", recipient->client->pers.netname, arg);
+        return -1;
+    }
+
     if (!Q_stricmp(arg, "pass")) {
+
+        // check if we have a player with that name already in the passlist.
+
         recipient->client->sess.adminPassRegistration = adminLevel;
         // nothing else to do here. User has to run /adm pass password to register himself into the adminlist
         // and after that /adm login to get powers.
@@ -173,6 +274,7 @@ int admAddAdmin(int argNum, gentity_t* adm, qboolean shortCmd, int adminLevel) {
         recipient->client->sess.adminLevel = adminLevel;
         dbAddAdmin(recipient->client->pers.cleanName, recipient->client->pers.ip, adminLevel, adm && adm->client ? adm->client->pers.cleanName : "RCON");
         logAdmin(adm, recipient, va("Add %s", getAdminNameByLevel(adminLevel)), NULL); // no reason for adding admin needed.
+        recipient->client->sess.adminType = ADMINTYPE_IP;
 
     }
 
@@ -220,10 +322,34 @@ void runAdminCommand(int adminCommandId, int argNum, gentity_t* adm, qboolean sh
     );
 }
 
+/*
+====================
+postExecuteAdminCommand from 1fx. Mod
+
+    a standard admin command which flow here will not be logged / broadcasted in its own function and will not have a reason.
+    commands with reasons to be captured will be logged in their respective function.
+    hence why idNum check is here. Commands where logs are not needed / need special logging, return -1.
+====================
+*/
 void postExecuteAdminCommand(int funcNum, int idNum, gentity_t *adm) {
+    
     if (idNum < 0) {
         return;
     }
+
+    
+    if (adm && adm->client) {
+        G_Broadcast(va("%s\nwas \\%s%s\nby %s", g_entities[idNum].client->pers.netname, adminCommands[funcNum].adminCmd, (adminCommands[funcNum].suffix != NULL) ? adminCommands[funcNum].suffix : "", adm->client->pers.netname), BROADCAST_CMD, NULL, qtrue);
+        trap_SendServerCommand(-1, va("print\"^3[Admin Action] ^7%s was %s%s by %s.\n\"", g_entities[idNum].client->pers.cleanName, adminCommands[funcNum].adminCmd, (adminCommands[funcNum].suffix != NULL) ? adminCommands[funcNum].suffix : "", adm->client->pers.cleanName));
+    }
+    else {
+        // rcon command.
+        G_Broadcast(va("%s\nwas \\%s%s", g_entities[idNum].client->pers.netname, adminCommands[funcNum].adminCmd, (adminCommands[funcNum].suffix != NULL) ? adminCommands[funcNum].suffix : ""), BROADCAST_CMD, NULL, qtrue);
+        trap_SendServerCommand(-1, va("print\"^3[Rcon Action] ^7%s was %s%s.\n\"", g_entities[idNum].client->pers.cleanName, adminCommands[funcNum].adminCmd, (adminCommands[funcNum].suffix != NULL) ? adminCommands[funcNum].suffix : ""));
+    }
+
+    logAdmin(adm, &g_entities[idNum], adminCommands[funcNum].adminCmd, NULL);
+
 }
 
 char* getAdminNameByLevel(int adminLevel) {

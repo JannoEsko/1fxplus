@@ -67,10 +67,10 @@ void logObjective() {
 
 }
 
-void logLogin(char* player, char* ip, int level, int method, char* reference) {
+void logLogin(char* player, char* ip, int level, int method) {
 
     if (g_logToDatabase.integer) {
-        dbLogLogin(player, ip, level, method, reference);
+        dbLogLogin(player, ip, level, method);
     }
 
 }

@@ -755,3 +755,56 @@ qboolean checkAdminPassword(char* adminPass) {
 
     return Q_stricmp(sameChar, adminPass);
 }
+
+/*
+============
+removeIngameAdminByNameAndType
+Tries to find whether the just removed admin was in game and if they were, then removes their admin powers and broadcasts the change.
+============
+*/
+void removeIngameAdminByNameAndType(gentity_t* adm, qboolean passadmin, char* removableName, char* removableIp, int removableLevel) {
+
+    gentity_t* tmp;
+
+    for (int i = 0; i < level.numConnectedClients; i++) {
+        tmp = &g_entities[level.sortedClients[i]];
+
+        if (
+            tmp && tmp->client
+            && (tmp->client->pers.connected == CON_CONNECTED || tmp->client->pers.connected == CON_CONNECTING)
+            && tmp->client->sess.adminLevel >= LEVEL_BADMIN
+            && !Q_stricmp(removableName, tmp->client->sess.adminName)
+            && (
+                (
+                    passadmin && tmp->client->sess.adminType == ADMINTYPE_PASS
+                )
+                ||
+                (
+                    !passadmin && removableIp && !Q_stricmp(removableIp, tmp->client->pers.ip) && tmp->client->sess.adminType == ADMINTYPE_IP
+                )
+            )
+        ) {
+            // mammoth if clause but if above states true, then the player's admin should be removed.
+
+            G_Broadcast(va("%s\n^7their %s powers were \\removed\nby %s", tmp->client->pers.netname, getAdminNameByLevel(removableLevel), adm && adm->client ? adm->client->pers.netname : "RCON"), BROADCAST_CMD, NULL, qtrue);
+            tmp->client->sess.adminLevel = LEVEL_NOADMIN;
+            break;
+        }
+    }
+
+}
+
+void removeAdminsFromGame(int adminType) {
+    gentity_t* tmp;
+
+    for (int i = 0; i < level.numConnectedClients; i++) {
+        tmp = &g_entities[level.sortedClients[i]];
+
+        if (tmp && tmp->client && tmp->client->sess.adminLevel >= LEVEL_BADMIN && tmp->client->sess.adminType == adminType) {
+            tmp->client->sess.adminLevel = 0;
+        }
+    }
+
+    G_Broadcast(va("All %sadmins were \\removed", adminType == ADMINTYPE_IP ? "" : "pass"), BROADCAST_GAME, NULL, qtrue);
+
+}

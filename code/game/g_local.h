@@ -268,6 +268,12 @@ typedef struct
     int                 lastMessagePriority;
     int                 lastMessage;
     char                adminPassAddedBy[MAX_NETNAME];
+    qboolean            playerDbChecksDone;     // qtrue if the databases have been checked for any sort of powers / privileges.
+                                                // powerchecks should be done 2 times, once at ClientConnect and once at the very first ClientBegin
+                                                // initial clientconnect, the player might have name 1fx. # Janno which is added as an admin with ip
+                                                // therefore we grant him powers. ClientBegin might be that the name (in the player mod folder) is savages # jantsux,
+                                                // which does not have admin. End result = player ends up with admin.
+                                                // Because I intend to do a powercheck at ClientBegin, I only want to do this once during their gaming session, and this variable will help me track in doing so.
 
 } clientSession_t;
 
@@ -573,7 +579,7 @@ void        G_StopGhosting      ( gentity_t* ent );
 void        G_StartGhosting     ( gentity_t* ent );
 
 void        BroadcastTeamChange( gclient_t *client, int oldTeam );
-void        SetTeam( gentity_t *ent, char *s, const char* identity );
+void        SetTeam( gentity_t *ent, char *s, const char* identity, qboolean isForceTeam );
 void        Cmd_FollowCycle_f( gentity_t *ent, int dir );
 qboolean    CheatsOk                ( gentity_t *ent );
 void        G_SpawnDebugCylinder    ( vec3_t origin, float radius, gentity_t* clientent, float viewRadius, int colorIndex );

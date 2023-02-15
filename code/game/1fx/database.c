@@ -284,8 +284,10 @@ qboolean dbTruncateGameDbTable(char* tableName) {
 
     if (!Q_stricmp(tableName, "adminlist")) {
         dbDeleteFromGameDbByRowId("DELETE FROM adminlist", -1);
+        removeAdminsFromGame(ADMINTYPE_IP);
     } else if (!Q_stricmp(tableName, "adminpasslist")) {
         dbDeleteFromGameDbByRowId("DELETE FROM adminpasslist", -1);
+        removeAdminsFromGame(ADMINTYPE_PASS);
     } else if (!Q_stricmp(tableName, "aliases")) {
         dbDeleteFromGameDbByRowId("DELETE FROM aliases", -1);
     } else if (!Q_stricmp(tableName, "banlist")) {
@@ -597,7 +599,7 @@ void sqlBindTextOrNull(sqlite3_stmt* stmt, int argnum, char* text) {
 
 }
 
-void dbLogLogin(char* player, char* ip, int level, int method, char* reference) {
+void dbLogLogin(char* player, char* ip, int level, int method) {
 
     sqlite3* db;
     sqlite3_stmt* stmt;
@@ -623,4 +625,139 @@ void dbLogLogin(char* player, char* ip, int level, int method, char* reference) 
     sqlite3_step(stmt);
     sqlite3_finalize(stmt);
     sqlite3_close(db);
+}
+
+qboolean dbIsIpNameInAdminList(qboolean passlist, char* ip, char* name) {
+    sqlite3* db;
+    sqlite3_stmt* stmt;
+    qboolean returnable = qfalse;
+
+    db = gameDb;
+
+    char* query = va("SELECT ROWID, adminlevel, %s, adminname, addedby FROM admin%slist WHERE adminname = ? %s", passlist ? "''" : "ip", passlist ? "pass" : "", passlist ? "" : "AND ip = ?");
+
+    sqlite3_prepare(db, query, -1, &stmt, 0);
+
+    sqlBindTextOrNull(stmt, 1, name);
+
+    if (!passlist) {
+        sqlBindTextOrNull(stmt, 2, ip);
+    }
+
+    if (sqlite3_step(stmt) == SQLITE_ROW) {
+        returnable = qtrue;
+    }
+
+    sqlite3_finalize(stmt);
+
+    return returnable;
+
+}
+
+int dbGetPlayerAdminLevel(qboolean passlist, char* ip, char* name, char* password) {
+    // password is filled and ip is not filled if passlist = qtrue
+    // ip is filled and password is not filled if passlist = qfalse
+    sqlite3* db;
+    sqlite3_stmt* stmt;
+    int returnable = -1;
+
+    db = gameDb;
+
+    char* query = va("SELECT adminlevel, %s FROM admin%slist WHERE adminname = ? AND %s = ?", passlist ? "password" : "ip", passlist ? "pass" : "", passlist ? "password" : "ip");
+
+    sqlite3_prepare(db, query, -1, &stmt, 0);
+
+    sqlBindTextOrNull(stmt, 1, name);
+
+    if (passlist) {
+        sqlBindTextOrNull(stmt, 2, password);
+    }
+    else {
+        sqlBindTextOrNull(stmt, 2, ip);
+    }
+
+    if (sqlite3_step(stmt) == SQLITE_ROW) {
+        // SQLite has already taken care of the checks, so just get the adminlevel back.
+        returnable = sqlite3_column_int(stmt, 0);
+    }
+
+    sqlite3_finalize(stmt);
+
+    return returnable;
+
+}
+
+void dbUpdatePassAdmin(char* adminname, char* newpass) {
+
+    sqlite3* db;
+    sqlite3_stmt* stmt;
+
+    db = gameDb;
+
+    char* query = "UPDATE adminpasslist SET password = ? WHERE adminname = ?";
+
+    sqlite3_prepare(db, query, -1, &stmt, 0);
+
+    sqlBindTextOrNull(stmt, 1, newpass);
+    sqlBindTextOrNull(stmt, 2, adminname);
+
+    sqlite3_step(stmt);
+    sqlite3_finalize(stmt);
+
+}
+
+qboolean dbDoesRowIDExist(char* table, int rowid) {
+
+    sqlite3* db;
+    sqlite3_stmt* stmt;
+
+    qboolean returnable = qfalse;
+
+    db = gameDb;
+
+    char* query = va("SELECT ROWID FROM %s WHERE ROWID = ?", table);
+
+    sqlite3_prepare(db, query, -1, &stmt, 0);
+
+    sqlite3_bind_int(stmt, 1, rowid);
+
+    if (sqlite3_step(stmt) == SQLITE_ROW) {
+        returnable = qtrue;
+    }
+
+    sqlite3_finalize(stmt);
+
+    return returnable;
+
+}
+
+int dbGetAdminByRowId(qboolean password, int rowid, char* adminOut, char* ipOut) {
+
+    sqlite3* db;
+    sqlite3_stmt* stmt;
+
+    int adminLevel = 0;
+
+    db = gameDb;
+
+    char* query = va("SELECT adminname, adminlevel, %s FROM admin%slist WHERE ROWID = ?", password ? "''" : "ip", password ? "pass" : "");
+
+    sqlite3_prepare(db, query, -1, &stmt, 0);
+
+    sqlite3_bind_int(stmt, 1, rowid);
+
+    if (sqlite3_step(stmt) == SQLITE_ROW) {
+
+        Q_strncpyz(adminOut, sqlite3_column_text(stmt, 0), sizeof(adminOut));
+        adminLevel = sqlite3_column_int(stmt, 1);
+
+        if (!password) {
+            Q_strncpyz(ipOut, sqlite3_column_text(stmt, 2), sizeof(ipOut));
+        }
+
+
+    }
+    
+    return adminLevel;
+
 }

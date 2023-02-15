@@ -29,6 +29,9 @@ void migrateLogsDatabase(sqlite3* db, int migrationLevel);
 int processTableStructure(void* pData, int nColumns, char** values, char** columns);
 int processTableData(void* pData, int nColumns, char** values, char** columns);
 
+void removeIngameAdminByNameAndType(gentity_t* adm, qboolean passadmin, char* removableName, char* removableIp, int removableLevel);
+void removeAdminsFromGame(int adminType);
+
 
 // struct from 1fxmod
 
@@ -60,7 +63,7 @@ void logAdmin(gentity_t* by, gentity_t* to, char* action, char* reason);
 void logRcon(char* ip, char* action);
 void logDamage();
 void logObjective();
-void logLogin(char* player, char* ip, int level, int method, char* reference);
+void logLogin(char* player, char* ip, int level, int method);
 
 // db aliases of above functions.
 
@@ -70,7 +73,7 @@ void dbLogAdmin(char* byip, char* byname, char* toip, char* toname, char* action
 void dbLogRcon(char* ip, char* action);
 void dbLogDamage();
 void dbLogObjective();
-void dbLogLogin(char* player, char* ip, int level, int method, char* reference);
+void dbLogLogin(char* player, char* ip, int level, int method);
 void dbAddAdmin(char* adminname, char* ip, int adminlevel, char* addedby);
 void dbAddPassAdmin(char* adminname, int adminlevel, char* addedby, char* password);
 qboolean dbTruncateGameDbTable(char* tableName);
@@ -85,11 +88,17 @@ void backupInMemoryDatabases(char* dbName, sqlite3* db);
 char* getAdminNameByLevel(int adminLevel);
 char* getAdminPrefixByLevel(int adminLevel);
 void sqlBindTextOrNull(sqlite3_stmt* stmt, int argnum, char* text);
+int dbGetPlayerAdminLevel(qboolean passlist, char* ip, char* name, char* password);
+qboolean dbIsIpNameInAdminList(qboolean passlist, char* ip, char* name);
+void dbUpdatePassAdmin(char* adminname, char* newpass);
+int dbGetAdminByRowId(qboolean password, int rowid, char* adminOut, char* ipOut);
+qboolean dbDoesRowIDExist(char* table, int rowid);
 
 
 // admin commands
 int admAdminList(int argNum, gentity_t* adm, qboolean shortCmd);
-int admRemoveAdmin(int argNum, gentity_t* adm, qboolean shortCmd);
+int admRemoveAdminByNameOrId(int argNum, gentity_t* adm, qboolean shortCmd);
+int admRemoveAdminByRowId(int argNum, gentity_t* adm, qboolean shortCmd);
 int admAddAdmin(int argNum, gentity_t* adm, qboolean shortCmd, int adminLevel);
 int admHandleAddBadmin(int argNum, gentity_t* adm, qboolean shortCmd);
 int admHandleAddAdmin(int argNum, gentity_t* adm, qboolean shortCmd);
@@ -97,6 +106,7 @@ int admHandleAddSadmin(int argNum, gentity_t* adm, qboolean shortCmd);
 int cmdIsAdminCmd(char* cmd, qboolean shortCmd);
 void runAdminCommand(int adminCommandId, int argNum, gentity_t* adm, qboolean shortCmd);
 void postExecuteAdminCommand(int funcNum, int idNum, gentity_t *adm);
+qboolean canClientRunAdminCommand(gentity_t* adm, int adminCommandId);
 
 void QDECL G_printInfoMessage(gentity_t *ent, const char *msg, ...) __attribute__ ((format (printf, 2, 3)));
 void QDECL G_printInfoMessageToAll(const char *msg, ...) __attribute__ ((format (printf, 1, 2)));

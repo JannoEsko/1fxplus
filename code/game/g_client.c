@@ -1289,6 +1289,20 @@ char *ClientConnect( int clientNum, qboolean firstTime, qboolean isBot )
 
     G_ReadSessionData( client );
 
+    if (firstTime && !isBot && !client->sess.adminLevel) {
+        // this is in firstTime only because after that, if the player was indeed an admin, session will already drag it going forwards.
+
+        int adminLevel = dbGetPlayerAdminLevel(qfalse, client->pers.ip, client->pers.cleanName, NULL);
+
+        if (adminLevel >= LEVEL_BADMIN) {
+            // initial admin level on connects / begins is a silent one, so just give them the power.
+            Q_strncpyz(client->sess.adminName, client->pers.cleanName, sizeof(client->sess.adminName));
+            client->sess.adminLevel = adminLevel;
+            client->sess.adminType = ADMINTYPE_IP;
+        }
+
+    }
+
     if( isBot )
     {
         ent->r.svFlags |= SVF_BOT;
@@ -1400,6 +1414,25 @@ void ClientBegin( int clientNum )
         {
             G_StartGhosting ( ent );
         }
+    }
+
+    // check admin if we have not yet done so.
+    if (!ent->client->sess.playerDbChecksDone) {
+        ent->client->sess.playerDbChecksDone = qtrue;
+
+        if (!ent->client->sess.adminLevel) {
+            // means that no admin level was found with IP+name combination during connecting, check over here as well.
+            int adminLevel = dbGetPlayerAdminLevel(qfalse, ent->client->pers.ip, ent->client->pers.cleanName, NULL);
+
+            if (adminLevel >= LEVEL_BADMIN) {
+                // initial admin level on connects / begins is a silent one, so just give them the power.
+                Q_strncpyz(ent->client->sess.adminName, ent->client->pers.cleanName, sizeof(ent->client->sess.adminName));
+                ent->client->sess.adminLevel = adminLevel;
+                ent->client->sess.adminType = ADMINTYPE_IP;
+            }
+        }
+
+        // FIXME add alias checks over here as well.
     }
 
     // count current clients and rank for scoreboard
@@ -1522,7 +1555,7 @@ void ClientSpawn(gentity_t *ent)
     }
     else
     {
-        SetTeam ( ent, "s", NULL );
+        SetTeam ( ent, "s", NULL, qfalse );
         return;
     }
 

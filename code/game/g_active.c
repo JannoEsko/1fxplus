@@ -3,6 +3,7 @@
 // g_active.c --
 
 #include "g_local.h"
+#include "1fx/1fxFunctions.h"
 
 
 void P_SetTwitchInfo(gclient_t  *client)
@@ -633,12 +634,14 @@ qboolean ClientInactivityTimer( gclient_t *client ) {
         client->inactivityWarning = qfalse;
     } else if ( !client->pers.localClient ) {
         if ( level.time > client->inactivityTime ) {
-            trap_DropClient( client - level.clients, "Dropped due to inactivity" );
-            return qfalse;
+            //trap_DropClient( client - level.clients, "Dropped due to inactivity" ); SoF is dead, so why drop clients.
+            //return qfalse;
+            G_printInfoMessageToAll("%s has been moved to spectator team due to inactivity.", client->pers.cleanName);
+            SetTeam(&g_entities[client->ps.clientNum], "spectator", NULL, qfalse);
         }
         if ( level.time > client->inactivityTime - 10000 && !client->inactivityWarning ) {
             client->inactivityWarning = qtrue;
-            trap_SendServerCommand( client - level.clients, "cp \"Ten seconds until inactivity drop!\n\"" );
+            G_Broadcast("You will be \\forceteamed to spec\nif you don't move in the next 10 seconds.", BROADCAST_GAME_IMPORTANT, &g_entities[client->ps.clientNum], qtrue);
         }
     }
     return qtrue;
@@ -1303,7 +1306,7 @@ void G_CheckClientTimeouts ( gentity_t *ent )
     // longer than the timeout to spectator then force this client into spectator mode
     if ( level.time - ent->client->pers.cmd.serverTime > g_timeouttospec.integer * 1000 )
     {
-        SetTeam ( ent, "spectator", NULL );
+        SetTeam ( ent, "spectator", NULL, qfalse );
     }
 }
 

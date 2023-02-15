@@ -201,7 +201,7 @@ void Svcmd_ForceTeam_f( void )
 
     // set the team
     trap_Argv( 2, str, sizeof( str ) );
-    SetTeam( &g_entities[cl - level.clients], str, NULL );
+    SetTeam( &g_entities[cl - level.clients], str, NULL, qfalse );
 }
 
 /*
@@ -241,6 +241,13 @@ qboolean ConsoleCommand( void )
         Svcmd_EntityList_f();
         return qtrue;
     }
+#ifdef _DEBUG
+    if (!Q_stricmp(cmd, "testcrash")) {
+        int* ptr = NULL;
+        *ptr = 0;
+        return qtrue;
+    }
+#endif
 
     if ( Q_stricmp (cmd, "forceteam") == 0 )
     {
