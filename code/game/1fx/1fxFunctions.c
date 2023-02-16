@@ -386,6 +386,46 @@ char *G_GetArg(int argNum,qboolean shortCmd)
     return arg;
 }
 
+char* concatArgs(int fromArgNum, qboolean shortCmd) {
+    
+    int totalArgs = 0;
+    char output[MAX_STRING_CHARS] = "";
+    char* arg;
+    int totalLength = 0, argLength = 0;
+
+    if (shortCmd) {
+        totalArgs = G_GetChatArgumentCount();
+    }
+    else {
+        totalArgs = trap_Argc();
+    }
+
+    while (fromArgNum < totalArgs) {
+        arg = G_GetArg(fromArgNum, shortCmd);
+        fromArgNum++;
+        argLength = strlen(arg);
+
+        if (totalLength + argLength > MAX_STRING_CHARS) {
+            // can't concat more. Chances of it happening are slim.
+            break;
+        }
+
+        memcpy(output + totalLength, arg, argLength);
+        totalLength += argLength;
+
+        if (fromArgNum != totalArgs) {
+            output[totalLength] = ' ';
+            totalLength++;
+        }
+
+    }
+
+    output[totalLength] = 0;
+
+    return output;
+
+}
+
 /*
 ==============
 G_RemoveColorEscapeSequences
@@ -807,4 +847,54 @@ void removeAdminsFromGame(int adminType) {
 
     G_Broadcast(va("All %sadmins were \\removed", adminType == ADMINTYPE_IP ? "" : "pass"), BROADCAST_GAME, NULL, qtrue);
 
+}
+
+void swapTeams(qboolean autoSwap, gentity_t* adm) {
+
+    int redScore = level.teamScores[TEAM_RED];
+    int blueScore = level.teamScores[TEAM_BLUE];
+    qboolean redLocked = level.redTeamLocked;
+    qboolean blueLocked = level.blueTeamLocked;
+    gentity_t* tmp;
+
+    if (!level.gametypeData->teams) {
+        G_printInfoMessage(adm, "Currently not playing a team game.");
+        return;
+    }
+
+    if (!Q_stricmp(g_realGametype.string, "h&s") || !Q_stricmp(g_realGametype.string, "h&z")) {
+        G_printInfoMessage(adm, "This gametype does not support swapping teams.");
+        return;
+    }
+
+    for (int i = 0; i < level.numConnectedClients; i++) {
+        tmp = &g_entities[level.sortedClients[i]];
+
+        if (tmp->client->pers.connected != CON_CONNECTED) {
+            continue;
+        }
+
+        if (tmp->client->sess.team == TEAM_SPECTATOR) {
+            continue;
+        }
+
+        SetTeam(tmp, tmp->client->sess.team == TEAM_RED ? "blue" : "red", NULL, TEAMCHANGE_SWAP);
+    }
+
+    level.teamScores[TEAM_BLUE] = redScore;
+    level.teamScores[TEAM_RED] = blueScore;
+
+    level.redTeamLocked = blueLocked;
+    level.blueTeamLocked = redLocked;
+
+    G_GlobalSound(G_SoundIndex("sound/misc/events/tut_lift02.mp3", qtrue));
+
+    if (!autoSwap) {
+        G_printInfoMessageToAll("Swap teams by %s.", adm && adm->client ? adm->client->pers.cleanName : "RCON");
+        G_Broadcast(va("%s^7 has \\swapped the teams!", adm && adm->client ? adm->client->pers.netname : "RCON"), BROADCAST_GAME, NULL, qtrue);
+        logAdmin(adm, NULL, "Swapteams", NULL);
+    }
+    else {
+        G_printInfoMessageToAll("Teams have been swapped automatically.");
+    }
 }

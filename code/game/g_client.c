@@ -1555,7 +1555,7 @@ void ClientSpawn(gentity_t *ent)
     }
     else
     {
-        SetTeam ( ent, "s", NULL, qfalse );
+        SetTeam ( ent, "s", NULL, TEAMCHANGE_REGULAR);
         return;
     }
 

@@ -637,7 +637,7 @@ qboolean ClientInactivityTimer( gclient_t *client ) {
             //trap_DropClient( client - level.clients, "Dropped due to inactivity" ); SoF is dead, so why drop clients.
             //return qfalse;
             G_printInfoMessageToAll("%s has been moved to spectator team due to inactivity.", client->pers.cleanName);
-            SetTeam(&g_entities[client->ps.clientNum], "spectator", NULL, qfalse);
+            SetTeam(&g_entities[client->ps.clientNum], "spectator", NULL, TEAMCHANGE_REGULAR);
         }
         if ( level.time > client->inactivityTime - 10000 && !client->inactivityWarning ) {
             client->inactivityWarning = qtrue;
@@ -1306,7 +1306,7 @@ void G_CheckClientTimeouts ( gentity_t *ent )
     // longer than the timeout to spectator then force this client into spectator mode
     if ( level.time - ent->client->pers.cmd.serverTime > g_timeouttospec.integer * 1000 )
     {
-        SetTeam ( ent, "spectator", NULL, qfalse );
+        SetTeam ( ent, "spectator", NULL, TEAMCHANGE_REGULAR);
     }
 }
 

@@ -55,6 +55,12 @@ typedef enum
 #define MAX_IDENTITY        64
 #define MAX_VOTE_COUNT      3
 
+typedef enum {
+    TEAMCHANGE_REGULAR,
+    TEAMCHANGE_FORCED,
+    TEAMCHANGE_SWAP
+} teamChangeType;
+
 typedef struct gentity_s gentity_t;
 typedef struct gclient_s gclient_t;
 
@@ -553,6 +559,9 @@ typedef struct
     int             sqlBackupTime;
     qboolean        pause;
     int             actionSoundIndex;
+    qboolean        redTeamLocked;
+    qboolean        blueTeamLocked;
+    qboolean        spectatorsLocked;
 
 } level_locals_t;
 
@@ -579,7 +588,7 @@ void        G_StopGhosting      ( gentity_t* ent );
 void        G_StartGhosting     ( gentity_t* ent );
 
 void        BroadcastTeamChange( gclient_t *client, int oldTeam );
-void        SetTeam( gentity_t *ent, char *s, const char* identity, qboolean isForceTeam );
+void        SetTeam( gentity_t *ent, char *s, const char* identity, int teamChangeType );
 void        Cmd_FollowCycle_f( gentity_t *ent, int dir );
 qboolean    CheatsOk                ( gentity_t *ent );
 void        G_SpawnDebugCylinder    ( vec3_t origin, float radius, gentity_t* clientent, float viewRadius, int colorIndex );
@@ -804,6 +813,7 @@ void        G_RunThink                          ( gentity_t *ent );
 void QDECL  G_LogPrintf                         ( const char *fmt, ... );
 void        SendScoreboardMessageToAllClients   ( void );
 void        CheckGametype                       ( void );
+void        G_setTrackedCvarWithoutTrackMessage ( vmCvar_t* cvar, int value );
 
 //
 // g_client.c
@@ -975,7 +985,18 @@ extern  vmCvar_t    g_badminChatPrefix;
 extern  vmCvar_t    g_adminChatPrefix;
 extern  vmCvar_t    g_sadminChatPrefix;
 extern  vmCvar_t    g_serverColors;
-
+extern  vmCvar_t    g_sl;
+extern  vmCvar_t    g_tl;
+extern  vmCvar_t    g_swapteams;
+extern  vmCvar_t    g_forceteam;
+extern  vmCvar_t    g_ban;
+extern  vmCvar_t    g_broadcast;
+extern  vmCvar_t    g_subnetban;
+extern  vmCvar_t    g_pop;
+extern  vmCvar_t    g_uppercut;
+extern  vmCvar_t    g_kick;
+extern  vmCvar_t    g_lock;
+extern  vmCvar_t    g_respawn;
 
 void    trap_Print( const char *text );
 void    trap_Error( const char *text ) __attribute__((noreturn));
@@ -1197,7 +1218,7 @@ void        trap_GT_Init        ( const char* gametype, qboolean restart );
 void        trap_GT_RunFrame    ( int time );
 void        trap_GT_Start       ( int time );
 int         trap_GT_SendEvent   ( int event, int time, int arg0, int arg1, int arg2, int arg3, int arg4 );
-void        trap_GT_Shutdown    ( void );
+void        trap_GT_Shutdown    ( int restart );
 
 void G_UpdateClientAntiLag  ( gentity_t* ent );
 void G_UndoAntiLag          ( void );

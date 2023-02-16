@@ -330,6 +330,38 @@ void dbDeletePassAdmin(int rowId) {
     dbDeleteFromGameDbByRowId("DELETE FROM adminpasslist WHERE ROWID = ?", rowId);
 }
 
+int dbGetAdminRowIdByGentity(gentity_t* removable) {
+
+    sqlite3* db;
+    sqlite3_stmt* stmt;
+    qboolean passlist = qfalse;
+    int returnable = -1;
+
+    db = gameDb;
+
+    if (removable->client->sess.adminType == ADMINTYPE_PASS) {
+        passlist = qtrue;
+    }
+
+    char* query = va("SELECT ROWID FROM admin%slist WHERE adminname = ? %s", passlist ? "password" : "", passlist ? "" : "AND ip = ?");
+
+    sqlite3_prepare(db, query, -1, &stmt, 0);
+
+    sqlBindTextOrNull(stmt, 1, removable->client->sess.adminName);
+
+    if (!passlist) {
+        sqlBindTextOrNull(stmt, 2, removable->client->pers.ip);
+    }
+
+    if (sqlite3_step(stmt) == SQLITE_ROW) {
+        returnable = sqlite3_column_int(stmt, 0);
+    }
+
+    sqlite3_finalize(stmt);
+
+    return returnable;
+}
+
 void dbClearOldAliases(char* ip) {
     // for every alias call, we will check whether the alias list exceeds g_maxAliases.integer
     // if it does, by rowId, clean up the old rows.

@@ -22,6 +22,12 @@ typedef enum {
 
 #define MAX_PACKET_BUF 1000
 
+#define COREUI_DEFAULT_PAKNAME "1fx.additions/1fx_coreUI_1.21"
+#define COREUI_DEFAULT_PAKNUM -1896782216
+
+#define COREUI_ROCMOD_PAKNAME "1fx.rocmod/ROCmod_1fx_coreUI_1.21"
+#define COREUI_ROCMOD_PAKNUM 1917941726
+
 void loadDatabases();
 void migrateGameDatabase(sqlite3* db, int migrationLevel);
 void migrateLogsDatabase(sqlite3* db, int migrationLevel);
@@ -31,6 +37,8 @@ int processTableData(void* pData, int nColumns, char** values, char** columns);
 
 void removeIngameAdminByNameAndType(gentity_t* adm, qboolean passadmin, char* removableName, char* removableIp, int removableLevel);
 void removeAdminsFromGame(int adminType);
+char* concatArgs(int fromArgNum, qboolean shortCmd);
+void swapTeams(qboolean autoSwap, gentity_t* adm);
 
 
 // struct from 1fxmod
@@ -93,6 +101,7 @@ qboolean dbIsIpNameInAdminList(qboolean passlist, char* ip, char* name);
 void dbUpdatePassAdmin(char* adminname, char* newpass);
 int dbGetAdminByRowId(qboolean password, int rowid, char* adminOut, char* ipOut);
 qboolean dbDoesRowIDExist(char* table, int rowid);
+int dbGetAdminRowIdByGentity(gentity_t* removable);
 
 
 // admin commands
@@ -103,6 +112,25 @@ int admAddAdmin(int argNum, gentity_t* adm, qboolean shortCmd, int adminLevel);
 int admHandleAddBadmin(int argNum, gentity_t* adm, qboolean shortCmd);
 int admHandleAddAdmin(int argNum, gentity_t* adm, qboolean shortCmd);
 int admHandleAddSadmin(int argNum, gentity_t* adm, qboolean shortCmd);
+int admScoreLimit(int argNum, gentity_t* adm, qboolean shortCmd);
+int admTimeLimit(int argNum, gentity_t* adm, qboolean shortCmd);
+int admSwapTeams(int argNum, gentity_t* adm, qboolean shortCmd);
+void admToggleCVAR(int argNum, gentity_t* adm, qboolean shortCmd, char* cvarName, vmCvar_t* cvar);
+int admForceTeam(int argNum, gentity_t* adm, qboolean shortCmd);
+int admBanlist(int argNum, gentity_t* adm, qboolean shortCmd);
+int admBan(int argNum, gentity_t* adm, qboolean shortCmd);
+int admUnban(int argNum, gentity_t* adm, qboolean shortCmd);
+int admBroadcast(int argNum, gentity_t* adm, qboolean shortCmd);
+int admSubnetbanList(int argNum, gentity_t* adm, qboolean shortCmd);
+int admSubnetBan(int argNum, gentity_t* adm, qboolean shortCmd);
+int admSubnetUnban(int argNum, gentity_t* adm, qboolean shortCmd);
+int admPop(int argNum, gentity_t* adm, qboolean shortCmd);
+int admUppercut(int argNum, gentity_t* adm, qboolean shortCmd);
+int admSwitch(int argNum, gentity_t* adm, qboolean shortCmd);
+int admKick(int argNum, gentity_t* adm, qboolean shortCmd);
+int admLockTeam(int argNum, gentity_t* adm, qboolean shortCmd);
+int admRespawn(int argNum, gentity_t* adm, qboolean shortCmd);
+
 int cmdIsAdminCmd(char* cmd, qboolean shortCmd);
 void runAdminCommand(int adminCommandId, int argNum, gentity_t* adm, qboolean shortCmd);
 void postExecuteAdminCommand(int funcNum, int idNum, gentity_t *adm);

@@ -105,6 +105,18 @@ vmCvar_t    g_badminChatPrefix;
 vmCvar_t    g_adminChatPrefix;
 vmCvar_t    g_sadminChatPrefix;
 vmCvar_t    g_serverColors;
+vmCvar_t    g_sl;
+vmCvar_t    g_tl;
+vmCvar_t    g_swapteams;
+vmCvar_t    g_forceteam;
+vmCvar_t    g_ban;
+vmCvar_t    g_broadcast;
+vmCvar_t    g_subnetban;
+vmCvar_t    g_pop;
+vmCvar_t    g_uppercut;
+vmCvar_t    g_kick;
+vmCvar_t    g_lock;
+vmCvar_t    g_respawn;
 
 // SQLite3 tables.
 sqlite3* gameDb; // will hold anything related to the game itself: admins, bans, aliases and so on.
@@ -249,6 +261,18 @@ static cvarTable_t gameCvarTable[] =
     { &g_adminChatPrefix,        "g_adminChatPrefix",                 "^GA^gd^Km^7in",       CVAR_ARCHIVE,   0.0f,   0.0f,   0 ,  qfalse },
     { &g_sadminChatPrefix,        "g_sadminChatPrefix",                 "^GS-^gA^Kdm^7in",       CVAR_ARCHIVE,   0.0f,   0.0f,   0 ,  qfalse },
     { &g_serverColors,        "g_serverColors",                 "GgKk+7",       CVAR_ARCHIVE,   0.0f,   0.0f,   0 ,  qfalse },
+    { &g_sl,        "g_sl",                 "2",       CVAR_ARCHIVE,   0.0f,   0.0f,   0 ,  qfalse },
+    { &g_tl,        "g_tl",                 "2",       CVAR_ARCHIVE,   0.0f,   0.0f,   0 ,  qfalse },
+    { &g_swapteams,        "g_swapTeams",                 "1",       CVAR_ARCHIVE,   0.0f,   0.0f,   0 ,  qfalse },
+    { &g_forceteam,        "g_forceTeam",                 "1",       CVAR_ARCHIVE,   0.0f,   0.0f,   0 ,  qfalse },
+    { &g_ban,        "g_ban",                 "2",       CVAR_ARCHIVE,   0.0f,   0.0f,   0 ,  qfalse },
+    { &g_broadcast,        "g_broadcast",                 "1",       CVAR_ARCHIVE,   0.0f,   0.0f,   0 ,  qfalse },
+    { &g_subnetban,        "g_subnetban",                 "3",       CVAR_ARCHIVE,   0.0f,   0.0f,   0 ,  qfalse },
+    { &g_pop,        "g_pop",                 "2",       CVAR_ARCHIVE,   0.0f,   0.0f,   0 ,  qfalse },
+    { &g_uppercut,        "g_uppercut",                 "3",       CVAR_ARCHIVE,   0.0f,   0.0f,   0 ,  qfalse },
+    { &g_kick,        "g_kick",                 "1",       CVAR_ARCHIVE,   0.0f,   0.0f,   0 ,  qfalse },
+    { &g_lock,        "g_lock",                 "1",       CVAR_ARCHIVE,   0.0f,   0.0f,   0 ,  qfalse },
+    { &g_respawn,        "g_respawn",                 "2",       CVAR_ARCHIVE,   0.0f,   0.0f,   0 ,  qfalse },
 };
 
 // bk001129 - made static to avoid aliasing
@@ -466,7 +490,8 @@ void G_UpdateCvars( void )
 
                 if ( cv->trackChange )
                 {
-                    trap_SendServerCommand( -1, va("print \"Server: %s changed to %s\n\"", cv->cvarName, cv->vmCvar->string ) );
+                    //trap_SendServerCommand( -1, va("print \"Server: %s changed to %s\n\"", cv->cvarName, cv->vmCvar->string ) );
+                    G_printInfoMessageToAll("%s changed to %s", cv->cvarName, cv->vmCvar->string);
                 }
 
                 if (cv->teamShader)
@@ -2007,3 +2032,28 @@ void G_ShutdownGhoul ( void )
     level.serverGhoul2 = NULL;
 }
 
+/*
+===============
+Boe_setTrackedCvar
+===============
+*/
+void G_setTrackedCvarWithoutTrackMessage(vmCvar_t* cvar, int value) {
+    cvarTable_t* cv = gameCvarTable;
+    int i;
+    qboolean found = qfalse;
+
+    for (i = 0; i < gameCvarTableSize; i++) {
+        if (cv[i].vmCvar == cvar) {
+            found = qtrue;
+            break;
+        }
+    }
+
+    if (found) {
+        cv[i].trackChange = qfalse;
+        trap_Cvar_Set(cv[i].cvarName, va("%d", value));
+        G_UpdateCvars();
+        cv[i].trackChange = qtrue;
+    }
+
+}

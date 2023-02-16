@@ -201,7 +201,7 @@ void Svcmd_ForceTeam_f( void )
 
     // set the team
     trap_Argv( 2, str, sizeof( str ) );
-    SetTeam( &g_entities[cl - level.clients], str, NULL, qfalse );
+    SetTeam( &g_entities[cl - level.clients], str, NULL, TEAMCHANGE_REGULAR);
 }
 
 /*

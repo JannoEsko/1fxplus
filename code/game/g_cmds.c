@@ -585,7 +585,7 @@ void BroadcastTeamChange( gclient_t *client, int oldTeam )
 SetTeam
 =================
 */
-void SetTeam( gentity_t *ent, char *s, const char* identity, qboolean isForceTeam )
+void SetTeam( gentity_t *ent, char *s, const char* identity, int teamChangeType )
 {
     int                 team;
     int                 oldTeam;
@@ -642,48 +642,50 @@ void SetTeam( gentity_t *ent, char *s, const char* identity, qboolean isForceTea
     }
     else if ( level.gametypeData->teams )
     {
-        // if running a team game, assign player to one of the teams
-        specState = SPECTATOR_NOT;
-        if ( !Q_stricmp( s, "red" ) || !Q_stricmp( s, "r" ) )
-        {
-            team = TEAM_RED;
-        }
-        else if ( !Q_stricmp( s, "blue" ) || !Q_stricmp( s, "b" ) )
-        {
-            team = TEAM_BLUE;
-        }
-        else
-        {
-            // pick the team with the least number of players
-            team = PickTeam( clientNum );
-        }
-
-        if ( g_teamForceBalance.integer  )
-        {
-            int     counts[TEAM_NUM_TEAMS];
-
-            counts[TEAM_BLUE] = TeamCount( ent->client->ps.clientNum, TEAM_BLUE, NULL );
-            counts[TEAM_RED] = TeamCount( ent->client->ps.clientNum, TEAM_RED, NULL );
-
-            // We allow a spread of two
-            if ( team == TEAM_RED && counts[TEAM_RED] - counts[TEAM_BLUE] > 1 )
+        if (teamChangeType == TEAMCHANGE_REGULAR) {
+            // if running a team game, assign player to one of the teams
+            specState = SPECTATOR_NOT;
+            if (!Q_stricmp(s, "red") || !Q_stricmp(s, "r"))
             {
-                trap_SendServerCommand( ent->client->ps.clientNum,
-                                        "cp \"Red team has too many players.\n\"" );
-
-                // ignore the request
-                return;
+                team = TEAM_RED;
             }
-            if ( team == TEAM_BLUE && counts[TEAM_BLUE] - counts[TEAM_RED] > 1 )
+            else if (!Q_stricmp(s, "blue") || !Q_stricmp(s, "b"))
             {
-                trap_SendServerCommand( ent->client->ps.clientNum,
-                                        "cp \"Blue team has too many players.\n\"" );
-
-                // ignore the request
-                return;
+                team = TEAM_BLUE;
+            }
+            else
+            {
+                // pick the team with the least number of players
+                team = PickTeam(clientNum);
             }
 
-            // It's ok, the team we are switching to has less or same number of players
+            if (g_teamForceBalance.integer)
+            {
+                int     counts[TEAM_NUM_TEAMS];
+
+                counts[TEAM_BLUE] = TeamCount(ent->client->ps.clientNum, TEAM_BLUE, NULL);
+                counts[TEAM_RED] = TeamCount(ent->client->ps.clientNum, TEAM_RED, NULL);
+
+                // We allow a spread of two
+                if (team == TEAM_RED && counts[TEAM_RED] - counts[TEAM_BLUE] > 1)
+                {
+                    trap_SendServerCommand(ent->client->ps.clientNum,
+                        "cp \"Red team has too many players.\n\"");
+
+                    // ignore the request
+                    return;
+                }
+                if (team == TEAM_BLUE && counts[TEAM_BLUE] - counts[TEAM_RED] > 1)
+                {
+                    trap_SendServerCommand(ent->client->ps.clientNum,
+                        "cp \"Blue team has too many players.\n\"");
+
+                    // ignore the request
+                    return;
+                }
+
+                // It's ok, the team we are switching to has less or same number of players
+            }
         }
     }
     else
@@ -719,13 +721,21 @@ void SetTeam( gentity_t *ent, char *s, const char* identity, qboolean isForceTea
     // he starts at 'base'
     client->pers.teamState.state = TEAM_BEGIN;
 
+    if (ent->s.gametypeitems > 0) {
+        G_DropGametypeItems(ent, 0);
+    }
+
+    ent->client->ps.stats[STAT_WEAPONS] = 0;
+    TossClientItems(ent);
+
+    // janno 160223 - We drop the items before this call and we only enter player_die (and alter their score) if it's a regular teamchange.
     if ( oldTeam != TEAM_SPECTATOR )
     {
         if ( ghost )
         {
             G_StopGhosting ( ent );
         }
-        else if ( !G_IsClientDead ( client ) )
+        else if ( !G_IsClientDead ( client ) && teamChangeType == TEAMCHANGE_REGULAR )
         {
             // Kill him (makes sure he loses flags, etc)
             ent->flags &= ~FL_GODMODE;
@@ -762,7 +772,9 @@ void SetTeam( gentity_t *ent, char *s, const char* identity, qboolean isForceTea
         ghost = qtrue;
     }
 
-    BroadcastTeamChange( client, oldTeam );
+    if (teamChangeType == TEAMCHANGE_REGULAR) {
+        BroadcastTeamChange(client, oldTeam);
+    }
 
     // See if we should spawn as a ghost
     if ( team != TEAM_SPECTATOR && level.gametypeData->respawnType == RT_NONE )
@@ -985,7 +997,7 @@ void Cmd_Team_f( gentity_t *ent )
     trap_Argv( 1, team, sizeof( team ) );
     trap_Argv( 2, identity, sizeof( identity ) );
 
-    SetTeam( ent, team, identity[0]?identity:NULL, qfalse );
+    SetTeam( ent, team, identity[0]?identity:NULL, TEAMCHANGE_REGULAR);
 
     // Remember the team switch time so they cant do it again really quick
     ent->client->switchTeamTime = level.time + 5000;
@@ -1049,7 +1061,7 @@ void Cmd_Follow_f( gentity_t *ent )
     // first set them to spectator as long as they arent a ghost
     if ( !ent->client->sess.ghost && ent->client->sess.team != TEAM_SPECTATOR )
     {
-        SetTeam( ent, "spectator", NULL, qfalse );
+        SetTeam( ent, "spectator", NULL, TEAMCHANGE_REGULAR);
     }
 
     ent->client->sess.spectatorState = SPECTATOR_FOLLOW;
@@ -1070,7 +1082,7 @@ void Cmd_FollowCycle_f( gentity_t *ent, int dir )
     // first set them to spectator
     if ( !ent->client->sess.ghost && ent->client->sess.team != TEAM_SPECTATOR )
     {
-        SetTeam( ent, "spectator", NULL, qfalse );
+        SetTeam( ent, "spectator", NULL, TEAMCHANGE_REGULAR);
     }
 
     if ( dir != 1 && dir != -1 )

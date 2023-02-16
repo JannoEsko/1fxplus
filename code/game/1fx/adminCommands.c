@@ -10,98 +10,97 @@ int minimumAdmLevel = (int) LEVEL_BADMIN;
 static admCmd_t adminCommands[] =
 {
 
-    {"!adlr",    "adminlistremove",      &minimumAdmLevel,           &admRemoveAdminByRowId,               "Remove an Admin from the adminlist",    "<line #>",         NULL,qtrue},
-    {"!ra",     "removeadmin",      &minimumAdmLevel,           &admRemoveAdminByNameOrId,            "Remove an Admin who is currently playing", "<i/n>", NULL, qtrue },
-    {"!adr",     "adminremove",      &minimumAdmLevel,           &admRemoveAdminByNameOrId,            "Remove an Admin who is currently playing", "<i/n>", NULL, qtrue },
-    {"!adl",    "adminlist",        &g_adminList.integer,       &admAdminList,                 "Show the Adminlist",               "",                 NULL,qtrue},
-    {"!al",     "adminlist",        &g_adminList.integer,       &admAdminList,                 "Show the Adminlist",               "",                 NULL,qtrue},
-    {"!ab",     "addbadmin",        &g_badmin.integer,          &admHandleAddBadmin,                  "Basic Admin",                      "<i/n>",            NULL,qtrue},
-    {"!aa",     "addadmin",         &g_admin.integer,           &admHandleAddAdmin,                  "Admin",                            "<i/n>",            NULL,qtrue},
-    {"!as",     "addsadmin",        &g_sadmin.integer,          &admHandleAddSadmin,                  "Server Admin",                     "<i/n>",            NULL,qtrue},
-        /*{"!sl",     "scorelimit",       &g_sl.integer,              &adm_scoreLimit,                "Change the scorelimit",            "<time>",           NULL,qtrue},
-        {"!tl",     "timelimit",        &g_tl.integer,              &adm_timeLimit,                 "Change the timelimit",             "<time>",           NULL,qtrue},
-        {"!sw",     "swapteams",        &g_swapteams.integer,       &adm_swapTeams,                 "Swap the players from team",       "",                 NULL,qfalse},
-        {"!rounds", "rounds",           &g_cm.integer,              &adm_Rounds,                    "Set the number of rounds",         "<rounds>",         NULL,qtrue},
-        // Boe!Man 6/2/15: Don't move or modify anything above this comment, the /adm list expects them in that specific order.
-        {"!pl",     "plant",            &g_plant.integer,           &adm_Plant,                     "Plant or unplant a player",        "<i/n>",            "ed",qfalse},
-        {"!rtl",    "roundtimelimit",   &g_rtl.integer,             &adm_roundTimeLimit,            "Change the round timelimit",       "<time>",           NULL,qtrue},
-        {"!ro",     "runover",          &g_runover.integer,         &adm_Runover,                   "Push a player backwards",          "<i/n>",            NULL,qfalse},
-        {"!c",      "rollercoaster",    &g_rollercoaster.integer,   &adm_Rollercoaster,             "Uppercut and push a player",       "<i/n>",            "ed",qfalse},
-        {"!girly",  "girly",            &g_girly.integer,           &adm_Girly,                     "Change player skin to female skin","<i/n> <0-12>",     NULL,qtrue},
-        {"!r",      "respawn",          &g_respawn.integer,         &adm_Respawn,                   "Respawn a player",                 "<i/n>",            "ed",qfalse},
-        {"!rs",     "respawn",          &g_respawn.integer,         &adm_Respawn,                   "Respawn a player",                 "<i/n>",            "ed",qfalse},
-        {"!mr",     "maprestart",       &g_mapswitch.integer,       &adm_mapRestart,                "Restart the current map",          "",                 NULL,qtrue},
-        {"!mr",     "map_restart",      &g_mapswitch.integer,       &adm_mapRestart,                "Restart the current map",          "",                 NULL,qtrue},
-        {"!st",     "strip",            &g_strip.integer,           &adm_Strip,                     "Remove weapons from a player",     "<i/n>",            "ped",qfalse},
-        {"!ra",     "removeadmin",      &minimumAdmLevel,           &adm_removeAdmin,               "Remove an Admin",                  "<i/n>",            NULL,qtrue},
-        {"!ft",     "forceteam",        &g_forceteam.integer,       &adm_forceTeam,                 "Force a player to join a team",    "<i/n> <team>",     "ed",qtrue},
-        {"!bs",     "blockseek",        &g_blockseek.integer,       &adm_blockSeek,                 "Block player from joining seek",   "<i/n>",            NULL,qfalse},
-        {"!bsl",    "blockseeklist",    &g_blockseek.integer,       &adm_blockSeekList,             "Show players blocked from seeking","",                 NULL,qtrue},
-        {"!nl",     "nolower",          &g_nosection.integer,       &adm_noLower,                   "Enable/Disable Nolower",           "",                 NULL,qtrue},
-        {"!nr",     "noroof",           &g_nosection.integer,       &adm_noRoof,                    "Enable/Disable Noroof",            "",                 NULL,qtrue},
-        {"!nm",     "nomiddle",         &g_nosection.integer,       &adm_noMiddle,                  "Enable/Disable Nomiddle",          "",                 NULL,qtrue},
-        {"!nw",     "nowhole",          &g_nosection.integer,       &adm_noWhole,                   "Enable/Disable Nowhole",           "",                 NULL,qtrue},
-        {"!sh",     "shuffleteams",     &g_shuffleteams.integer,    &adm_shuffleTeams,              "Mix the teams at random",          "",                 NULL,qtrue},
-        {"!nn",     "nonades",          &g_nades.integer,           &adm_noNades,                   "Enable or disable nades",          "",                 NULL,qtrue},
-        {"!ri",     "respawninterval",  &g_ri.integer,              &adm_respawnInterval,           "Change the respawn interval",      "<time>",           NULL,qtrue},
-        {"!rd",     "realdamage",       &g_damage.integer,          &adm_realDamage,                "Toggle Real damage",               "",                 NULL,qtrue},
-        {"!nd",     "normaldamage",     &g_damage.integer,          &adm_normalDamage,              "Toggle Normal damage",             "",                 NULL,qtrue},
-        {"!gr",     "gametyperestart",  &g_gr.integer,              &adm_gametypeRestart,           "Restart the current gametype",     "",                 NULL,qtrue},
-        {"!acl",    "addclan",          &g_clan.integer,            &adm_addClanMember,             "Add a clan member",                "<i/n>",            NULL,qtrue},
-        {"!rc",     "removeclan",       &g_clan.integer,            &adm_removeClanMember,          "Remove a clan member",             "<i/n>",            NULL,qtrue},
-        {"!rcl",    "removeclanlist",   &g_clan.integer,            &adm_removeClanMemberFromList,  "Remove a member from the list",    "<i/line #>",       NULL,qtrue},
-        {"!clr",    "clanlistremove",   &g_clan.integer,            &adm_removeClanMemberFromList,  "Remove a member from the list",    "<i/line #>",       NULL,qtrue},
-        {"!cl",     "clanlist",         &g_clan.integer,            &adm_clanList,                  "Show the clanlist",                "",                 NULL,qtrue},
-        {"!cm",     "compmode",         &g_cm.integer,              &adm_compMode,                  "Toggles Competition Mode",         "",                 NULL,qtrue},
-        {"!bl",     "banlist",          &g_ban.integer,             &adm_banList,                   "Shows the current banlist",        "",                 NULL,qtrue},
-        {"!ba",     "ban",              &g_ban.integer,             &adm_Ban,                       "Ban a player",                     "<XdYhZm> <i/n> <rsn>", "ned",qtrue},
-        {"!ub",     "unban",            &g_ban.integer,             &adm_Unban,                     "Unban a banned IP (player)",       "<ip/line #>",      NULL,qtrue},
-        {"!uba",    "unban",            &g_ban.integer,             &adm_Unban,                     "Unban a banned IP (player)",       "<ip/line #>",      NULL,qtrue},
-        {"!br",     "broadcast",        &g_broadcast.integer,       &adm_Broadcast,                 "Broadcast a message",              "<message>",        NULL,qtrue},
-        {"!sbl",    "subnetbanlist",    &g_subnetban.integer,       &adm_subnetbanList,             "Shows the current subnetbanlist",  "",                 NULL,qtrue},
-        {"!sb",     "subnetban",        &g_subnetban.integer,       &adm_subnetBan,                 "Ban a players' subnet",            "<XdYhZm> <i/n> <rsn>",   "ned",qtrue},
-        {"!sbu",    "subnetunban",      &g_subnetban.integer,       &adm_subnetUnban,               "Unban a banned subnet",            "<ip/line #>",      NULL,qtrue},
-        {"!su",     "subnetunban",      &g_subnetban.integer,       &adm_subnetUnban,               "Unban a banned subnet",            "<ip/line #>",      NULL,qtrue},
-        {"!et",     "eventeams",        &g_eventeams.integer,       &adm_evenTeams,                 "Make the teams even",              "",                 NULL,qtrue},
-        {"!cva",    "clanvsall",        &g_clanvsall.integer,       &adm_clanVsAll,                 "Clan versus other players-mode",   "",                 NULL,qtrue},
-        {"!l",      "lock",             &g_lock.integer,            &adm_lockTeam,                  "Lock/unlock a team",               "<team>",           NULL,qtrue},
-        {"!fl",     "flash",            &g_flash.integer,           &adm_Flash,                     "Flash a player",                   "<i/n>",            "ed",qfalse},
-        {"!g",      "gametype",         &g_mapswitch.integer,       &adm_Gametype,                  "Switch to the given gametype",     "<gametype>",       NULL,qtrue},
-        {"!gt",     "gametype",         &g_mapswitch.integer,       &adm_Gametype,                  "Switch to the given gametype",     "<gametype>",       NULL,qtrue},
-        {"!map",    "map",              &g_mapswitch.integer,       &adm_Map,                       "Switch to the specified map",      "<map name>",       NULL,qtrue},
-        {"!altmap", "altmap",           &g_mapswitch.integer,       &adm_Map,                       "Switch to the specified altmap",   "<map name>",       NULL,qtrue},
-        {"!devmap", "devmap",           &g_mapswitch.integer,       &adm_Map,                       "Switch to the specified devmap",   "<map name>",       NULL,qtrue},
-        {"!mc",     "mapcycle",         &g_mapswitch.integer,       &adm_mapCycle,                  "Switch to the next-defined map",   "",                 NULL,qtrue},
-        {"!pv",     "passvote",         &g_forcevote.integer,       &adm_passVote,                  "Pass the running vote",            "",                 NULL,qtrue},
-        {"!cv",     "cancelvote",       &g_forcevote.integer,       &adm_cancelVote,                "Cancel the running vote",          "",                 NULL,qtrue},
-        {"!pa",     "pause",            &g_pause.integer,           &adm_Pause,                     "Pause/resume the game",            "",                 NULL,qtrue},
-        {"!b",      "burn",             &g_burn.integer,            &adm_Burn,                      "Burn a player",                    "",                 "ed",qfalse},
-        {"!k",      "kick",             &g_kick.integer,            &adm_Kick,                      "Kick a player",                    "<i/n>",            "ed",qfalse},
-        {"!m",      "mute",             &g_mute.integer,            &adm_Mute,                      "Mute/unmute a player",             "<i/n> <time>",     NULL,qtrue},
-        {"!s",      "strip",            &g_strip.integer,           &adm_Strip,                     "Remove weapons from a player",     "<i/n>",            "ped",qfalse},
-        {"!ff",     "friendlyfire",     &g_ff.integer,              &adm_friendlyFire,              "Enables/disables friendly fire",   "",                 NULL,qtrue},
-        {"!rn",     "rename",           &g_rename.integer,          &adm_Rename,                    "Renames a players' name",          "<i/n> <name>",     NULL,qtrue},
-        {"!swi",    "switch",           &g_forceteam.integer,       &adm_Switch,                    "Switch one to the opposite team",  "<i/n>",            "ed",qfalse},
-        #ifndef _DEMO
-        {"!3rd",    "3rd",              &g_3rd.integer,             &adm_Third,                     "Toggles Thirdperson on or off",    "",                 NULL,qtrue},
-        {"!third",  "third",            &g_3rd.integer,             &adm_Third,                     "Toggles Thirdperson on or off",    "",                 NULL,qtrue},
-        #endif // not _DEMO
-        {"!wp",     "weapon",           &g_toggleweapon.integer,    &adm_toggleWeapon,              "Toggles weapon on or off",         "",                 NULL,qtrue},
-        {"!aca",    "anticamp",         &g_anticamp.integer,        &adm_Anticamp,                  "Toggles anticamp on or off",       "",                 NULL,qtrue},
-        {"!em",     "endmap",           &g_endmap.integer,          &adm_endMap,                    "Requests map to end",              "",                 NULL,qtrue},
-        {"!ml",     "maplist",          &g_mapswitch.integer,       &adm_mapList,                   "Lists all available maps",         "",                 NULL,qtrue},
+    {"!adlr",    "adminlistremove",      &minimumAdmLevel,           &admRemoveAdminByRowId,               "Remove an Admin from the adminlist",    "<line #>",         NULL},
+    {"!ra",     "removeadmin",      &minimumAdmLevel,           &admRemoveAdminByNameOrId,            "Remove an Admin who is currently playing", "<i/n>", NULL },
+    {"!adr",     "adminremove",      &minimumAdmLevel,           &admRemoveAdminByNameOrId,            "Remove an Admin who is currently playing", "<i/n>", NULL },
+    {"!adl",    "adminlist",        &g_adminList.integer,       &admAdminList,                 "Show the Adminlist",               "",                 NULL},
+    {"!al",     "adminlist",        &g_adminList.integer,       &admAdminList,                 "Show the Adminlist",               "",                 NULL},
+    {"!ab",     "addbadmin",        &g_badmin.integer,          &admHandleAddBadmin,                  "Basic Admin",                      "<i/n>",            NULL},
+    {"!aa",     "addadmin",         &g_admin.integer,           &admHandleAddAdmin,                  "Admin",                            "<i/n>",            NULL},
+    {"!as",     "addsadmin",        &g_sadmin.integer,          &admHandleAddSadmin,                  "Server Admin",                     "<i/n>",            NULL},
+        {"!sl",     "scorelimit",       &g_sl.integer,              &admScoreLimit,                "Change the scorelimit",            "<time>",           NULL},
+        {"!tl",     "timelimit",        &g_tl.integer,              &admTimeLimit,                 "Change the timelimit",             "<time>",           NULL},
+        {"!sw",     "swapteams",        &g_swapteams.integer,       &admSwapTeams,                 "Swap the players from team",       "",                 NULL},
+        {"!ft",     "forceteam",        &g_forceteam.integer,       &admForceTeam,                 "Force a player to join a team",    "<i/n> <team>",     "ed"},
+        {"!bl",     "banlist",          &g_ban.integer,             &admBanlist,                   "Shows the current banlist",        "",                 NULL},
+        {"!ba",     "ban",              &g_ban.integer,             &admBan,                       "Ban a player",                     "<XdYhZm> <i/n> <rsn>", "ned"},
+        {"!ub",     "unban",            &g_ban.integer,             &admUnban,                     "Unban a banned IP (player)",       "<ip/line #>",      NULL},
+        {"!uba",    "unban",            &g_ban.integer,             &admUnban,                     "Unban a banned IP (player)",       "<ip/line #>",      NULL},
+        {"!br",     "broadcast",        &g_broadcast.integer,       &admBroadcast,                 "Broadcast a message",              "<message>",        NULL},
+        {"!sbl",    "subnetbanlist",    &g_subnetban.integer,       &admSubnetbanList,             "Shows the current subnetbanlist",  "",                 NULL},
+        {"!sb",     "subnetban",        &g_subnetban.integer,       &admSubnetBan,                 "Ban a players' subnet",            "<XdYhZm> <i/n> <rsn>",   "ned"},
+        {"!sbu",    "subnetunban",      &g_subnetban.integer,       &admSubnetUnban,               "Unban a banned subnet",            "<ip/line #>",      NULL},
+        {"!su",     "subnetunban",      &g_subnetban.integer,       &admSubnetUnban,               "Unban a banned subnet",            "<ip/line #>",      NULL},
         // Boe!Man 6/2/15: Admin synonyms for Gold.
         // Pop/explode.
-        {"!p",      "pop",              &g_pop.integer,             &adm_Pop,                       "Pop/explodes a player",            "<i/n>",            "ped",qfalse},
-        #ifdef _GOLD
-        {"!e",      "explode",          &g_pop.integer,             &adm_Pop,                       "Pop/explodes a player",            "<i/n>",            "ped",qfalse},
-        #endif // _GOLD
+        {"!p",      "pop",              &g_pop.integer,             &admPop,                       "Pop/explodes a player",            "<i/n>",            "ped"},
+        {"!e",      "explode",          &g_pop.integer,             &admPop,                       "Pop/explodes a player",            "<i/n>",            "ped"},
         // Uppercut/launch.
-        {"!u",      "uppercut",         &g_uppercut.integer,        &adm_Uppercut,                  "Launch a player upwards",          "<i/n>",            NULL,qtrue},
-        {"!uc",     "uppercut",         &g_uppercut.integer,        &adm_Uppercut,                  "Launch a player upwards",          "<i/n>",            NULL,qtrue},
-        #ifdef _GOLD
-        {"!la",     "launch",           &g_uppercut.integer,        &adm_Uppercut,                  "Launch a player upwards",          "<i/n>",            "ed",qtrue},
-        #endif // _GOLD
+        {"!u",      "uppercut",         &g_uppercut.integer,        &admUppercut,                  "Launch a player upwards",          "<i/n>",            NULL},
+        {"!uc",     "uppercut",         &g_uppercut.integer,        &admUppercut,                  "Launch a player upwards",          "<i/n>",            NULL},
+        {"!la",     "launch",           &g_uppercut.integer,        &admUppercut,                  "Launch a player upwards",          "<i/n>",            "ed"},
+        {"!swi",    "switch",           &g_forceteam.integer,       &admSwitch,                    "Switch one to the opposite team",  "<i/n>",            "ed"},
+        {"!k",      "kick",             &g_kick.integer,            &admKick,                      "Kick a player",                    "<i/n>",            "ed"},
+        {"!l",      "lock",             &g_lock.integer,            &admLockTeam,                  "Lock/unlock a team",               "<team>",           NULL},
+        {"!r",      "respawn",          &g_respawn.integer,         &admRespawn,                   "Respawn a player",                 "<i/n>",            "ed"},
+        {"!rs",     "respawn",          &g_respawn.integer,         &admRespawn,                   "Respawn a player",                 "<i/n>",            "ed"},
+        /*{"!rounds", "rounds",           &g_cm.integer,              &adm_Rounds,                    "Set the number of rounds",         "<rounds>",         NULL},
+        // Boe!Man 6/2/15: Don't move or modify anything above this comment, the /adm list expects them in that specific order.
+        {"!pl",     "plant",            &g_plant.integer,           &adm_Plant,                     "Plant or unplant a player",        "<i/n>",            "ed"},
+        {"!rtl",    "roundtimelimit",   &g_rtl.integer,             &adm_roundTimeLimit,            "Change the round timelimit",       "<time>",           NULL},
+        {"!ro",     "runover",          &g_runover.integer,         &adm_Runover,                   "Push a player backwards",          "<i/n>",            NULL},
+        {"!c",      "rollercoaster",    &g_rollercoaster.integer,   &adm_Rollercoaster,             "Uppercut and push a player",       "<i/n>",            "ed"},
+        {"!girly",  "girly",            &g_girly.integer,           &adm_Girly,                     "Change player skin to female skin","<i/n> <0-12>",     NULL},
+        
+        {"!mr",     "maprestart",       &g_mapswitch.integer,       &adm_mapRestart,                "Restart the current map",          "",                 NULL},
+        {"!mr",     "map_restart",      &g_mapswitch.integer,       &adm_mapRestart,                "Restart the current map",          "",                 NULL},
+        {"!st",     "strip",            &g_strip.integer,           &adm_Strip,                     "Remove weapons from a player",     "<i/n>",            "ped"},
+        {"!bs",     "blockseek",        &g_blockseek.integer,       &adm_blockSeek,                 "Block player from joining seek",   "<i/n>",            NULL},
+        {"!bsl",    "blockseeklist",    &g_blockseek.integer,       &adm_blockSeekList,             "Show players blocked from seeking","",                 NULL},
+        {"!nl",     "nolower",          &g_nosection.integer,       &adm_noLower,                   "Enable/Disable Nolower",           "",                 NULL},
+        {"!nr",     "noroof",           &g_nosection.integer,       &adm_noRoof,                    "Enable/Disable Noroof",            "",                 NULL},
+        {"!nm",     "nomiddle",         &g_nosection.integer,       &adm_noMiddle,                  "Enable/Disable Nomiddle",          "",                 NULL},
+        {"!nw",     "nowhole",          &g_nosection.integer,       &adm_noWhole,                   "Enable/Disable Nowhole",           "",                 NULL},
+        {"!sh",     "shuffleteams",     &g_shuffleteams.integer,    &adm_shuffleTeams,              "Mix the teams at random",          "",                 NULL},
+        {"!nn",     "nonades",          &g_nades.integer,           &adm_noNades,                   "Enable or disable nades",          "",                 NULL},
+        {"!ri",     "respawninterval",  &g_ri.integer,              &adm_respawnInterval,           "Change the respawn interval",      "<time>",           NULL},
+        {"!rd",     "realdamage",       &g_damage.integer,          &adm_realDamage,                "Toggle Real damage",               "",                 NULL},
+        {"!nd",     "normaldamage",     &g_damage.integer,          &adm_normalDamage,              "Toggle Normal damage",             "",                 NULL},
+        {"!gr",     "gametyperestart",  &g_gr.integer,              &adm_gametypeRestart,           "Restart the current gametype",     "",                 NULL},
+        {"!acl",    "addclan",          &g_clan.integer,            &adm_addClanMember,             "Add a clan member",                "<i/n>",            NULL},
+        {"!rc",     "removeclan",       &g_clan.integer,            &adm_removeClanMember,          "Remove a clan member",             "<i/n>",            NULL},
+        {"!rcl",    "removeclanlist",   &g_clan.integer,            &adm_removeClanMemberFromList,  "Remove a member from the list",    "<i/line #>",       NULL},
+        {"!clr",    "clanlistremove",   &g_clan.integer,            &adm_removeClanMemberFromList,  "Remove a member from the list",    "<i/line #>",       NULL},
+        {"!cl",     "clanlist",         &g_clan.integer,            &adm_clanList,                  "Show the clanlist",                "",                 NULL},
+        {"!cm",     "compmode",         &g_cm.integer,              &adm_compMode,                  "Toggles Competition Mode",         "",                 NULL},
+        
+        {"!et",     "eventeams",        &g_eventeams.integer,       &adm_evenTeams,                 "Make the teams even",              "",                 NULL},
+        {"!cva",    "clanvsall",        &g_clanvsall.integer,       &adm_clanVsAll,                 "Clan versus other players-mode",   "",                 NULL},
+        
+        {"!fl",     "flash",            &g_flash.integer,           &adm_Flash,                     "Flash a player",                   "<i/n>",            "ed"},
+        {"!g",      "gametype",         &g_mapswitch.integer,       &adm_Gametype,                  "Switch to the given gametype",     "<gametype>",       NULL},
+        {"!gt",     "gametype",         &g_mapswitch.integer,       &adm_Gametype,                  "Switch to the given gametype",     "<gametype>",       NULL},
+        {"!map",    "map",              &g_mapswitch.integer,       &adm_Map,                       "Switch to the specified map",      "<map name>",       NULL},
+        {"!altmap", "altmap",           &g_mapswitch.integer,       &adm_Map,                       "Switch to the specified altmap",   "<map name>",       NULL},
+        {"!devmap", "devmap",           &g_mapswitch.integer,       &adm_Map,                       "Switch to the specified devmap",   "<map name>",       NULL},
+        {"!mc",     "mapcycle",         &g_mapswitch.integer,       &adm_mapCycle,                  "Switch to the next-defined map",   "",                 NULL},
+        {"!pv",     "passvote",         &g_forcevote.integer,       &adm_passVote,                  "Pass the running vote",            "",                 NULL},
+        {"!cv",     "cancelvote",       &g_forcevote.integer,       &adm_cancelVote,                "Cancel the running vote",          "",                 NULL},
+        {"!pa",     "pause",            &g_pause.integer,           &adm_Pause,                     "Pause/resume the game",            "",                 NULL},
+        {"!b",      "burn",             &g_burn.integer,            &adm_Burn,                      "Burn a player",                    "",                 "ed"},
+        
+        {"!m",      "mute",             &g_mute.integer,            &adm_Mute,                      "Mute/unmute a player",             "<i/n> <time>",     NULL},
+        {"!s",      "strip",            &g_strip.integer,           &adm_Strip,                     "Remove weapons from a player",     "<i/n>",            "ped"},
+        {"!ff",     "friendlyfire",     &g_ff.integer,              &adm_friendlyFire,              "Enables/disables friendly fire",   "",                 NULL},
+        {"!rn",     "rename",           &g_rename.integer,          &adm_Rename,                    "Renames a players' name",          "<i/n> <name>",     NULL},
+        
+        {"!3rd",    "3rd",              &g_3rd.integer,             &adm_Third,                     "Toggles Thirdperson on or off",    "",                 NULL},
+        {"!third",  "third",            &g_3rd.integer,             &adm_Third,                     "Toggles Thirdperson on or off",    "",                 NULL},
+        {"!wp",     "weapon",           &g_toggleweapon.integer,    &adm_toggleWeapon,              "Toggles weapon on or off",         "",                 NULL},
+        {"!aca",    "anticamp",         &g_anticamp.integer,        &adm_Anticamp,                  "Toggles anticamp on or off",       "",                 NULL},
+        {"!em",     "endmap",           &g_endmap.integer,          &adm_endMap,                    "Requests map to end",              "",                 NULL},
+        {"!ml",     "maplist",          &g_mapswitch.integer,       &adm_mapList,                   "Lists all available maps",         "",                 NULL},
+        
         */
 };
 
@@ -109,15 +108,262 @@ static int adminCommandsSize = sizeof(adminCommands) / sizeof(adminCommands[0]);
 // End
 
 int admAdminList(int argNum, gentity_t* adm, qboolean shortCmd) {
-    dbGetAdminlist(adm, qfalse);
-    dbGetAdminlist(adm, qtrue);
+
+    qboolean passlist = qfalse;
+
+    if (!Q_stricmp(G_GetArg(argNum, shortCmd), "pass")) {
+        passlist = qtrue;
+    }
+
+    dbGetAdminlist(adm, passlist);
+
+    return -1;
+}
+
+// mostly taken from 1fx. Mod, missing competitive mode which will be added along with the rest of compmode functionality.
+void admToggleCVAR(int argNum, gentity_t* adm, qboolean shortCmd, char* cvarName, vmCvar_t* cvar) {
+
+    char* arg = G_GetArg(argNum, shortCmd);
+    int newValue = arg ? atoi(arg) : -1;
+
+    if (newValue < 0) {
+        G_printInfoMessage(adm, "%s is %d.", cvarName, cvar->integer);
+    }
+    else {
+        // means change
+        if (cvar) {
+            G_setTrackedCvarWithoutTrackMessage(cvar, newValue);
+        }
+        else {
+            trap_Cvar_Set(cvarName, va("%d", newValue));
+            trap_Cvar_Update(cvarName);
+        }
+
+        G_printInfoMessageToAll("%s was changed to %d by %s.", cvarName, newValue, adm->client->pers.cleanName); // RCON commands should be already captured by the game engine itself.
+        G_Broadcast(va("\\%s was changed to %d\nby %s", cvarName, newValue, adm->client->pers.netname), BROADCAST_GAME, NULL, qtrue);
+        logAdmin(adm, NULL, va("%s changed to %d", cvarName, newValue), NULL);
+
+        // was only sent for rocmod and gold specific, but this shouldn't impact non-ROCMod clients if we send it again over here as well.
+        for (int i = 0; i < level.numConnectedClients; i++) {
+            DeathmatchScoreboardMessage(&g_entities[level.sortedClients[i]]);
+        }
+    }
+}
+
+int admBanlist(int argNum, gentity_t* adm, qboolean shortCmd) {
+
+    return -1;
+}
+
+int admBan(int argNum, gentity_t* adm, qboolean shortCmd) {
+
+    int idNum = -1;
+
+
+    return -1;
+}
+
+int admUnban(int argNum, gentity_t* adm, qboolean shortCmd) {
+
+    return -1;
+}
+
+int admBroadcast(int argNum, gentity_t* adm, qboolean shortCmd) {
+
+    return -1;
+}
+
+int admSubnetbanList(int argNum, gentity_t* adm, qboolean shortCmd) {
+
+    return -1;
+}
+
+int admSubnetBan(int argNum, gentity_t* adm, qboolean shortCmd) {
+
+    int idNum = -1;
+
+    return idNum;
+}
+
+int admSubnetUnban(int argNum, gentity_t* adm, qboolean shortCmd) {
+
+    return -1;
+}
+
+int admPop(int argNum, gentity_t* adm, qboolean shortCmd) {
+
+    int idNum = -1;
+
+    return idNum;
+}
+
+int admUppercut(int argNum, gentity_t* adm, qboolean shortCmd) {
+
+    int idNum = -1;
+
+    return idNum;
+}
+
+int admSwitch(int argNum, gentity_t* adm, qboolean shortCmd) {
+
+    int idNum = -1;
+
+    return idNum;
+}
+
+int admKick(int argNum, gentity_t* adm, qboolean shortCmd) {
+
+    int idNum = -1;
+
+    return idNum;
+}
+
+int admLockTeam(int argNum, gentity_t* adm, qboolean shortCmd) {
+
+    return -1;
+}
+
+int admRespawn(int argNum, gentity_t* adm, qboolean shortCmd) {
+
+    int idNum = -1;
+
+    return idNum;
+}
+
+int admForceTeam(int argNum, gentity_t* adm, qboolean shortCmd) {
+
+    gentity_t* recipient;
+    char* playerArg = G_GetArg(argNum, shortCmd);
+    char* teamArg = Q_strlwr(G_GetArg(argNum + 1, shortCmd));
+    int idNum = -1;
+    char team[2];
+
+    if (teamArg && strlen(teamArg) > 0) {
+        team[0] = teamArg[0];
+        team[1] = '\0';
+    }
+    else {
+        G_printInfoMessage(adm, "Please enter a team to force the player(s) to.");
+        return -1;
+    }
+
+    if (!Q_stricmp(team, "s") && !Q_stricmp(team, "b") && !Q_stricmp(team, "r")) {
+        G_printInfoMessage(adm, "Team '%s' not recognized.", teamArg);
+        return -1;
+    }
+
+    // special cases: forceteam all and forceteam players.
+    // forceteam all takes all the connected clients
+    // forceteam players takes all the clients who are not spectators.
+
+    if (!Q_stricmp(playerArg, "all") || !Q_stricmp(playerArg, "players")) {
+
+        playerArg = Q_strlwr(playerArg);
+
+        for (int i = 0; i < level.numConnectedClients; i++) {
+            recipient = &g_entities[level.sortedClients[i]];
+
+            if (!Q_stricmp(playerArg, "all")) {
+                SetTeam(recipient, team, NULL, TEAMCHANGE_FORCED);
+            }
+            else if (recipient->client->sess.team != TEAM_SPECTATOR) {
+                SetTeam(recipient, team, NULL, TEAMCHANGE_FORCED);
+            }
+
+        }
+
+        G_Broadcast(va("%s \\forceteamed to %s\nby %s", !Q_stricmp(playerArg, "all") ? "Everyone\nwas" : "All players\nwere", teamArg, adm && adm->client ? adm->client->pers.netname : "RCON"), BROADCAST_GAME, NULL, qtrue);
+        logAdmin(adm, NULL, va("forceteam %s to %s", playerArg, teamArg), NULL);
+
+    }
+    else {
+        idNum = G_clientNumFromArg(adm, argNum, "forceteam", qfalse, qfalse, qfalse, shortCmd);
+
+        if (idNum >= 0) {
+            recipient = g_entities + idNum;
+            SetTeam(recipient, team, NULL, TEAMCHANGE_FORCED);
+            logAdmin(adm, recipient, va("forceteam to %s", teamArg), NULL);
+        }
+
+    }
+
+    return idNum;
+
+}
+
+int admScoreLimit(int argNum, gentity_t* adm, qboolean shortCmd) {
+    admToggleCVAR(argNum, adm, shortCmd, "Scorelimit", &g_scorelimit);
+    return -1;
+}
+
+int admTimeLimit(int argNum, gentity_t* adm, qboolean shortCmd) {
+    admToggleCVAR(argNum, adm, shortCmd, "Timelimit", &g_timelimit);
+    return -1;
+}
+
+int admSwapTeams(int argNum, gentity_t* adm, qboolean shortCmd) {
+    swapTeams(qfalse, adm);
     return -1;
 }
 
 
 int admRemoveAdminByNameOrId(int argNum, gentity_t* adm, qboolean shortCmd) {
 
-    // to save on not copy-pasting functionality, try to find the 
+    int idNum, removableAdminLevel;
+    gentity_t* recipient;
+    char* reason;
+
+    idNum = G_clientNumFromArg(adm, argNum, "do this to", qfalse, qfalse, qfalse, shortCmd);
+
+    if (idNum < 0) {
+        return -1;
+    }
+
+    recipient = g_entities + idNum;
+
+    if (!recipient || !recipient->client) {
+        return -1;
+    }
+
+    reason = concatArgs(argNum + 1, shortCmd);
+
+    if (recipient->client->sess.adminPassRegistration) {
+
+        removableAdminLevel = recipient->client->sess.adminPassRegistration;
+        recipient->client->sess.adminPassRegistration = 0;
+
+        G_printInfoMessage(adm, "Removed %s %s from adminpass registration list", getAdminNameByLevel(removableAdminLevel), recipient->client->pers.cleanName);
+
+        // notify the player as well, but because they had not yet done /adm pass, just notify them and do not broadcast the change.
+        G_printInfoMessage(recipient, "Your pass registration was removed by %s.", adm && adm->client ? adm->client->pers.cleanName : "RCON");
+
+        logAdmin(adm, recipient, va("Removed %s %s from adminpass registrationlist.", getAdminNameByLevel(removableAdminLevel), recipient->client->pers.cleanName), reason);
+    }
+    else if (recipient->client->sess.adminLevel >= LEVEL_BADMIN) {
+        removableAdminLevel = recipient->client->sess.adminLevel;
+        recipient->client->sess.adminLevel = LEVEL_NOADMIN;
+
+        G_Broadcast(va("%s^7\ntheir %s was \\removed\nby %s", recipient->client->pers.netname, getAdminNameByLevel(removableAdminLevel), adm && adm->client ? adm->client->pers.netname : "RCON"), BROADCAST_GAME, NULL, qtrue);
+        logAdmin(adm, recipient, va("Removed %s %s from admin%slist.", getAdminNameByLevel(removableAdminLevel), recipient->client->pers.cleanName, recipient->client->sess.adminType == ADMINTYPE_PASS ? "pass" : ""), reason);
+        G_printInfoMessageToAll("%s's %s powers were removed by %s.", recipient->client->pers.cleanName, getAdminNameByLevel(removableAdminLevel), adm && adm->client ? adm->client->pers.cleanName : "RCON");
+        int adminRowId = dbGetAdminRowIdByGentity(recipient);
+
+        if (adminRowId == -1) {
+            // a case that shouldn't happen, but just in case...
+            logSystem(LOGLEVEL_ERROR, va("adminRowId is -1 while %s was removing %s's powers from admin%slist", adm && adm->client ? adm->client->pers.cleanName : "RCON", recipient->client->pers.cleanName, recipient->client->sess.adminType == ADMINTYPE_PASS ? "pass" : ""));
+        }
+        else {
+            if (recipient->client->sess.adminType == ADMINTYPE_PASS) {
+                dbDeletePassAdmin(adminRowId);
+            }
+            else {
+                dbDeleteAdmin(adminRowId);
+            }
+        }
+    }
+    else {
+        G_printInfoMessage(adm, "%s is not an admin.", recipient->client->pers.cleanName);
+    }
 
     return -1;
 }
@@ -140,15 +386,7 @@ int admRemoveAdminByRowId(int argNum, gentity_t* adm, qboolean shortCmd) {
     removableAdminLevel = dbGetAdminByRowId(passadmin, rowid, removableName, removableIp);
 
     if (!removableAdminLevel) {
-
-        if (adm && adm->client) {
-            G_printInfoMessage(adm, "Admin with row %d does not exist.", rowid);
-        }
-        else {
-            Com_Printf("Admin with row %d does not exist.", rowid);
-        }
-
-        
+        G_printInfoMessage(adm, "Admin with row %d does not exist.", rowid);
     }
     else {
 
@@ -191,12 +429,7 @@ int admRemoveAdminByRowId(int argNum, gentity_t* adm, qboolean shortCmd) {
                 dbDeleteAdmin(rowid);
             }
 
-            if (adm && adm->client) {
-                G_printInfoMessage(adm, "Removed %s %s from admin%slist", getAdminNameByLevel(removableAdminLevel), removableName, passadmin ? "pass" : "");
-            }
-            else {
-                Com_Printf("Removed %s %s from admin%slist", getAdminNameByLevel(removableAdminLevel), removableName, passadmin ? "pass" : "");
-            }
+            G_printInfoMessage(adm, "Removed %s %s from admin%slist", getAdminNameByLevel(removableAdminLevel), removableName, passadmin ? "pass" : "");
 
             removeIngameAdminByNameAndType(adm, passadmin, removableName, removableIp, removableAdminLevel);
 
