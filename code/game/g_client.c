@@ -1289,20 +1289,6 @@ char *ClientConnect( int clientNum, qboolean firstTime, qboolean isBot )
 
     G_ReadSessionData( client );
 
-    if (firstTime && !isBot && !client->sess.adminLevel) {
-        // this is in firstTime only because after that, if the player was indeed an admin, session will already drag it going forwards.
-
-        int adminLevel = dbGetPlayerAdminLevel(qfalse, client->pers.ip, client->pers.cleanName, NULL);
-
-        if (adminLevel >= LEVEL_BADMIN) {
-            // initial admin level on connects / begins is a silent one, so just give them the power.
-            Q_strncpyz(client->sess.adminName, client->pers.cleanName, sizeof(client->sess.adminName));
-            client->sess.adminLevel = adminLevel;
-            client->sess.adminType = ADMINTYPE_IP;
-        }
-
-    }
-
     if( isBot )
     {
         ent->r.svFlags |= SVF_BOT;
@@ -1326,6 +1312,20 @@ char *ClientConnect( int clientNum, qboolean firstTime, qboolean isBot )
         if ( level.gametypeData->teams && client->sess.team != TEAM_SPECTATOR )
         {
             BroadcastTeamChange( client, -1 );
+        }
+
+        if (!isBot && !client->sess.adminLevel) {
+            // this is in firstTime only because after that, if the player was indeed an admin, session will already drag it going forwards.
+
+            int adminLevel = dbGetPlayerAdminLevel(qfalse, client->pers.ip, client->pers.cleanName, NULL);
+
+            if (adminLevel >= LEVEL_BADMIN) {
+                // initial admin level on connects / begins is a silent one, so just give them the power.
+                Q_strncpyz(client->sess.adminName, client->pers.cleanName, sizeof(client->sess.adminName));
+                client->sess.adminLevel = adminLevel;
+                client->sess.adminType = ADMINTYPE_IP;
+            }
+
         }
     }
 

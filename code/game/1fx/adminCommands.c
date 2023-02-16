@@ -124,7 +124,7 @@ int admAdminList(int argNum, gentity_t* adm, qboolean shortCmd) {
 void admToggleCVAR(int argNum, gentity_t* adm, qboolean shortCmd, char* cvarName, vmCvar_t* cvar) {
 
     char* arg = G_GetArg(argNum, shortCmd);
-    int newValue = arg ? atoi(arg) : -1;
+    int newValue = arg && strlen(arg) > 0 ? atoi(arg) : -1;
 
     if (newValue < 0) {
         G_printInfoMessage(adm, "%s is %d.", cvarName, cvar->integer);
@@ -136,7 +136,7 @@ void admToggleCVAR(int argNum, gentity_t* adm, qboolean shortCmd, char* cvarName
         }
         else {
             trap_Cvar_Set(cvarName, va("%d", newValue));
-            trap_Cvar_Update(cvarName);
+            trap_Cvar_Update(cvar);
         }
 
         G_printInfoMessageToAll("%s was changed to %d by %s.", cvarName, newValue, adm->client->pers.cleanName); // RCON commands should be already captured by the game engine itself.
@@ -277,7 +277,7 @@ int admForceTeam(int argNum, gentity_t* adm, qboolean shortCmd) {
 
     }
     else {
-        idNum = G_clientNumFromArg(adm, argNum, "forceteam", qfalse, qfalse, qfalse, shortCmd);
+        idNum = G_clientNumFromArg(adm, argNum, "forceteam", qfalse, qtrue, qtrue, shortCmd);
 
         if (idNum >= 0) {
             recipient = g_entities + idNum;
@@ -313,7 +313,7 @@ int admRemoveAdminByNameOrId(int argNum, gentity_t* adm, qboolean shortCmd) {
     gentity_t* recipient;
     char* reason;
 
-    idNum = G_clientNumFromArg(adm, argNum, "do this to", qfalse, qfalse, qfalse, shortCmd);
+    idNum = G_clientNumFromArg(adm, argNum, "do this to", qfalse, qtrue, qtrue, shortCmd);
 
     if (idNum < 0) {
         return -1;
@@ -330,6 +330,38 @@ int admRemoveAdminByNameOrId(int argNum, gentity_t* adm, qboolean shortCmd) {
     if (recipient->client->sess.adminPassRegistration) {
 
         removableAdminLevel = recipient->client->sess.adminPassRegistration;
+
+        if (adm && adm->client) {
+
+            qboolean canRemove = qfalse;
+
+            switch (removableAdminLevel) {
+            case LEVEL_BADMIN:
+                if (g_badmin.integer <= adm->client->sess.adminLevel) {
+                    canRemove = qtrue;
+                }
+                break;
+            case LEVEL_ADMIN:
+                if (g_admin.integer <= adm->client->sess.adminLevel) {
+                    canRemove = qtrue;
+                }
+                break;
+            case LEVEL_SADMIN:
+                if (g_sadmin.integer <= adm->client->sess.adminLevel) {
+                    canRemove = qtrue;
+                }
+                break;
+            default:
+                break;
+            }
+
+            if (!canRemove) {
+                G_printInfoMessage(adm, "You're not permitted to remove %s's.", getAdminNameByLevel(removableAdminLevel));
+                return -1;
+            }
+
+        }
+
         recipient->client->sess.adminPassRegistration = 0;
 
         G_printInfoMessage(adm, "Removed %s %s from adminpass registration list", getAdminNameByLevel(removableAdminLevel), recipient->client->pers.cleanName);
@@ -341,6 +373,38 @@ int admRemoveAdminByNameOrId(int argNum, gentity_t* adm, qboolean shortCmd) {
     }
     else if (recipient->client->sess.adminLevel >= LEVEL_BADMIN) {
         removableAdminLevel = recipient->client->sess.adminLevel;
+
+        if (adm && adm->client) {
+
+            qboolean canRemove = qfalse;
+
+            switch (removableAdminLevel) {
+                case LEVEL_BADMIN:
+                    if (g_badmin.integer <= adm->client->sess.adminLevel) {
+                        canRemove = qtrue;
+                    }
+                    break;
+                case LEVEL_ADMIN:
+                    if (g_admin.integer <= adm->client->sess.adminLevel) {
+                        canRemove = qtrue;
+                    }
+                    break;
+                case LEVEL_SADMIN:
+                    if (g_sadmin.integer <= adm->client->sess.adminLevel) {
+                        canRemove = qtrue;
+                    }
+                    break;
+                default:
+                    break;
+            }
+
+            if (!canRemove) {
+                G_printInfoMessage(adm, "You're not permitted to remove %s's.", getAdminNameByLevel(removableAdminLevel));
+                return -1;
+            }
+
+        }
+
         recipient->client->sess.adminLevel = LEVEL_NOADMIN;
 
         G_Broadcast(va("%s^7\ntheir %s was \\removed\nby %s", recipient->client->pers.netname, getAdminNameByLevel(removableAdminLevel), adm && adm->client ? adm->client->pers.netname : "RCON"), BROADCAST_GAME, NULL, qtrue);
@@ -360,7 +424,7 @@ int admRemoveAdminByNameOrId(int argNum, gentity_t* adm, qboolean shortCmd) {
                 dbDeleteAdmin(adminRowId);
             }
         }
-    }
+    } 
     else {
         G_printInfoMessage(adm, "%s is not an admin.", recipient->client->pers.cleanName);
     }
@@ -459,7 +523,7 @@ int admAddAdmin(int argNum, gentity_t* adm, qboolean shortCmd, int adminLevel) {
     gentity_t* recipient;
     char* arg;
 
-    idNum = G_clientNumFromArg(adm, argNum, "do this to", qfalse, qtrue, qfalse, shortCmd);
+    idNum = G_clientNumFromArg(adm, argNum, "do this to", qfalse, qfalse, qfalse, shortCmd);
 
     if (idNum < 0) {
         return -1;
@@ -508,6 +572,7 @@ int admAddAdmin(int argNum, gentity_t* adm, qboolean shortCmd, int adminLevel) {
         dbAddAdmin(recipient->client->pers.cleanName, recipient->client->pers.ip, adminLevel, adm && adm->client ? adm->client->pers.cleanName : "RCON");
         logAdmin(adm, recipient, va("Add %s", getAdminNameByLevel(adminLevel)), NULL); // no reason for adding admin needed.
         recipient->client->sess.adminType = ADMINTYPE_IP;
+        Q_strncpyz(recipient->client->sess.adminName, recipient->client->pers.cleanName, sizeof(recipient->client->sess.adminName));
 
     }
 

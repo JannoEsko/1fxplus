@@ -9,7 +9,7 @@
 #endif
 
 
-void loadDatabases() {
+void loadDatabases(void) {
     sqlite3* db;
     sqlite3_stmt* stmt;
     int              rc, gameMigrationLevel = 0, logMigrationLevel = 0;
@@ -343,7 +343,7 @@ int dbGetAdminRowIdByGentity(gentity_t* removable) {
         passlist = qtrue;
     }
 
-    char* query = va("SELECT ROWID FROM admin%slist WHERE adminname = ? %s", passlist ? "password" : "", passlist ? "" : "AND ip = ?");
+    char* query = va("SELECT ROWID FROM admin%slist WHERE adminname = ? %s", passlist ? "pass" : "", passlist ? "" : "AND ip = ?");
 
     sqlite3_prepare(db, query, -1, &stmt, 0);
 
@@ -422,7 +422,7 @@ void dbDeleteSubnetBan(int rowId) {
     dbDeleteFromGameDbByRowId("DELETE FROM subnetbanlist WHERE ROWID = ?", rowId);
 }
 
-void dbClearOutdatedBans() {
+void dbClearOutdatedBans(void) {
     dbDeleteFromGameDbByRowId("DELETE FROM banlist WHERE endofmap = 1 OR banneduntil <= datetime('now')", -1);
     dbDeleteFromGameDbByRowId("DELETE FROM subnetbanlist WHERE endofmap = 1 OR banneduntil <= datetime('now')", -1);
 }
@@ -548,7 +548,7 @@ void dbGetAdminlist(gentity_t* ent, qboolean passlist) {
     }
 }
 
-void unloadInMemoryDatabases() {
+void unloadInMemoryDatabases(void) {
     backupInMemoryDatabases("game.db", gameDb);
     sqlite3_exec(gameDb, "DETACH DATABASE game", NULL, NULL, NULL);
     sqlite3_close(gameDb);

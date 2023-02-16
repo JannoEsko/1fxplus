@@ -642,51 +642,50 @@ void SetTeam( gentity_t *ent, char *s, const char* identity, int teamChangeType 
     }
     else if ( level.gametypeData->teams )
     {
-        if (teamChangeType == TEAMCHANGE_REGULAR) {
-            // if running a team game, assign player to one of the teams
-            specState = SPECTATOR_NOT;
-            if (!Q_stricmp(s, "red") || !Q_stricmp(s, "r"))
-            {
-                team = TEAM_RED;
-            }
-            else if (!Q_stricmp(s, "blue") || !Q_stricmp(s, "b"))
-            {
-                team = TEAM_BLUE;
-            }
-            else
-            {
-                // pick the team with the least number of players
-                team = PickTeam(clientNum);
-            }
-
-            if (g_teamForceBalance.integer)
-            {
-                int     counts[TEAM_NUM_TEAMS];
-
-                counts[TEAM_BLUE] = TeamCount(ent->client->ps.clientNum, TEAM_BLUE, NULL);
-                counts[TEAM_RED] = TeamCount(ent->client->ps.clientNum, TEAM_RED, NULL);
-
-                // We allow a spread of two
-                if (team == TEAM_RED && counts[TEAM_RED] - counts[TEAM_BLUE] > 1)
-                {
-                    trap_SendServerCommand(ent->client->ps.clientNum,
-                        "cp \"Red team has too many players.\n\"");
-
-                    // ignore the request
-                    return;
-                }
-                if (team == TEAM_BLUE && counts[TEAM_BLUE] - counts[TEAM_RED] > 1)
-                {
-                    trap_SendServerCommand(ent->client->ps.clientNum,
-                        "cp \"Blue team has too many players.\n\"");
-
-                    // ignore the request
-                    return;
-                }
-
-                // It's ok, the team we are switching to has less or same number of players
-            }
+        // if running a team game, assign player to one of the teams
+        specState = SPECTATOR_NOT;
+        if (!Q_stricmp(s, "red") || !Q_stricmp(s, "r"))
+        {
+            team = TEAM_RED;
         }
+        else if (!Q_stricmp(s, "blue") || !Q_stricmp(s, "b"))
+        {
+            team = TEAM_BLUE;
+        }
+        else
+        {
+            // pick the team with the least number of players
+            team = PickTeam(clientNum);
+        }
+
+        if (g_teamForceBalance.integer && teamChangeType == TEAMCHANGE_REGULAR)
+        {
+            int     counts[TEAM_NUM_TEAMS];
+
+            counts[TEAM_BLUE] = TeamCount(ent->client->ps.clientNum, TEAM_BLUE, NULL);
+            counts[TEAM_RED] = TeamCount(ent->client->ps.clientNum, TEAM_RED, NULL);
+
+            // We allow a spread of two
+            if (team == TEAM_RED && counts[TEAM_RED] - counts[TEAM_BLUE] > 1)
+            {
+                trap_SendServerCommand(ent->client->ps.clientNum,
+                    "cp \"Red team has too many players.\n\"");
+
+                // ignore the request
+                return;
+            }
+            if (team == TEAM_BLUE && counts[TEAM_BLUE] - counts[TEAM_RED] > 1)
+            {
+                trap_SendServerCommand(ent->client->ps.clientNum,
+                    "cp \"Blue team has too many players.\n\"");
+
+                // ignore the request
+                return;
+            }
+
+            // It's ok, the team we are switching to has less or same number of players
+        }
+
     }
     else
     {
@@ -787,7 +786,7 @@ void SetTeam( gentity_t *ent, char *s, const char* identity, int teamChangeType 
         }
 
         // Spectator to a team doesnt count
-        if ( oldTeam != TEAM_SPECTATOR )
+        if ( oldTeam != TEAM_SPECTATOR && teamChangeType == TEAMCHANGE_REGULAR )
         {
             client->sess.noTeamChange = qtrue;
         }

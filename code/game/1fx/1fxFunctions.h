@@ -28,7 +28,7 @@ typedef enum {
 #define COREUI_ROCMOD_PAKNAME "1fx.rocmod/ROCmod_1fx_coreUI_1.21"
 #define COREUI_ROCMOD_PAKNUM 1917941726
 
-void loadDatabases();
+void loadDatabases(void);
 void migrateGameDatabase(sqlite3* db, int migrationLevel);
 void migrateLogsDatabase(sqlite3* db, int migrationLevel);
 
@@ -91,7 +91,7 @@ void dbDeletePassAdmin(int rowId);
 void dbGetAdminlist(gentity_t* ent, qboolean passlist);
 void getSubnet(char* ipIn, char* out);
 void admGetBanDurationFromArg(qboolean shortCmd, int *duration, char *arg);
-void unloadInMemoryDatabases();
+void unloadInMemoryDatabases(void);
 void backupInMemoryDatabases(char* dbName, sqlite3* db);
 char* getAdminNameByLevel(int adminLevel);
 char* getAdminPrefixByLevel(int adminLevel);
@@ -102,6 +102,7 @@ void dbUpdatePassAdmin(char* adminname, char* newpass);
 int dbGetAdminByRowId(qboolean password, int rowid, char* adminOut, char* ipOut);
 qboolean dbDoesRowIDExist(char* table, int rowid);
 int dbGetAdminRowIdByGentity(gentity_t* removable);
+void dbClearOutdatedBans(void);
 
 
 // admin commands

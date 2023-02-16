@@ -22,7 +22,7 @@ void G_WriteClientSessionData( gclient_t *client )
     const char  *s;
     const char  *var;
 
-    s = va("%i %i %s \\%s\\", client->sess.team, client->sess.adminLevel, client->sess.adminType, client->sess.adminName );
+    s = va("%i %i %i \\%s\\", client->sess.team, client->sess.adminLevel, client->sess.adminType, client->sess.adminName );
 
     var = va( "session%i", client - level.clients );
 
@@ -105,6 +105,7 @@ void G_InitSessionData( gclient_t *client, char *userinfo )
 
     sess->spectatorState = SPECTATOR_FREE;
     sess->spectatorTime = level.time;
+    memset(sess->adminName, 0, sizeof(sess->adminName));
 
     G_WriteClientSessionData( client );
 }
