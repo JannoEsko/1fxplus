@@ -117,6 +117,11 @@ vmCvar_t    g_uppercut;
 vmCvar_t    g_kick;
 vmCvar_t    g_lock;
 vmCvar_t    g_respawn;
+vmCvar_t    g_plant;
+
+vmCvar_t    g_redTeamPrefix;
+vmCvar_t    g_blueTeamPrefix;
+vmCvar_t    g_spectatorTeamPrefix;
 
 // SQLite3 tables.
 sqlite3* gameDb; // will hold anything related to the game itself: admins, bans, aliases and so on.
@@ -273,6 +278,10 @@ static cvarTable_t gameCvarTable[] =
     { &g_kick,        "g_kick",                 "1",       CVAR_ARCHIVE,   0.0f,   0.0f,   0 ,  qfalse },
     { &g_lock,        "g_lock",                 "1",       CVAR_ARCHIVE,   0.0f,   0.0f,   0 ,  qfalse },
     { &g_respawn,        "g_respawn",                 "2",       CVAR_ARCHIVE,   0.0f,   0.0f,   0 ,  qfalse },
+    { &g_plant,        "g_plant",                 "3",       CVAR_ARCHIVE,   0.0f,   0.0f,   0 ,  qfalse },
+    { &g_blueTeamPrefix,        "g_blueTeamPrefix",                 "blue",       CVAR_ARCHIVE,   0.0f,   0.0f,   0 ,  qfalse },
+    { &g_redTeamPrefix,        "g_redTeamPrefix",                 "red",       CVAR_ARCHIVE,   0.0f,   0.0f,   0 ,  qfalse },
+    { &g_spectatorTeamPrefix,        "g_spectatorTeamPrefix",                 "spec",       CVAR_ARCHIVE,   0.0f,   0.0f,   0 ,  qfalse },
 };
 
 // bk001129 - made static to avoid aliasing

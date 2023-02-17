@@ -39,6 +39,9 @@ void removeIngameAdminByNameAndType(gentity_t* adm, qboolean passadmin, char* re
 void removeAdminsFromGame(int adminType);
 char* concatArgs(int fromArgNum, qboolean shortCmd);
 void swapTeams(qboolean autoSwap, gentity_t* adm);
+char* getNameOrArg(gentity_t* ent, char* arg, qboolean cleanName);
+void parseTokens(gentity_t* ent, char* chatText, int mode, qboolean checkSounds);
+char* getTeamPrefixByGametype(int team);
 
 
 // struct from 1fxmod
@@ -53,6 +56,9 @@ typedef struct
     char* params; // Description of the command in /adm.
     char* suffix; // Suffix for post processing broadcast, or NULL when function doesn't use it/has no suffix.
 }admCmd_t;
+
+extern int adminCommandsSize;
+extern admCmd_t adminCommands[];
 
 // BoeMan 8/30/14: Broadcast priorities, from low to high.
 typedef enum {
@@ -90,7 +96,7 @@ void dbDeleteAdmin(int rowId);
 void dbDeletePassAdmin(int rowId);
 void dbGetAdminlist(gentity_t* ent, qboolean passlist);
 void getSubnet(char* ipIn, char* out);
-void admGetBanDurationFromArg(qboolean shortCmd, int *duration, char *arg);
+void getBanDurationFromArg(int *duration, char *arg);
 void unloadInMemoryDatabases(void);
 void backupInMemoryDatabases(char* dbName, sqlite3* db);
 char* getAdminNameByLevel(int adminLevel);
@@ -103,6 +109,12 @@ int dbGetAdminByRowId(qboolean password, int rowid, char* adminOut, char* ipOut)
 qboolean dbDoesRowIDExist(char* table, int rowid);
 int dbGetAdminRowIdByGentity(gentity_t* removable);
 void dbClearOutdatedBans(void);
+void dbAddBan(char* playername, char* ip, char* adminname, int endofmap, int days, int hours, int minutes);
+void dbAddSubnetban(char* playername, char* ip, char* adminname, int endofmap, int days, int hours, int minutes);
+char* checkBanReason(char* ip, qboolean isSubnet);
+void dbGetBanlist(gentity_t* ent, qboolean isSubnet);
+qboolean dbGetBanByRow(int rownum, char* bannedName, char* bannedIp, qboolean isSubnet);
+void dbDeleteBanByRowId(int rownum, qboolean isSubnet);
 
 
 // admin commands
@@ -131,6 +143,8 @@ int admSwitch(int argNum, gentity_t* adm, qboolean shortCmd);
 int admKick(int argNum, gentity_t* adm, qboolean shortCmd);
 int admLockTeam(int argNum, gentity_t* adm, qboolean shortCmd);
 int admRespawn(int argNum, gentity_t* adm, qboolean shortCmd);
+int admPlant(int argNum, gentity_t* adm, qboolean shortCmd);
+void admUnplant(gentity_t* adm, gentity_t* recipient);
 
 int cmdIsAdminCmd(char* cmd, qboolean shortCmd);
 void runAdminCommand(int adminCommandId, int argNum, gentity_t* adm, qboolean shortCmd);
@@ -148,6 +162,7 @@ void G_RemoveAdditionalCarets(char *text);
 void G_RemoveColorEscapeSequences(char *text);
 char* G_ColorizeMessage(char* broadcast);
 void G_Broadcast(char* broadcast, int broadcastLevel, gentity_t* to, qboolean playSound);
+void G_ClientSound(gentity_t* ent, int soundIndex); // Boe_ClientSound
 void G_GlobalSound(int soundIndex); // Boe_GlobalSound
 void G_CloseSound(vec3_t origin, int soundIndex); // Henk_CloseSound
 qboolean checkAdminPassword(char* adminPass);

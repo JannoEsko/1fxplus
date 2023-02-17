@@ -1577,6 +1577,20 @@ static void Cmd_Say_f( gentity_t *ent, int mode, qboolean arg0 ) {
         p = ConcatArgs( 1 );
     }
 
+    char* admCmd = G_GetArg(0, qtrue); 
+
+    Com_Printf("Cmd_Say_f: admCmd => %s.\n", admCmd ? admCmd : "");
+
+    if (ent->client->sess.adminLevel >= LEVEL_BADMIN) {
+        int adminCommand = cmdIsAdminCmd(admCmd, qtrue);
+
+        if (canClientRunAdminCommand(ent, adminCommand)) {
+            runAdminCommand(adminCommand, 1, ent, qtrue);
+        }
+    }
+
+    
+
     G_Say( ent, NULL, mode, p );
 }
 
@@ -2249,18 +2263,83 @@ void ClientCommand( int clientNum ) {
             }
         }
         else if (ent->client->sess.adminLevel >= LEVEL_BADMIN) {
-            int adminCommand = cmdIsAdminCmd(arg1, qfalse);
 
-            if (adminCommand == -1) {
-                G_printInfoMessage(ent, "Such a command does not exist as an admin command.");
-                return;
-            }
+            if (!Q_stricmp(arg1, "?") || !Q_stricmp(arg1, "help") || !Q_stricmp(arg1, "commands") || !Q_stricmp(arg1, "list") || !Q_stricmp(arg1, "")) {
+                // list displays all.
+                // mostly taken from 1fx. Mod
+                char bigbuf[16384] = "\0";
+                char sendbuf[1024] = "\0";
+                char* bbPointer;
+                int admCommandsLevelTo = ent->client->sess.adminLevel;
 
-            if (canClientRunAdminCommand(ent, adminCommand)) {
-                runAdminCommand(adminCommand, 2, ent, qfalse);
-            }
+                trap_SendServerCommand(ent - g_entities, va("print \" \n^3%-5s %-20s %-14s Explanation\n\"", "Lvl", "Commands", "Arguments"));
+                trap_SendServerCommand(ent - g_entities, va("print \" ----------------------------------------------------------\n\""));
+
+                if (!Q_stricmp(arg1, "list")) {
+                    admCommandsLevelTo = LEVEL_RCON;
+                }
+                admCmd_t* admcmd;
+                for (int admLvl = LEVEL_BADMIN; admLvl <= admCommandsLevelTo; admLvl++) {
+
+                    for (int cmds = 0; cmds < adminCommandsSize; cmds++) {
+                        admcmd = &adminCommands[cmds];
+                        
+                        if (*admcmd->adminLevel == admLvl) {
+                            Q_strcat(bigbuf, sizeof(bigbuf), va("[^3%i^7%-3s %-7s %-12.12s %-14s ^7[^3%.32s^7]\n", admLvl, "]", admcmd->shortCmd, admcmd->adminCmd, admcmd->params, admcmd->desc));
+                        }
+                    }
+
+                }
+
+                if (strlen(bigbuf) <= 1000) {
+                    trap_SendServerCommand(ent - g_entities, va("print \"%s\"", bigbuf));
+                }
+                else {
+                    bbPointer = bigbuf;
+                    int totalPackets = strlen(bigbuf) / 1000;
+
+                    if (strlen(bigbuf) % 1000 > 0) {
+                        totalPackets++;
+                    }
+
+                    for (int packetNum = 0; packetNum < totalPackets; packetNum++) {
+
+                        if (packetNum + 1 == totalPackets) {
+                            Q_strncpyz(sendbuf, bbPointer, strlen(bbPointer)); // the 998 row should by max make the bigpointer go over with
+                        }
+                        else if (bbPointer[999] == '^') { // if the packet is about to end with a color...
+                            Q_strncpyz(sendbuf, bbPointer, 998); // in 1fxmod this was 1001 and later it had additional logic to bring the color back in the next packet.
+                            bbPointer += 998;
+                        }
+                        else {
+                            Q_strncpyz(sendbuf, bbPointer, 1000);
+                            bbPointer += 1000;
+                        }
+
+                        trap_SendServerCommand(ent - g_entities, va("print \"%s\"", sendbuf));
+                        memset(sendbuf, 0, sizeof(sendbuf));
+                    }
+                }
+
+                memset(bigbuf, 0, sizeof(bigbuf));
+                trap_SendServerCommand(ent - g_entities, va("print \"%3s^31^7] %-17s^7[^32^7] %-15s^7[^33^7] %-15s^7[^34^7] RCON\n\"", "[", "B-Admin", "Admin", "S-Admin"));
+                trap_SendServerCommand(ent - g_entities, va("print \"\n^7Use ^3[Page Up]^7 and ^3[Page Down]^7 keys to scroll.\n\""));
+            } 
             else {
-                G_printInfoMessage(ent, "You're not privileged enough to run that command.");
+                int adminCommand = cmdIsAdminCmd(arg1, qfalse);
+
+                if (adminCommand == -1) {
+                    G_printInfoMessage(ent, "Such a command does not exist as an admin command.");
+                    G_printInfoMessage(ent, "Type '/adm ?' to see commands for your level or '/adm list' to see all commands.");
+                    return;
+                }
+
+                if (canClientRunAdminCommand(ent, adminCommand)) {
+                    runAdminCommand(adminCommand, 2, ent, qfalse);
+                }
+                else {
+                    G_printInfoMessage(ent, "You're not privileged enough to run that command.");
+                }
             }
         }
         else {

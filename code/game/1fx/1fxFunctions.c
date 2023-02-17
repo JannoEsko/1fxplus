@@ -475,7 +475,7 @@ void G_RemoveAdditionalCarets(char *text)
 }
 
 
-void admGetBanDurationFromArg(qboolean shortCmd, int *duration, char *arg) {
+void getBanDurationFromArg(int *duration, char *arg) {
 
     if (strlen(arg)) {
         if(Q_stricmp(arg,"eom") != 0) {
@@ -504,8 +504,11 @@ void admGetBanDurationFromArg(qboolean shortCmd, int *duration, char *arg) {
             m = m % 60;
             totalDays = d + h / 24 + m / (60 * 24);
 
-            if ((h == 0 && d == 0 && m == 0) || totalDays > g_maxBanDuration.integer) {
+            if ((h == 0 && d == 0 && m == 0)) {
                 duration[0] = -1;
+            } 
+            else if (totalDays > g_maxBanDuration.integer) {
+                duration[0] = 2;
             }
             else {
                 duration[0] = 1;
@@ -758,6 +761,20 @@ void G_Broadcast(char* broadcast, int broadcastLevel, gentity_t* to, qboolean pl
 
 /*
 =============
+Boe_ClientSound
+=============
+*/
+void G_ClientSound (gentity_t* ent, int soundIndex) {
+    gentity_t* tent;
+
+    tent = G_TempEntity(ent->r.currentOrigin, EV_GLOBAL_SOUND);
+    tent->s.eventParm = soundIndex;
+    tent->r.svFlags |= SVF_SINGLECLIENT;
+    tent->r.singleClient = ent->s.number;
+}
+
+/*
+=============
 Boe_GlobalSound in 1fx. Mod
 =============
 */
@@ -826,7 +843,7 @@ void removeIngameAdminByNameAndType(gentity_t* adm, qboolean passadmin, char* re
         ) {
             // mammoth if clause but if above states true, then the player's admin should be removed.
 
-            G_Broadcast(va("%s\n^7their %s powers were \\removed\nby %s", tmp->client->pers.netname, getAdminNameByLevel(removableLevel), adm && adm->client ? adm->client->pers.netname : "RCON"), BROADCAST_CMD, NULL, qtrue);
+            G_Broadcast(va("%s\n^7their %s powers were \\removed\nby %s", tmp->client->pers.netname, getAdminNameByLevel(removableLevel), getNameOrArg(adm, "RCON", qfalse)), BROADCAST_CMD, NULL, qtrue);
             tmp->client->sess.adminLevel = LEVEL_NOADMIN;
             break;
         }
@@ -890,11 +907,56 @@ void swapTeams(qboolean autoSwap, gentity_t* adm) {
     G_GlobalSound(G_SoundIndex("sound/misc/events/tut_lift02.mp3", qtrue));
 
     if (!autoSwap) {
-        G_printInfoMessageToAll("Swap teams by %s.", adm && adm->client ? adm->client->pers.cleanName : "RCON");
-        G_Broadcast(va("%s^7 has \\swapped the teams!", adm && adm->client ? adm->client->pers.netname : "RCON"), BROADCAST_GAME, NULL, qtrue);
+        G_printInfoMessageToAll("Swap teams by %s.", getNameOrArg(adm, "RCON", qtrue));
+        G_Broadcast(va("%s^7 has \\swapped the teams!", getNameOrArg(adm, "RCON", qfalse)), BROADCAST_GAME, NULL, qtrue);
         logAdmin(adm, NULL, "Swapteams", NULL);
     }
     else {
         G_printInfoMessageToAll("Teams have been swapped automatically.");
     }
+}
+
+/*
+=============
+Wrapper function not to call ent && ent->client ? on functions requiring name or an arg (e.g. RCON) to be displayed.
+=============
+*/
+char* getNameOrArg(gentity_t* ent, char* arg, qboolean cleanName) {
+
+    if (cleanName) {
+        return ent && ent->client ? ent->client->pers.cleanName : arg;
+    }
+
+    return ent && ent->client ? ent->client->pers.netname : arg;
+
+}
+
+/*
+===========
+Boe_Tokens in 1fx. Mod
+===========
+*/
+void parseTokens(gentity_t* ent, char* chatText, int mode, qboolean checkSounds) {
+
+}
+
+char* getTeamPrefixByGametype(int team) {
+    
+    if (team == TEAM_BLUE) {
+        if (!Q_stricmp(g_realGametype.string, "h&s")) {
+            return "seekers";
+        }
+        else {
+            return g_blueTeamPrefix.string;
+        }
+    }
+    else {
+        if (!Q_stricmp(g_realGametype.string, "h&s")) {
+            return "hiders";
+        }
+        else {
+            return g_redTeamPrefix.string;
+        }
+    }
+
 }

@@ -483,6 +483,68 @@ void dbAddSubnetban(char* playername, char* ip, char* adminname, int endofmap, i
 
 }
 
+void dbGetBanlist(gentity_t* ent, qboolean isSubnet) {
+    sqlite3* db;
+    sqlite3_stmt* stmt;
+    int rc;
+    char buf[MAX_PACKET_BUF];
+    char* banDurationChar;
+    int banDuration = -1;
+
+
+    memset(buf, 0, sizeof(buf));
+
+    db = gameDb;
+
+    char* query = va("SELECT ROWID, ip, playername, reason, adminname, CASE WHEN (endofmap = 1) THEN 'End of map' ELSE ROUND((JULIANDAY(banneduntil) - JULIANDAY()) * 1440) END FROM %sbanlist", isSubnet ? "pass" : "");
+    if (ent && ent->client) {
+        Q_strcat(buf, sizeof(buf), va("^3 %-4s %-15s %-12s %-14s %-12s %-10s\n" \
+            "^7-----------------------------------------------------------------------------\n",
+            "#", "IP", "Name", "Reason", "By", "Remaining"));
+    }
+    else {
+        Com_Printf("^3 %-4s %-15s %-12s %-14s %-12s %-10s\n", "#", "IP", "Name", "Reason", "By", "Remaining");
+        Com_Printf("^7-----------------------------------------------------------------------------\n");
+    }
+
+    if (sqlite3_prepare(db, query, -1, &stmt, 0) == SQLITE_OK) {
+        while ((rc = sqlite3_step(stmt)) != SQLITE_DONE) {
+            if (rc == SQLITE_ROW) {
+                //because the query will get the days left for the ban, then lets use the int as the basis for conversion.
+                //but check also whether it's just end of map
+                
+                banDurationChar = sqlite3_column_text(stmt, 5);
+
+                if (Q_stricmp(banDurationChar, "End of map")) {
+                    banDuration = atoi(banDurationChar);
+                    banDurationChar = va("%dd%02dh%02dm", ((int)banDuration / (60 * 24)), ((int)banDuration / 60) % 24, banDuration % 60);
+                }
+
+                if (ent && ent->client) {
+                    // Boe!Man 11/04/11: Put packet through to clients if char size would exceed 1000 and reset buf2.
+                    if ((strlen(buf) + strlen(va("[^3%-3.3i^7] %-15.15s %-12.12s %-14.14s %-12.12s %-10.10s\n", sqlite3_column_int(stmt, 0), sqlite3_column_text(stmt, 1), sqlite3_column_text(stmt, 2), sqlite3_column_text(stmt, 3), sqlite3_column_text(stmt, 4), banDurationChar))) > 1000) {
+                        trap_SendServerCommand(ent - g_entities, va("print \"%s\"", buf));
+                        memset(buf, 0, sizeof(buf)); // Boe!Man 11/04/11: Empty the buffer.
+                    }
+                    Q_strcat(buf, sizeof(buf), va("[^3%-3.3i^7] %-15.15s %-12.12s %-14.14s %-12.12s %-10.10s\n", sqlite3_column_int(stmt, 0), sqlite3_column_text(stmt, 1), sqlite3_column_text(stmt, 2), sqlite3_column_text(stmt, 3), sqlite3_column_text(stmt, 4), banDurationChar));
+                }
+                else {
+                    Com_Printf("[^3%-3.3d^7] %-15.15s %-12.12s %-14.14s %-12.12s %-10.10s\n", sqlite3_column_int(stmt, 0), sqlite3_column_text(stmt, 1), sqlite3_column_text(stmt, 2), sqlite3_column_text(stmt, 3), sqlite3_column_text(stmt, 4), banDurationChar);
+                }
+            }
+        }
+    }
+
+    sqlite3_finalize(stmt);
+    // Boe!Man 11/04/11: Fix for RCON not properly showing footer of banlist.
+    if (ent && ent->client) {
+        trap_SendServerCommand(ent - g_entities, va("print \"%s\nUse ^3[Page Up] ^7and ^3[Page Down] ^7keys to scroll\n\n\"", buf)); // Boe!Man 11/04/11: Also send the last buf2 (that wasn't filled as a whole yet).
+    }
+    else {
+        Com_Printf("\nUse ^3[Page Up] ^7and ^3[Page Down] ^7keys to scroll\n\n");
+    }
+}
+
 // whilst I would prefer that this function gives you an admin list and another one does the printing,
 // it simply does not make sense to do so in C considering that the admin list can quite often be large.
 // plus the fact that I would be looping over the contents anyhow to print them, I would just end up creating more of an headache
@@ -792,4 +854,52 @@ int dbGetAdminByRowId(qboolean password, int rowid, char* adminOut, char* ipOut)
     
     return adminLevel;
 
+}
+
+char* checkBanReason(char* ip, qboolean isSubnet) {
+
+    sqlite3* db;
+    sqlite3_stmt* stmt;
+
+    db = gameDb;
+
+    char* query = va("SELECT reason FROM %sbanlist WHERE ip = ?", isSubnet ? "subnet" : "");
+
+    sqlite3_prepare(db, query, -1, &stmt, 0);
+
+    sqlBindTextOrNull(stmt, 1, ip);
+
+    if (sqlite3_step(stmt) == SQLITE_ROW) {
+        return sqlite3_column_text(stmt, 0);
+    }
+
+    return NULL;
+
+}
+
+qboolean dbGetBanByRow(int rownum, char* bannedName, char* bannedIp, qboolean isSubnet) {
+
+    sqlite3* db;
+    sqlite3_stmt* stmt;
+    qboolean returnable = qfalse;
+
+    db = gameDb;
+
+    char* query = va("SELECT playername, ip FROM %sbanlist WHERE ROWID = ?", isSubnet ? "subnet" : "");
+
+    sqlite3_prepare(db, query, -1, &stmt, 0);
+
+    sqlite3_bind_int(stmt, 1, rownum);
+
+    if (sqlite3_step(stmt) == SQLITE_ROW) {
+        returnable = qtrue;
+        bannedName = sqlite3_column_text(stmt, 0);
+        bannedIp = sqlite3_column_text(stmt, 1);
+    }
+
+    return returnable;
+}
+
+void dbDeleteBanByRowId(int rownum, qboolean isSubnet) {
+    dbDeleteFromGameDbByRowId(va("DELETE FROM %sbanlist WHERE ROWID = ?", isSubnet ? "subnet" : ""), rownum);
 }

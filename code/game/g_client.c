@@ -1253,6 +1253,9 @@ char *ClientConnect( int clientNum, qboolean firstTime, qboolean isBot )
         Q_strncpyz ( ip, "bot", MAX_IP );
     }
 
+    // for every connect, first clear out outdated bans.
+    dbClearOutdatedBans();
+
     // we don't check password for bots and local client
     // NOTE: local client <-> "ip" "localhost"
     //   this means this client is not running in our current process
@@ -1265,6 +1268,25 @@ char *ClientConnect( int clientNum, qboolean firstTime, qboolean isBot )
         {
             return va("Invalid password: %s", value );
         }
+
+        // check banlist whether the client should be rejected.
+
+        char* banned = checkBanReason(ip, qfalse);
+
+        if (banned) {
+            return va("Banned: %s", banned);
+        }
+
+        char subnet[MAX_IP];
+
+        getSubnet(ip, subnet);
+
+        banned = checkBanReason(subnet, qtrue);
+
+        if (banned) {
+            return va("Subnetbanned: %s", banned);
+        }
+
     }
 
     // they can connect

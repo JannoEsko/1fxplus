@@ -280,6 +280,7 @@ typedef struct
                                                 // therefore we grant him powers. ClientBegin might be that the name (in the player mod folder) is savages # jantsux,
                                                 // which does not have admin. End result = player ends up with admin.
                                                 // Because I intend to do a powercheck at ClientBegin, I only want to do this once during their gaming session, and this variable will help me track in doing so.
+    qboolean            planted;
 
 } clientSession_t;
 
@@ -997,6 +998,10 @@ extern  vmCvar_t    g_uppercut;
 extern  vmCvar_t    g_kick;
 extern  vmCvar_t    g_lock;
 extern  vmCvar_t    g_respawn;
+extern  vmCvar_t    g_plant;
+extern  vmCvar_t    g_redTeamPrefix;
+extern  vmCvar_t    g_blueTeamPrefix;
+extern  vmCvar_t    g_spectatorTeamPrefix;
 
 void    trap_Print( const char *text );
 void    trap_Error( const char *text ) __attribute__((noreturn));
