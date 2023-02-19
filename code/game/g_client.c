@@ -1042,8 +1042,19 @@ void ClientUserinfoChanged( int clientNum )
     // set name
     Q_strncpyz ( oldname, client->pers.netname, sizeof( oldname ) );
     s = Info_ValueForKey (userinfo, "name");
-    G_ClientCleanName( s, client->pers.netname, sizeof(client->pers.netname), level.gametypeData->teams?qfalse:qtrue );
+    G_ClientCleanName( s, client->pers.netname, sizeof(client->pers.netname), qtrue );
     G_ClientCleanName( s, client->pers.cleanName, sizeof(client->pers.cleanName), qfalse );
+
+    if(strlen(client->pers.netname) > MAX_NETNAME - 3) {
+        client->pers.netname[MAX_NETNAME - 3] = '\0';
+    }
+
+    if (strlen(client->pers.cleanName) > MAX_NETNAME - 3) {
+        client->pers.cleanName[MAX_NETNAME - 3] = '\0';
+    }
+
+    strcat(client->pers.netname, S_COLOR_WHITE);
+
     if ( client->sess.team == TEAM_SPECTATOR )
     {
         if ( client->sess.spectatorState == SPECTATOR_SCOREBOARD )
@@ -1254,7 +1265,7 @@ char *ClientConnect( int clientNum, qboolean firstTime, qboolean isBot )
     }
 
     // for every connect, first clear out outdated bans.
-    dbClearOutdatedBans();
+    dbClearOutdatedBans(qfalse);
 
     // we don't check password for bots and local client
     // NOTE: local client <-> "ip" "localhost"
@@ -1270,21 +1281,20 @@ char *ClientConnect( int clientNum, qboolean firstTime, qboolean isBot )
         }
 
         // check banlist whether the client should be rejected.
-
-        char* banned = checkBanReason(ip, qfalse);
-
+        char* banReason;
+        qboolean banned = checkBanReason(ip, qfalse, &banReason);
         if (banned) {
-            return va("Banned: %s", banned);
+            return va("Banned: %s", banReason);
         }
 
         char subnet[MAX_IP];
 
         getSubnet(ip, subnet);
 
-        banned = checkBanReason(subnet, qtrue);
+        banned = checkBanReason(subnet, qtrue, &banReason);
 
         if (banned) {
-            return va("Subnetbanned: %s", banned);
+            return va("Subnetbanned: %s", banReason);
         }
 
     }

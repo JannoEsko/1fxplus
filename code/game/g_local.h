@@ -45,11 +45,14 @@ typedef enum
 
 } moverState_t;
 
-#define LEVEL_NOADMIN 0
-#define LEVEL_BADMIN 1
-#define LEVEL_ADMIN 2
-#define LEVEL_SADMIN 3
-#define LEVEL_RCON 4
+typedef enum {
+    LEVEL_NOADMIN,
+    LEVEL_BADMIN,
+    LEVEL_ADMIN,
+    LEVEL_SADMIN,
+    LEVEL_RCON
+} admLevels;
+
 
 #define MAX_NETNAME         36
 #define MAX_IDENTITY        64
@@ -281,6 +284,13 @@ typedef struct
                                                 // which does not have admin. End result = player ends up with admin.
                                                 // Because I intend to do a powercheck at ClientBegin, I only want to do this once during their gaming session, and this variable will help me track in doing so.
     qboolean            planted;
+    int                 oneSecChecks;
+    int                 burnTimer;
+    int                 coasterCounter;
+    int                 coasterState;
+    int                 nextCoaster;
+    int                 spinViewState;
+    int                 nextSpin;
 
 } clientSession_t;
 
@@ -563,6 +573,9 @@ typedef struct
     qboolean        redTeamLocked;
     qboolean        blueTeamLocked;
     qboolean        spectatorsLocked;
+    int             mapState;                   // defines specific states on maps, e.g. 1 = about to map restart etc.
+    int             mapStateTimer;              // time left to run the map state command
+    char            newMap[MAX_STRING_CHARS];   // if a new map command is sent, then this holds the next map value.
 
 } level_locals_t;
 
@@ -707,6 +720,7 @@ int         G_Damage            ( gentity_t *targ, gentity_t *inflictor, gentity
 qboolean    G_RadiusDamage      ( vec3_t origin, gentity_t *attacker, float damage, float radius, gentity_t *ignore, int power, int dflags, int mod );
 void        body_die            ( gentity_t *self, gentity_t *inflictor, gentity_t *attacker, int damage, int meansOfDeath, int hitLocation, vec3_t hitDir );
 void        TossClientItems     ( gentity_t *self );
+void        G_ApplyKnockback    ( gentity_t *targ, vec3_t newDir, float knockback );
 
 // damage flags
 #define DAMAGE_RADIUS               0x00000001  // damage was indirect
@@ -815,6 +829,7 @@ void QDECL  G_LogPrintf                         ( const char *fmt, ... );
 void        SendScoreboardMessageToAllClients   ( void );
 void        CheckGametype                       ( void );
 void        G_setTrackedCvarWithoutTrackMessage ( vmCvar_t* cvar, int value );
+qboolean    G_IsGametypeSupported               ( char* input );
 
 //
 // g_client.c
@@ -1002,6 +1017,19 @@ extern  vmCvar_t    g_plant;
 extern  vmCvar_t    g_redTeamPrefix;
 extern  vmCvar_t    g_blueTeamPrefix;
 extern  vmCvar_t    g_spectatorTeamPrefix;
+
+extern  vmCvar_t    g_ri;
+extern  vmCvar_t    g_rtl;
+extern  vmCvar_t    g_runover;
+extern  vmCvar_t    g_rollercoaster;
+extern  vmCvar_t    g_mapswitch;
+extern  vmCvar_t    g_strip;
+extern  vmCvar_t    g_shuffleteams;
+extern  vmCvar_t    g_gr;
+extern  vmCvar_t    g_eventeams;
+extern  vmCvar_t    g_ff;
+extern  vmCvar_t    g_rename;
+extern  vmCvar_t    g_burn;
 
 void    trap_Print( const char *text );
 void    trap_Error( const char *text ) __attribute__((noreturn));

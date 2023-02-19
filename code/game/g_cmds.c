@@ -1577,9 +1577,7 @@ static void Cmd_Say_f( gentity_t *ent, int mode, qboolean arg0 ) {
         p = ConcatArgs( 1 );
     }
 
-    char* admCmd = G_GetArg(0, qtrue); 
-
-    Com_Printf("Cmd_Say_f: admCmd => %s.\n", admCmd ? admCmd : "");
+    char* admCmd = G_GetArg(0, qtrue);
 
     if (ent->client->sess.adminLevel >= LEVEL_BADMIN) {
         int adminCommand = cmdIsAdminCmd(admCmd, qtrue);

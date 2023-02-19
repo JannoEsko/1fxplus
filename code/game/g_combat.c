@@ -144,7 +144,11 @@ char *modNames[] =
     "MOD_TEAMCHANGE",
     "MOD_TARGET_LASER",
     "MOD_TRIGGER_HURT",
-    "MOD_TRIGGER_HURT_NOSUICIDE"
+    "MOD_TRIGGER_HURT_NOSUICIDE",
+
+    // custom mods from 1fxplus.
+
+    "MOD_POP"
 };
 
 /*

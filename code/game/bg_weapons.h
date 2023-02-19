@@ -50,7 +50,9 @@ typedef enum
     MOD_TARGET_LASER,
     MOD_TRIGGER_HURT,
     MOD_TRIGGER_HURT_NOSUICIDE,
-    MOD_POP
+    MOD_POP,
+    MOD_BURN,
+    MOD_CAR
 
 } meansOfDeath_t;
 

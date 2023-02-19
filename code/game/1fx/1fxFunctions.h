@@ -5,7 +5,7 @@ extern sqlite3* gameDb;
 extern sqlite3* logDb;
 extern char sqlTempName[16];
 
-#define SQL_GAME_MIGRATION_LEVEL 1
+#define SQL_GAME_MIGRATION_LEVEL 2
 #define SQL_LOG_MIGRATION_LEVEL 1
 
 #define LOGLEVEL_INFO 0
@@ -19,6 +19,12 @@ typedef enum {
     ADMINTYPE_IP,
     ADMINTYPE_PASS
 } admTypes;
+
+typedef enum {
+    COASTER_RUNOVER,
+    COASTER_UPPERCUT,
+    COASTER_SPIN
+} coasterState;
 
 #define MAX_PACKET_BUF 1000
 
@@ -42,6 +48,15 @@ void swapTeams(qboolean autoSwap, gentity_t* adm);
 char* getNameOrArg(gentity_t* ent, char* arg, qboolean cleanName);
 void parseTokens(gentity_t* ent, char* chatText, int mode, qboolean checkSounds);
 char* getTeamPrefixByGametype(int team);
+void respawnClient(gentity_t* requestor, gentity_t* ent);
+void runMapStateEvents(void);
+void uppercutPlayer(gentity_t* recipient, int ucLevel);
+void runoverPlayer(gentity_t* recipient);
+void spinView(gentity_t* recipient);
+void stripTeam(int team, qboolean handsUp);
+void stripClient(gentity_t* recipient, qboolean handsUp);
+void stripEveryone(qboolean handsUp);
+
 
 
 // struct from 1fxmod
@@ -56,6 +71,20 @@ typedef struct
     char* params; // Description of the command in /adm.
     char* suffix; // Suffix for post processing broadcast, or NULL when function doesn't use it/has no suffix.
 }admCmd_t;
+
+typedef enum {
+    MAPSTATE_NOTHING, // default, no action defined.
+    MAPSTATE_RESTART,
+    MAPSTATE_CHANGEMAP,
+    MAPSTATE_CHANGEGT,
+    MAPSTATE_MAPCYCLE
+} mapStates;
+
+typedef enum {
+    SPINVIEW_NONE,
+    SPINVIEW_SLOW,
+    SPINVIEW_FAST
+};
 
 extern int adminCommandsSize;
 extern admCmd_t adminCommands[];
@@ -105,16 +134,16 @@ void sqlBindTextOrNull(sqlite3_stmt* stmt, int argnum, char* text);
 int dbGetPlayerAdminLevel(qboolean passlist, char* ip, char* name, char* password);
 qboolean dbIsIpNameInAdminList(qboolean passlist, char* ip, char* name);
 void dbUpdatePassAdmin(char* adminname, char* newpass);
-int dbGetAdminByRowId(qboolean password, int rowid, char* adminOut, char* ipOut);
+int dbGetAdminByRowId(qboolean password, int rowid, char** adminOut, char** ipOut);
 qboolean dbDoesRowIDExist(char* table, int rowid);
 int dbGetAdminRowIdByGentity(gentity_t* removable);
-void dbClearOutdatedBans(void);
-void dbAddBan(char* playername, char* ip, char* adminname, int endofmap, int days, int hours, int minutes);
-void dbAddSubnetban(char* playername, char* ip, char* adminname, int endofmap, int days, int hours, int minutes);
-char* checkBanReason(char* ip, qboolean isSubnet);
+void dbClearOutdatedBans(qboolean includeEom);
+void dbAddBan(qboolean isSubnet, char* playername, char* ip, char* adminname, char* reason, int endofmap, int days, int hours, int minutes);
+qboolean checkBanReason(char* ip, qboolean isSubnet, char** output);
 void dbGetBanlist(gentity_t* ent, qboolean isSubnet);
-qboolean dbGetBanByRow(int rownum, char* bannedName, char* bannedIp, qboolean isSubnet);
+qboolean dbGetBanByRow(int rownum, char** bannedName, char** bannedIp, qboolean isSubnet);
 void dbDeleteBanByRowId(int rownum, qboolean isSubnet);
+void admUnbanPlayer(int argNum, gentity_t* adm, qboolean shortCmd, qboolean isSubnet);
 
 
 // admin commands
@@ -145,6 +174,20 @@ int admLockTeam(int argNum, gentity_t* adm, qboolean shortCmd);
 int admRespawn(int argNum, gentity_t* adm, qboolean shortCmd);
 int admPlant(int argNum, gentity_t* adm, qboolean shortCmd);
 void admUnplant(gentity_t* adm, gentity_t* recipient);
+int admRespawnInterval (int argNum, gentity_t* adm, qboolean shortCmd);
+int admRoundTimelimit (int argNum, gentity_t* adm, qboolean shortCmd);
+int admRunover (int argNum, gentity_t* adm, qboolean shortCmd);
+int admRollercoaster (int argNum, gentity_t* adm, qboolean shortCmd);
+int admMapRestart (int argNum, gentity_t* adm, qboolean shortCmd);
+int admStrip (int argNum, gentity_t* adm, qboolean shortCmd);
+int admShuffleTeams (int argNum, gentity_t* adm, qboolean shortCmd);
+int admGametypeRestart (int argNum, gentity_t* adm, qboolean shortCmd);
+int admEventeams (int argNum, gentity_t* adm, qboolean shortCmd);
+int admGametype (int argNum, gentity_t* adm, qboolean shortCmd);
+int admFriendlyFire (int argNum, gentity_t* adm, qboolean shortCmd);
+int admRename (int argNum, gentity_t* adm, qboolean shortCmd);
+int admBurn (int argNum, gentity_t* adm, qboolean shortCmd);
+int admMapcycle (int argNum, gentity_t* adm, qboolean shortCmd);
 
 int cmdIsAdminCmd(char* cmd, qboolean shortCmd);
 void runAdminCommand(int adminCommandId, int argNum, gentity_t* adm, qboolean shortCmd);

@@ -389,9 +389,11 @@ char *G_GetArg(int argNum,qboolean shortCmd)
 char* concatArgs(int fromArgNum, qboolean shortCmd) {
     
     int totalArgs = 0;
-    char output[MAX_STRING_CHARS] = "";
+    static char output[MAX_STRING_CHARS] = "";
     char* arg;
     int totalLength = 0, argLength = 0;
+
+    memset(output, 0, sizeof(output));
 
     if (shortCmd) {
         totalArgs = G_GetChatArgumentCount();
@@ -402,7 +404,6 @@ char* concatArgs(int fromArgNum, qboolean shortCmd) {
 
     while (fromArgNum < totalArgs) {
         arg = G_GetArg(fromArgNum, shortCmd);
-        fromArgNum++;
         argLength = strlen(arg);
 
         if (totalLength + argLength > MAX_STRING_CHARS) {
@@ -417,6 +418,8 @@ char* concatArgs(int fromArgNum, qboolean shortCmd) {
             output[totalLength] = ' ';
             totalLength++;
         }
+
+        fromArgNum++;
 
     }
 
@@ -959,4 +962,162 @@ char* getTeamPrefixByGametype(int team) {
         }
     }
 
+}
+
+void respawnClient(gentity_t* requestor, gentity_t* recipient) {
+
+    if (recipient->client->sess.team == TEAM_SPECTATOR){
+        G_printInfoMessage(requestor, "You cannot respawn a spectator.");
+        return -1;
+    }
+
+    if (recipient->client->sess.ghost) {
+        G_StopFollowing(recipient);
+        recipient->client->ps.pm_flags &= ~PMF_GHOST;
+        recipient->client->ps.pm_type = PM_NORMAL;
+        recipient->client->sess.ghost = qfalse;
+    }
+    else {
+        TossClientItems(recipient);
+    }
+    recipient->client->sess.noTeamChange = qfalse;
+    trap_UnlinkEntity(recipient);
+    ClientSpawn(recipient);
+
+    G_ClientSound(recipient, G_SoundIndex("sound/ambience/vehicles/telephone_pole.mp3", qtrue)); // Let the client know something happened.
+
+}
+
+void runMapStateEvents(void) {
+
+    int mapState = level.mapState;
+    level.mapState = MAPSTATE_NOTHING;
+
+    if (mapState == MAPSTATE_RESTART || mapState == MAPSTATE_CHANGEGT) {
+        trap_SendConsoleCommand(EXEC_APPEND, "map_restart 0\n");
+    } else if (mapState == MAPSTATE_CHANGEMAP) {
+        trap_SendConsoleCommand(EXEC_APPEND, va("map %s\n", level.newMap));
+    } else if (mapState == MAPSTATE_MAPCYCLE) {
+        trap_SendConsoleCommand(EXEC_APPEND, "mapcycle\n");
+    }
+
+}
+
+void runoverPlayer(gentity_t* recipient) {
+
+    vec3_t      direction, fireAngles;
+
+    VectorCopy(recipient->client->ps.viewangles, fireAngles);
+    AngleVectors(fireAngles, direction, NULL, NULL);
+    direction[0] *= -1.0;
+    direction[1] *= -1.0;
+    direction[2] = 0.0;
+    VectorNormalize(direction);
+
+    G_ClientSound(recipient, G_SoundIndex("sound/ambience/vehicles/hit_scrape.mp3", qtrue));
+
+    // Do the actual action.
+    recipient->client->ps.velocity[2] = 20;
+    recipient->client->ps.weaponTime = 3000;
+    G_Damage(recipient, NULL, NULL, NULL, NULL, 15, 0, MOD_CAR, HL_NONE);
+    G_ApplyKnockback(recipient, direction, 400.0f);
+}
+
+void uppercutPlayer(gentity_t* recipient, int ucLevel) {
+
+    recipient->client->ps.pm_flags |= PMF_JUMPING;
+    recipient->client->ps.groundEntityNum = ENTITYNUM_NONE;
+
+    if (ucLevel) {
+        recipient->client->ps.velocity[2] = 200 * ucLevel;
+    } else {
+        recipient->client->ps.velocity[2] = 1000;
+    }
+
+    G_ClientSound(recipient, G_SoundIndex("sound/weapons/rpg7/fire01.mp3", qtrue));
+}
+
+void spinView(gentity_t* recipient) {
+
+    switch (recipient->client->sess.spinViewState) {
+        case SPINVIEW_NONE:
+            return;
+        case SPINVIEW_FAST:
+            recipient->client->sess.nextSpin = level.time + 10;
+            break;
+        case SPINVIEW_SLOW:
+            recipient->client->sess.nextSpin = level.time + 250;
+            break;
+        default:
+            recipient->client->sess.spinViewState = SPINVIEW_NONE;
+            return;
+    }
+
+    vec3_t spin;
+    VectorCopy(recipient->client->ps.viewangles, spin);
+    spin[0] = (float) Q_irand(0, 360);
+    spin[1] = fmod(spin[1] + 20, 360.0);
+    SetClientViewAngle(recipient, spin);
+    G_ClientSound(recipient, G_SoundIndex("sound/npc/air1/guard02/laughs.mp3", qtrue));
+}
+
+void stripClient(gentity_t* recipient, qboolean handsUp) {
+
+    int idle;
+
+    if (recipient->client->sess.team == TEAM_SPECTATOR) {
+        return;
+    }
+
+    recipient->client->ps.zoomFov = 0;
+    recipient->client->ps.pm_flags &= ~(PMF_GOGGLES_ON | PMF_ZOOM_FLAGS);
+
+    recipient->client->ps.stats[STAT_GOGGLES] = GOGGLES_NONE;
+    memset(recipient->client->ps.ammo, 0, sizeof(recipient->client->ps.ammo));
+    memset(recipient->client->ps.clip, 0, sizeof(recipient->client->ps.clip));
+
+    if (handsUp) {
+        recipient->client->ps.stats[STAT_WEAPONS] = 0;
+        recipient->client->ps.weapon = WP_NONE;
+
+    } else {
+        recipient->client->ps.stats[STAT_WEAPONS] |= (1 << WP_KNIFE);
+        recipient->client->ps.clip[ATTACK_NORMAL][WP_KNIFE] = weaponData[WP_KNIFE].attack[ATTACK_NORMAL].clipSize;
+        recipient->client->ps.firemode[WP_KNIFE] = BG_FindFireMode(WP_KNIFE, ATTACK_NORMAL, WP_FIREMODE_AUTO);
+        recipient->client->ps.weapon = WP_KNIFE;
+        BG_GetInviewAnim(recipient->client->ps.weapon, "idle", &idle);
+        recipient->client->ps.weaponAnimId = idle;
+    }
+
+    recipient->client->ps.weaponstate = WEAPON_READY;
+    recipient->client->ps.weaponTime = 0;
+    recipient->client->ps.weaponAnimTime = 0;
+    // Boe!Man 6/23/13: Fixed crash bug in Linux, simply because 'bg_outfittingGroups[-1][client->pers.outfitting.items[-1]]' equals 0.
+    recipient->client->ps.stats[STAT_OUTFIT_GRENADE] = bg_itemlist[0].giTag;
+
+}
+
+void stripTeam(int team, qboolean handsUp) {
+    gentity_t* recipient;
+
+    if (team == TEAM_SPECTATOR) {
+        return;
+    }
+
+    for (int i = 0; i < level.numConnectedClients; i++) {
+        recipient = &g_entities[level.sortedClients[i]];
+
+        if (recipient->client->sess.team == team) {
+            stripClient(recipient, handsUp);
+        }
+    }
+}
+
+void stripEveryone(qboolean handsUp) {
+    gentity_t* recipient;
+
+    for (int i = 0; i < level.numConnectedClients; i++) {
+        recipient = &g_entities[level.sortedClients[i]];
+        stripClient(recipient, handsUp);
+    }
 }

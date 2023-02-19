@@ -45,28 +45,44 @@ admCmd_t adminCommands[] =
         {"!r",      "respawn",          &g_respawn.integer,         &admRespawn,                   "Respawn a player",                 "<i/n>",            "ed"},
         {"!rs",     "respawn",          &g_respawn.integer,         &admRespawn,                   "Respawn a player",                 "<i/n>",            "ed"},
         {"!pl",     "plant",            &g_plant.integer,           &admPlant,                     "Plant or unplant a player",        "<i/n>",            "ed"},
+    {"!ri",     "respawninterval",  &g_ri.integer,              &admRespawnInterval,           "Change the respawn interval",      "<time>",           NULL},
+    {"!rtl",    "roundtimelimit",   &g_rtl.integer,             &admRoundTimelimit,            "Change the round timelimit",       "<time>",           NULL},
+    {"!ro",     "runover",          &g_runover.integer,         &admRunover,                   "Push a player backwards",          "<i/n>",            NULL},
+    {"!c",      "rollercoaster",    &g_rollercoaster.integer,   &admRollercoaster,             "Uppercut and push a player",       "<i/n>",            "ed"},
+    {"!mr",     "maprestart",       &g_mapswitch.integer,       &admMapRestart,                "Restart the current map",          "",                 NULL},
+    {"!mr",     "map_restart",      &g_mapswitch.integer,       &admMapRestart,                "Restart the current map",          "",                 NULL},
+    {"!st",     "strip",            &g_strip.integer,           &admStrip,                     "Remove weapons from a player",     "<i/n>",            "ped"},
+
+    {"!s",      "strip",            &g_strip.integer,           &admStrip,                     "Remove weapons from a player",     "<i/n>",            "ped"},
+
+    {"!sh",     "shuffleteams",     &g_shuffleteams.integer,    &admShuffleTeams,              "Mix the teams at random",          "",                 NULL},
+
+    {"!gr",     "gametyperestart",  &g_gr.integer,              &admGametypeRestart,           "Restart the current gametype",     "",                 NULL},
+
+    {"!et",     "eventeams",        &g_eventeams.integer,       &admEventeams,                 "Make the teams even",              "",                 NULL},
+
+    {"!g",      "gametype",         &g_mapswitch.integer,       &admGametype,                  "Switch to the given gametype",     "<gametype>",       NULL},
+    {"!gt",     "gametype",         &g_mapswitch.integer,       &admGametype,                  "Switch to the given gametype",     "<gametype>",       NULL},
+
+    {"!ff",     "friendlyfire",     &g_ff.integer,              &admFriendlyFire,              "Enables/disables friendly fire",   "",                 NULL},
+    {"!rn",     "rename",           &g_rename.integer,          &admRename,                    "Renames a players' name",          "<i/n> <name>",     NULL},
+
+    {"!b",      "burn",             &g_burn.integer,            &admBurn,                      "Burn a player",                    "",                 "ed"},
+
+    {"!mc",     "mapcycle",         &g_mapswitch.integer,       &admMapcycle,                  "Switch to the next-defined map",   "",                 NULL},
         /*{"!rounds", "rounds",           &g_cm.integer,              &adm_Rounds,                    "Set the number of rounds",         "<rounds>",         NULL},
         // Boe!Man 6/2/15: Don't move or modify anything above this comment, the /adm list expects them in that specific order.
-        {"!rtl",    "roundtimelimit",   &g_rtl.integer,             &adm_roundTimeLimit,            "Change the round timelimit",       "<time>",           NULL},
-        {"!ro",     "runover",          &g_runover.integer,         &adm_Runover,                   "Push a player backwards",          "<i/n>",            NULL},
-        {"!c",      "rollercoaster",    &g_rollercoaster.integer,   &adm_Rollercoaster,             "Uppercut and push a player",       "<i/n>",            "ed"},
         {"!girly",  "girly",            &g_girly.integer,           &adm_Girly,                     "Change player skin to female skin","<i/n> <0-12>",     NULL},
 
-        {"!mr",     "maprestart",       &g_mapswitch.integer,       &adm_mapRestart,                "Restart the current map",          "",                 NULL},
-        {"!mr",     "map_restart",      &g_mapswitch.integer,       &adm_mapRestart,                "Restart the current map",          "",                 NULL},
-        {"!st",     "strip",            &g_strip.integer,           &adm_Strip,                     "Remove weapons from a player",     "<i/n>",            "ped"},
         {"!bs",     "blockseek",        &g_blockseek.integer,       &adm_blockSeek,                 "Block player from joining seek",   "<i/n>",            NULL},
         {"!bsl",    "blockseeklist",    &g_blockseek.integer,       &adm_blockSeekList,             "Show players blocked from seeking","",                 NULL},
         {"!nl",     "nolower",          &g_nosection.integer,       &adm_noLower,                   "Enable/Disable Nolower",           "",                 NULL},
         {"!nr",     "noroof",           &g_nosection.integer,       &adm_noRoof,                    "Enable/Disable Noroof",            "",                 NULL},
         {"!nm",     "nomiddle",         &g_nosection.integer,       &adm_noMiddle,                  "Enable/Disable Nomiddle",          "",                 NULL},
         {"!nw",     "nowhole",          &g_nosection.integer,       &adm_noWhole,                   "Enable/Disable Nowhole",           "",                 NULL},
-        {"!sh",     "shuffleteams",     &g_shuffleteams.integer,    &adm_shuffleTeams,              "Mix the teams at random",          "",                 NULL},
         {"!nn",     "nonades",          &g_nades.integer,           &adm_noNades,                   "Enable or disable nades",          "",                 NULL},
-        {"!ri",     "respawninterval",  &g_ri.integer,              &adm_respawnInterval,           "Change the respawn interval",      "<time>",           NULL},
         {"!rd",     "realdamage",       &g_damage.integer,          &adm_realDamage,                "Toggle Real damage",               "",                 NULL},
         {"!nd",     "normaldamage",     &g_damage.integer,          &adm_normalDamage,              "Toggle Normal damage",             "",                 NULL},
-        {"!gr",     "gametyperestart",  &g_gr.integer,              &adm_gametypeRestart,           "Restart the current gametype",     "",                 NULL},
         {"!acl",    "addclan",          &g_clan.integer,            &adm_addClanMember,             "Add a clan member",                "<i/n>",            NULL},
         {"!rc",     "removeclan",       &g_clan.integer,            &adm_removeClanMember,          "Remove a clan member",             "<i/n>",            NULL},
         {"!rcl",    "removeclanlist",   &g_clan.integer,            &adm_removeClanMemberFromList,  "Remove a member from the list",    "<i/line #>",       NULL},
@@ -74,25 +90,17 @@ admCmd_t adminCommands[] =
         {"!cl",     "clanlist",         &g_clan.integer,            &adm_clanList,                  "Show the clanlist",                "",                 NULL},
         {"!cm",     "compmode",         &g_cm.integer,              &adm_compMode,                  "Toggles Competition Mode",         "",                 NULL},
 
-        {"!et",     "eventeams",        &g_eventeams.integer,       &adm_evenTeams,                 "Make the teams even",              "",                 NULL},
         {"!cva",    "clanvsall",        &g_clanvsall.integer,       &adm_clanVsAll,                 "Clan versus other players-mode",   "",                 NULL},
 
         {"!fl",     "flash",            &g_flash.integer,           &adm_Flash,                     "Flash a player",                   "<i/n>",            "ed"},
-        {"!g",      "gametype",         &g_mapswitch.integer,       &adm_Gametype,                  "Switch to the given gametype",     "<gametype>",       NULL},
-        {"!gt",     "gametype",         &g_mapswitch.integer,       &adm_Gametype,                  "Switch to the given gametype",     "<gametype>",       NULL},
         {"!map",    "map",              &g_mapswitch.integer,       &adm_Map,                       "Switch to the specified map",      "<map name>",       NULL},
         {"!altmap", "altmap",           &g_mapswitch.integer,       &adm_Map,                       "Switch to the specified altmap",   "<map name>",       NULL},
         {"!devmap", "devmap",           &g_mapswitch.integer,       &adm_Map,                       "Switch to the specified devmap",   "<map name>",       NULL},
-        {"!mc",     "mapcycle",         &g_mapswitch.integer,       &adm_mapCycle,                  "Switch to the next-defined map",   "",                 NULL},
         {"!pv",     "passvote",         &g_forcevote.integer,       &adm_passVote,                  "Pass the running vote",            "",                 NULL},
         {"!cv",     "cancelvote",       &g_forcevote.integer,       &adm_cancelVote,                "Cancel the running vote",          "",                 NULL},
         {"!pa",     "pause",            &g_pause.integer,           &adm_Pause,                     "Pause/resume the game",            "",                 NULL},
-        {"!b",      "burn",             &g_burn.integer,            &adm_Burn,                      "Burn a player",                    "",                 "ed"},
 
         {"!m",      "mute",             &g_mute.integer,            &adm_Mute,                      "Mute/unmute a player",             "<i/n> <time>",     NULL},
-        {"!s",      "strip",            &g_strip.integer,           &adm_Strip,                     "Remove weapons from a player",     "<i/n>",            "ped"},
-        {"!ff",     "friendlyfire",     &g_ff.integer,              &adm_friendlyFire,              "Enables/disables friendly fire",   "",                 NULL},
-        {"!rn",     "rename",           &g_rename.integer,          &adm_Rename,                    "Renames a players' name",          "<i/n> <name>",     NULL},
 
         {"!3rd",    "3rd",              &g_3rd.integer,             &adm_Third,                     "Toggles Thirdperson on or off",    "",                 NULL},
         {"!third",  "third",            &g_3rd.integer,             &adm_Third,                     "Toggles Thirdperson on or off",    "",                 NULL},
@@ -106,6 +114,259 @@ admCmd_t adminCommands[] =
 
 int adminCommandsSize = sizeof(adminCommands) / sizeof(adminCommands[0]);
 // End
+
+int admRespawnInterval (int argNum, gentity_t* adm, qboolean shortCmd) {
+    admToggleCVAR(argNum, adm, shortCmd, "Respawn interval", &g_respawnInterval);
+    return -1;
+}
+
+int admRoundTimelimit (int argNum, gentity_t* adm, qboolean shortCmd) {
+    admToggleCVAR(argNum, adm, shortCmd, "Round timelimit", &g_roundtimelimit);
+    return -1;
+}
+
+int admRunover (int argNum, gentity_t* adm, qboolean shortCmd) {
+
+    int idNum = -1;
+    gentity_t* recipient;
+
+    idNum = G_clientNumFromArg(adm, argNum, "runover", qtrue, qtrue, qtrue, shortCmd);
+
+    if (idNum >= 0) {
+        recipient = g_entities + idNum;
+        runoverPlayer(recipient);
+    }
+
+    return idNum;
+}
+
+int admRollercoaster (int argNum, gentity_t* adm, qboolean shortCmd) {
+
+    int idNum = -1;
+    gentity_t* recipient;
+    char* coasterCounterArg;
+    int coasterCounter = 0;
+
+    idNum = G_clientNumFromArg(adm, argNum, "runover", qtrue, qtrue, qtrue, shortCmd);
+
+    if (idNum >= 0) {
+        recipient = g_entities + idNum;
+
+        // check for 2nd arg.
+        coasterCounterArg = G_GetArg(argNum + 1, shortCmd);
+
+        if (coasterCounterArg && strlen(coasterCounterArg) > 0) {
+            coasterCounter = atoi(coasterCounterArg);
+        }
+
+        if (coasterCounter > 0) {
+            coasterCounter *= 3;
+        } else {
+            coasterCounter = 6;
+        }
+
+        recipient->client->sess.coasterState = COASTER_UPPERCUT;
+        recipient->client->sess.coasterCounter = coasterCounter;
+        recipient->client->sess.nextCoaster = level.time;
+
+        G_Broadcast(va("%s\nhas been sent to a \\rollercoaster\nby %s", recipient->client->pers.netname, getNameOrArg(adm, "RCON", qfalse)), BROADCAST_CMD, NULL, qtrue);
+        G_printInfoMessageToAll("%s has been sent to a rollercoaster by %s", recipient->client->pers.cleanName, getNameOrArg(adm, "RCON", qtrue));
+        logAdmin(adm, recipient, "rollercoaster", NULL);
+    }
+
+    return -1;
+}
+
+int admMapRestart (int argNum, gentity_t* adm, qboolean shortCmd) {
+    level.mapState = MAPSTATE_RESTART;
+    level.mapStateTimer = level.time + 5000;
+
+    G_Broadcast(va("\\Map restart by %s", getNameOrArg(adm, "RCON", qfalse)), BROADCAST_CMD, NULL, qtrue);
+    logAdmin(adm, NULL, "map restart", NULL);
+    G_printInfoMessageToAll("Map restart by %s", getNameOrArg(adm, "RCON", qtrue));
+
+    return -1;
+}
+
+int admStrip (int argNum, gentity_t* adm, qboolean shortCmd) {
+
+    int idNum = -1;
+    gentity_t* recipient;
+
+    idNum = G_clientNumFromArg(adm, argNum, "strip", qtrue, qtrue, qfalse, shortCmd);
+
+    if (idNum >= 0) {
+        recipient = g_entities + idNum;
+        stripClient(recipient, qfalse);
+    }
+
+    return idNum;
+}
+
+int admShuffleTeams (int argNum, gentity_t* adm, qboolean shortCmd) {
+
+    int initialRedTeamCount = 0, initialBlueTeamCount = 0, shuffleRedTeamCount = 0, shuffleBlueTeamCount = 0;
+    gentity_t* recipient;
+
+    if (!level.gametypeData->teams) {
+        G_printInfoMessage(adm, "Not in a team game, therefore nothing to shuffle...");
+        return -1;
+    }
+
+    if (level.blueTeamLocked || level.redTeamLocked) {
+        G_printInfoMessage(adm, "Unlock teams prior to shuffling.");
+        return -1;
+    }
+
+    initialRedTeamCount = TeamCount(-1, TEAM_RED, NULL);
+    initialBlueTeamCount = TeamCount(-1, TEAM_BLUE, NULL);
+
+    if (!initialRedTeamCount || !initialBlueTeamCount) {
+        G_printInfoMessage(adm, "No players ingame, therefore nothing to shuffle...");
+        return -1;
+    }
+
+    for (int i = 0; i < level.numConnectedClients; i++) {
+        recipient = &g_entities[level.sortedClients[i]];
+
+        if (recipient->client->sess.team == TEAM_SPECTATOR) {
+            continue;
+        }
+
+        if (initialRedTeamCount == shuffleRedTeamCount) {
+            SetTeam(recipient, "b", NULL, TEAMCHANGE_FORCED);
+            shuffleBlueTeamCount++;
+        } else if (initialBlueTeamCount == shuffleBlueTeamCount) {
+            SetTeam(recipient, "r", NULL, TEAMCHANGE_FORCED);
+            shuffleRedTeamCount++;
+        } else {
+            int newTeam = irand(1, 2);
+            if (newTeam == TEAM_RED) {
+                SetTeam(recipient, "r", NULL, TEAMCHANGE_FORCED);
+                shuffleRedTeamCount++;
+            } else {
+                SetTeam(recipient, "b", NULL, TEAMCHANGE_FORCED);
+                shuffleBlueTeamCount++;
+            }
+        }
+    }
+
+    G_Broadcast(va("Teams have been \\shuffled by %s", getNameOrArg(adm, "RCON", qfalse)), BROADCAST_CMD, NULL, qfalse);
+    G_GlobalSound(G_SoundIndex("sound/misc/events/tut_lift02.mp3", qtrue));
+    G_printInfoMessageToAll("Teams have been shuffled by %s", getNameOrArg(adm, "RCON", qtrue));
+    logAdmin(adm, NULL, "shuffleteams", NULL);
+
+    return -1;
+}
+
+int admGametypeRestart (int argNum, gentity_t* adm, qboolean shortCmd) {
+    // Cannot restart the gametype in DM (at least, no visible effect).
+    if(!Q_stricmp(g_realGametype.string, "dm")){
+        G_printInfoMessage(adm, "You cannot restart this gametype.");
+        return -1;
+    }
+
+    // Cannot restart the gametype in intermission mode.
+    if(level.intermissionQueued || level.intermissiontime){
+        G_printInfoMessage(adm, "You cannot restart the gametype while being in intermission.");
+        return -1;
+    }
+
+    // Cannot restart the gametype while being paused.
+    if(level.pause){
+        G_printInfoMessage(adm, "You cannot restart the gametype while the game is paused.");
+        return -1;
+    }
+
+    G_Broadcast("\\Gametype restart", BROADCAST_CMD, NULL, qtrue);
+    G_printInfoMessageToAll("Gametype has been restarted by %s.", getNameOrArg(adm, "RCON", qtrue));
+    logAdmin(adm, NULL, "gametype restart", NULL);
+
+    trap_SendConsoleCommand(EXEC_APPEND, "gametype_restart\n");
+
+    return -1;
+}
+
+int admEventeams (int argNum, gentity_t* adm, qboolean shortCmd) {
+    logAdmin(adm, NULL, "eventeams", NULL);
+    return -1;
+}
+
+int admGametype (int argNum, gentity_t* adm, qboolean shortCmd) {
+
+
+    char* gametype = G_GetArg(argNum, shortCmd);
+
+    if (!gametype || strlen(gametype) == 0) {
+        G_printInfoMessage(adm, "Current gametype is %s.", g_realGametype.string);
+    } else if (!G_IsGametypeSupported(gametype)) {
+        G_printInfoMessage(adm, "Gametype %s is not supported by 1fxplus.", gametype);
+    } else {
+        level.mapState = MAPSTATE_CHANGEGT;
+        level.mapStateTimer = level.time + 5000;
+        G_Broadcast(va("\\Gametype %s by %s", gametype, getNameOrArg(adm, "RCON", qfalse)), BROADCAST_CMD, NULL, qtrue);
+        logAdmin(adm, NULL, va("gametype %s", gametype), NULL);
+        G_printInfoMessageToAll("Gametype %s by %s", gametype, getNameOrArg(adm, "RCON", qtrue));
+        trap_Cvar_Set("g_realGametype", gametype);
+        trap_SendConsoleCommand(EXEC_APPEND, va("g_gametype %s\n", gametype));
+    }
+
+    return -1;
+}
+
+int admFriendlyFire (int argNum, gentity_t* adm, qboolean shortCmd) {
+
+    qboolean enable = !g_friendlyFire.integer;
+    G_setTrackedCvarWithoutTrackMessage(&g_friendlyFire, enable);
+
+    G_Broadcast(va("\\Friendlyfire %s by %s", enable ? "enabled" : "disabled", getNameOrArg(adm, "RCON", qfalse)), BROADCAST_CMD, NULL, qtrue);
+    G_printInfoMessageToAll("Friendlyfire %s by %s", enable ? "enabled" : "disabled", getNameOrArg(adm, "RCON", qtrue));
+    logAdmin(adm, NULL, va("friendlyfire %s", enable ? "enabled" : "disabled"), NULL);
+
+    return -1;
+}
+
+int admRename (int argNum, gentity_t* adm, qboolean shortCmd) {
+    return -1;
+}
+
+int admBurn (int argNum, gentity_t* adm, qboolean shortCmd) {
+
+    gentity_t       *recipient, *tmp;
+    int             idNum = -1;
+
+    idNum = G_clientNumFromArg(adm, argNum, "burn", qtrue, qtrue, qtrue, shortCmd);
+    if (idNum >= 0) {
+        recipient = g_entities + idNum;
+
+        // Create temporary entity for the burn effect.
+        tmp = G_TempEntity(recipient->r.currentOrigin, EV_EXPLOSION_HIT_FLESH);
+        tmp->s.eventParm = 0;
+        tmp->s.otherEntityNum2 = recipient->s.number;
+        tmp->s.time = WP_ANM14_GRENADE + ((((int)recipient->s.apos.trBase[YAW] & 0x7FFF) % 360) << 16);
+        VectorCopy(recipient->r.currentOrigin, tmp->s.angles);
+        SnapVector(tmp->s.angles);
+
+        // Set burn seconds and notify the player of what happened with a sound effect.
+        recipient->client->sess.burnTimer = 4;
+        G_ClientSound(recipient, G_SoundIndex("/sound/weapons/incendiary_grenade/incen01.mp3", qtrue));
+
+    }
+
+    return idNum;
+}
+
+int admMapcycle (int argNum, gentity_t* adm, qboolean shortCmd) {
+
+    level.mapState = MAPSTATE_MAPCYCLE;
+    level.mapStateTimer = level.time + 5000;
+
+    G_Broadcast(va("\\Mapcycle by %s", getNameOrArg(adm, "RCON", qfalse)), BROADCAST_CMD, NULL, qtrue);
+    logAdmin(adm, NULL, "mapcycle", NULL);
+    G_printInfoMessageToAll("Mapcycle by %s", getNameOrArg(adm, "RCON", qtrue));
+
+    return -1;
+}
 
 void admUnplant(gentity_t* adm, gentity_t* recipient) {
 
@@ -183,8 +444,8 @@ void admToggleCVAR(int argNum, gentity_t* adm, qboolean shortCmd, char* cvarName
             trap_Cvar_Update(cvar);
         }
 
-        G_printInfoMessageToAll("%s was changed to %d by %s.", cvarName, newValue, adm->client->pers.cleanName); // RCON commands should be already captured by the game engine itself.
-        G_Broadcast(va("\\%s was changed to %d\nby %s", cvarName, newValue, adm->client->pers.netname), BROADCAST_CMD, NULL, qtrue);
+        G_printInfoMessageToAll("%s was changed to %d by %s.", cvarName, newValue, getNameOrArg(adm, "RCON", qtrue));
+        G_Broadcast(va("\\%s was changed to %d\nby %s", cvarName, newValue, getNameOrArg(adm, "RCON", qfalse)), BROADCAST_CMD, NULL, qtrue);
         logAdmin(adm, NULL, va("%s changed to %d", cvarName, newValue), NULL);
 
         // was only sent for rocmod and gold specific, but this shouldn't impact non-ROCMod clients if we send it again over here as well.
@@ -201,12 +462,11 @@ int admBanlist(int argNum, gentity_t* adm, qboolean shortCmd) {
     return -1;
 }
 
-int admBan(int argNum, gentity_t* adm, qboolean shortCmd) {
-
+void admBanPlayer(int argNum, gentity_t* adm, qboolean shortCmd, qboolean isSubnet) {
     int idNum = -1;
     gentity_t* recipient;
     char* reason;
-    char* durationString;
+    char durationString[MAX_STRING_CHARS], dayString[MAX_STRING_CHARS] = "\0", hourString[MAX_STRING_CHARS] = "\0", minuteString[MAX_STRING_CHARS] = "\0";
     char* banDurationArg = G_GetArg(argNum + 1, shortCmd);
     int banDuration[4] = { -1, 0, 0, 0 };
     qboolean isEom = qfalse;
@@ -215,20 +475,32 @@ int admBan(int argNum, gentity_t* adm, qboolean shortCmd) {
 
     if (banDuration[0] != 1) {
         isEom = qtrue;
-        durationString = "until the end of map";
+        Q_strncpyz(durationString, "until the end of map", sizeof(durationString));
     }
     else {
-        durationString = va(
-            "for %s%s%s"
-            , banDuration[1] ? 
-                va("%d days", banDuration[1]) 
-                : "", 
-            banDuration[2] ? 
-                va("%s%d hours", banDuration[1] ? ", " : "", banDuration[2])
-                : "", 
-            banDuration[3] ? 
-                va("%s%d minutes", (banDuration[1] || banDuration[2]) ? ", " : "", banDuration[3]) 
-            : "");
+
+        if (banDuration[1]) {
+            Q_strncpyz(dayString, va("%d days", banDuration[1]), sizeof(dayString));
+        }
+
+        if (banDuration[2]) {
+            if (banDuration[1]) {
+                Q_strncpyz(hourString, va(", %d hours", banDuration[2]), sizeof(hourString));
+            } else {
+                Q_strncpyz(hourString, va("%d hours", banDuration[2]), sizeof(hourString));
+            }
+        }
+
+        if (banDuration[3]) {
+            if (banDuration[1] || banDuration[2]) {
+                Q_strncpyz(minuteString, va(", %d minutes", banDuration[3]), sizeof(minuteString));
+            } else {
+                Q_strncpyz(minuteString, va("%d minutes", banDuration[3]), sizeof(minuteString));
+            }
+        }
+
+
+        Q_strncpyz(durationString, va("for %s%s%s", dayString, hourString, minuteString), sizeof(durationString));
     }
 
     if (banDuration[0] == -1) {
@@ -238,40 +510,24 @@ int admBan(int argNum, gentity_t* adm, qboolean shortCmd) {
         reason = concatArgs(argNum + 2, shortCmd);
     }
 
-
-
-    idNum = G_clientNumFromArg(adm, argNum, "ban", qfalse, qfalse, qfalse, shortCmd);
+    idNum = G_clientNumFromArg(adm, argNum, "do this to", qfalse, qfalse, qfalse, shortCmd);
 
     if (idNum >= 0) {
         recipient = g_entities + idNum;
-        G_Broadcast(va("%s\n^7has been \\banned %s\nby %s", recipient->client->pers.netname, durationString, getNameOrArg(adm, "RCON", qfalse)), BROADCAST_CMD, NULL, qtrue);
-        logAdmin(adm, recipient, va("banned %s", durationString), reason);
-        dbAddBan(recipient->client->pers.cleanName, recipient->client->pers.ip, getNameOrArg(adm, "RCON", qtrue), isEom, banDuration[1], banDuration[2], banDuration[3]);
+        G_Broadcast(va("%s\n^7has been \\%sbanned %s\nby %s", recipient->client->pers.netname, isSubnet ? "subnet" : "", durationString, getNameOrArg(adm, "RCON", qfalse)), BROADCAST_CMD, NULL, qtrue);
+        logAdmin(adm, recipient, va("%sbanned %s", isSubnet ? "subnet" : "", durationString), reason);
+        dbAddBan(isSubnet, recipient->client->pers.cleanName, recipient->client->pers.ip, getNameOrArg(adm, "RCON", qtrue), reason, isEom, banDuration[1], banDuration[2], banDuration[3]);
         trap_DropClient(idNum, va("Banned by %s %s. Reason: %s", getNameOrArg(adm, "RCON", qtrue), durationString, reason));
     }
+}
 
+int admBan(int argNum, gentity_t* adm, qboolean shortCmd) {
+    admBanPlayer(argNum, adm, shortCmd, qfalse);
     return -1;
 }
 
 int admUnban(int argNum, gentity_t* adm, qboolean shortCmd) {
-
-    int rownum = atoi(G_GetArg(argNum, shortCmd));
-
-    if (rownum > 0) {
-        // get row data so I can also display it to the player.
-        char* bannedName;
-        char* bannedIp;
-
-        if (dbGetBanByRow(rownum, bannedName, bannedIp, qfalse)) {
-            logAdmin(adm, NULL, va("Unbanned [%d] %s (%s)", rownum, bannedName, bannedIp), NULL);
-            G_printInfoMessage(adm, va("Unbanned [%d] %s (%s)", rownum, bannedName, bannedIp));
-            dbDeleteBanByRowId(rownum, qfalse);
-        }
-    }
-    else {
-        G_printInfoMessage(adm, "No ID specified whom to unban");
-    }
-
+    admUnbanPlayer(argNum, adm, shortCmd, qfalse);
     return -1;
 }
 
@@ -295,66 +551,16 @@ int admBroadcast(int argNum, gentity_t* adm, qboolean shortCmd) {
 }
 
 int admSubnetbanList(int argNum, gentity_t* adm, qboolean shortCmd) {
-
     dbGetBanlist(adm, qtrue);
-
     return -1;
 }
 
 int admSubnetBan(int argNum, gentity_t* adm, qboolean shortCmd) {
-
-    int idNum = -1;
-    gentity_t* recipient;
-    char* reason;
-    char* durationString;
-    char* banDurationArg = G_GetArg(argNum + 1, shortCmd);
-    int banDuration[4] = { -1, 0, 0, 0 };
-    qboolean isEom = qfalse;
-
-    getBanDurationFromArg(&banDuration, banDurationArg);
-
-    if (banDuration[0] != 1) {
-        isEom = qtrue;
-        durationString = "until the end of map";
-    }
-    else {
-        durationString = va(
-            "for %s%s%s"
-            , banDuration[1] ?
-            va("%d days", banDuration[1])
-            : "",
-            banDuration[2] ?
-            va("%s%d hours", banDuration[1] ? ", " : "", banDuration[2])
-            : "",
-            banDuration[3] ?
-            va("%s%d minutes", (banDuration[1] || banDuration[2]) ? ", " : "", banDuration[3])
-            : "");
-    }
-
-    if (banDuration[0] == -1) {
-        reason = concatArgs(argNum + 1, shortCmd);
-    }
-    else {
-        reason = concatArgs(argNum + 2, shortCmd);
-    }
-
-
-
-    idNum = G_clientNumFromArg(adm, argNum, "subnetban", qfalse, qfalse, qfalse, shortCmd);
-
-    if (idNum >= 0) {
-        recipient = g_entities + idNum;
-        G_Broadcast(va("%s\n^7has been \\subnetbanned %s\nby %s", recipient->client->pers.netname, durationString, getNameOrArg(adm, "RCON", qfalse)), BROADCAST_CMD, NULL, qtrue);
-        logAdmin(adm, recipient, va("subnetbanned %s", durationString), reason);
-        dbAddSubnetban(recipient->client->pers.cleanName, recipient->client->pers.subnet, getNameOrArg(adm, "RCON", qtrue), isEom, banDuration[1], banDuration[2], banDuration[3]);
-        trap_DropClient(idNum, va("Subnetbanned by %s %s. Reason: %s", getNameOrArg(adm, "RCON", qtrue), durationString, reason));
-    }
-
+    admBanPlayer(argNum, adm, shortCmd, qtrue);
     return -1;
 }
 
-int admSubnetUnban(int argNum, gentity_t* adm, qboolean shortCmd) {
-
+void admUnbanPlayer(int argNum, gentity_t* adm, qboolean shortCmd, qboolean isSubnet) {
     int rownum = atoi(G_GetArg(argNum, shortCmd));
 
     if (rownum > 0) {
@@ -362,15 +568,19 @@ int admSubnetUnban(int argNum, gentity_t* adm, qboolean shortCmd) {
         char* bannedName;
         char* bannedIp;
 
-        if (dbGetBanByRow(rownum, bannedName, bannedIp, qtrue)) {
-            logAdmin(adm, NULL, va("Subnetunbanned [%d] %s (%s)", rownum, bannedName, bannedIp), NULL);
-            G_printInfoMessage(adm, va("Subnetunbanned [%d] %s (%s)", rownum, bannedName, bannedIp));
-            dbDeleteBanByRowId(rownum, qtrue);
+        if (dbGetBanByRow(rownum, &bannedName, &bannedIp, isSubnet)) {
+            logAdmin(adm, NULL, va("%s [%d] %s (%s)", isSubnet ? "Subnetunbanned" : "Unbanned", rownum, bannedName, bannedIp), NULL);
+            G_printInfoMessage(adm, va("%s [%d] %s (%s)", isSubnet ? "Subnetunbanned" : "Unbanned", rownum, bannedName, bannedIp));
+            dbDeleteBanByRowId(rownum, isSubnet);
         }
     }
     else {
         G_printInfoMessage(adm, "No ID specified whom to unban");
     }
+}
+
+int admSubnetUnban(int argNum, gentity_t* adm, qboolean shortCmd) {
+    admUnbanPlayer(argNum, adm, shortCmd, qtrue);
     return -1;
 }
 
@@ -409,23 +619,12 @@ int admUppercut(int argNum, gentity_t* adm, qboolean shortCmd) {
 
     if (idNum >= 0) {
         recipient = g_entities + idNum;
-
-        recipient->client->ps.pm_flags |= PMF_JUMPING;
-        recipient->client->ps.groundEntityNum = ENTITYNUM_NONE;
-
         ucLevelArg = G_GetArg(argNum + 1, shortCmd);
 
         if (ucLevelArg && strlen(ucLevelArg) > 0) {
             ucLevel = atoi(ucLevelArg);
-
-            if (ucLevel > 0) {
-                recipient->client->ps.velocity[2] = 200 * ucLevel;
-            }
         }
-
-        if (ucLevel <= 0) {
-            recipient->client->ps.velocity[2] = 1000;
-        }
+        uppercutPlayer(recipient, ucLevel);
     }
 
     return idNum;
@@ -535,6 +734,14 @@ int admLockTeam(int argNum, gentity_t* adm, qboolean shortCmd) {
 int admRespawn(int argNum, gentity_t* adm, qboolean shortCmd) {
 
     int idNum = -1;
+    gentity_t* recipient;
+
+    idNum = G_clientNumFromArg(adm, argNum, "respawn", qfalse, qtrue, qtrue, shortCmd);
+
+    if (idNum >= 0) {
+        recipient = g_entities + idNum;
+        respawnClient(adm, recipient);
+    }
 
     return idNum;
 }
@@ -745,7 +952,8 @@ int admRemoveAdminByRowId(int argNum, gentity_t* adm, qboolean shortCmd) {
 
     int rowid = atoi(G_GetArg(argNum, shortCmd));
     char* pass = G_GetArg(argNum + 1, shortCmd);
-    char removableName[MAX_NETNAME], removableIp[MAX_IP];
+    char* removableName;
+    char* removableIp;
     int removableAdminLevel = 0;
 
     qboolean passadmin = qfalse;
@@ -756,7 +964,7 @@ int admRemoveAdminByRowId(int argNum, gentity_t* adm, qboolean shortCmd) {
 
     // first need to figure out whether I can even remove that admin.
 
-    removableAdminLevel = dbGetAdminByRowId(passadmin, rowid, removableName, removableIp);
+    removableAdminLevel = dbGetAdminByRowId(passadmin, rowid, &removableName, &removableIp);
 
     if (!removableAdminLevel) {
         G_printInfoMessage(adm, "Admin with row %d does not exist.", rowid);
@@ -911,6 +1119,7 @@ qboolean canClientRunAdminCommand(gentity_t* adm, int adminCommandId) {
 int cmdIsAdminCmd(char* cmd, qboolean shortCmd) {
 
     Q_strlwr(cmd);
+    Q_CleanStr(cmd);
     for (int i = 0; i < adminCommandsSize; i++) {
         if (shortCmd && (!Q_stricmp(cmd, adminCommands[i].shortCmd) || !Q_stricmp(cmd, va("!%s", adminCommands[i].adminCmd)))) {
             return i;

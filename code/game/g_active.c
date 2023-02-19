@@ -994,6 +994,53 @@ void ClientThink_real( gentity_t *ent )
         return;
     }
 
+    if (client->sess.spinViewState != SPINVIEW_NONE && client->sess.nextSpin <= level.time) {
+        spinView(ent);
+    }
+
+    if (client->sess.coasterCounter && client->sess.nextCoaster <= level.time) {
+        client->sess.coasterCounter--;
+
+        switch (client->sess.coasterState) {
+            case COASTER_UPPERCUT:
+                client->sess.coasterState = COASTER_RUNOVER;
+                client->sess.spinViewState = SPINVIEW_NONE;
+                uppercutPlayer(ent, 0);
+                break;
+            case COASTER_RUNOVER:
+                client->sess.coasterState = COASTER_SPIN;
+                client->sess.nextSpin = level.time + 750;
+                client->sess.spinViewState = SPINVIEW_FAST;
+                runoverPlayer(ent);
+                break;
+            case COASTER_SPIN:
+                client->sess.coasterState = COASTER_UPPERCUT;
+                break;
+            default:
+                break;
+        }
+
+        client->sess.nextCoaster = level.time + 750;
+    }
+
+    if (level.time > client->sess.oneSecChecks) {
+        client->sess.oneSecChecks = level.time + 1000;
+        if ( client->sess.burnTimer ) {
+            client->sess.burnTimer--;
+            if (ent->client->ps.stats[STAT_HEALTH] >= 35) {
+                G_Damage (ent, NULL, NULL, NULL, NULL, 12, 0, MOD_BURN, HL_NONE );
+            }
+            vec3_t fireAngles, direction;
+            VectorCopy(ent->client->ps.viewangles, fireAngles);
+            AngleVectors( fireAngles, direction, NULL, NULL );
+            direction[0] *= -1.0;
+            direction[1] *= -1.0;
+            direction[2] = 0.0;
+            VectorNormalize ( direction );
+            G_ApplyKnockback ( ent, direction, 10 );  //knock them back
+        }
+    }
+
     // spectators don't do much
     if ( G_IsClientSpectating ( client ) )
     {

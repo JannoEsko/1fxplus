@@ -123,6 +123,19 @@ vmCvar_t    g_redTeamPrefix;
 vmCvar_t    g_blueTeamPrefix;
 vmCvar_t    g_spectatorTeamPrefix;
 
+vmCvar_t    g_ri;
+vmCvar_t    g_rtl;
+vmCvar_t    g_runover;
+vmCvar_t    g_rollercoaster;
+vmCvar_t    g_mapswitch;
+vmCvar_t    g_strip;
+vmCvar_t    g_shuffleteams;
+vmCvar_t    g_gr;
+vmCvar_t    g_eventeams;
+vmCvar_t    g_ff;
+vmCvar_t    g_rename;
+vmCvar_t    g_burn;
+
 // SQLite3 tables.
 sqlite3* gameDb; // will hold anything related to the game itself: admins, bans, aliases and so on.
 sqlite3* logDb; // will hold all the log tables (RCON, admin, game etc)
@@ -201,7 +214,7 @@ static cvarTable_t gameCvarTable[] =
     { &g_debugRMG, "g_debugRMG", "0", 0, 0.0f, 0.0f },
 
     { &g_timeouttospec,     "g_timeouttospec",  "15",       CVAR_ARCHIVE, 0.0, 0.0, 0, qfalse },
-    { &g_roundtimelimit,    "g_roundtimelimit", "5",        CVAR_ARCHIVE, 0.0, 0.0, 0, qfalse },
+    { &g_roundtimelimit,    "g_roundtimelimit", "5",        CVAR_ARCHIVE, 1.0, 0.0, 0, qfalse },
     { &g_roundjointime,     "g_roundjointime",  "5",        CVAR_ARCHIVE, 0.0, 0.0, 0, qfalse },
     { &g_timeextension,     "g_timeextension",  "15",       CVAR_ARCHIVE, 0.0, 0.0, 0, qfalse },
 
@@ -282,6 +295,19 @@ static cvarTable_t gameCvarTable[] =
     { &g_blueTeamPrefix,        "g_blueTeamPrefix",                 "blue",       CVAR_ARCHIVE,   0.0f,   0.0f,   0 ,  qfalse },
     { &g_redTeamPrefix,        "g_redTeamPrefix",                 "red",       CVAR_ARCHIVE,   0.0f,   0.0f,   0 ,  qfalse },
     { &g_spectatorTeamPrefix,        "g_spectatorTeamPrefix",                 "spec",       CVAR_ARCHIVE,   0.0f,   0.0f,   0 ,  qfalse },
+    { &g_ri,        "g_ri",                 "2",       CVAR_ARCHIVE,   0.0f,   0.0f,   0 ,  qfalse },
+    { &g_rtl,        "g_rtl",                 "2",       CVAR_ARCHIVE,   0.0f,   0.0f,   0 ,  qfalse },
+    { &g_runover,        "g_runover",                 "1",       CVAR_ARCHIVE,   0.0f,   0.0f,   0 ,  qfalse },
+    { &g_rollercoaster,        "g_rollercoaster",                 "2",       CVAR_ARCHIVE,   0.0f,   0.0f,   0 ,  qfalse },
+    { &g_mapswitch,        "g_mapswitch",                 "2",       CVAR_ARCHIVE,   0.0f,   0.0f,   0 ,  qfalse },
+    { &g_strip,        "g_strip",                 "2",       CVAR_ARCHIVE,   0.0f,   0.0f,   0 ,  qfalse },
+    { &g_shuffleteams,        "g_shuffleteams",                 "1",       CVAR_ARCHIVE,   0.0f,   0.0f,   0 ,  qfalse },
+    { &g_gr,        "g_gr",                 "2",       CVAR_ARCHIVE,   0.0f,   0.0f,   0 ,  qfalse },
+    { &g_eventeams,        "g_eventeams",                 "1",       CVAR_ARCHIVE,   0.0f,   0.0f,   0 ,  qfalse },
+    { &g_ff,        "g_ff",                 "3",       CVAR_ARCHIVE,   0.0f,   0.0f,   0 ,  qfalse },
+    { &g_rename,        "g_rename",                 "2",       CVAR_ARCHIVE,   0.0f,   0.0f,   0 ,  qfalse },
+    { &g_burn,        "g_burn",                 "2",       CVAR_ARCHIVE,   0.0f,   0.0f,   0 ,  qfalse },
+
 };
 
 // bk001129 - made static to avoid aliasing
@@ -560,19 +586,19 @@ void G_UpdateAvailableWeapons ( void )
     trap_Cvar_Update ( &g_availableWeapons );
 }
 
-qboolean G_IsGametypeSupported() {
+qboolean G_IsGametypeSupported(char* input) {
     // only add the DLL/SO's being built over here.
     return
-        Q_stricmp(g_gametype.string, "h&s") == 0 ? qtrue : qfalse ||
-        Q_stricmp(g_gametype.string, "h&z") == 0 ? qtrue : qfalse ||
-        Q_stricmp(g_gametype.string, "hns") == 0 ? qtrue : qfalse ||
-        Q_stricmp(g_gametype.string, "hnz") == 0 ? qtrue : qfalse ||
-        Q_stricmp(g_gametype.string, "inf") == 0 ? qtrue : qfalse ||
-        Q_stricmp(g_gametype.string, "dm") == 0 ? qtrue : qfalse ||
-        Q_stricmp(g_gametype.string, "elim") == 0 ? qtrue : qfalse ||
-        Q_stricmp(g_gametype.string, "dem") == 0 ? qtrue : qfalse ||
-        Q_stricmp(g_gametype.string, "tdm") == 0 ? qtrue : qfalse ||
-        Q_stricmp(g_gametype.string, "ctf") == 0 ? qtrue : qfalse
+        Q_stricmp(input ? input : g_gametype.string, "h&s") == 0 ? qtrue : qfalse ||
+        Q_stricmp(input ? input : g_gametype.string, "h&z") == 0 ? qtrue : qfalse ||
+        Q_stricmp(input ? input : g_gametype.string, "hns") == 0 ? qtrue : qfalse ||
+        Q_stricmp(input ? input : g_gametype.string, "hnz") == 0 ? qtrue : qfalse ||
+        Q_stricmp(input ? input : g_gametype.string, "inf") == 0 ? qtrue : qfalse ||
+        Q_stricmp(input ? input : g_gametype.string, "dm") == 0 ? qtrue : qfalse ||
+        Q_stricmp(input ? input : g_gametype.string, "elim") == 0 ? qtrue : qfalse ||
+        Q_stricmp(input ? input : g_gametype.string, "dem") == 0 ? qtrue : qfalse ||
+        Q_stricmp(input ? input : g_gametype.string, "tdm") == 0 ? qtrue : qfalse ||
+        Q_stricmp(input ? input : g_gametype.string, "ctf") == 0 ? qtrue : qfalse
 
         ;
 
@@ -581,7 +607,7 @@ qboolean G_IsGametypeSupported() {
 void G_SetRealGametype() {
 
     // check whether the g_gametype is a supported gametype.
-    if (!G_IsGametypeSupported()) {
+    if (!G_IsGametypeSupported(NULL)) {
         Com_Printf("Gametype %s is not supported by 1fxplus. Gametype defaulted to deathmatch.\n", g_gametype.string);
         trap_Cvar_Set("g_gametype", "dm");
         trap_Cvar_Update(&g_gametype);
@@ -811,6 +837,7 @@ void G_InitGame( int levelTime, int randomSeed, int restart )
     // check databases.
     Com_Printf ("Loading databases...\n");
     loadDatabases();
+    dbClearOutdatedBans(qtrue);
 
     Com_Printf ("-----------------------------------\n");
 
@@ -1996,6 +2023,10 @@ void G_RunFrame( int levelTime )
         backupInMemoryDatabases("game.db", gameDb);
         // Do this again in the next 5 minutes.
         level.sqlBackupTime = level.time + 50000;
+    }
+
+    if (level.mapState != MAPSTATE_NOTHING && level.time >= level.mapStateTimer) {
+        runMapStateEvents();
     }
 
     // Check warmup rules
