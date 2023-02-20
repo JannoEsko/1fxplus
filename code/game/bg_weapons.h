@@ -52,7 +52,8 @@ typedef enum
     MOD_TRIGGER_HURT_NOSUICIDE,
     MOD_POP,
     MOD_BURN,
-    MOD_CAR
+    MOD_CAR,
+    MOD_REFRESH
 
 } meansOfDeath_t;
 

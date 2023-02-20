@@ -26,6 +26,11 @@ typedef enum {
     COASTER_SPIN
 } coasterState;
 
+typedef enum {
+    CL_NONE,
+    CL_ROCMOD
+} clientMod;
+
 #define MAX_PACKET_BUF 1000
 
 #define COREUI_DEFAULT_PAKNAME "1fx.additions/1fx_coreUI_1.21"
@@ -56,6 +61,13 @@ void spinView(gentity_t* recipient);
 void stripTeam(int team, qboolean handsUp);
 void stripClient(gentity_t* recipient, qboolean handsUp);
 void stripEveryone(qboolean handsUp);
+void resetSession(gentity_t* ent);
+void G_FreeStatsMemory(gentity_t* ent);
+void G_AllocateStatsMemory(gentity_t* ent);
+void G_EmptyStatsMemory(gentity_t* ent);
+void refreshStats(gentity_t* ent);
+int normalAttackMod(int mod);
+int altAttack(int weapon);
 
 
 

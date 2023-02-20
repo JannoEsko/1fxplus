@@ -261,47 +261,28 @@ from chat buffer.
 ============
 */
 
-int G_GetChatArgumentCount()
-{
-    char text[MAX_SAY_TEXT];
-    char *text2;
+int G_GetChatArgumentCount() {
+    
+    char arg0[MAX_STRING_TOKENS];
+    char arg1[MAX_SAY_TEXT];
+    char* token;
     int argc = 0;
 
-    // Fetch the argument containing the full buffer.
-    trap_Argv(1, text, sizeof(text));
-    text2 = text;
+    trap_Argv(0, arg0, sizeof(arg0));
+    if (!Q_stricmp(arg0, "say") || !Q_stricmp(arg0, "say_team") || !Q_stricmp(arg0, "vsay_team") || !Q_stricmp(arg0, "tell")) {
+        trap_Argv(1, arg1, sizeof(arg1));
+        if (strlen(arg1) > 0) {
+            token = strtok(arg1, " ");
 
-    // Loop through text, find first character.
-    while (text2 != NULL && *text2 == ' ') {
-        *text2++;
-    }
-
-    if (!text2 || strlen(text2) == 0) {
-        // No real argument present.
-        return 0;
-    }
-
-    while (text2 != NULL && strlen(text2) != 0) {
-        text2 = strstr(text2, " ");
-
-        // No more arguments found, return.
-        if (text2 == NULL)
-            break;
-
-        // Get rid of extra spaces.
-        while (text2 != NULL && *text2 == ' ') {
-            *text2++;
+            while (token != NULL) {
+                argc++;
+                token = strtok(NULL, " ");
+            }
         }
-
-        if (text2 == NULL || strlen(text2) == 0) {
-            // No real argument present.
-            break;
-        }
-
-        argc++;
     }
 
     return argc;
+
 }
 
 /*
@@ -317,45 +298,33 @@ char *G_GetChatArgument(int argNum)
 {
     static char newArg[MAX_SAY_TEXT];
     char text[MAX_SAY_TEXT];
-    char *text2, *end;
-    int argc = 0;
+    char* token;
 
-    // Reset buffer.
-    memset(newArg, 0, sizeof(newArg));
-
-    // Fetch the argument containing the full buffer.
-    trap_Argv(1, text, sizeof(text));
-    text2 = text;
-
-    // Argument must be present.
-    if (G_GetChatArgumentCount() < argNum) {
+    if (argNum < 0 || argNum >= G_GetChatArgumentCount()) {
         return "";
     }
 
-    // Loop through text, find first character.
-    while (text2 != NULL && *text2 == ' '){
-        *text2++;
+    memset(newArg, 0, sizeof(newArg));
+
+    trap_Argv(1, text, sizeof(text)); // clientcmd is say "text text text", arg0 = cmd which is checked in getchatargumentcount, arg1 to be parsed here.
+    int currentArg = 0;
+
+    if (strlen(text) == 0) {
+        return "";
     }
 
-    while (argc < argNum) {
-        text2 = strstr(text2, " ");
+    token = strtok(text, " ");
 
-        // Get rid of extra spaces.
-        while (text2 && *text2 == ' ') {
-            *text2++;
-        }
-
-        argc++;
+    while (currentArg < argNum && token != NULL) {
+        currentArg++;
+        token = strtok(NULL, " ");
     }
 
-    // Check if there are more arguments after this one, or if it's the last one.
-    end = strstr(text2, " ");
-    if (end == NULL) {
-        Q_strncpyz(newArg, text2, sizeof(newArg));
-    }else{
-        text2[end - text2] = '\0';
-        Q_strncpyz(newArg, text2, sizeof(newArg));
+    if (token == NULL) {
+        return "";
     }
+
+    Q_strncpyz(newArg, token, sizeof(newArg));
 
     // Remove colors from arg.
     G_RemoveColorEscapeSequences(newArg);
@@ -380,7 +349,7 @@ char *G_GetArg(int argNum,qboolean shortCmd)
         trap_Argv(argNum,arg,sizeof(arg));
     }
     else {
-        strncpy(arg,G_GetChatArgument(argNum),sizeof(arg));
+        strncpy(arg, G_GetChatArgument(argNum), sizeof(arg));
     }
 
     return arg;
@@ -1039,6 +1008,11 @@ void uppercutPlayer(gentity_t* recipient, int ucLevel) {
 
 void spinView(gentity_t* recipient) {
 
+    if (recipient->client->sess.lastSpin < level.time) {
+        recipient->client->sess.spinViewState = SPINVIEW_NONE;
+        return;
+    }
+
     switch (recipient->client->sess.spinViewState) {
         case SPINVIEW_NONE:
             return;
@@ -1120,4 +1094,157 @@ void stripEveryone(qboolean handsUp) {
         recipient = &g_entities[level.sortedClients[i]];
         stripClient(recipient, handsUp);
     }
+}
+
+void resetSession(gentity_t* ent) {
+
+    clientSession_t* sess = &ent->client->sess;
+    sess->adminLevel = LEVEL_NOADMIN;
+    sess->adminPassRegistration = LEVEL_NOADMIN;
+    memset(sess->adminName, 0, sizeof(sess->adminName));
+    memset(sess->adminPassAddedBy, 0, sizeof(sess->adminPassAddedBy));
+    sess->playerDbChecksDone = qfalse;
+    sess->planted = qfalse;
+    sess->lastSpin = 0;
+    sess->clientMod = CL_NONE;
+    memset(sess->clientModVersion, 0, sizeof(sess->clientModVersion));
+    sess->clientCheckCount = 0;
+
+}
+
+void G_FreeStatsMemory(gentity_t* ent)
+{
+    int i;
+    gclient_t* client;
+
+    if (ent == NULL) {
+        for (i = 0; i < level.maxclients; i++)
+        {
+            client = &level.clients[i];
+
+            if (client->pers.statinfo.weapon_shots != NULL)
+                free(client->pers.statinfo.weapon_shots);
+            if (client->pers.statinfo.weapon_hits != NULL)
+                free(client->pers.statinfo.weapon_hits);
+            if (client->pers.statinfo.weapon_headshots != NULL)
+                free(client->pers.statinfo.weapon_headshots);
+
+            client->pers.statinfo.weapon_shots = NULL;
+            client->pers.statinfo.weapon_hits = NULL;
+            client->pers.statinfo.weapon_headshots = NULL;
+        }
+    }
+    else {
+        client = ent->client;
+
+        if (client->pers.statinfo.weapon_shots != NULL)
+            free(client->pers.statinfo.weapon_shots);
+        if (client->pers.statinfo.weapon_hits != NULL)
+            free(client->pers.statinfo.weapon_hits);
+        if (client->pers.statinfo.weapon_headshots != NULL)
+            free(client->pers.statinfo.weapon_headshots);
+
+        client->pers.statinfo.weapon_shots = NULL;
+        client->pers.statinfo.weapon_hits = NULL;
+        client->pers.statinfo.weapon_headshots = NULL;
+    }
+}
+
+void G_EmptyStatsMemory(gentity_t* ent)
+{
+    // Free the stats memory before memsetting the struct.
+    G_FreeStatsMemory(ent);
+
+    // Memset it now.
+    memset(&ent->client->pers.statinfo, 0, sizeof(ent->client->pers.statinfo));
+
+    // Re-allocate the memory.
+    G_AllocateStatsMemory(ent);
+}
+
+void G_AllocateStatsMemory(gentity_t* ent)
+{
+    int i;
+    gclient_t* client;
+
+    if (ent == NULL) {
+        for (i = 0; i < level.maxclients; i++)
+        {
+            client = &level.clients[i];
+
+            client->pers.statinfo.weapon_shots = calloc(ATTACK_MAX * WP_NUM_WEAPONS, sizeof(int));
+            client->pers.statinfo.weapon_hits = calloc(ATTACK_MAX * WP_NUM_WEAPONS, sizeof(int));
+            client->pers.statinfo.weapon_headshots = calloc(ATTACK_MAX * WP_NUM_WEAPONS, sizeof(int));
+            if (!client->pers.statinfo.weapon_shots || !client->pers.statinfo.weapon_hits || !client->pers.statinfo.weapon_headshots) {
+                Com_Error(ERR_FATAL, "Unable to initialize memory for weapon stats! Out of memory?");
+            }
+        }
+    }
+    else {
+        client = ent->client;
+
+        client->pers.statinfo.weapon_shots = calloc(ATTACK_MAX * WP_NUM_WEAPONS, sizeof(int));
+        client->pers.statinfo.weapon_hits = calloc(ATTACK_MAX * WP_NUM_WEAPONS, sizeof(int));
+        client->pers.statinfo.weapon_headshots = calloc(ATTACK_MAX * WP_NUM_WEAPONS, sizeof(int));
+        if (!client->pers.statinfo.weapon_shots || !client->pers.statinfo.weapon_hits || !client->pers.statinfo.weapon_headshots) {
+            Com_Error(ERR_FATAL, "Unable to initialize memory for weapon stats! Out of memory?");
+        }
+    }
+}
+
+void refreshStats(gentity_t* ent) {
+
+    if (level.time <= level.gametypeStartTime + 5000) {
+        G_printInfoMessage(ent, "You shouldn't refresh at the start of a new round.");
+        return;
+    }
+
+    if (!G_IsClientSpectating(ent->client))
+    {
+        ent->flags &= ~FL_GODMODE;
+        ent->client->ps.stats[STAT_HEALTH] = ent->health = -999;
+        player_die(ent, ent, ent, 100000, MOD_REFRESH, HL_NONE, vec3_origin);
+    }
+
+    G_EmptyStatsMemory(ent);
+
+    ent->client->pers.enterTime = level.time;
+    ent->client->ps.persistant[PERS_SCORE] = 0;
+    ent->client->sess.score = 0;
+    ent->client->sess.deaths = 0;
+    ent->client->sess.kills = 0;
+    ent->client->sess.teamkillDamage = 0;
+    ent->client->sess.teamkillForgiveTime = 0;
+    ent->client->pers.statinfo.lastclient_hurt = -1;
+    ent->client->pers.statinfo.lasthurtby = -1;
+    ent->client->pers.statinfo.lastKillerHealth = -1;
+    ent->client->pers.statinfo.lastKillerArmor = -1;
+}
+
+/*
+================
+altAttack
+4/30/14 - 9:25 PM
+Convenience function to quickly get the alt attack mod value.
+================
+*/
+
+int altAttack(int weapon) {
+    return weapon + 256;
+}
+
+/*
+================
+normalAttackMod
+10/23/15 - 10:13 PM
+Convenience function to quickly get normalized WP_* value of a mod.
+================
+*/
+
+int normalAttackMod(int mod) {
+    if (mod > 256) {
+        return mod - 256;
+    }
+
+    return mod;
 }

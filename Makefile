@@ -699,6 +699,7 @@ makedirs:
 	@$(MKDIR) $(BUILD_DIR)
 	@$(MKDIR) $(B)/ext
 	@$(MKDIR) $(B)/ext/sqlite
+	@$(MKDIR) $(B)/ext/rocmod
 	@$(MKDIR) $(B)/game
 	@$(MKDIR) $(B)/game/1fx
 	@$(MKDIR) $(B)/gametype
@@ -751,6 +752,7 @@ SOF2GOBJ_ = \
   $(B)/game/g_utils.o \
   $(B)/game/g_weapon.o \
   $(B)/ext/sqlite/sqlite3.o \
+  $(B)/ext/rocmod/rocmod.o \
   $(B)/game/1fx/logger.o \
   $(B)/game/1fx/database.o \
   $(B)/game/1fx/adminCommands.o \
@@ -919,6 +921,8 @@ $(B)/qcommon/%.o: $(CMDIR)/%.c
 $(B)/game/%.o: $(GDIR)/%.c
 	$(DO_GAME_CC)
 $(B)/ext/sqlite/%.o: $(EXTDIR)/sqlite/%.c
+	$(DO_GAME_CC)
+$(B)/ext/rocmod/%.o: $(EXTDIR)/rocmod/%.c
 	$(DO_GAME_CC)
 $(B)/game/1fx/%.o: $(GDIR)/1fx/%.c
 	$(DO_GAME_CC)

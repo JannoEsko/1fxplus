@@ -573,6 +573,9 @@ void admUnbanPlayer(int argNum, gentity_t* adm, qboolean shortCmd, qboolean isSu
             G_printInfoMessage(adm, va("%s [%d] %s (%s)", isSubnet ? "Subnetunbanned" : "Unbanned", rownum, bannedName, bannedIp));
             dbDeleteBanByRowId(rownum, isSubnet);
         }
+        else {
+            G_printInfoMessage(adm, "ID %d was not found in %sbanlist.", rownum, isSubnet ? "subnet" : "");
+        }
     }
     else {
         G_printInfoMessage(adm, "No ID specified whom to unban");

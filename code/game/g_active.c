@@ -985,6 +985,17 @@ void ClientThink_real( gentity_t *ent )
         ucmd->serverTime = ((ucmd->serverTime + pmove_msec.integer-1) / pmove_msec.integer) * pmove_msec.integer;
     }
 
+    if (level.awardTime && ent->client->sess.clientMod != CL_ROCMOD) {
+        ent->client->ps.pm_type = PM_FREEZE;
+        ent->client->ps.stats[STAT_HEALTH] = -1;
+
+        memset(&pm, 0, sizeof(pm));
+        pm.ps = &client->ps;
+        pm.cmd = *ucmd;
+        Pmove(&pm);
+        return;
+    }
+
     //
     // check for exiting intermission
     //
@@ -992,6 +1003,38 @@ void ClientThink_real( gentity_t *ent )
     {
         ClientIntermissionThink( client );
         return;
+    }
+
+    if (level.pause) {
+        if (g_inactivity.integer) {
+            client->inactivityTime = level.time + g_inactivity.integer * 1000;
+        }
+        else {
+            client->inactivityTime = level.time + 60 * 1000;
+        }
+        client->inactivityWarning = qfalse;
+        return;
+    }
+
+    if (level.clientMod == CL_ROCMOD && client->sess.clientMod != CL_ROCMOD && level.time > client->sess.clientCheckTime) {
+        if (client->sess.clientCheckCount > 25) {
+            char* info = G_ColorizeMessage("\\Info:");
+
+            trap_SendServerCommand(ent - g_entities, va("chat -1 \"%s This " MOD_NAME_COLORED " server expects you to be running ^1ROCmod 2.1c^7.\n\"", info));
+            trap_SendServerCommand(ent - g_entities, va("chat -1 \"%s You do not appear to be running that specific version of ^1ROCmod^7.\n\"", info));
+            trap_SendServerCommand(ent - g_entities, va("chat -1 \"%s Please ^1download the mod^7, or ^1turn on auto-downloading^7, and re-join the game.\n\"", info));
+
+            // It looks like the client doesn't have the proper client, just continue bothering him every 20 seconds.
+            client->sess.clientCheckTime = level.time + 20000;
+        }
+        else {
+            // Get the client to verify as soon as possible.
+            client->sess.clientCheckTime = level.time + 5000;
+        }
+
+        trap_SendServerCommand(ent - g_entities, "verifymod");
+        client->sess.clientCheckCount++;
+
     }
 
     if (client->sess.spinViewState != SPINVIEW_NONE && client->sess.nextSpin <= level.time) {
@@ -1010,6 +1053,7 @@ void ClientThink_real( gentity_t *ent )
             case COASTER_RUNOVER:
                 client->sess.coasterState = COASTER_SPIN;
                 client->sess.nextSpin = level.time + 750;
+                client->sess.lastSpin = level.time + 750 + 750;
                 client->sess.spinViewState = SPINVIEW_FAST;
                 runoverPlayer(ent);
                 break;

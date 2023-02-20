@@ -53,6 +53,44 @@ typedef enum {
     LEVEL_RCON
 } admLevels;
 
+//statinfo as-is from 1fx. Mod.
+typedef struct statinfo_s
+{
+    int* weapon_shots;
+    int* weapon_hits;
+    int* weapon_headshots;
+    int         weapon;
+    int         attack;
+    int         shotcount;
+    int         hitcount;
+    float       accuracy;
+    float       ratio;
+    int         handhits;
+    int         foothits;
+    int         armhits;
+    int         leghits;
+    int         headhits;
+    int         neckhits;
+    int         torsohits;
+    int         waisthits;
+    int         headShotKills;
+    int         kills;
+    int         killsinarow;
+    int         deaths;
+    int         damageDone;
+    int         damageTaken;
+    int         lastclient_hurt;
+    int         lasthurtby;
+    int         lastKillerHealth;
+    int         lastKillerArmor;
+    int         overallScore;
+    int         explosiveKills;
+    int         knifeKills;
+    int         bestKillsInARow;
+    int         itemCaptures;
+    int         itemDefends;
+} statinfo_t;
+
 
 #define MAX_NETNAME         36
 #define MAX_IDENTITY        64
@@ -291,7 +329,13 @@ typedef struct
     int                 nextCoaster;
     int                 spinViewState;
     int                 nextSpin;
-
+    int                 lastSpin;
+    int                 clientMod;
+    char                clientModVersion[64];
+    int                 clientCheckTime;
+    int                 clientCheckCount;
+    int                 rocmodExtraFeatures;
+    qboolean            isClanMember;
 } clientSession_t;
 
 //
@@ -321,6 +365,9 @@ typedef struct
     char                ip[MAX_IP];
     char                cleanName[MAX_NETNAME];
     char                subnet[MAX_IP];
+
+    // Boe!Man 3/30/10
+    statinfo_t          statinfo;                   // This holds the client's stats (stuns, last damage by, etc..).
 
 } clientPersistant_t;
 
@@ -576,6 +623,9 @@ typedef struct
     int             mapState;                   // defines specific states on maps, e.g. 1 = about to map restart etc.
     int             mapStateTimer;              // time left to run the map state command
     char            newMap[MAX_STRING_CHARS];   // if a new map command is sent, then this holds the next map value.
+    qboolean        awardTime;                  // FIXME make me functional.
+    int             clientMod;
+    int             lastETIupdate;
 
 } level_locals_t;
 
@@ -1030,6 +1080,8 @@ extern  vmCvar_t    g_eventeams;
 extern  vmCvar_t    g_ff;
 extern  vmCvar_t    g_rename;
 extern  vmCvar_t    g_burn;
+extern  vmCvar_t    g_clientHandlesDeathMessages;
+extern  vmCvar_t    g_timeextension;
 
 void    trap_Print( const char *text );
 void    trap_Error( const char *text ) __attribute__((noreturn));

@@ -3,6 +3,7 @@
 // g_combat.c
 
 #include "g_local.h"
+#include "1fx/1fxFunctions.h"
 
 void BotDamageNotification  ( gclient_t *bot, gentity_t *attacker );
 
@@ -199,6 +200,17 @@ void player_die(
         trap_GT_SendEvent ( GTEV_CLIENT_DEATH, level.time, self->s.number, self->client->sess.team, -1, -1, 0 );
     }
 
+    if (attacker && attacker != self && attacker->client && self->client->pers.statinfo.killsinarow >= 3 && Q_stricmp(g_realGametype.string, "h&s"))
+    {
+        G_Broadcast(va("%s\nhis \\killing spree\nwas ended by %s", self->client->pers.netname, attacker->client->pers.netname), BROADCAST_GAME, NULL, qfalse);
+    }
+
+    if (self->client->pers.statinfo.killsinarow > self->client->pers.statinfo.bestKillsInARow)
+        self->client->pers.statinfo.bestKillsInARow = self->client->pers.statinfo.killsinarow;
+
+    self->client->pers.statinfo.killsinarow = 0;
+    self->client->pers.statinfo.deaths++;
+
     // Add to the number of deaths for this player
     self->client->sess.deaths++;
 
@@ -268,12 +280,15 @@ void player_die(
         killer, self->s.number, meansOfDeath, killerName,
         self->client->pers.netname, obit );
 
-    // broadcast the death event to everyone
-    ent = G_TempEntity( self->r.currentOrigin, EV_OBITUARY );
-    ent->s.eventParm = mod;
-    ent->s.otherEntityNum = self->s.number;
-    ent->s.otherEntityNum2 = killer;
-    ent->r.svFlags = SVF_BROADCAST; // send to everyone
+    if (g_clientHandlesDeathMessages.integer) {
+        // broadcast the death event to everyone
+        ent = G_TempEntity(self->r.currentOrigin, EV_OBITUARY);
+        ent->s.eventParm = mod;
+        ent->s.otherEntityNum = self->s.number;
+        ent->s.otherEntityNum2 = killer;
+        ent->r.svFlags = SVF_BROADCAST; // send to everyone
+    }
+    
 
     self->enemy = attacker;
 
@@ -299,7 +314,9 @@ void player_die(
         {
             G_AddScore( attacker, 1 );
             attacker->client->sess.kills++;
-
+            attacker->client->pers.statinfo.killsinarow++;
+            // Boe!Man 6/2/10: Add it to our own stats list.
+            attacker->client->pers.statinfo.kills++;
             attacker->client->lastKillTime = level.time;
         }
     }
@@ -307,6 +324,81 @@ void player_die(
     {
         G_AddScore( self, g_suicidePenalty.integer );
     }
+
+    if (attacker->client) {
+        if (attacker->client->pers.statinfo.killsinarow >= 3 && Q_stricmp(g_realGametype.string, "h&s")) {
+            G_Broadcast(va("%s\nis on \\fire\nwith %i kills in a row!", attacker->client->pers.netname, attacker->client->pers.statinfo.killsinarow), BROADCAST_GAME, NULL, qfalse);
+        }
+    }
+
+
+    
+    // Boe!Man 5/27/15: Do keep track of some stats.
+    int hitLoc2;
+    statinfo_t* info = &attacker->client->pers.statinfo;
+    if (self != attacker && self && attacker && attacker->client &&
+        (!level.gametypeData->teams || (level.gametypeData->teams && !OnSameTeam(self, attacker)))) { // Make sure the attacker and self pointers are valid and actual clients.
+        hitLoc2 = hitLocation & (~HL_DISMEMBERBIT);
+        if (hitLoc2 == HL_HEAD) {
+            //add to the total headshot count for this player
+            info->headShotKills++;
+            info->weapon_headshots[attacker->client->pers.statinfo.attack * WP_NUM_WEAPONS + attacker->client->pers.statinfo.weapon]++;
+        }
+
+        switch (meansOfDeath) {
+        case MOD_KNIFE:
+            info->knifeKills++;
+            break;
+        case MOD_M4_ASSAULT_RIFLE:
+            if (attack == ATTACK_ALTERNATE) {
+                info->explosiveKills++;
+            }
+            break;
+        case MOD_MM1_GRENADE_LAUNCHER:
+        case MOD_RPG7_LAUNCHER:
+        case MOD_M84_GRENADE:
+        case MOD_SMOHG92_GRENADE:
+        case MOD_ANM14_GRENADE:
+        case MOD_M15_GRENADE:
+            if (mod == MOD_ANM14_GRENADE)
+            {
+                info->hitcount++;
+                info->accuracy = (float)info->hitcount / (float)info->shotcount * 100;
+                info->weapon_hits[((mod > 256) ? ATTACK_ALTERNATE : ATTACK_NORMAL) * WP_NUM_WEAPONS + normalAttackMod(mod)]++;
+
+            }
+
+            info->explosiveKills++;
+            break;
+        default:
+            break;
+        }
+    }
+
+    //Ryan march 22 2004 9:20pm   calculate ratio's
+    if (attacker && attacker->client && attacker != self)
+    {
+        if (attacker->client->pers.statinfo.deaths)
+        {
+            attacker->client->pers.statinfo.ratio = (float)attacker->client->pers.statinfo.kills / (float)attacker->client->pers.statinfo.deaths;
+        }
+        else
+        {
+            attacker->client->pers.statinfo.ratio = attacker->client->pers.statinfo.kills;
+        }
+    }
+    //Careful if this "if" isnt here and they die from changing teams
+    //before they have any other deaths we will divide by 0 since
+    //we dont add deaths incurred from changing teams
+    if (self->client->pers.statinfo.deaths)
+    {
+        self->client->pers.statinfo.ratio = (float)self->client->pers.statinfo.kills / (float)self->client->pers.statinfo.deaths;
+    }
+    else
+    {
+        self->client->pers.statinfo.ratio = (float)self->client->pers.statinfo.kills;
+    }
+    //Ryan
 
     // If client is in a nodrop area, don't drop anything
     contents = trap_PointContents( self->r.currentOrigin, -1 );
@@ -346,6 +438,13 @@ void player_die(
     }
 
     Cmd_Score_f( self );
+
+    // Henk 01/04/10 -> Hp/armor message if you are killed
+    if (attacker->client && self->client && attacker->s.number != self->s.number && Q_stricmp(g_realGametype.string, "h&s")) { // if the attacker and target are both clients
+        G_printInfoMessage(self, "%s had ^3%i ^7health and ^3%i ^7armor left.", attacker->client->pers.cleanName, attacker->health, attacker->client->ps.stats[STAT_ARMOR]);
+        self->client->pers.statinfo.lastKillerHealth = attacker->health;
+        self->client->pers.statinfo.lastKillerArmor = attacker->client->ps.stats[STAT_ARMOR];
+    }
 
     // send updated scores to any clients that are following this one,
     // or they would get stale scoreboards
@@ -781,6 +880,9 @@ int G_Damage (
     int             save;
     int             asave;
     int             knockback;
+    int             actualtake;
+
+    qboolean teamDamage = qfalse;
 
     if (!targ->takedamage)
     {
@@ -921,6 +1023,8 @@ int G_Damage (
     asave = CheckArmor (targ, take, dflags);
     take -= asave;
 
+    actualtake = Com_Clamp(0, targ->health, take);
+
     // Teamkill dmage thats not caused by a telefrag?
     if ( g_teamkillDamageMax.integer && mod != MOD_TELEFRAG && !(dflags&DAMAGE_NO_TEAMKILL) )
     {
@@ -944,6 +1048,8 @@ int G_Damage (
 
                 attacker->client->sess.teamkillDamage      += actualtake;
                 attacker->client->sess.teamkillForgiveTime  = level.time;
+
+                teamDamage = qtrue;
             }
         }
     }
@@ -1017,6 +1123,12 @@ int G_Damage (
         targ->client->lasthurt_client = attacker->s.number;
         targ->client->lasthurt_time = level.time;
         targ->client->lasthurt_mod = mod;
+
+        if (attacker->client)
+        {
+            targ->client->pers.statinfo.lasthurtby = attacker->s.number;
+            attacker->client->pers.statinfo.lastclient_hurt = targ->s.number;
+        }
     }
 
     // do the damage
@@ -1026,6 +1138,21 @@ int G_Damage (
 
         if ( targ->client )
         {
+            if (targ == attacker)
+            {
+                targ->client->pers.statinfo.damageTaken += actualtake;
+            }
+            else if (level.gametypeData->teams && OnSameTeam(targ, attacker))
+            {
+                attacker->client->pers.statinfo.damageDone -= actualtake;
+            }
+            else if (attacker && attacker->client) {
+
+                attacker->client->pers.statinfo.damageDone += actualtake;
+                targ->client->pers.statinfo.damageTaken += actualtake;
+
+            }
+
             targ->client->ps.stats[STAT_HEALTH] = targ->health;
 
             if ( targ->health > 0 )
@@ -1079,6 +1206,13 @@ int G_Damage (
 
             targ->enemy = attacker;
             targ->die (targ, inflictor, attacker, take, mod, location, dir );
+
+            if (teamDamage) {
+                if (attacker->client->pers.statinfo.killsinarow > attacker->client->pers.statinfo.bestKillsInARow)
+                    attacker->client->pers.statinfo.bestKillsInARow = attacker->client->pers.statinfo.killsinarow;
+
+                attacker->client->pers.statinfo.killsinarow = 0;
+            }
         }
         else if ( targ->pain )
         {
@@ -1354,6 +1488,18 @@ qboolean G_RadiusDamage (
 
             if ( d && ent->client )
             {
+
+                statinfo_t* stat = &attacker->client->pers.statinfo;
+
+                //Fire nades only count a hit if they kill
+                if (mod != MOD_ANM14_GRENADE && (!level.gametypeData->teams || (level.gametypeData->teams && !OnSameTeam(attacker, ent))))
+                {
+                    stat->hitcount++;
+                    stat->accuracy = (float)stat->hitcount / (float)stat->shotcount * 100;
+                    stat->weapon_hits[((mod > 256) ? ATTACK_ALTERNATE : ATTACK_NORMAL) * WP_NUM_WEAPONS + normalAttackMod(mod)]++;
+                }
+                //Ryan
+                
                 // Only one of the grenade hits will count for tk damage
                 if ( ent != attacker )
                 {

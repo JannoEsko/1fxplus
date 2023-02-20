@@ -2,6 +2,7 @@
 //
 #include "g_local.h"
 #include "1fx/1fxFunctions.h"
+#include "../ext/rocmod/rocmod.h"
 
 // g_client.c -- client functions that don't happen every frame
 
@@ -1368,6 +1369,12 @@ char *ClientConnect( int clientNum, qboolean firstTime, qboolean isBot )
     ent->s.number = clientNum;
     trap_UnlinkEntity ( ent );
 
+    G_EmptyStatsMemory(ent);
+    ent->client->pers.statinfo.lasthurtby = -1;
+    ent->client->pers.statinfo.lastclient_hurt = -1;
+    ent->client->pers.statinfo.lastKillerHealth = -1;
+    ent->client->pers.statinfo.lastKillerArmor = -1;
+
     return NULL;
 }
 
@@ -1885,6 +1892,10 @@ void ClientDisconnect( int clientNum )
     trap_SetConfigstring( CS_PLAYERS + clientNum, "");
 
     CalculateRanks();
+    resetSession(ent);
+    if (level.intermissiontime && !level.pause && level.clientMod == CL_ROCMOD) {
+        ROCmod_sendBestPlayerStats();
+    }
 
 #ifdef _SOF2_BOTS
     if ( ent->r.svFlags & SVF_BOT )

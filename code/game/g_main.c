@@ -3,6 +3,7 @@
 
 #include "g_local.h"
 #include "1fx/1fxFunctions.h"
+#include "../ext/rocmod/rocmod.h"
 
 level_locals_t  level;
 
@@ -135,6 +136,8 @@ vmCvar_t    g_eventeams;
 vmCvar_t    g_ff;
 vmCvar_t    g_rename;
 vmCvar_t    g_burn;
+vmCvar_t    g_clientHandlesDeathMessages;
+vmCvar_t    g_timeextension;
 
 // SQLite3 tables.
 sqlite3* gameDb; // will hold anything related to the game itself: admins, bans, aliases and so on.
@@ -307,6 +310,7 @@ static cvarTable_t gameCvarTable[] =
     { &g_ff,        "g_ff",                 "3",       CVAR_ARCHIVE,   0.0f,   0.0f,   0 ,  qfalse },
     { &g_rename,        "g_rename",                 "2",       CVAR_ARCHIVE,   0.0f,   0.0f,   0 ,  qfalse },
     { &g_burn,        "g_burn",                 "2",       CVAR_ARCHIVE,   0.0f,   0.0f,   0 ,  qfalse },
+    { &g_timeextension,     "g_timeextension",  "15",       CVAR_ARCHIVE, 0.0, 0.0, 0, qfalse },
 
 };
 
@@ -858,6 +862,32 @@ void G_InitGame( int levelTime, int randomSeed, int restart )
 
     G_RemapTeamShaders();
 
+    // set the client mod variable in level struct.
+    char clientMod[MAX_CVAR_VALUE_STRING];
+    level.clientMod = CL_NONE;
+
+    trap_Cvar_VariableStringBuffer("sv_clientmod", clientMod, sizeof(clientMod));
+
+    if (!Q_stricmp(clientMod, "rocmod")) {
+        level.clientMod = CL_ROCMOD;
+        trap_Cvar_Register(NULL, "sv_modVersion", "| ^71fx^1plus 2.1c", CVAR_SYSTEMINFO | CVAR_ROM, 0.0, 0.0);
+        trap_Cvar_Register(NULL, "g_allowCustomTeams", "1", CVAR_SYSTEMINFO | CVAR_ROM, 0.0, 0.0);
+        trap_Cvar_Register(NULL, "g_customRedName", va("%s^7 Team", getTeamPrefixByGametype(TEAM_RED)), CVAR_SYSTEMINFO | CVAR_ROM, 0.0, 0.0);
+        trap_Cvar_Register(NULL, "g_customBlueName", va("%s^7 Team", getTeamPrefixByGametype(TEAM_BLUE)), CVAR_SYSTEMINFO | CVAR_ROM, 0.0, 0.0);
+
+        // Automatic demo recording in ROCmod.
+        trap_Cvar_Register(NULL, "g_autoMatchDemo", "1", CVAR_ARCHIVE, 0.0, 0.0);
+        trap_Cvar_Register(NULL, "inMatch", "0", CVAR_SYSTEMINFO | CVAR_ROM | CVAR_TEMP, 0.0, 0.0);
+
+        // Client death messages are handled by client.
+        g_clientHandlesDeathMessages.integer = 1;
+    }
+    else {
+        g_clientHandlesDeathMessages.integer = 0;
+    }
+
+    G_AllocateStatsMemory(NULL);
+
     // Initialize the gametype
     // as we're now able to load gametype DLL's, separate h&s/h&z/....? from other gametypes,
     // load the gametype from realGametype string.
@@ -900,7 +930,8 @@ void G_ShutdownGame( int restart )
     }
     Com_Printf("Unloading and backing up in-memory databases.\n");
     unloadInMemoryDatabases();
-
+    // Boe!Man 7/27/15: Free statinfo memory of all clients.
+    G_FreeStatsMemory(NULL);
     // write all the client session data so we can get it back
     G_WriteSessionData();
 
@@ -1317,6 +1348,11 @@ void BeginIntermission( void )
 
     // send the current scoring to all clients
     SendScoreboardMessageToAllClients();
+
+    if (level.clientMod == CL_ROCMOD) {
+        // Send the Awards to the players.
+        ROCmod_sendBestPlayerStats();
+    }
 }
 
 
@@ -1929,6 +1965,12 @@ void G_RunFrame( int levelTime )
 
     // get any cvar changes
     G_UpdateCvars();
+
+    if (level.clientMod == CL_ROCMOD && level.time > level.lastETIupdate) {
+        ROCmod_sendExtraTeamInfo(NULL);
+
+        level.lastETIupdate = level.time + 1000;
+    }
 
     // go through all allocated objects
     ent = &g_entities[0];

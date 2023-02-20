@@ -2,6 +2,7 @@
 //
 #include "g_local.h"
 #include "1fx/1fxFunctions.h"
+#include "../ext/rocmod/rocmod.h"
 
 int AcceptBotCommand(char *cmd, gentity_t *pl);
 
@@ -12,16 +13,22 @@ DeathmatchScoreboardMessage
 */
 void DeathmatchScoreboardMessage( gentity_t *ent )
 {
-    char        entry[1024];
-    char        string[1400];
-    int         stringlength;
+    char        entry[1024], rocmodEntry[1024];
+    char        string[1400], rocmodString[1400];
+    int         stringlength, rocmodStringLength;
     int         i, j;
     gclient_t   *cl;
     int         numSorted;
 
+    if (level.awardTime) {
+        return;
+    }
+
     // send the latest information on all clients
     string[0]    = 0;
     stringlength = 0;
+    rocmodString[0] = 0;
+    rocmodStringLength = 0;
 
     numSorted = level.numConnectedClients;
 
@@ -53,6 +60,22 @@ void DeathmatchScoreboardMessage( gentity_t *ent )
             g_teamkillDamageMax.integer ? 100 * cl->sess.teamkillDamage / g_teamkillDamageMax.integer : 0
             );
 
+        Com_sprintf(rocmodEntry, sizeof(rocmodEntry),
+
+            " %i %i %i %i %i %i %i %i %i %i",
+            cl->sess.adminLevel,
+            cl->pers.statinfo.hitcount,
+            cl->pers.statinfo.shotcount,
+            cl->pers.statinfo.headShotKills,
+            cl->pers.statinfo.itemCaptures,
+            cl->pers.statinfo.bestKillsInARow,
+            cl->pers.statinfo.knifeKills,
+            cl->pers.statinfo.explosiveKills,
+            cl->sess.isClanMember,
+            cl->pers.statinfo.itemDefends
+
+            );
+
         j = strlen(entry);
         if (stringlength + j > 1022 )
         {
@@ -61,12 +84,22 @@ void DeathmatchScoreboardMessage( gentity_t *ent )
 
         strcpy (string + stringlength, entry);
         stringlength += j;
+
+        if (rocmodStringLength + strlen(rocmodEntry) < 1022) {
+            strcpy(rocmodString + rocmodStringLength, rocmodEntry);
+            rocmodStringLength += strlen(rocmodEntry);
+        }
+
     }
 
     trap_SendServerCommand( ent-g_entities, va("scores %i %i %i%s", i,
                             level.teamScores[TEAM_RED],
                             level.teamScores[TEAM_BLUE],
                             string ) );
+
+    if (level.clientMod == CL_ROCMOD && ent->client->sess.clientMod == CL_ROCMOD) {
+        trap_SendServerCommand(ent - g_entities, va("scores4 %i 10 %i%s", g_timelimit.integer ? (g_timelimit.integer + level.timeExtension) : 0, i, rocmodString));
+    }
 }
 
 
@@ -2386,38 +2419,44 @@ void ClientCommand( int clientNum ) {
         return;
     }
 
-    if ( Q_stricmp ( cmd, "drop" ) == 0 )
-        Cmd_Drop_f ( ent );
-    else if (Q_stricmp (cmd, "dropitem" ) == 0 )
-        Cmd_DropItem_f ( ent );
-    else if (Q_stricmp (cmd, "give") == 0)
-        Cmd_Give_f (ent);
-    else if (Q_stricmp (cmd, "god") == 0)
-        Cmd_God_f (ent);
-    else if (Q_stricmp (cmd, "notarget") == 0)
-        Cmd_Notarget_f (ent);
-    else if (Q_stricmp (cmd, "noclip") == 0)
-        Cmd_Noclip_f (ent);
-    else if (Q_stricmp (cmd, "kill") == 0)
-        Cmd_Kill_f (ent);
-    else if (Q_stricmp (cmd, "levelshot") == 0)
-        Cmd_LevelShot_f (ent);
-    else if (Q_stricmp (cmd, "follow") == 0)
-        Cmd_Follow_f (ent);
-    else if (Q_stricmp (cmd, "follownext") == 0)
-        Cmd_FollowCycle_f (ent, 1);
-    else if (Q_stricmp (cmd, "followprev") == 0)
-        Cmd_FollowCycle_f (ent, -1);
-    else if (Q_stricmp (cmd, "where") == 0)
-        Cmd_Where_f (ent);
-    else if (Q_stricmp (cmd, "callvote") == 0)
-        Cmd_CallVote_f (ent);
-    else if (Q_stricmp (cmd, "vote") == 0)
-        Cmd_Vote_f (ent);
-    else if (Q_stricmp (cmd, "setviewpos") == 0)
-        Cmd_SetViewpos_f( ent );
-    else if (Q_stricmp ( cmd, "ignore" ) == 0 )
-        Cmd_Ignore_f ( ent );
+    if (Q_stricmp(cmd, "drop") == 0)
+        Cmd_Drop_f(ent);
+    else if (Q_stricmp(cmd, "dropitem") == 0)
+        Cmd_DropItem_f(ent);
+    else if (Q_stricmp(cmd, "give") == 0)
+        Cmd_Give_f(ent);
+    else if (Q_stricmp(cmd, "god") == 0)
+        Cmd_God_f(ent);
+    else if (Q_stricmp(cmd, "notarget") == 0)
+        Cmd_Notarget_f(ent);
+    else if (Q_stricmp(cmd, "noclip") == 0)
+        Cmd_Noclip_f(ent);
+    else if (Q_stricmp(cmd, "kill") == 0)
+        Cmd_Kill_f(ent);
+    else if (Q_stricmp(cmd, "levelshot") == 0)
+        Cmd_LevelShot_f(ent);
+    else if (Q_stricmp(cmd, "follow") == 0)
+        Cmd_Follow_f(ent);
+    else if (Q_stricmp(cmd, "follownext") == 0)
+        Cmd_FollowCycle_f(ent, 1);
+    else if (Q_stricmp(cmd, "followprev") == 0)
+        Cmd_FollowCycle_f(ent, -1);
+    else if (Q_stricmp(cmd, "where") == 0)
+        Cmd_Where_f(ent);
+    else if (Q_stricmp(cmd, "callvote") == 0)
+        Cmd_CallVote_f(ent);
+    else if (Q_stricmp(cmd, "vote") == 0)
+        Cmd_Vote_f(ent);
+    else if (Q_stricmp(cmd, "setviewpos") == 0)
+        Cmd_SetViewpos_f(ent);
+    else if (Q_stricmp(cmd, "ignore") == 0)
+        Cmd_Ignore_f(ent);
+    else if (Q_stricmp(cmd, "verified") == 0 && level.clientMod == CL_ROCMOD)
+        ROCmod_verifyClient(ent, clientNum);
+    else if (Q_stricmp(cmd, "uef") == 0 && level.clientMod == CL_ROCMOD)
+        ROCmod_clientUpdate(ent, clientNum);
+    else if (!Q_stricmp(cmd, "refresh"))
+        refreshStats(ent);
 
 #ifdef _SOF2_BOTS
     else if (Q_stricmp (cmd, "addbot") == 0)

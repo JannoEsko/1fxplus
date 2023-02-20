@@ -45,6 +45,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 #define MOD_NAME "1fxplus"
 #define MOD_VERSION "0.01"
+#define MOD_NAME_COLORED "^71fx^1plus^7"
 
 #ifndef PRODUCT_DATE
 #  define PRODUCT_DATE __DATE__

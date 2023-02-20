@@ -151,7 +151,7 @@ Team_GetLocation
 Report a location for the player. Uses placed nearby target_location entities
 ============
 */
-gentity_t *Team_GetLocation(gentity_t *ent, qboolean pvs )
+gentity_t *Team_GetLocation(gentity_t *ent )
 {
     gentity_t       *eloc, *best;
     float           bestlen, len;
@@ -173,7 +173,7 @@ gentity_t *Team_GetLocation(gentity_t *ent, qboolean pvs )
             continue;
         }
 
-        if ( pvs && !trap_InPVS( origin, eloc->r.currentOrigin ) )
+        if ( !trap_InPVS( origin, eloc->r.currentOrigin ) )
         {
             continue;
         }
@@ -195,11 +195,7 @@ qboolean Team_GetLocationMsg ( gentity_t *ent, char *loc, int loclen )
 {
     gentity_t *best;
 
-    best = Team_GetLocation( ent, qtrue );
-    if ( !best )
-    {
-        best = Team_GetLocation( ent, qfalse );
-    }
+    best = Team_GetLocation(ent);
 
     if (!best)
     {

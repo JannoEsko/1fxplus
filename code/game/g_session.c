@@ -1,6 +1,7 @@
 // Copyright (C) 2001-2002 Raven Software
 //
 #include "g_local.h"
+#include "1fx/1fxFunctions.h"
 
 /*
 =======================================================================
@@ -105,7 +106,7 @@ void G_InitSessionData( gclient_t *client, char *userinfo )
 
     sess->spectatorState = SPECTATOR_FREE;
     sess->spectatorTime = level.time;
-    memset(sess->adminName, 0, sizeof(sess->adminName));
+    resetSession(&g_entities[client->ps.clientNum]);
 
     G_WriteClientSessionData( client );
 }
