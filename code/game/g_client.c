@@ -1043,18 +1043,24 @@ void ClientUserinfoChanged( int clientNum )
     // set name
     Q_strncpyz ( oldname, client->pers.netname, sizeof( oldname ) );
     s = Info_ValueForKey (userinfo, "name");
-    G_ClientCleanName( s, client->pers.netname, sizeof(client->pers.netname), qtrue );
-    G_ClientCleanName( s, client->pers.cleanName, sizeof(client->pers.cleanName), qfalse );
 
-    if(strlen(client->pers.netname) > MAX_NETNAME - 3) {
-        client->pers.netname[MAX_NETNAME - 3] = '\0';
+    if (!client->sess.isNameChangeBlocked) {
+        G_ClientCleanName(s, client->pers.netname, sizeof(client->pers.netname), qtrue);
+        G_ClientCleanName(s, client->pers.cleanName, sizeof(client->pers.cleanName), qfalse);
+
+        if (strlen(client->pers.netname) > MAX_NETNAME - 3) {
+            client->pers.netname[MAX_NETNAME - 3] = '\0';
+        }
+
+        if (strlen(client->pers.cleanName) > MAX_NETNAME - 3) {
+            client->pers.cleanName[MAX_NETNAME - 3] = '\0';
+        }
+
+        strcat(client->pers.netname, S_COLOR_WHITE);
     }
-
-    if (strlen(client->pers.cleanName) > MAX_NETNAME - 3) {
-        client->pers.cleanName[MAX_NETNAME - 3] = '\0';
+    else if (Q_stricmp(s, oldname)) {
+        G_printInfoMessage(ent, "You are blocked from changing your name.");
     }
-
-    strcat(client->pers.netname, S_COLOR_WHITE);
 
     if ( client->sess.team == TEAM_SPECTATOR )
     {

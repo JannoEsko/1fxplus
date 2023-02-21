@@ -2,6 +2,7 @@
 //
 
 #include "g_local.h"
+#include "1fx/1fxFunctions.h"
 
 qboolean G_SpawnString( const char *key, const char *defaultString, char **out )
 {
@@ -262,6 +263,9 @@ spawn_t spawns[] =
     {"script_runner",               0},
     {"trigger_arioche_objective",   0},
     {"func_brushmodel_child",       0},
+
+    // 1fx additions
+    {"seekers",                     parseCustomETHiders},
 
     {0, 0}
 };

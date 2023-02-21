@@ -479,6 +479,8 @@ void G_ResetGametype ( qboolean fullRestart )
             break;
     }
 
+    evenTeams(qtrue);
+
     level.gametypeJoinTime  = 0;
 
     // Allow people to join 20 seconds after both teams have people on them

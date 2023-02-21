@@ -344,7 +344,7 @@ char *G_GetArg(int argNum,qboolean shortCmd)
     static char arg[MAX_STRING_CHARS];
     memset(arg, 0, sizeof(arg));
 
-    if(!shortCmd && !G_GetChatArgumentCount()) {
+    if(!shortCmd && G_GetChatArgumentCount() <= 1) {
         //argNum++; if I use it in admin commands, I already have the correct argnum in play. Therefore this will actually mess it up.
         trap_Argv(argNum,arg,sizeof(arg));
     }
@@ -1247,4 +1247,172 @@ int normalAttackMod(int mod) {
     }
 
     return mod;
+}
+
+int evenTeams(qboolean automatic) {
+
+    int redTeamCount, blueTeamCount;
+    gentity_t* recipient;
+    int maxConnectedTime = 0, team = 0, playersToMove = 0;
+    qboolean havePlayersBeenMoved = qfalse;
+
+    if (level.redTeamLocked || level.blueTeamLocked) {
+        return EVENTEAMS_TEAM_LOCKED;
+    }
+
+    if (!Q_stricmp(g_realGametype.string, "hnz") || !level.gametypeData->teams) {
+        return EVENTEAMS_GT_INCOMPATIBLE;
+    }
+
+    redTeamCount = TeamCount(-1, TEAM_RED, NULL);
+    blueTeamCount = TeamCount(-1, TEAM_BLUE, NULL);
+
+    if (redTeamCount <= 1 && blueTeamCount <= 1) {
+        return EVENTEAMS_EVEN;
+    }
+
+    if (!Q_stricmp(g_realGametype.string, "hns")) {
+        int totalPlayers = redTeamCount + blueTeamCount;
+        int seekers = 0, maxhiders = 0;
+        if (level.customETHiderAmount[0]) {
+
+            for (int i = 0; i < sizeof(level.customETHiderAmount); i++) {
+                if (level.customETHiderAmount[i + 1] == -1) {
+                    seekers = i + 1;
+                    break;
+                }
+
+                if (totalPlayers >= level.customETHiderAmount[i] && totalPlayers <= level.customETHiderAmount[i + 1]) {
+                    seekers = i + 1;
+                    break;
+                }
+            }
+
+        }
+        else {
+            if (redTeamCount < 4) {
+                seekers = 1;
+            }
+            else {
+                seekers = (totalPlayers + 1) / 5;
+            }
+        }
+
+        maxhiders = totalPlayers - seekers;
+
+        team = TEAM_RED;
+        playersToMove = blueTeamCount - seekers;
+
+        if (blueTeamCount < seekers) {
+            team = TEAM_BLUE;
+            playersToMove = seekers - blueTeamCount;
+        }
+
+        if (playersToMove <= 0) {
+            return EVENTEAMS_EVEN;
+        }
+
+        for (int i = 0; i < playersToMove; i++) {
+            recipient = getLastConnectedClientInTeam(team == TEAM_RED ? TEAM_BLUE : TEAM_RED, qfalse);
+
+            if (recipient) {
+                SetTeam(recipient, team == TEAM_RED ? "r" : "b", NULL, TEAMCHANGE_FORCED);
+                havePlayersBeenMoved = qtrue;
+            }
+            else if (!havePlayersBeenMoved) {
+                return EVENTEAMS_NORECIPIENTS;
+            }
+        }
+
+    }
+    else {
+        playersToMove = abs(redTeamCount - blueTeamCount);
+
+        if (playersToMove <= 1) {
+            return 0;
+        }
+
+        playersToMove /= 2;
+
+        team = TEAM_RED;
+
+
+        if (redTeamCount > blueTeamCount) {
+            team = TEAM_BLUE;
+        }
+
+        for (int i = 0; i < playersToMove; i++) {
+
+            recipient = getLastConnectedClientInTeam(team == TEAM_RED ? TEAM_BLUE : TEAM_RED, qtrue);
+
+            if (recipient) {
+                SetTeam(recipient, team == TEAM_RED ? "r" : "b", NULL, TEAMCHANGE_FORCED);
+                havePlayersBeenMoved = qtrue;
+            }
+            else if (!havePlayersBeenMoved) {
+                return EVENTEAMS_NORECIPIENTS;
+            }
+
+        }
+
+
+    }
+
+    if (automatic) { // if not then most likely this is from an admin call and the broadcasting will come from that function instead.
+        G_Broadcast("Teams have been \\evened!", BROADCAST_GAME, NULL, qtrue);
+        G_printInfoMessageToAll("Teams have been evened!");
+        logGame(); // currently a placeholder before the game logging is done just to track through func references.
+    }
+
+    G_GlobalSound(G_SoundIndex("sound/misc/events/tut_lift02.mp3", qtrue));
+
+    return EVENTEAMS_DONE;
+
+}
+
+void parseCustomETHiders(gentity_t* ent) {
+
+    int tmp;
+    for (int i = 1; i <= MAX_CLIENTS; i++) {
+
+        G_SpawnInt(va("%i", i), -1, &tmp);
+
+        if (tmp) {
+            level.customETHiderAmount[i - 1] = tmp;
+        }
+    }
+}
+
+gentity_t* getLastConnectedClient(qboolean respectGametypeItems) {
+    return getLastConnectedClientInTeam(-1, respectGametypeItems);
+}
+
+gentity_t* getLastConnectedClientInTeam(int team, qboolean respectGametypeItems) {
+    int maxConnectedTime = 0, client = -1;
+
+    for (int i = 0; i < level.numConnectedClients; i++) {
+        if (g_entities[level.sortedClients[i]].client->pers.connected == CON_DISCONNECTED) {
+            continue;
+        }
+
+        if (respectGametypeItems && g_entities[level.sortedClients[i]].s.gametypeitems) {
+            continue;
+        }
+
+        if (team != -1 && g_entities[level.sortedClients[i]].client->sess.team != team) {
+            continue;
+        }
+
+        if (g_entities[level.sortedClients[i]].client->pers.enterTime > maxConnectedTime) {
+            maxConnectedTime = g_entities[level.sortedClients[i]].client->pers.enterTime;
+            client = i;
+        }
+
+    }
+
+    if (client != -1) {
+        return &g_entities[level.sortedClients[client]];
+    }
+
+    return NULL;
 }

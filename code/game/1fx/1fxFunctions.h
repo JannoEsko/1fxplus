@@ -68,6 +68,10 @@ void G_EmptyStatsMemory(gentity_t* ent);
 void refreshStats(gentity_t* ent);
 int normalAttackMod(int mod);
 int altAttack(int weapon);
+int evenTeams(qboolean automatic);
+void parseCustomETHiders(gentity_t* ent);
+gentity_t* getLastConnectedClient(qboolean respectGametypeItems);
+gentity_t* getLastConnectedClientInTeam(int team, qboolean respectGametypeItems);
 
 
 
@@ -97,6 +101,14 @@ typedef enum {
     SPINVIEW_SLOW,
     SPINVIEW_FAST
 };
+
+typedef enum {
+    EVENTEAMS_DONE,
+    EVENTEAMS_EVEN,
+    EVENTEAMS_GT_INCOMPATIBLE,
+    EVENTEAMS_NORECIPIENTS,
+    EVENTEAMS_TEAM_LOCKED
+} evenTeams_Response;
 
 extern int adminCommandsSize;
 extern admCmd_t adminCommands[];

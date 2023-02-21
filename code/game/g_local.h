@@ -336,6 +336,7 @@ typedef struct
     int                 clientCheckCount;
     int                 rocmodExtraFeatures;
     qboolean            isClanMember;
+    qboolean            isNameChangeBlocked;
 } clientSession_t;
 
 //
@@ -626,6 +627,7 @@ typedef struct
     qboolean        awardTime;                  // FIXME make me functional.
     int             clientMod;
     int             lastETIupdate;
+    int             customETHiderAmount[MAX_CLIENTS];
 
 } level_locals_t;
 

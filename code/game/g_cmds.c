@@ -1597,7 +1597,9 @@ Cmd_Say_f
 static void Cmd_Say_f( gentity_t *ent, int mode, qboolean arg0 ) {
     char        *p;
 
-    if ( trap_Argc () < 2 && !arg0 ) {
+    int argc = trap_Argc();
+
+    if ( argc < 2 && !arg0 ) {
         return;
     }
 
@@ -1616,7 +1618,7 @@ static void Cmd_Say_f( gentity_t *ent, int mode, qboolean arg0 ) {
         int adminCommand = cmdIsAdminCmd(admCmd, qtrue);
 
         if (canClientRunAdminCommand(ent, adminCommand)) {
-            runAdminCommand(adminCommand, 1, ent, qtrue);
+            runAdminCommand(adminCommand, argc == 2 ? 1 : 2, ent, (qboolean)argc == 2);
         }
     }
 

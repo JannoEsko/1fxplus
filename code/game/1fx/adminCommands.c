@@ -288,7 +288,30 @@ int admGametypeRestart (int argNum, gentity_t* adm, qboolean shortCmd) {
 }
 
 int admEventeams (int argNum, gentity_t* adm, qboolean shortCmd) {
-    logAdmin(adm, NULL, "eventeams", NULL);
+    int etResponse = evenTeams(qfalse);
+
+    switch (etResponse) {
+        case EVENTEAMS_DONE:
+            logAdmin(adm, NULL, "eventeams", NULL);
+            G_Broadcast(va("\\Eventeams by %s", getNameOrArg(adm, "RCON", qfalse)), BROADCAST_CMD, NULL, qtrue);
+            G_printInfoMessageToAll("Eventeams by %s", getNameOrArg(adm, "RCON", qtrue));
+            break;
+        case EVENTEAMS_EVEN:
+            G_printInfoMessage(adm, "Teams are already even.");
+            break;
+        case EVENTEAMS_GT_INCOMPATIBLE:
+            G_printInfoMessage(adm, "You cannot eventeams in this gametype.");
+            break;
+        case EVENTEAMS_NORECIPIENTS:
+            G_printInfoMessage(adm, "Couldn't find players whom to move to a different team.");
+            break;
+        case EVENTEAMS_TEAM_LOCKED:
+            G_printInfoMessage(adm, "You cannot eventeams when there's a locked team.");
+            break;
+        default:
+            break;
+    }
+
     return -1;
 }
 
@@ -327,6 +350,53 @@ int admFriendlyFire (int argNum, gentity_t* adm, qboolean shortCmd) {
 }
 
 int admRename (int argNum, gentity_t* adm, qboolean shortCmd) {
+
+    gentity_t* recipient;
+    int idNum = -1;
+
+    idNum = G_clientNumFromArg(adm, argNum, "rename", qfalse, qfalse, qfalse, shortCmd);
+
+    if (idNum >= 0) {
+        recipient = g_entities + idNum;
+        
+        if (recipient->client->sess.isNameChangeBlocked) {
+            recipient->client->sess.isNameChangeBlocked = qfalse;
+            G_Broadcast(va("%s can \\rename again.", recipient->client->pers.netname), BROADCAST_CMD, NULL, qtrue);
+            logAdmin(adm, recipient, "rename unblocked", NULL);
+            G_printInfoMessageToAll("%s can rename again.", recipient->client->pers.cleanName);
+        }
+        else {
+            char newName[MAX_NETNAME];
+            Q_strncpyz(newName, concatArgs(argNum + 1, shortCmd), sizeof(newName));
+
+            if (!newName || strlen(newName) == 0) {
+                G_printInfoMessage(adm, "You cannot set an empty name or unlock someone that's not locked from changing names.");
+                return -1;
+            }
+
+            if (strlen(newName) >= MAX_NETNAME) {
+                newName[MAX_NETNAME] = '\0';
+            }
+
+            char userinfo[MAX_INFO_STRING];
+
+            trap_GetUserinfo(idNum, userinfo, sizeof(userinfo));
+            Info_SetValueForKey(userinfo, "name", newName);
+            trap_SetUserinfo(idNum, userinfo);
+
+            char oldname[MAX_NETNAME], oldCleanname[MAX_NETNAME];
+            Q_strncpyz(oldname, recipient->client->pers.netname, sizeof(oldname));
+            Q_strncpyz(oldCleanname, recipient->client->pers.cleanName, sizeof(oldCleanname));
+
+            ClientUserinfoChanged(idNum);
+            recipient->client->sess.isNameChangeBlocked = qtrue;
+            G_Broadcast(va("%s\nhas been \\renamed to %s\nby %s", oldname, recipient->client->pers.netname, getNameOrArg(adm, "RCON", qfalse)), BROADCAST_CMD, NULL, qtrue);
+            logAdmin(adm, recipient, "rename", newName);
+            G_printInfoMessageToAll("%s has been renamed to %s by %s.", oldCleanname, recipient->client->pers.cleanName, getNameOrArg(adm, "RCON", qtrue));
+        }
+
+    }
+
     return -1;
 }
 
