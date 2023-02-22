@@ -188,12 +188,12 @@ ifneq (,$(findstring "$(PLATFORM)", "linux" "gnu_kfreebsd" "kfreebsd-gnu" "gnu")
     OPTIMIZE += -mtune=ultrasparc3 -mv8plus
   endif
   endif
-  
+  LDFLAGS=
   SHLIBEXT=so
   SHLIBCFLAGS=-fPIC -fvisibility=hidden
-  SHLIBLDFLAGS=-shared $(LDFLAGS)
+  SHLIBLDFLAGS= -shared  $(LDFLAGS)
 
-  LIBS=-ldl -lm -pthread
+  LIBS=-ldl -lm -lpthread
 
   ifeq ($(ARCH),x86)
     # linux32 make ...
@@ -672,6 +672,8 @@ targets: makedirs
 	@echo ""
 	@echo "  LIBS:"
 	$(call print_wrapped, $(LIBS))
+	@echo "  SHLIBS:"
+	$(call print_wrapped, $(SHLIBLDFLAGS))
 	@echo ""
 	@echo "  Output:"
 	$(call print_list, $(NAKED_TARGETS))
@@ -756,6 +758,7 @@ SOF2GOBJ_ = \
   $(B)/game/1fx/logger.o \
   $(B)/game/1fx/database.o \
   $(B)/game/1fx/adminCommands.o \
+  $(B)/game/1fx/threadedFunctions.o \
   $(B)/game/1fx/1fxFunctions.o \
   \
   $(B)/qcommon/q_math.o \
@@ -765,7 +768,7 @@ SOF2GOBJ = $(SOF2GOBJ_) $(B)/game/g_syscalls.o
 
 $(B)/sof2mp_game$(SHLIBNAME): $(SOF2GOBJ)
 	$(echo_cmd) "LD $@"
-	$(Q)$(CC) $(CFLAGS) $(SHLIBLDFLAGS) -o $@ $(SOF2GOBJ)
+	$(Q)$(CC) $(CFLAGS) $(SHLIBLDFLAGS) -o $@ $(SOF2GOBJ) -lcurl
 
 #############################################################################
 # GT DM MODULE

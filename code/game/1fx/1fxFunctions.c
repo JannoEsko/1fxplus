@@ -1,5 +1,6 @@
 #include "../g_local.h"
 #include "1fxFunctions.h"
+#include "threadedFunctions.h"
 
 
 /*
@@ -1108,6 +1109,11 @@ void resetSession(gentity_t* ent) {
     sess->lastSpin = 0;
     sess->clientMod = CL_NONE;
     memset(sess->clientModVersion, 0, sizeof(sess->clientModVersion));
+    memset(sess->countryCode, 0, sizeof(sess->countryCode));
+    memset(sess->countryName, 0, sizeof(sess->countryName));
+
+    Q_strncpyz(sess->countryCode, "N/A", sizeof(sess->countryCode));
+    Q_strncpyz(sess->countryName, "N/A", sizeof(sess->countryName));
     sess->clientCheckCount = 0;
 
 }
@@ -1416,3 +1422,63 @@ gentity_t* getLastConnectedClientInTeam(int team, qboolean respectGametypeItems)
 
     return NULL;
 }
+
+/*
+==============
+G_IP2Integer
+12/05/15 - 12:59 AM
+Converts an IP address
+to a numeric form.
+as-is from 1fx. Mod.
+==============
+*/
+
+unsigned int G_IP2Integer(const char* originalIP) {
+    char* octet;
+    char            ip[MAX_IP];
+    int             octetCount = 3;
+    unsigned int    ipNum = 0;
+
+    // Make a copy from the original so strtok never modifies the original data.
+    strncpy(ip, originalIP, sizeof(ip));
+    octet = strtok(ip, ".");
+
+    // Loop through octects while they are available.
+    while (octet != NULL) {
+        ipNum += (unsigned int)(atoi(octet) * pow(256, octetCount--));
+        octet = strtok(NULL, ".");
+    }
+
+    // Return result.
+    return ipNum;
+}
+
+void checkThreadInboundMessages() {
+
+    int action = -1, playerId = -1;
+    char message[THREAD_CURL_BIGBUF];
+    gentity_t* recipient;
+
+    int response = dequeueInbound(&action, &playerId, message);
+
+    if (response == THREADRESPONSE_SUCCESS) {
+        if (action == RUN_PRINTF) {
+            Com_Printf("%s\n", message);
+        }
+        else if (action == IPHUB_DATA_RESPONSE) {
+            if (playerId >= 0) {
+                recipient = g_entities + playerId;
+                Q_strncpyz(recipient->client->sess.countryCode, Info_ValueForKey(message, "countryCode"), sizeof(recipient->client->sess.countryCode));
+                Q_strncpyz(recipient->client->sess.countryName, Info_ValueForKey(message, "countryName"), sizeof(recipient->client->sess.countryName));
+                dbAddToIpCache(G_IP2Integer(recipient->client->pers.ip), recipient->client->sess.countryCode, recipient->client->sess.countryName, atoi(Info_ValueForKey(message, "blockLevel")));
+                if (atoi(Info_ValueForKey(message, "blockLevel")) == 1 && g_dontAllowVPN.integer) {
+                    trap_DropClient(playerId, "VPN Detected");
+                }
+            }
+        }
+    }
+
+    
+
+}
+

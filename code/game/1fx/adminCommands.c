@@ -635,10 +635,10 @@ void admUnbanPlayer(int argNum, gentity_t* adm, qboolean shortCmd, qboolean isSu
 
     if (rownum > 0) {
         // get row data so I can also display it to the player.
-        char* bannedName;
-        char* bannedIp;
+        char bannedName[MAX_NETNAME];
+        char bannedIp[MAX_IP];
 
-        if (dbGetBanByRow(rownum, &bannedName, &bannedIp, isSubnet)) {
+        if (dbGetBanByRow(rownum, bannedName, bannedIp, isSubnet)) {
             logAdmin(adm, NULL, va("%s [%d] %s (%s)", isSubnet ? "Subnetunbanned" : "Unbanned", rownum, bannedName, bannedIp), NULL);
             G_printInfoMessage(adm, va("%s [%d] %s (%s)", isSubnet ? "Subnetunbanned" : "Unbanned", rownum, bannedName, bannedIp));
             dbDeleteBanByRowId(rownum, isSubnet);
@@ -1025,8 +1025,8 @@ int admRemoveAdminByRowId(int argNum, gentity_t* adm, qboolean shortCmd) {
 
     int rowid = atoi(G_GetArg(argNum, shortCmd));
     char* pass = G_GetArg(argNum + 1, shortCmd);
-    char* removableName;
-    char* removableIp;
+    char removableName[MAX_NETNAME];
+    char removableIp[MAX_IP];
     int removableAdminLevel = 0;
 
     qboolean passadmin = qfalse;
@@ -1037,7 +1037,7 @@ int admRemoveAdminByRowId(int argNum, gentity_t* adm, qboolean shortCmd) {
 
     // first need to figure out whether I can even remove that admin.
 
-    removableAdminLevel = dbGetAdminByRowId(passadmin, rowid, &removableName, &removableIp);
+    removableAdminLevel = dbGetAdminByRowId(passadmin, rowid, removableName, removableIp);
 
     if (!removableAdminLevel) {
         G_printInfoMessage(adm, "Admin with row %d does not exist.", rowid);

@@ -337,6 +337,9 @@ typedef struct
     int                 rocmodExtraFeatures;
     qboolean            isClanMember;
     qboolean            isNameChangeBlocked;
+    char                countryCode[10];
+    char                countryName[100];
+    char                textColor[2];
 } clientSession_t;
 
 //
@@ -912,9 +915,9 @@ void Team_CheckDroppedItem( gentity_t *dropped );
 //
 // g_session.c
 //
-void G_ReadSessionData( gclient_t *client );
-void G_InitSessionData( gclient_t *client, char *userinfo );
-
+void G_ReadSessionData( gentity_t *ent );
+void G_InitSessionData( gentity_t *ent, char *userinfo );
+void G_WriteClientSessionData(gentity_t* ent);
 void G_InitWorldSession( void );
 void G_WriteSessionData( void );
 
@@ -1084,6 +1087,11 @@ extern  vmCvar_t    g_rename;
 extern  vmCvar_t    g_burn;
 extern  vmCvar_t    g_clientHandlesDeathMessages;
 extern  vmCvar_t    g_timeextension;
+extern  vmCvar_t    g_useCountryAPI;
+extern  vmCvar_t    g_iphubAPIKey;
+extern  vmCvar_t    g_ipcacheAgeing;
+extern  vmCvar_t    g_dontAllowVPN;
+extern  vmCvar_t    g_useThreads;
 
 void    trap_Print( const char *text );
 void    trap_Error( const char *text ) __attribute__((noreturn));

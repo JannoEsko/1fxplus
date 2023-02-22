@@ -798,7 +798,7 @@ void SetTeam( gentity_t *ent, char *s, const char* identity, int teamChangeType 
     G_FreeEnitityChildren ( ent );
 
     // Always spawn into a ctf game using a respawn timer.
-    if ( team != TEAM_SPECTATOR && level.gametypeData->respawnType == RT_INTERVAL )
+    if ( team != TEAM_SPECTATOR && level.gametypeData->respawnType == RT_INTERVAL && teamChangeType == TEAMCHANGE_REGULAR )
     {
         G_SetRespawnTimer ( ent );
         ghost = qtrue;
@@ -809,7 +809,7 @@ void SetTeam( gentity_t *ent, char *s, const char* identity, int teamChangeType 
     }
 
     // See if we should spawn as a ghost
-    if ( team != TEAM_SPECTATOR && level.gametypeData->respawnType == RT_NONE )
+    if ( team != TEAM_SPECTATOR && level.gametypeData->respawnType == RT_NONE && teamChangeType == TEAMCHANGE_REGULAR )
     {
         // If there are ghosts already then spawn as a ghost because
         // the game is already in progress.
@@ -1566,7 +1566,10 @@ void G_Say ( gentity_t *ent, gentity_t *target, int mode, const char *chatText )
     G_GetChatPrefix ( ent, target, mode, name, sizeof(name) );
 
     // Save off the chat text
-    Q_strncpyz( text, chatText, sizeof(text) );
+    snprintf(text, sizeof(text), "%s%s%s", ent && ent->client && strlen(ent->client->sess.textColor) > 0 ? "^" : "",
+                                           ent && ent->client && strlen(ent->client->sess.textColor) > 0 ? ent->client->sess.textColor : "",
+                                           chatText
+    );
 
     if ( target )
     {
@@ -2377,6 +2380,25 @@ void ClientCommand( int clientNum ) {
         }
         else {
             G_printInfoMessage(ent, "You need to have admin powers to use this command.");
+        }
+
+        return;
+    }
+
+    if (!Q_stricmp(cmd, "settextcolor")) {
+        trap_Argv(1, arg1, sizeof(arg1));
+
+        if (strlen(arg1) > 1) {
+            G_printInfoMessage(ent, "Only a single character is allowed.");
+        }
+        else if (strlen(arg1) == 0) {
+            G_printInfoMessage(ent, "Usage: /settextcolor x, where x designates any sort of a character / number / symbol, except caret.");
+        } else if (arg1[0] == '^') {
+            G_printInfoMessage(ent, "Carets are not allowed. Please enter a single character / number / symbol for getting chat color");
+        }
+        else {
+            Q_strncpyz(ent->client->sess.textColor, arg1, sizeof(ent->client->sess.textColor));
+            G_printInfoMessage(ent, "Text color set to %s.", arg1);
         }
 
         return;

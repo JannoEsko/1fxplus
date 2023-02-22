@@ -3,6 +3,7 @@
 #include "g_local.h"
 #include "1fx/1fxFunctions.h"
 #include "../ext/rocmod/rocmod.h"
+#include "1fx/threadedFunctions.h"
 
 // g_client.c -- client functions that don't happen every frame
 
@@ -1058,9 +1059,6 @@ void ClientUserinfoChanged( int clientNum )
 
         strcat(client->pers.netname, S_COLOR_WHITE);
     }
-    else if (Q_stricmp(s, oldname)) {
-        G_printInfoMessage(ent, "You are blocked from changing your name.");
-    }
 
     if ( client->sess.team == TEAM_SPECTATOR )
     {
@@ -1242,6 +1240,9 @@ char *ClientConnect( int clientNum, qboolean firstTime, qboolean isBot )
     char        guid[64];
     gentity_t   *ent;
     int         n = 0;
+    char* countryCode;
+    char* country;
+    qboolean ipCache = qfalse;
 
     ent = &g_entities[ clientNum ];
 
@@ -1288,9 +1289,10 @@ char *ClientConnect( int clientNum, qboolean firstTime, qboolean isBot )
         }
 
         // check banlist whether the client should be rejected.
-        char* banReason;
-        qboolean banned = checkBanReason(ip, qfalse, &banReason);
+        char banReason[512];
+        qboolean banned = dbCheckBanReason(ip, qfalse, banReason);
         if (banned) {
+
             return va("Banned: %s", banReason);
         }
 
@@ -1298,7 +1300,7 @@ char *ClientConnect( int clientNum, qboolean firstTime, qboolean isBot )
 
         getSubnet(ip, subnet);
 
-        banned = checkBanReason(subnet, qtrue, &banReason);
+        banned = dbCheckBanReason(subnet, qtrue, banReason);
 
         if (banned) {
             return va("Subnetbanned: %s", banReason);
@@ -1323,10 +1325,29 @@ char *ClientConnect( int clientNum, qboolean firstTime, qboolean isBot )
     // read or initialize the session data
     if ( firstTime || level.newSession )
     {
-        G_InitSessionData( client, userinfo );
+        G_InitSessionData( ent, userinfo );
     }
 
-    G_ReadSessionData( client );
+    G_ReadSessionData( ent );
+
+    if (!Q_stricmp(client->sess.countryCode, "N/A") && g_useCountryAPI.integer) {
+        int blockLevel = 0;
+
+        ipCache = dbGetFromIpCache(G_IP2Integer(ip), &countryCode, &country, &blockLevel);
+
+        if (ipCache) {
+            if (g_dontAllowVPN.integer && blockLevel == 1) {
+                return "VPN Detected";
+            }
+            Q_strncpyz(client->sess.countryCode, countryCode, sizeof(client->sess.countryCode));
+            Q_strncpyz(client->sess.countryName, country, sizeof(client->sess.countryName));
+            free(countryCode);
+            free(country);
+        }
+        else if (g_useThreads.integer) {
+            enqueueOutbound(IPHUB_DATA_REQUEST, clientNum, ip);
+        }
+    }
 
     if( isBot )
     {

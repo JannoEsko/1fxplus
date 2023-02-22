@@ -4,6 +4,7 @@
 #include "g_local.h"
 #include "1fx/1fxFunctions.h"
 #include "../ext/rocmod/rocmod.h"
+#include "1fx/threadedFunctions.h"
 
 level_locals_t  level;
 
@@ -138,6 +139,11 @@ vmCvar_t    g_rename;
 vmCvar_t    g_burn;
 vmCvar_t    g_clientHandlesDeathMessages;
 vmCvar_t    g_timeextension;
+vmCvar_t    g_useCountryAPI;
+vmCvar_t    g_iphubAPIKey;
+vmCvar_t    g_ipcacheAgeing;
+vmCvar_t    g_dontAllowVPN;
+vmCvar_t    g_useThreads;
 
 // SQLite3 tables.
 sqlite3* gameDb; // will hold anything related to the game itself: admins, bans, aliases and so on.
@@ -311,6 +317,11 @@ static cvarTable_t gameCvarTable[] =
     { &g_rename,        "g_rename",                 "2",       CVAR_ARCHIVE,   0.0f,   0.0f,   0 ,  qfalse },
     { &g_burn,        "g_burn",                 "2",       CVAR_ARCHIVE,   0.0f,   0.0f,   0 ,  qfalse },
     { &g_timeextension,     "g_timeextension",  "15",       CVAR_ARCHIVE, 0.0, 0.0, 0, qfalse },
+    { &g_useCountryAPI,     "g_useCountryAPI",  "0",       CVAR_ARCHIVE | CVAR_LATCH, 0.0, 0.0, 0, qfalse },
+    { &g_iphubAPIKey,     "g_iphubAPIKey",  "0",       CVAR_ARCHIVE | CVAR_LATCH, 0.0, 0.0, 0, qfalse },
+    { &g_ipcacheAgeing,     "g_ipcacheAgeing",      "30",       CVAR_ARCHIVE, 0.0, 0.0, 0, qfalse },
+    { &g_dontAllowVPN,     "g_dontAllowVPN",      "0",       CVAR_ARCHIVE | CVAR_LATCH, 0.0, 0.0, 0, qfalse },
+    { &g_useThreads,     "g_useThreads",      "0",       CVAR_ARCHIVE | CVAR_LATCH, 0.0, 0.0, 0, qfalse },
 
 };
 
@@ -898,6 +909,11 @@ void G_InitGame( int levelTime, int randomSeed, int restart )
         level.sqlBackupTime = level.time + 50000;
     }
 
+    if (g_useThreads.integer) {
+        startThread();
+        Com_Printf("Initializing threads...");
+    }
+
     level.actionSoundIndex = G_SoundIndex("sound/misc/menus/click.wav", qtrue);
 
     // Music
@@ -934,6 +950,10 @@ void G_ShutdownGame( int restart )
     G_FreeStatsMemory(NULL);
     // write all the client session data so we can get it back
     G_WriteSessionData();
+
+    if (g_useThreads.integer) {
+        closeThread();
+    }
 
 #ifdef _SOF2_BOTS
     if ( trap_Cvar_VariableIntegerValue( "bot_enable" ) )
@@ -2096,6 +2116,10 @@ void G_RunFrame( int levelTime )
         }
         trap_Cvar_Set("g_listEntity", "0");
     }
+
+    // check for any activities from the thread.
+    checkThreadInboundMessages();
+
 }
 
 void G_InitGhoul ( void )

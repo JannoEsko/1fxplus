@@ -163,6 +163,33 @@ void migrateGameDatabase(sqlite3* db, int migrationLevel) {
         }
     }
 
+    if (migrationLevel < 3) {
+        char* migration = "CREATE TABLE ipcache (ip4int INTEGER, countrycode VARCHAR(5), country VARCHAR(100), blocklevel INTEGER, addedwhen TIMESTAMP DEFAULT CURRENT_TIMESTAMP);"
+            "DELETE FROM migrationlevel;"
+            "INSERT INTO migrationlevel (migrationlevel) VALUES (3)";
+        if (sqlite3_exec(db, migration, 0, 0, 0) != SQLITE_OK) {
+            logSystem(LOGLEVEL_FATAL_DB, va("Migration level 3 failed (needed: %d, starting from: %d). Err: %s", SQL_GAME_MIGRATION_LEVEL, migrationLevel, sqlite3_errmsg(db)));
+            sqlite3_close(db);
+            Com_Error(ERR_FATAL, va("Game dropped due to failing to migrate the game database to level 3 (needed: %d, starting from: %d)", SQL_GAME_MIGRATION_LEVEL, migrationLevel));
+        }
+    }
+
+    if (migrationLevel < 4) {
+        
+        // move sessions to db. Allows us to have as many arguments as we need and brings structure in strings.
+        // sessiosn get all ID's pre-set because they're constant. We won't delete rows, just update / clear structures.
+        char* migration = "CREATE TABLE sessions (client INTEGER, inuse INTEGER, team INTEGER, adminlevel INTEGER, admintype INTEGER, countrycode VARCHAR(10), country VARCHAR(100), adminname VARCHAR(64));"
+            "INSERT INTO sessions (client) VALUES (0), (1), (2), (3), (4), (5), (6), (7), (8), (9), (10), (11), (12), (13), (14), (15), (16), (17), (18), (19), (20), (21), (22), (23), (24), (25), (26), (27), (28), (29), (30), (31), (32), (33), (34), (35), (36), (37), (38), (39), (40), (41), (42), (43), (44), (45), (46), (47), (48), (49), (50), (51), (52), (53), (54), (55), (56), (57), (58), (59), (60), (61), (62), (63);"
+            "DELETE FROM migrationlevel;"
+            "INSERT INTO migrationlevel (migrationlevel) VALUES (4)";
+
+        if (sqlite3_exec(db, migration, 0, 0, 0) != SQLITE_OK) {
+            logSystem(LOGLEVEL_FATAL_DB, va("Migration level 4 failed (needed: %d, starting from: %d). Err: %s", SQL_GAME_MIGRATION_LEVEL, migrationLevel, sqlite3_errmsg(db)));
+            sqlite3_close(db);
+            Com_Error(ERR_FATAL, va("Game dropped due to failing to migrate the game database to level 4 (needed: %d, starting from: %d)", SQL_GAME_MIGRATION_LEVEL, migrationLevel));
+        }
+    }
+
 }
 
 
@@ -815,7 +842,7 @@ qboolean dbDoesRowIDExist(char* table, int rowid) {
 
 }
 
-int dbGetAdminByRowId(qboolean password, int rowid, char** adminOut, char** ipOut) {
+int dbGetAdminByRowId(qboolean password, int rowid, char* adminOut, char* ipOut) {
 
     sqlite3* db;
     sqlite3_stmt* stmt;
@@ -832,24 +859,27 @@ int dbGetAdminByRowId(qboolean password, int rowid, char** adminOut, char** ipOu
 
     if (sqlite3_step(stmt) == SQLITE_ROW) {
 
-        *adminOut = sqlite3_column_text(stmt, 0);
+        Q_strncpyz(adminOut, sqlite3_column_text(stmt, 0), MAX_NETNAME);
         adminLevel = sqlite3_column_int(stmt, 1);
 
         if (!password) {
-            *ipOut = sqlite3_column_text(stmt, 2);
+            Q_strncpyz(ipOut, sqlite3_column_text(stmt, 2), MAX_IP);
         }
 
 
     }
+
+    sqlite3_finalize(stmt);
     
     return adminLevel;
 
 }
 
-qboolean checkBanReason(char* ip, qboolean isSubnet, char** output) {
+qboolean dbCheckBanReason(char* ip, qboolean isSubnet, char* output) {
 
     sqlite3* db;
     sqlite3_stmt* stmt;
+    qboolean returnable = qfalse;
 
     db = gameDb;
 
@@ -860,17 +890,17 @@ qboolean checkBanReason(char* ip, qboolean isSubnet, char** output) {
     sqlBindTextOrNull(stmt, 1, ip);
 
     if (sqlite3_step(stmt) == SQLITE_ROW) {
-        *output = sqlite3_column_text(stmt, 0);
-        return qtrue;
+        Q_strncpyz(output, sqlite3_column_text(stmt, 0), 512);
+        returnable = qtrue;
     }
 
-    *output = NULL;
+    sqlite3_finalize(stmt);
 
-    return qfalse;
+    return returnable;
 
 }
 
-qboolean dbGetBanByRow(int rownum, char** bannedName, char** bannedIp, qboolean isSubnet) {
+qboolean dbGetBanByRow(int rownum, char* bannedName, char* bannedIp, qboolean isSubnet) {
 
     sqlite3* db;
     sqlite3_stmt* stmt;
@@ -886,13 +916,134 @@ qboolean dbGetBanByRow(int rownum, char** bannedName, char** bannedIp, qboolean 
 
     if (sqlite3_step(stmt) == SQLITE_ROW) {
         returnable = qtrue;
-        *bannedName = sqlite3_column_text(stmt, 0);
-        *bannedIp = sqlite3_column_text(stmt, 1);
+        Q_strncpyz(bannedName, sqlite3_column_text(stmt, 0), MAX_NETNAME);
+        Q_strncpyz(bannedIp, sqlite3_column_text(stmt, 1), MAX_IP);
     }
+
+    sqlite3_finalize(stmt);
 
     return returnable;
 }
 
 void dbDeleteBanByRowId(int rownum, qboolean isSubnet) {
     dbDeleteFromGameDbByRowId(va("DELETE FROM %sbanlist WHERE ROWID = ?", isSubnet ? "subnet" : ""), rownum);
+}
+//CREATE TABLE ipcache (ip4int INTEGER, countrycode VARCHAR(5), country VARCHAR(100), blocklevel INTEGER, addedat TIMESTAMP DEFAULT CURRENT_TIMESTAMP);
+void dbClearOutdatedIpCache() {
+    dbDeleteFromGameDbByRowId(va("DELETE FROM ipcache WHERE addedwhen < datetime('now', '-%d day', '+0 hour', '+0 minute')", g_ipcacheAgeing.integer), -1);
+}
+
+void dbAddToIpCache(unsigned int ipInteger, char* countrycode, char* country, int blocklevel) {
+
+    sqlite3* db;
+    sqlite3_stmt* stmt;
+
+    db = gameDb;
+    char* query = "INSERT INTO ipcache (ip4int, countrycode, country, blocklevel) VALUES (?, ?, ?, ?)";
+
+    sqlite3_prepare(db, query, -1, &stmt, 0);
+    sqlite3_bind_int64(stmt, 1, (sqlite3_int64) ipInteger);
+    sqlBindTextOrNull(stmt, 2, countrycode);
+    sqlBindTextOrNull(stmt, 3, country);
+    sqlite3_bind_int(stmt, 4, blocklevel);
+
+    sqlite3_step(stmt);
+    sqlite3_finalize(stmt);
+}
+
+qboolean dbGetFromIpCache(unsigned int ipInteger, char** countrycode, char** country, int* blocklevel) {
+
+    sqlite3* db;
+    sqlite3_stmt* stmt;
+    qboolean returnable = qfalse;
+
+    db = gameDb;
+
+    char* query = "SELECT countrycode, country, blocklevel FROM ipcache WHERE ip4int = ?";
+
+    sqlite3_prepare(db, query, -1, &stmt, 0);
+
+    sqlite3_bind_int64(stmt, 1, (sqlite3_int64)ipInteger);
+
+    if (sqlite3_step(stmt) == SQLITE_ROW) {
+        returnable = qtrue;
+
+        int cclen = 0, clen = 0;
+        cclen = strlen(sqlite3_column_text(stmt, 0)) + 1;
+        clen = strlen(sqlite3_column_text(stmt, 1)) + 1;
+        *countrycode = (char*)malloc(cclen);
+        *country = (char*)malloc(clen);
+        Q_strncpyz(*countrycode, sqlite3_column_text(stmt, 0), cclen);
+        Q_strncpyz(*country, sqlite3_column_text(stmt, 1), clen);
+        *blocklevel = sqlite3_column_int(stmt, 2);
+    }
+
+    sqlite3_finalize(stmt);
+    return returnable;
+
+}
+
+void dbWriteSession(gentity_t* ent) {
+
+    sqlite3* db;
+    sqlite3_stmt* stmt;
+
+    db = gameDb;
+    char* query = "UPDATE sessions SET inuse = 1, team = ?, adminlevel = ?, admintype = ?, countrycode = ?, country = ?, adminname = ? WHERE client = ?";
+
+    sqlite3_prepare(db, query, -1, &stmt, 0);
+    
+    sqlite3_bind_int(stmt, 1, ent->client->sess.team);
+    sqlite3_bind_int(stmt, 2, ent->client->sess.adminLevel);
+    sqlite3_bind_int(stmt, 3, ent->client->sess.adminType);
+    sqlBindTextOrNull(stmt, 4, ent->client->sess.countryCode);
+    sqlBindTextOrNull(stmt, 5, ent->client->sess.countryName);
+    sqlBindTextOrNull(stmt, 6, ent->client->sess.adminName);
+    sqlite3_bind_int(stmt, 7, ent->s.clientNum);
+
+    sqlite3_step(stmt);
+    sqlite3_finalize(stmt);
+
+}
+
+void dbReadSession(gentity_t* ent) {
+
+    sqlite3* db;
+    sqlite3_stmt* stmt;
+
+    db = gameDb;
+    char* query = "SELECT team, adminlevel, admintype, countrycode, country, adminname FROM sessions WHERE inuse = 1 AND client = ?";
+
+    sqlite3_prepare(db, query, -1, &stmt, 0);
+
+    sqlite3_bind_int(stmt, 1, ent->s.clientNum);
+
+    if (sqlite3_step(stmt) == SQLITE_ROW) {
+        ent->client->sess.team = sqlite3_column_int(stmt, 0);
+        ent->client->sess.adminLevel = sqlite3_column_int(stmt, 1);
+        ent->client->sess.adminType = sqlite3_column_int(stmt, 2);
+        Q_strncpyz(ent->client->sess.countryCode, sqlite3_column_text(stmt, 3), sizeof(ent->client->sess.countryCode));
+        Q_strncpyz(ent->client->sess.countryName, sqlite3_column_text(stmt, 4), sizeof(ent->client->sess.countryName));
+        Q_strncpyz(ent->client->sess.adminName, sqlite3_column_text(stmt, 5), sizeof(ent->client->sess.adminName));
+    }    
+
+    sqlite3_finalize(stmt);
+
+}
+
+void dbClearSession(int clientNum) {
+
+    sqlite3* db;
+    sqlite3_stmt* stmt;
+
+    db = gameDb;
+    char* query = "UPDATE sessions SET inuse = 0 WHERE client = ?";
+
+    sqlite3_prepare(db, query, -1, &stmt, 0);
+
+    sqlite3_bind_int(stmt, 1, clientNum);
+
+    sqlite3_step(stmt);
+    sqlite3_finalize(stmt);
+
 }

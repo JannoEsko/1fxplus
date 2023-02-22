@@ -5,7 +5,7 @@ extern sqlite3* gameDb;
 extern sqlite3* logDb;
 extern char sqlTempName[16];
 
-#define SQL_GAME_MIGRATION_LEVEL 2
+#define SQL_GAME_MIGRATION_LEVEL 4
 #define SQL_LOG_MIGRATION_LEVEL 1
 
 #define LOGLEVEL_INFO 0
@@ -72,6 +72,8 @@ int evenTeams(qboolean automatic);
 void parseCustomETHiders(gentity_t* ent);
 gentity_t* getLastConnectedClient(qboolean respectGametypeItems);
 gentity_t* getLastConnectedClientInTeam(int team, qboolean respectGametypeItems);
+unsigned int G_IP2Integer(const char* originalIP);
+void checkThreadInboundMessages(void);
 
 
 
@@ -158,16 +160,22 @@ void sqlBindTextOrNull(sqlite3_stmt* stmt, int argnum, char* text);
 int dbGetPlayerAdminLevel(qboolean passlist, char* ip, char* name, char* password);
 qboolean dbIsIpNameInAdminList(qboolean passlist, char* ip, char* name);
 void dbUpdatePassAdmin(char* adminname, char* newpass);
-int dbGetAdminByRowId(qboolean password, int rowid, char** adminOut, char** ipOut);
+int dbGetAdminByRowId(qboolean password, int rowid, char* adminOut, char* ipOut);
 qboolean dbDoesRowIDExist(char* table, int rowid);
 int dbGetAdminRowIdByGentity(gentity_t* removable);
 void dbClearOutdatedBans(qboolean includeEom);
 void dbAddBan(qboolean isSubnet, char* playername, char* ip, char* adminname, char* reason, int endofmap, int days, int hours, int minutes);
-qboolean checkBanReason(char* ip, qboolean isSubnet, char** output);
+qboolean dbCheckBanReason(char* ip, qboolean isSubnet, char* output);
 void dbGetBanlist(gentity_t* ent, qboolean isSubnet);
-qboolean dbGetBanByRow(int rownum, char** bannedName, char** bannedIp, qboolean isSubnet);
+qboolean dbGetBanByRow(int rownum, char* bannedName, char* bannedIp, qboolean isSubnet);
 void dbDeleteBanByRowId(int rownum, qboolean isSubnet);
+void dbClearOutdatedIpCache(void);
+void dbAddToIpCache(unsigned int ipInteger, char* countrycode, char* country, int blocklevel);
+qboolean dbGetFromIpCache(unsigned int ipInteger, char** countrycode, char** country, int* blocklevel);
 void admUnbanPlayer(int argNum, gentity_t* adm, qboolean shortCmd, qboolean isSubnet);
+void dbReadSession(gentity_t* ent);
+void dbWriteSession(gentity_t* ent);
+void dbClearSession(int clientNum);
 
 
 // admin commands

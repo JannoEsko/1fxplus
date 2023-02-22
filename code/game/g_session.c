@@ -18,16 +18,9 @@ G_WriteClientSessionData
 Called on game shutdown
 ================
 */
-void G_WriteClientSessionData( gclient_t *client )
+void G_WriteClientSessionData( gentity_t *ent )
 {
-    const char  *s;
-    const char  *var;
-
-    s = va("%i %i %i \\%s\\", client->sess.team, client->sess.adminLevel, client->sess.adminType, client->sess.adminName );
-
-    var = va( "session%i", client - level.clients );
-
-    trap_Cvar_Set( var, s );
+    dbWriteSession(ent);
 }
 
 /*
@@ -37,22 +30,9 @@ G_ReadSessionData
 Called on a reconnect
 ================
 */
-void G_ReadSessionData( gclient_t *client )
+void G_ReadSessionData( gentity_t *ent )
 {
-    char        s[MAX_STRING_CHARS], adminName[MAX_NETNAME];
-    const char  *var;
-    int         sessionTeam, adminLevel, adminType;
-
-    var = va( "session%i", client - level.clients );
-    trap_Cvar_VariableStringBuffer( var, s, sizeof(s) );
-
-    sscanf( s, "%i %i %i \\%[^\\]", &sessionTeam, &adminLevel, &adminType, &adminName );
-
-    // bk001205 - format issues
-    client->sess.team = (team_t)sessionTeam;
-    client->sess.adminLevel = adminLevel;
-    Q_strncpyz(client->sess.adminName, adminName, sizeof(client->sess.adminName));
-    client->sess.adminType = adminType;
+    dbReadSession(ent);
 }
 
 
@@ -63,8 +43,9 @@ G_InitSessionData
 Called on a first-time connect
 ================
 */
-void G_InitSessionData( gclient_t *client, char *userinfo )
+void G_InitSessionData( gentity_t* ent, char *userinfo )
 {
+    gclient_t* client = ent->client;
     clientSession_t *sess;
     const char      *value;
 
@@ -107,8 +88,7 @@ void G_InitSessionData( gclient_t *client, char *userinfo )
     sess->spectatorState = SPECTATOR_FREE;
     sess->spectatorTime = level.time;
     resetSession(&g_entities[client->ps.clientNum]);
-
-    G_WriteClientSessionData( client );
+    G_WriteClientSessionData( ent );
 }
 
 
@@ -147,11 +127,11 @@ void G_WriteSessionData( void )
 
     trap_Cvar_Set( "session", level.gametypeData->name );
 
-    for ( i = 0 ; i < level.maxclients ; i++ )
+    for ( i = 0 ; i < level.numConnectedClients ; i++ )
     {
-        if ( level.clients[i].pers.connected == CON_CONNECTED )
+        if ( g_entities[level.sortedClients[i]].client->pers.connected == CON_CONNECTED )
         {
-            G_WriteClientSessionData( &level.clients[i] );
+            G_WriteClientSessionData( &g_entities[level.sortedClients[i]] );
         }
     }
 }
