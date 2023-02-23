@@ -65,6 +65,7 @@ void closeThread() {
 #elif defined _WIN32
 
 #include <windows.h>
+#include <process.h>
 
 HANDLE outboundMutex;
 HANDLE inboundMutex;
@@ -101,7 +102,10 @@ void startThread() {
 
 void closeThread() {
 	killThread = 1;
+    
 	WaitForSingleObject(thread, 1000);
+    CloseHandle(inboundMutex);
+    CloseHandle(outboundMutex);
 	CloseHandle(thread);
 }
 
@@ -155,14 +159,14 @@ int enqueueOutbound(int action, int playerId, char* message) {
 
 	acquireOutboundMutex();
 
-	tmp->message = (char*)malloc(strlen(message) + 1);
+	tmp->message = (char*)malloc(strlen(message) + 2);
 
 	if (!tmp->message) {
 		freeOutboundMutex();
 		return THREADRESPONSE_ENQUEUE_COULDNT_MALLOC;
 	}
 
-	Q_strncpyz(tmp->message, message, strlen(message));
+	Q_strncpyz(tmp->message, message, strlen(message) + 1);
 	tmp->action = action;
 	tmp->playerId = playerId;
 	tmp->next = NULL;

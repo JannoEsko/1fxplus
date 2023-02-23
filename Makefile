@@ -315,7 +315,7 @@ ifdef MINGW
   endif
 
   BASE_CFLAGS = -Wall -fno-strict-aliasing -Wimplicit -Wstrict-prototypes \
-    -DUSE_ICON -pthread
+    -DUSE_ICON
 
   ifeq ($(ARCH),x86_64)
     OPTIMIZE = -O3
@@ -327,7 +327,7 @@ ifdef MINGW
   SHLIBEXT=dll
   SHLIBCFLAGS=
   SHLIBLDFLAGS=-shared $(LDFLAGS)
-  LIBS= -lws2_32 -lwinmm -lpsapi -pthread
+  LIBS= -lws2_32 -lwinmm -lpsapi -lcurl
 
   ifeq ($(ARCH),x86)
     # build 32bit
