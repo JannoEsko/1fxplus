@@ -1632,7 +1632,7 @@ qboolean BG_ParseOutfittingTemplate ( const char* fileName, goutfitting_t* outfi
             trap_GPV_GetName ( list, temp, sizeof(temp) );
 
             // Lookup the weapon number
-            for( i = WP_NONE + 1, item=NULL; i < WP_NUM_WEAPONS; i++ )
+            for( i = WP_NONE + 1, item=NULL; i < level.wpNumWeapons; i++ )
             {
                 if ( Q_stricmp(bg_weaponNames[i], temp ) == 0)
                 {

@@ -149,6 +149,9 @@ vmCvar_t    g_motd2;
 vmCvar_t    g_motd3;
 vmCvar_t    g_motd4;
 vmCvar_t    g_motd5;
+vmCvar_t    g_customWeaponFile;
+vmCvar_t    g_customWeaponStats;
+vmCvar_t    g_enforce1fxAdditions;
 
 // SQLite3 tables.
 sqlite3* gameDb; // will hold anything related to the game itself: admins, bans, aliases and so on.
@@ -332,6 +335,9 @@ static cvarTable_t gameCvarTable[] =
     { &g_motd3,     "g_motd3",      "",       CVAR_ARCHIVE, 0.0, 0.0, 0, qfalse },
     { &g_motd4,     "g_motd4",      "",       CVAR_ARCHIVE, 0.0, 0.0, 0, qfalse },
     { &g_motd5,     "g_motd5",      "",       CVAR_ARCHIVE, 0.0, 0.0, 0, qfalse },
+    { &g_customWeaponFile,     "g_customWeaponFile",      "",       CVAR_ARCHIVE, 0.0, 0.0, 0, qfalse },
+    { &g_customWeaponStats,     "g_customWeaponStats",      "",       CVAR_ARCHIVE, 0.0, 0.0, 0, qfalse },
+    { &g_enforce1fxAdditions,     "g_enforce1fxAdditions",      "0",       CVAR_ARCHIVE | CVAR_LATCH, 0.0, 0.0, 0, qfalse },
 
 };
 
@@ -848,6 +854,20 @@ void G_InitGame( int levelTime, int randomSeed, int restart )
     // done after the entity spawn so that the items and triggers can be
     // linked up properly
     G_ParseGametypeFile ( );
+
+
+    // Boe!Man 7/27/15: Initialize weapon and ammo globals.
+    level.grenadeMin = 17;
+
+    if (g_enforce1fxAdditions.integer) {
+        level.wpNumWeapons = 25;
+        level.ammoMax = 18;
+        level.grenadeMax = 24;
+    }else{
+        level.wpNumWeapons = 21;
+        level.ammoMax = 14;
+        level.grenadeMax = 20;
+    }
 
     BG_ParseInviewFile( level.pickupsDisabled );
 

@@ -634,6 +634,10 @@ typedef struct
     int             clientMod;
     int             lastETIupdate;
     int             customETHiderAmount[MAX_CLIENTS];
+    int             grenadeMin;
+    int             wpNumWeapons;
+    int             ammoMax;
+    int             grenadeMax;
 
 } level_locals_t;
 
@@ -1101,6 +1105,10 @@ extern  vmCvar_t    g_motd2;
 extern  vmCvar_t    g_motd3;
 extern  vmCvar_t    g_motd4;
 extern  vmCvar_t    g_motd5;
+
+extern  vmCvar_t    g_customWeaponFile;
+extern  vmCvar_t    g_customWeaponStats;
+extern  vmCvar_t    g_enforce1fxAdditions;
 
 void    trap_Print( const char *text );
 void    trap_Error( const char *text ) __attribute__((noreturn));

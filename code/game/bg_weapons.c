@@ -423,7 +423,21 @@ qboolean BG_InitWeaponStats( qboolean pickupsDisabled )
     char        name[256];
     int         i;
 
-    GP2 = trap_GP_ParseFile("ext_data/sof2.wpn");
+    GP2 = NULL;
+
+    if (strlen(g_customWeaponStats.string) > 0) {
+        Com_Printf("Parsing custom weaponstats from /1fx/weaponstats/%s...", g_customWeaponStats.string);
+        GP2 = trap_GP_ParseFile(va("./1fx/weaponstats/%s", g_customWeaponStats.string));
+
+        if (!GP2) {
+            Com_Printf("Custom weaponstats parsing failed, reverting to default...");
+        }
+    }
+
+    if (!GP2) {
+        GP2 = trap_GP_ParseFile("ext_data/sof2.wpn");
+    }
+    
     if (!GP2)
     {
         return qfalse;
