@@ -144,6 +144,11 @@ vmCvar_t    g_iphubAPIKey;
 vmCvar_t    g_ipcacheAgeing;
 vmCvar_t    g_dontAllowVPN;
 vmCvar_t    g_useThreads;
+vmCvar_t    g_motd1;
+vmCvar_t    g_motd2;
+vmCvar_t    g_motd3;
+vmCvar_t    g_motd4;
+vmCvar_t    g_motd5;
 
 // SQLite3 tables.
 sqlite3* gameDb; // will hold anything related to the game itself: admins, bans, aliases and so on.
@@ -322,6 +327,11 @@ static cvarTable_t gameCvarTable[] =
     { &g_ipcacheAgeing,     "g_ipcacheAgeing",      "30",       CVAR_ARCHIVE, 0.0, 0.0, 0, qfalse },
     { &g_dontAllowVPN,     "g_dontAllowVPN",      "0",       CVAR_ARCHIVE | CVAR_LATCH, 0.0, 0.0, 0, qfalse },
     { &g_useThreads,     "g_useThreads",      "0",       CVAR_ARCHIVE | CVAR_LATCH, 0.0, 0.0, 0, qfalse },
+    { &g_motd1,     "g_motd1",      "",       CVAR_ARCHIVE, 0.0, 0.0, 0, qfalse },
+    { &g_motd2,     "g_motd2",      "",       CVAR_ARCHIVE, 0.0, 0.0, 0, qfalse },
+    { &g_motd3,     "g_motd3",      "",       CVAR_ARCHIVE, 0.0, 0.0, 0, qfalse },
+    { &g_motd4,     "g_motd4",      "",       CVAR_ARCHIVE, 0.0, 0.0, 0, qfalse },
+    { &g_motd5,     "g_motd5",      "",       CVAR_ARCHIVE, 0.0, 0.0, 0, qfalse },
 
 };
 
@@ -731,7 +741,7 @@ void G_InitGame( int levelTime, int randomSeed, int restart )
     Com_Printf ("------- Game Initialization -------\n");
     Com_Printf ("gamename: %s %s\n", PRODUCT_NAME, PRODUCT_VERSION);
     Com_Printf ("gamedate: %s\n", __DATE__);
-    Com_Printf("Mod: %s\nMod version: %s\n", MOD_NAME, MOD_VERSION);
+    Com_Printf("Mod: %s\nMod version: %s\n", MOD_NAME, PRODUCT_VERSION);
 
     srand( randomSeed );
 
@@ -944,12 +954,14 @@ void G_ShutdownGame( int restart )
         G_LogPrintf("------------------------------------------------------------\n" );
         trap_FS_FCloseFile( level.logFile );
     }
+    // write all the client session data so we can get it back
+    G_WriteSessionData();
     Com_Printf("Unloading and backing up in-memory databases.\n");
+
     unloadInMemoryDatabases();
     // Boe!Man 7/27/15: Free statinfo memory of all clients.
     G_FreeStatsMemory(NULL);
-    // write all the client session data so we can get it back
-    G_WriteSessionData();
+    
 
     if (g_useThreads.integer) {
         closeThread();

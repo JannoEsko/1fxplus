@@ -340,6 +340,9 @@ typedef struct
     char                countryCode[10];
     char                countryName[100];
     char                textColor[2];
+    qboolean            firstTime;
+    int                 motdStartTime;
+    int                 motdStopTime;
 } clientSession_t;
 
 //
@@ -1092,6 +1095,12 @@ extern  vmCvar_t    g_iphubAPIKey;
 extern  vmCvar_t    g_ipcacheAgeing;
 extern  vmCvar_t    g_dontAllowVPN;
 extern  vmCvar_t    g_useThreads;
+
+extern  vmCvar_t    g_motd1;
+extern  vmCvar_t    g_motd2;
+extern  vmCvar_t    g_motd3;
+extern  vmCvar_t    g_motd4;
+extern  vmCvar_t    g_motd5;
 
 void    trap_Print( const char *text );
 void    trap_Error( const char *text ) __attribute__((noreturn));

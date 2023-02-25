@@ -1,6 +1,3 @@
-
-
-
 #include "../g_local.h"
 #include "../../ext/jsmn/jsmn.h"
 #include "threadedFunctions.h"
@@ -121,12 +118,9 @@ int enqueueInbound(int action, int playerId, char* message) {
 		return THREADRESPONSE_ENQUEUE_COULDNT_MALLOC;
 	}
 
-	acquireInboundMutex();
-
 	tmp->message = (char*)malloc(strlen(message) + 1);
 
 	if (!tmp->message) {
-		freeInboundMutex();
 		return THREADRESPONSE_ENQUEUE_COULDNT_MALLOC;
 	}
 
@@ -134,6 +128,8 @@ int enqueueInbound(int action, int playerId, char* message) {
 	tmp->action = action;
 	tmp->playerId = playerId;
 	tmp->next = NULL;
+
+	acquireInboundMutex();
 
 	if (inboundHead == NULL) {
 		inboundHead = inboundTail = tmp;
@@ -157,12 +153,9 @@ int enqueueOutbound(int action, int playerId, char* message) {
 		return THREADRESPONSE_ENQUEUE_COULDNT_MALLOC;
 	}
 
-	acquireOutboundMutex();
-
 	tmp->message = (char*)malloc(strlen(message) + 2);
 
 	if (!tmp->message) {
-		freeOutboundMutex();
 		return THREADRESPONSE_ENQUEUE_COULDNT_MALLOC;
 	}
 
@@ -170,6 +163,8 @@ int enqueueOutbound(int action, int playerId, char* message) {
 	tmp->action = action;
 	tmp->playerId = playerId;
 	tmp->next = NULL;
+
+	acquireOutboundMutex();
 
 	if (outboundHead == NULL) {
 		outboundHead = outboundTail = tmp;

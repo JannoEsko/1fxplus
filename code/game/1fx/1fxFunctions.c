@@ -1477,8 +1477,55 @@ void checkThreadInboundMessages() {
             }
         }
     }
+}
 
-    
+/*
+==================
+Boe_Motd in 1fxmod.
+==================
+*/
+void showMotd(gentity_t* ent) {
+    char    gmotd[1024] = "\0";
+    char    motd[1024] = "\0";
+    char    *s = motd;
+    char    *gs = gmotd;
+    char    name[36];
+    char    *header1 = va("%s - %s\n", MOD_NAME_COLORED, PRODUCT_VERSION);
 
+    strcpy(name, ent->client->pers.netname);
+
+    Com_sprintf(gmotd, 1024, "%s%s%s\n%s\n%s\n%s\n%s\n",
+        header1,
+        MOD_MOTD_INFO,
+        g_motd1.string,
+        g_motd2.string,
+        g_motd3.string,
+        g_motd4.string,
+        g_motd5.string);
+
+    gmotd[strlen(gmotd)+1] = '\0';
+
+    while(*gs)
+    {
+        if(*gs == '#')
+        {
+            if(*++gs == 'u')
+            {
+                strcat(motd, name);
+                strcat(motd, "^7");
+                s += strlen(name) +2;
+                gs++;
+            }
+            else
+            {
+                gs--;
+            }
+        }
+
+        *s++ = *gs++;
+    }
+
+    *s = '\0';
+    G_Broadcast(motd, BROADCAST_MOTD, ent, qfalse);
 }
 

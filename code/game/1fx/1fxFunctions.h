@@ -74,6 +74,7 @@ gentity_t* getLastConnectedClient(qboolean respectGametypeItems);
 gentity_t* getLastConnectedClientInTeam(int team, qboolean respectGametypeItems);
 unsigned int G_IP2Integer(const char* originalIP);
 void checkThreadInboundMessages(void);
+void showMotd(gentity_t* ent);
 
 
 

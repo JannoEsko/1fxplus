@@ -1016,6 +1016,19 @@ void ClientThink_real( gentity_t *ent )
         return;
     }
 
+    if(client->sess.firstTime && !client->sess.motdStartTime && !level.intermissionQueued) {
+        if ( ucmd->buttons & BUTTON_ANY )
+        {
+            char *info = G_ColorizeMessage("\\Info:");
+            client->sess.motdStartTime = level.time;
+            client->sess.motdStopTime = level.time + 10000;
+            trap_SendServerCommand( ent - g_entities, va("chat -1 \"%s This server is running SoF2Plus with %s\n\"", info, MOD_NAME_COLORED));
+            trap_SendServerCommand( ent - g_entities, va("chat -1 \"%s Please report any bugs on github.com/JannoEsko/1fxplus\n\"", info));
+            trap_SendServerCommand( ent - g_entities, va("chat -1 \"%s You can find more about SoF2Plus at github.com/sof2plus\n\"", info));
+            showMotd(ent);
+        }
+    }
+
     if (level.clientMod == CL_ROCMOD && client->sess.clientMod != CL_ROCMOD && level.time > client->sess.clientCheckTime) {
         if (client->sess.clientCheckCount > 25) {
             char* info = G_ColorizeMessage("\\Info:");
@@ -1065,6 +1078,24 @@ void ClientThink_real( gentity_t *ent )
         }
 
         client->sess.nextCoaster = level.time + 750;
+    }
+
+    if(client->sess.motdStartTime) {
+        // Boe!Man 10/18/15: Make sure the motd is being broadcasted several times.
+        if (level.time >= client->sess.motdStartTime + 1000 && level.time < client->sess.motdStopTime - 3500){
+			client->sess.motdStartTime += 1000;
+			showMotd(ent);
+		} else if(level.time >= client->sess.motdStopTime && level.time > (ent->client->sess.lastMessage + 4000)) {
+            // Boe!Man 3/16/11: Better to reset the values and actually put firstTime to qfalse so it doesn't mess up when we want to broadcast a teamchange.
+            client->sess.motdStartTime = 0;
+            client->sess.motdStopTime = 0;
+            if(client->sess.firstTime)
+            {
+                BroadcastTeamChange( client, -1 );
+                client->sess.firstTime = qfalse;
+            }
+        }
+
     }
 
     if (level.time > client->sess.oneSecChecks) {

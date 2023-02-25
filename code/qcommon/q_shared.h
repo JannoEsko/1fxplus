@@ -44,8 +44,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #endif
 
 #define MOD_NAME "1fxplus"
-#define MOD_VERSION "0.01"
 #define MOD_NAME_COLORED "^71fx^1plus^7"
+#define MOD_MOTD_INFO "Inspired from 1fx. Mod, originally developed by ^GBoe!Man ^7& ^6Henkie\n^7Running on SoF2Plus, which is derived from ioquake3\nMade compatible to SoF2 by ^GBoe!Man\n^71fxplus developed by 1fx^1.^K # ^7Janno\nhttps://github.com/sof2plus\nhttps://github.com/JannoEsko/1fxplus\n"
 
 #ifndef PRODUCT_DATE
 #  define PRODUCT_DATE __DATE__
