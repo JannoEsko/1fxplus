@@ -2445,6 +2445,8 @@ void ClientCommand( int clientNum ) {
 
     if (Q_stricmp(cmd, "drop") == 0)
         Cmd_Drop_f(ent);
+    else if (!Q_stricmp(cmd, "motd")) 
+        showMotd(ent);
     else if (Q_stricmp(cmd, "dropitem") == 0)
         Cmd_DropItem_f(ent);
     else if (Q_stricmp(cmd, "give") == 0)

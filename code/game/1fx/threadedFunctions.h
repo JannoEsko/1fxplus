@@ -36,7 +36,7 @@ struct curlProgressData {
 #ifdef __linux__
 #define THREAD_SLEEP_DURATION 50000
 #elif defined _WIN32
-#define THREAD_SLEEP_DURATION 100
+#define THREAD_SLEEP_DURATION 50
 #endif
 
 #define IPHUB_API_ENDPOINT "http://v2.api.iphub.info/ip/"

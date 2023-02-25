@@ -65,6 +65,13 @@ typedef struct {
     int     iconBlueFlagDropped;
     int     iconRedFlagCarried;
     int     iconBlueFlagCarried;
+
+    qboolean    blueFlagAtSpawn;
+    qboolean    redFlagAtSpawn;
+
+    char    redTeamPrefix[64];
+    char    blueTeamPrefix[64];
+
 } gametypeLocals_t;
 
 //=============================================
@@ -77,6 +84,9 @@ extern gametypeLocals_t gametype;
 
 extern vmCvar_t         gt_flagReturnTime;
 extern vmCvar_t         gt_simpleScoring;
+extern vmCvar_t            gt_flagCaptureType;
+extern vmCvar_t            gt_flagAutoReturn;
+extern vmCvar_t         gt_playerCanReturnFlag;
 
 void    GT_Init         ( void );
 void    GT_RunFrame     ( int time );
