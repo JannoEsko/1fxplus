@@ -8,52 +8,137 @@
 #include "g_local.h"
 
 // names as they appear in the SOF2.wpn and inview files
-char *bg_weaponNames[WP_NUM_WEAPONS] =
+char *bg_weaponNames[WP_MAX_WEAPONS] = {0};
+char *bg_enumWeaponNames[WP_MAX_WEAPONS] = {0};
+char *ammoNames[WP_MAX_AMMO] = {0};
+char *modNames[WP_MAX_MODS] = {0};
+
+weaponData_t weaponData[WP_MAX_WEAPONS];
+ammoData_t ammoData[WP_MAX_AMMO];
+
+void BG_InitializeWeaponsAndAmmo()
 {
-    "No Weapon",                    // WP_NONE,
-    "Knife",                        // WP_KNIFE,
-    "M1911A1",                      // WP_M1911A1_PISTOL,
-    "US SOCOM",                     // WP_US_SOCOM_PISTOL,
-    "Silver Talon",                 // WP_SILVER_TALON,
-    "M590",                         // WP_M590_SHOTGUN,
-    "Micro Uzi",                    // WP_MICRO_UZI_SUBMACHINEGUN,
-    "M3A1",                         // WP_M3A1_SUBMACHINEGUN,
-    "MP5",                          // WP_MP5
-    "USAS-12",                      // WP_USAS_12_SHOTGUN,
-    "M4",                           // WP_M4_ASSAULT_RIFLE,
-    "AK74",                         // WP_AK74_ASSAULT_RIFLE,
-    "Sig 551",                      // WP_SIG551
-    "MSG90A1",                      // WP_MSG90A1_SNIPER_RIFLE,
-    "M60",                          // WP_M60_MACHINEGUN,
-    "MM1",                          // WP_MM1_GRENADE_LAUNCHER,
-    "RPG7",                         // WP_RPG7_LAUNCHER,
-    "M84",                          // WP_M84_GRENADE,
-    "SMOHG92",                      // WP_SMOHG92_GRENADE,
-    "ANM14",                        // WP_ANM14_GRENADE,
-    "M15",                          // WP_M15_GRENADE,
-};
+    bg_weaponNames[0] = "No Weapon";    // WP_NONE
+    bg_weaponNames[1] = "Knife";        // WP_KNIFE
+    bg_weaponNames[2] = "M1911A1";      // WP_M1911A1_PISTOL
+    bg_weaponNames[3] = "US SOCOM";     // WP_US_SOCOM_PISTOL
+    bg_weaponNames[4] = "Silver Talon"; // WP_SILVER_TALON
+    bg_weaponNames[5] = "M590";         // WP_M590_SHOTGUN
+    bg_weaponNames[6] = "Micro Uzi";    // WP_MICRO_UZI_SUBMACHINEGUN
+    bg_weaponNames[7] = "M3A1";         // WP_M3A1_SUBMACHINEGUN
+    bg_weaponNames[8] = "MP5";          // WP_MP5
+    bg_weaponNames[9] = "USAS-12";      // WP_USAS_12_SHOTGUN
+    bg_weaponNames[10] = "M4";          // WP_M4_ASSAULT_RIFLE
+    bg_weaponNames[11] = "AK74";        // WP_AK74_ASSAULT_RIFLE
+    bg_weaponNames[12] = "Sig 551";     // WP_SIG551
+    bg_weaponNames[13] = "MSG90A1";     // WP_MSG90A1_SNIPER_RIFLE
+    bg_weaponNames[14] = "M60";         // WP_M60_MACHINEGUN
+    bg_weaponNames[15] = "MM1";         // WP_MM1_GRENADE_LAUNCHER
+    bg_weaponNames[16] = "RPG7";        // WP_RPG7_LAUNCHER
+    bg_weaponNames[17] = "M84";         // WP_M84_GRENADE
+    bg_weaponNames[18] = "SMOHG92";     // WP_SMOHG92_GRENADE
+    bg_weaponNames[19] = "ANM14";       // WP_ANM14_GRENADE
+    bg_weaponNames[20] = "M15";         // WP_M15_GRENADE
 
-weaponData_t weaponData[WP_NUM_WEAPONS];
+    bg_enumWeaponNames[0] = "WP_NONE";
+    bg_enumWeaponNames[1] = "WP_KNIFE";
+    bg_enumWeaponNames[2] = "WP_M1911A1_PISTOL";
+    bg_enumWeaponNames[3] = "WP_US_SOCOM_PISTOL";
+    bg_enumWeaponNames[4] = "WP_SILVER_TALON";
+    bg_enumWeaponNames[5] = "WP_M590_SHOTGUN";
+    bg_enumWeaponNames[6] = "WP_MICRO_UZI_SUBMACHINEGUN";
+    bg_enumWeaponNames[7] = "WP_M3A1_SUBMACHINEGUN";
+    bg_enumWeaponNames[8] = "WP_MP5";
+    bg_enumWeaponNames[9] = "WP_USAS_12_SHOTGUN";
+    bg_enumWeaponNames[10] = "WP_M4_ASSAULT_RIFLE";
+    bg_enumWeaponNames[11] = "WP_AK74_ASSAULT_RIFLE";
+    bg_enumWeaponNames[12] = "WP_SIG551";
+    bg_enumWeaponNames[13] = "WP_MSG90A1_SNIPER_RIFLE";
+    bg_enumWeaponNames[14] = "WP_M60_MACHINEGUN";
+    bg_enumWeaponNames[15] = "WP_MM1_GRENADE_LAUNCHER";
+    bg_enumWeaponNames[16] = "WP_RPG7_LAUNCHER";
+    bg_enumWeaponNames[17] = "WP_M84_GRENADE";
+    bg_enumWeaponNames[18] = "WP_SMOHG92_GRENADE";
+    bg_enumWeaponNames[19] = "WP_ANM14_GRENADE";
+    bg_enumWeaponNames[20] = "WP_M15_GRENADE";
 
-char *ammoNames[AMMO_MAX] =
-{
-    "Knife",        //  AMMO_KNIFE,
-    "0.45 ACP",     //  AMMO_045,
-    "5.56mm",       //  AMMO_556,
-    "9mm",          //  AMMO_9  ,
-    "12 gauge",     //  AMMO_12 ,
-    "7.62mm",       //  AMMO_762,
-    "40mm grenade", //  AMMO_40,
-    "RPG7",         //  AMMO_RPG7
-    "M15",          //  AMMO_M15,
-    "M84",          //  AMMO_M84,
-    "SMOHG92",      //  AMMO_SMOHG92,
-    "ANM14",        //  AMMO_ANM14,
-    "7.62mm belt",  //  AMMO_762_BELT,
-    "9mm|mp5",      //  AMMO_9_MP5
-};
+    ammoNames[0] = "Knife";         //  AMMO_KNIFE
+    ammoNames[1] = "0.45 ACP";      //  AMMO_045
+    ammoNames[2] = "5.56mm";        //  AMMO_556
+    ammoNames[3] = "9mm";           //  AMMO_9
+    ammoNames[4] = "12 gauge";      //  AMMO_12
+    ammoNames[5] = "7.62mm";        //  AMMO_762
+    ammoNames[6] = "40mm grenade";  //  AMMO_40
+    ammoNames[7] = "RPG7";          //  AMMO_RPG7
+    ammoNames[8] = "M15";           //  AMMO_M15
+    ammoNames[9] = "M84";           //  AMMO_M84
+    ammoNames[10] = "SMOHG92";      //  AMMO_SMOHG92
+    ammoNames[11] = "ANM14";        //  AMMO_ANM14
+    ammoNames[12] = "7.62mm belt";  //  AMMO_762_BELT
+    ammoNames[13] = "9mm|mp5";      //  AMMO_9_MP5
 
-ammoData_t ammoData[AMMO_MAX];
+    // Boe!Man 7/27/15: Check for 1fx. Client Additions, and if so, add the remaining weapons.
+    if (g_enforce1fxAdditions.integer) {
+        bg_weaponNames[21] = "M67";         // WP_M67_GRENADE
+        bg_weaponNames[22] = "F1";          // WP_F1_GRENADE
+        bg_weaponNames[23] = "L2A2";        // WP_L2A2_GRENADE
+        bg_weaponNames[24] = "MDN11";       // WP_MDN11_GRENADE
+
+        bg_enumWeaponNames[21] = "WP_M67_GRENADE";
+        bg_enumWeaponNames[22] = "WP_F1_GRENADE";
+        bg_enumWeaponNames[23] = "WP_L2A2_GRENADE";
+        bg_enumWeaponNames[24] = "WP_MDN11_GRENADE";
+
+        if(!Q_stricmp(g_realGametype.string, "hns")){
+            // Boe!Man 11/9/15: Don't cross any hard-defined bit fields for ammo types. Re-use some to stay under the hard limit of MAX_AMMO.
+            ammoNames[12] = "F1";       //  AMMO_F1
+            ammoNames[13] = "MDN11";    //  AMMO_MDN11
+        }
+        ammoNames[14] = "M67";          //  AMMO_M67
+        ammoNames[15] = "L2A2";         //  AMMO_L2A2
+    }
+
+    modNames[0] = "Unknown";
+    modNames[1] = "Knife";
+    modNames[2] = "M1911A1";
+    modNames[3] = "US SOCOM";
+    modNames[4] = "Silver Talon";
+    modNames[5] = "M590";
+    modNames[6] = "Micro Uzi";
+    modNames[7] = "M3A1";
+    modNames[8] = "MP5";
+    modNames[9] = "USAS-12";
+    modNames[10] = "M4";
+    modNames[11] = "AK74";
+    modNames[12] = "Sig 551";
+    modNames[13] = "M1911A1";
+    modNames[14] = "M60";
+    modNames[15] = "MM1";
+    modNames[16] = "RPG7";
+    modNames[17] = "M84";
+    modNames[18] = "SMOHG92";
+    modNames[19] = "ANM14";
+    modNames[20] = "M15";
+    modNames[21] = "M67";
+    modNames[22] = "F1";
+    modNames[23] = "L2A2";
+    modNames[24] = "MDN11";
+    modNames[25] = "Water";
+    modNames[26] = "Crushing entity";
+    modNames[27] = "Telefrag";
+    modNames[28] = "Falling";
+    modNames[29] = "Sucicide";
+    modNames[30] = "Team change";
+    modNames[31] = "Target Laser";
+    modNames[32] = "Trigger hurt entity";
+    modNames[33] = "Trigger hurt entity (no suicide)";
+    modNames[34] = "Car";
+    modNames[35] = "Pop";
+    modNames[36] = "Refresh";
+    modNames[37] = "Plant up";
+    modNames[38] = "Burn";
+}
+
 
 static const char* BG_GetRealAmmoName ( ammo_t ammoNum )
 {
@@ -108,7 +193,7 @@ qboolean BG_InitAmmoStats(void)
     }
 
     topGroup = trap_GP_GetBaseParseGroup(GP2);
-    for ( i = 0; i < AMMO_MAX; i ++ )
+    for ( i = 0; i < level.ammoMax; i ++ )
     {
         void*   topSubs;
         const char* realName;
@@ -215,7 +300,7 @@ static qboolean BG_ParseAttackStats ( int weaponNum, attackData_t* attack, void 
     }
 
     attack->ammoIndex = AMMO_NONE;
-    for (i = 0; i < AMMO_MAX; i++)
+    for (i = 0; i < level.ammoMax; i++)
     {
         if (0 == Q_stricmp(tmpStr, ammoNames[i]))
         {
@@ -225,7 +310,7 @@ static qboolean BG_ParseAttackStats ( int weaponNum, attackData_t* attack, void 
     }
 
 #ifndef NDEBUG
-    if (AMMO_MAX == i)
+    if (level.ammoMax == i)
     {
         Com_Printf("BG_ParseWeaponStats: Unknown ammo: %s\n", tmpStr);
     }
@@ -423,20 +508,10 @@ qboolean BG_InitWeaponStats( qboolean pickupsDisabled )
     char        name[256];
     int         i;
 
-    GP2 = NULL;
-
-    if (strlen(g_customWeaponFile.string) > 0) {
-        Com_Printf("Parsing custom weaponfile from /1fx/weaponfiles/%s...", g_customWeaponFile.string);
-        GP2 = trap_GP_ParseFile(va("./1fx/weaponfiles/%s", g_customWeaponFile.string));
-
-        if (!GP2) {
-            Com_Printf("Custom weaponfile parsing failed, reverting to default...");
-        }
-    }
-
-    if (!GP2) {
-        GP2 = trap_GP_ParseFile("ext_data/sof2.wpn");
-    }
+    // the custom wpn file stuff was detached from this func.
+    // we might not have the full context needed to load all the weapons in the custom weaponfile.
+    // so the chain is that we init everything with this, the default value, after which we load the custom additions on top.
+    GP2 = trap_GP_ParseFile("ext_data/sof2.wpn");
 
     if (!GP2)
     {
@@ -451,7 +526,7 @@ qboolean BG_InitWeaponStats( qboolean pickupsDisabled )
         if (Q_stricmp(name, "weapon") == 0)
         {
             trap_GPG_FindPairValue(topSubs, "name", "", name, sizeof(name));
-            for(i=0;i<WP_NUM_WEAPONS;i++)
+            for(i=0;i<level.wpNumWeapons;i++)
             {
                 if (Q_stricmp(bg_weaponNames[i], name) == 0)
                 {
@@ -461,7 +536,7 @@ qboolean BG_InitWeaponStats( qboolean pickupsDisabled )
             }
 
 #ifndef NDEBUG
-            if (i == WP_NUM_WEAPONS)
+            if (i == level.wpNumWeapons)
             {
                 Com_Printf("BG_InitWeaponStats: Unknown weapon: %s\n", name);
             }
@@ -477,7 +552,7 @@ qboolean BG_InitWeaponStats( qboolean pickupsDisabled )
 
 ////////////////////////////////////////////////////////////////////////////////////
 
-TWeaponParseInfo    weaponParseInfo[WP_NUM_WEAPONS];
+TWeaponParseInfo    weaponParseInfo[WP_MAX_WEAPONS];
 char                weaponLeftHand[MAX_QPATH];
 char                weaponRightHand[MAX_QPATH];
 
@@ -1017,7 +1092,7 @@ qboolean BG_ParseInviewFile( qboolean pickupsDisabled )
 
     if (strlen(g_inviewFile.string) > 0) {
         Com_Printf("Parsing inview from /1fx/weaponfiles/inviews/%s\n", g_inviewFile.string);
-        GP2 = trap_GP_ParseFile(va("./1fx/weaponfiles/inviews/%s", g_inviewFile.string));
+        GP2 = trap_GP_ParseFile(va("weaponfiles/inviews/%s", g_inviewFile.string));
 
         if (!GP2) {
             Com_Printf("Custom inview file parsing failed, reverting to default.\n");
@@ -1072,7 +1147,7 @@ qboolean BG_ParseInviewFile( qboolean pickupsDisabled )
         else if (Q_stricmp(name, "weapon") == 0)
         {
             trap_GPG_FindPairValue(topSubs, "name", "", name, sizeof(name));
-            for(i=0;i<WP_NUM_WEAPONS;i++)
+            for(i=0;i<level.wpNumWeapons;i++)
             {
                 if (Q_stricmp(bg_weaponNames[i], name) == 0)
                 {
@@ -1082,7 +1157,7 @@ qboolean BG_ParseInviewFile( qboolean pickupsDisabled )
             }
 
 #ifndef NDEBUG
-            if (i == WP_NUM_WEAPONS)
+            if (i == level.wpNumWeapons)
             {
                 Com_Printf("BG_InitWeapons: Unknown weapon: %s\n", name);
             }
@@ -1303,7 +1378,7 @@ int BG_GetMaxAmmo ( const playerState_t* ps, int ammoIndex )
         return 0;
     }
 
-    for ( ammo = 0, weapon = WP_KNIFE; weapon < WP_NUM_WEAPONS; weapon ++ )
+    for ( ammo = 0, weapon = WP_KNIFE; weapon < level.wpNumWeapons; weapon ++ )
     {
         if ( !(ps->stats[STAT_WEAPONS] & (1<<weapon)) )
         {

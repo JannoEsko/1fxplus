@@ -638,6 +638,7 @@ typedef struct
     int             wpNumWeapons;
     int             ammoMax;
     int             grenadeMax;
+    char            mapname[MAX_STRING_CHARS];
 
 } level_locals_t;
 
@@ -859,6 +860,7 @@ gentity_t*  G_FindNearbyClient              ( vec3_t origin, team_t team, float 
 void        G_AddClientSpawn                ( gentity_t* ent, team_t team );
 qboolean    G_IsClientChatIgnored           ( int ignorer, int ingnoree );
 void        G_IgnoreClientChat              ( int ignorer, int ignoree, qboolean ignore );
+void        G_UpdateOutfitting              ( int clientNum );
 
 //
 // g_svcmds.c
@@ -1099,6 +1101,10 @@ extern  vmCvar_t    g_iphubAPIKey;
 extern  vmCvar_t    g_ipcacheAgeing;
 extern  vmCvar_t    g_dontAllowVPN;
 extern  vmCvar_t    g_useThreads;
+extern  vmCvar_t    g_nosection;
+extern  vmCvar_t    g_compCurrentRound;
+extern  vmCvar_t    g_compModeState;
+extern  vmCvar_t    g_cm;
 
 extern  vmCvar_t    g_motd1;
 extern  vmCvar_t    g_motd2;
@@ -1111,6 +1117,10 @@ extern  vmCvar_t    g_enforce1fxAdditions;
 extern  vmCvar_t    g_instaGib;
 extern  vmCvar_t    g_damage;
 extern  vmCvar_t    g_inviewFile;
+
+extern  vmCvar_t    g_loadEntityFromFile;
+extern  vmCvar_t    g_entityFile;
+extern  vmCvar_t    g_altmap;
 
 void    trap_Print( const char *text );
 void    trap_Error( const char *text ) __attribute__((noreturn));

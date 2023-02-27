@@ -10,9 +10,9 @@ int minimumAdmLevel = (int)LEVEL_BADMIN;
 admCmd_t adminCommands[] =
 {
 
-    {"!adlr",    "adminlistremove",      &minimumAdmLevel,           &admRemoveAdminByRowId,               "Remove an Admin from the adminlist",    "<line #>",         NULL},
-    {"!ra",     "removeadmin",      &minimumAdmLevel,           &admRemoveAdminByNameOrId,            "Remove an Admin who is currently playing", "<i/n>", NULL },
-    {"!adr",     "adminremove",      &minimumAdmLevel,           &admRemoveAdminByNameOrId,            "Remove an Admin who is currently playing", "<i/n>", NULL },
+    {"!adlr",    "adminlistremove",      &minimumAdmLevel,           &admRemoveAdminByRowId,               "Remove an Admin from list",    "<line #>",         NULL},
+    {"!ra",     "removeadmin",      &minimumAdmLevel,           &admRemoveAdminByNameOrId,            "Remove an Admin ingame", "<i/n>", NULL },
+    {"!adr",     "adminremove",      &minimumAdmLevel,           &admRemoveAdminByNameOrId,            "Remove an Admin ingame", "<i/n>", NULL },
     {"!adl",    "adminlist",        &g_adminList.integer,       &admAdminList,                 "Show the Adminlist",               "",                 NULL},
     {"!al",     "adminlist",        &g_adminList.integer,       &admAdminList,                 "Show the Adminlist",               "",                 NULL},
     {"!ab",     "addbadmin",        &g_badmin.integer,          &admHandleAddBadmin,                  "Basic Admin",                      "<i/n>",            NULL},
@@ -49,15 +49,15 @@ admCmd_t adminCommands[] =
     {"!rtl",    "roundtimelimit",   &g_rtl.integer,             &admRoundTimelimit,            "Change the round timelimit",       "<time>",           NULL},
     {"!ro",     "runover",          &g_runover.integer,         &admRunover,                   "Push a player backwards",          "<i/n>",            NULL},
     {"!c",      "rollercoaster",    &g_rollercoaster.integer,   &admRollercoaster,             "Uppercut and push a player",       "<i/n>",            "ed"},
-    {"!mr",     "maprestart",       &g_mapswitch.integer,       &admMapRestart,                "Restart the current map",          "",                 NULL},
-    {"!mr",     "map_restart",      &g_mapswitch.integer,       &admMapRestart,                "Restart the current map",          "",                 NULL},
+    {"!mr",     "maprestart",       &minimumAdmLevel,       &admMapRestart,                "Restart the current map",          "",                 NULL},
+    {"!mr",     "map_restart",      &minimumAdmLevel,       &admMapRestart,                "Restart the current map",          "",                 NULL},
     {"!st",     "strip",            &g_strip.integer,           &admStrip,                     "Remove weapons from a player",     "<i/n>",            "ped"},
 
     {"!s",      "strip",            &g_strip.integer,           &admStrip,                     "Remove weapons from a player",     "<i/n>",            "ped"},
 
     {"!sh",     "shuffleteams",     &g_shuffleteams.integer,    &admShuffleTeams,              "Mix the teams at random",          "",                 NULL},
 
-    {"!gr",     "gametyperestart",  &g_gr.integer,              &admGametypeRestart,           "Restart the current gametype",     "",                 NULL},
+    {"!gr",     "gametyperestart",  &minimumAdmLevel,              &admGametypeRestart,           "Restart the current gametype",     "",                 NULL},
 
     {"!et",     "eventeams",        &g_eventeams.integer,       &admEventeams,                 "Make the teams even",              "",                 NULL},
 
@@ -73,16 +73,19 @@ admCmd_t adminCommands[] =
     {"!rd",     "realdamage",       &g_damage.integer,          &admRealDamage,                "Toggle Real damage",               "",                 NULL},
         {"!nd",     "normaldamage",     &g_damage.integer,          &admNormalDamage,              "Toggle Normal damage",             "",                 NULL},
         {"!cd",     "customdamage",     &g_damage.integer,          &admCustomDamage,              "Toggle Custom damage",             "<wpn file>",                 NULL},
+    {"!nl",     "nolower",          &g_nosection.integer,       &admNoLower,                   "Enable/Disable Nolower",           "",                 NULL},
+        {"!nr",     "noroof",           &g_nosection.integer,       &admNoRoof,                    "Enable/Disable Noroof",            "",                 NULL},
+        {"!nm",     "nomiddle",         &g_nosection.integer,       &admNoMiddle,                  "Enable/Disable Nomiddle",          "",                 NULL},
+        {"!nw",     "nowhole",          &g_nosection.integer,       &admNoWhole,                   "Enable/Disable Nowhole",           "",                 NULL},
+        {"!pa",     "pause",            &minimumAdmLevel,           &admPause,                     "Pause/resume the game",            "",                 NULL},
+        {"!cm",     "compmode",         &g_cm.integer,              &admCompmode,                  "Toggles Competition Mode",         "",                 NULL},
         /*{"!rounds", "rounds",           &g_cm.integer,              &adm_Rounds,                    "Set the number of rounds",         "<rounds>",         NULL},
         // Boe!Man 6/2/15: Don't move or modify anything above this comment, the /adm list expects them in that specific order.
         {"!girly",  "girly",            &g_girly.integer,           &adm_Girly,                     "Change player skin to female skin","<i/n> <0-12>",     NULL},
 
         {"!bs",     "blockseek",        &g_blockseek.integer,       &adm_blockSeek,                 "Block player from joining seek",   "<i/n>",            NULL},
         {"!bsl",    "blockseeklist",    &g_blockseek.integer,       &adm_blockSeekList,             "Show players blocked from seeking","",                 NULL},
-        {"!nl",     "nolower",          &g_nosection.integer,       &adm_noLower,                   "Enable/Disable Nolower",           "",                 NULL},
-        {"!nr",     "noroof",           &g_nosection.integer,       &adm_noRoof,                    "Enable/Disable Noroof",            "",                 NULL},
-        {"!nm",     "nomiddle",         &g_nosection.integer,       &adm_noMiddle,                  "Enable/Disable Nomiddle",          "",                 NULL},
-        {"!nw",     "nowhole",          &g_nosection.integer,       &adm_noWhole,                   "Enable/Disable Nowhole",           "",                 NULL},
+        
         {"!nn",     "nonades",          &g_nades.integer,           &adm_noNades,                   "Enable or disable nades",          "",                 NULL},
         {"!rd",     "realdamage",       &g_damage.integer,          &adm_realDamage,                "Toggle Real damage",               "",                 NULL},
         {"!nd",     "normaldamage",     &g_damage.integer,          &adm_normalDamage,              "Toggle Normal damage",             "",                 NULL},
@@ -101,7 +104,7 @@ admCmd_t adminCommands[] =
         {"!devmap", "devmap",           &g_mapswitch.integer,       &adm_Map,                       "Switch to the specified devmap",   "<map name>",       NULL},
         {"!pv",     "passvote",         &g_forcevote.integer,       &adm_passVote,                  "Pass the running vote",            "",                 NULL},
         {"!cv",     "cancelvote",       &g_forcevote.integer,       &adm_cancelVote,                "Cancel the running vote",          "",                 NULL},
-        {"!pa",     "pause",            &g_pause.integer,           &adm_Pause,                     "Pause/resume the game",            "",                 NULL},
+        
 
         {"!m",      "mute",             &g_mute.integer,            &adm_Mute,                      "Mute/unmute a player",             "<i/n> <time>",     NULL},
 
@@ -125,6 +128,33 @@ int admRespawnInterval (int argNum, gentity_t* adm, qboolean shortCmd) {
 
 int admRoundTimelimit (int argNum, gentity_t* adm, qboolean shortCmd) {
     admToggleCVAR(argNum, adm, shortCmd, "Round timelimit", &g_roundtimelimit);
+    return -1;
+}
+
+int admNoLower(int argNum, gentity_t* adm, qboolean shortCmd) {
+
+    return -1;
+}
+
+int admPause(int argNum, gentity_t* adm, qboolean shortCmd) {
+
+    return -1;
+}
+
+int admCompmode(int argNum, gentity_t* adm, qboolean shortCmd) {
+
+    return -1;
+}
+
+int admNoRoof(int argNum, gentity_t* adm, qboolean shortCmd) {
+    return -1;
+}
+
+int admNoMiddle(int argNum, gentity_t* adm, qboolean shortCmd) {
+    return -1;
+}
+
+int admNoWhole(int argNum, gentity_t* adm, qboolean shortCmd) {
     return -1;
 }
 
@@ -187,6 +217,10 @@ int admRealDamage (int argNum, gentity_t* adm, qboolean shortCmd) {
         G_printInfoMessage(adm, "Cannot set RD on H&S / H&Z gametypes.");
 
     } else if (weaponMod(WEAPONMOD_RD, qfalse)) {
+        for (int i = 0; i < level.numConnectedClients; i++){
+            level.clients[level.sortedClients[i]].noOutfittingChange = qfalse;
+            G_UpdateOutfitting(g_entities[level.sortedClients[i]].s.number);
+        }
         logAdmin(adm, NULL, "Real damage", NULL);
         G_Broadcast(va("Real damage by %s", getNameOrArg(adm, "RCON", qfalse)), BROADCAST_CMD, NULL, qtrue);
         G_printInfoMessageToAll("Real damage by %s", getNameOrArg(adm, "RCON", qtrue));
@@ -203,6 +237,10 @@ int admNormalDamage (int argNum, gentity_t* adm, qboolean shortCmd) {
         G_printInfoMessage(adm, "Cannot set ND on H&S / H&Z gametypes.");
 
     } else if (weaponMod(WEAPONMOD_ND, qfalse)) {
+        for (int i = 0; i < level.numConnectedClients; i++){
+            level.clients[level.sortedClients[i]].noOutfittingChange = qfalse;
+            G_UpdateOutfitting(g_entities[level.sortedClients[i]].s.number);
+        }
         logAdmin(adm, NULL, "Normal damage", NULL);
         G_Broadcast(va("Normal damage by %s", getNameOrArg(adm, "RCON", qfalse)), BROADCAST_CMD, NULL, qtrue);
         G_printInfoMessageToAll("Normal damage by %s", getNameOrArg(adm, "RCON", qtrue));
@@ -217,15 +255,20 @@ int admCustomDamage (int argNum, gentity_t* adm, qboolean shortCmd) {
 
     char* wpnmod = concatArgs(argNum, shortCmd);
 
-    if (!wpnmod) {
+    if (!wpnmod || strlen(wpnmod) == 0) {
         G_printInfoMessage(adm, "You need to specify the weaponmod file, e.g. !cd italy.wpn (/adm customdamage italy.wpn).");
         G_printInfoMessage(adm, "The file has to be in 1fx/weaponfiles/ folder.");
 
     } else {
 
         trap_Cvar_Set("g_customWeaponFile", wpnmod);
+        trap_Cvar_Update(&g_customWeaponFile);
 
         if (weaponMod(WEAPONMOD_CUSTOM, qfalse)) {
+            for (int i = 0; i < level.numConnectedClients; i++){
+                level.clients[level.sortedClients[i]].noOutfittingChange = qfalse;
+                G_UpdateOutfitting(g_entities[level.sortedClients[i]].s.number);
+            }
             logAdmin(adm, NULL, "Custom damage", wpnmod);
             G_Broadcast(va("Custom damage by %s", getNameOrArg(adm, "RCON", qfalse)), BROADCAST_CMD, NULL, qtrue);
             G_printInfoMessageToAll("Custom damage by %s", getNameOrArg(adm, "RCON", qtrue));
@@ -238,12 +281,33 @@ int admCustomDamage (int argNum, gentity_t* adm, qboolean shortCmd) {
 }
 
 int admMapRestart (int argNum, gentity_t* adm, qboolean shortCmd) {
-    level.mapState = MAPSTATE_RESTART;
-    level.mapStateTimer = level.time + 5000;
 
-    G_Broadcast(va("\\Map restart by %s", getNameOrArg(adm, "RCON", qfalse)), BROADCAST_CMD, NULL, qtrue);
-    logAdmin(adm, NULL, "map restart", NULL);
-    G_printInfoMessageToAll("Map restart by %s", getNameOrArg(adm, "RCON", qtrue));
+    // If the person is allowed to do cm and compmode is enabled, then allow them to call map restart.
+
+    int mapStateTimer = 3000;
+
+    char mrArg = G_GetArg(argNum + 1, shortCmd);
+
+    if (mrArg && atoi(mrArg) > 0) {
+        mapStateTimer = atoi(mrArg) * 1000;
+    }
+
+    if (g_compModeState.integer == COMPMODE_INITIALIZED && ((adm && adm->client && adm->client->sess.adminLevel >= g_cm.integer) || !adm)) {
+        level.mapState = MAPSTATE_COMPETITION;
+        level.mapStateTimer = level.time + mapStateTimer;
+
+        G_Broadcast(va("Starting round %d", g_compCurrentRound.integer), BROADCAST_CMD, NULL, qtrue);
+        logAdmin(adm, NULL, va("compmode"), va("Starting round %d", g_compCurrentRound.integer));
+        G_printInfoMessageToAll("Starting round %d", g_compCurrentRound.integer);
+    }
+    else if ((adm && adm->client && adm->client->sess.adminLevel >= g_mapswitch.integer) || !adm) {
+        level.mapState = MAPSTATE_RESTART;
+        level.mapStateTimer = level.time + mapStateTimer;
+
+        G_Broadcast(va("\\Map restart by %s", getNameOrArg(adm, "RCON", qfalse)), BROADCAST_CMD, NULL, qtrue);
+        logAdmin(adm, NULL, "map restart", NULL);
+        G_printInfoMessageToAll("Map restart by %s", getNameOrArg(adm, "RCON", qtrue));
+    }
 
     return -1;
 }
@@ -338,11 +402,22 @@ int admGametypeRestart (int argNum, gentity_t* adm, qboolean shortCmd) {
         return -1;
     }
 
-    G_Broadcast("\\Gametype restart", BROADCAST_CMD, NULL, qtrue);
-    G_printInfoMessageToAll("Gametype has been restarted by %s.", getNameOrArg(adm, "RCON", qtrue));
-    logAdmin(adm, NULL, "gametype restart", NULL);
+    if (g_compModeState.integer == COMPMODE_INMATCH && ((adm && adm->client && adm->client->sess.adminLevel >= g_cm.integer) || !adm)) {
+        G_Broadcast("\\Gametype restart", BROADCAST_CMD, NULL, qtrue);
+        G_printInfoMessageToAll("Gametype has been restarted by %s.", getNameOrArg(adm, "RCON", qtrue));
+        logAdmin(adm, NULL, "gametype restart in compmode", NULL);
+        G_ResetGametype(qfalse);
+        //trap_SendConsoleCommand(EXEC_APPEND, "gametype_restart\n");
+    }
+    else if ((adm && adm->client && adm->client->sess.adminLevel >= g_gr.integer) || !adm) {
+        G_Broadcast("\\Gametype restart", BROADCAST_CMD, NULL, qtrue);
+        G_printInfoMessageToAll("Gametype has been restarted by %s.", getNameOrArg(adm, "RCON", qtrue));
+        logAdmin(adm, NULL, "gametype restart in compmode", NULL);
+        G_ResetGametype(qfalse);
+        //trap_SendConsoleCommand(EXEC_APPEND, "gametype_restart\n");
+    }
 
-    trap_SendConsoleCommand(EXEC_APPEND, "gametype_restart\n");
+    
 
     return -1;
 }
@@ -766,7 +841,6 @@ int admUppercut(int argNum, gentity_t* adm, qboolean shortCmd) {
 int admSwitch(int argNum, gentity_t* adm, qboolean shortCmd) {
 
     int idNum = -1;
-    char playerArg = G_GetArg(argNum, shortCmd);
     gentity_t* recipient;
 
     idNum = G_clientNumFromArg(adm, argNum, "switch", qfalse, qtrue, qtrue, shortCmd);

@@ -5,7 +5,7 @@ extern sqlite3* gameDb;
 extern sqlite3* logDb;
 extern char sqlTempName[16];
 
-#define SQL_GAME_MIGRATION_LEVEL 4
+#define SQL_GAME_MIGRATION_LEVEL 5
 #define SQL_LOG_MIGRATION_LEVEL 1
 
 #define LOGLEVEL_INFO 0
@@ -105,7 +105,8 @@ typedef enum {
     MAPSTATE_RESTART,
     MAPSTATE_CHANGEMAP,
     MAPSTATE_CHANGEGT,
-    MAPSTATE_MAPCYCLE
+    MAPSTATE_MAPCYCLE,
+    MAPSTATE_COMPETITION
 } mapStates;
 
 typedef enum {
@@ -133,6 +134,13 @@ typedef enum {
     BROADCAST_AWARDS,           // Awards (H&S and regular).
     BROADCAST_MOTD              // Message of the day when entering the server.
 } broadcastPrio_t;
+
+typedef enum {
+    COMPMODE_NONE,
+    COMPMODE_INITIALIZED,
+    COMPMODE_INMATCH,
+    COMPMODE_END
+} compModeState;
 
 
 
@@ -186,6 +194,7 @@ void admUnbanPlayer(int argNum, gentity_t* adm, qboolean shortCmd, qboolean isSu
 void dbReadSession(gentity_t* ent);
 void dbWriteSession(gentity_t* ent);
 void dbClearSession(int clientNum);
+void sqlBindTextOrDefault(sqlite3_stmt* stmt, int argnum, char* text, char* def);
 
 
 // admin commands
@@ -233,6 +242,12 @@ int admMapcycle (int argNum, gentity_t* adm, qboolean shortCmd);
 int admRealDamage (int argNum, gentity_t* adm, qboolean shortCmd);
 int admNormalDamage (int argNum, gentity_t* adm, qboolean shortCmd);
 int admCustomDamage (int argNum, gentity_t* adm, qboolean shortCmd);
+int admNoLower(int argNum, gentity_t* adm, qboolean shortCmd);
+int admPause(int argNum, gentity_t* adm, qboolean shortCmd);
+int admCompmode(int argNum, gentity_t* adm, qboolean shortCmd);
+int admNoRoof(int argNum, gentity_t* adm, qboolean shortCmd);
+int admNoMiddle(int argNum, gentity_t* adm, qboolean shortCmd);
+int admNoWhole(int argNum, gentity_t* adm, qboolean shortCmd);
 
 int cmdIsAdminCmd(char* cmd, qboolean shortCmd);
 void runAdminCommand(int adminCommandId, int argNum, gentity_t* adm, qboolean shortCmd);

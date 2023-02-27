@@ -189,6 +189,23 @@ void migrateGameDatabase(sqlite3* db, int migrationLevel) {
             Com_Error(ERR_FATAL, va("Game dropped due to failing to migrate the game database to level 4 (needed: %d, starting from: %d)", SQL_GAME_MIGRATION_LEVEL, migrationLevel));
         }
     }
+    
+    if (migrationLevel < 5) {
+        char* migration = "ALTER TABLE sessions ADD COLUMN textcolor VARCHAR(5);"
+            "CREATE INDEX idx_ipcache_ip ON ipcache (ip4int);"
+            
+            "DELETE FROM migrationlevel;"
+            "INSERT INTO migrationlevel (migrationlevel) VALUES (5)";
+
+        if (sqlite3_exec(db, migration, 0, 0, 0) != SQLITE_OK) {
+            logSystem(LOGLEVEL_FATAL_DB, va("Migration level 5 failed (needed: %d, starting from: %d). Err: %s", SQL_GAME_MIGRATION_LEVEL, migrationLevel, sqlite3_errmsg(db)));
+            sqlite3_close(db);
+            Com_Error(ERR_FATAL, va("Game dropped due to failing to migrate the game database to level 5 (needed: %d, starting from: %d)", SQL_GAME_MIGRATION_LEVEL, migrationLevel));
+        }
+    }
+
+    // keeping this here, depending on competition mode setup, will see whether I want to use a db cache or whether we won't actually !mr at all, just swap scores if rounds > 1
+    //"CREATE TABLE compplayercache (playerid INTEGER, score INTEGER, kills INTEGER, deaths INTEGER);" 
 
 }
 
@@ -710,6 +727,22 @@ void sqlBindTextOrNull(sqlite3_stmt* stmt, int argnum, char* text) {
 
 }
 
+void sqlBindTextOrDefault(sqlite3_stmt* stmt, int argnum, char* text, char* def) {
+
+    if (!def) {
+        sqlBindTextOrNull(stmt, argnum, text);
+    }
+    else {
+        if (text) {
+            sqlite3_bind_text(stmt, argnum, text, strlen(text), SQLITE_STATIC);
+        }
+        else {
+            sqlite3_bind_text(stmt, argnum, def, strlen(def), SQLITE_STATIC);
+        }
+    }
+
+}
+
 void dbLogLogin(char* player, char* ip, int level, int method) {
 
     sqlite3* db;
@@ -989,7 +1022,7 @@ void dbWriteSession(gentity_t* ent) {
     sqlite3_stmt* stmt;
 
     db = gameDb;
-    char* query = "UPDATE sessions SET inuse = 1, team = ?, adminlevel = ?, admintype = ?, countrycode = ?, country = ?, adminname = ? WHERE client = ?";
+    char* query = "UPDATE sessions SET inuse = 1, team = ?, adminlevel = ?, admintype = ?, countrycode = ?, country = ?, adminname = ?, textcolor = ? WHERE client = ?";
 
     sqlite3_prepare(db, query, -1, &stmt, 0);
     
@@ -999,7 +1032,8 @@ void dbWriteSession(gentity_t* ent) {
     sqlBindTextOrNull(stmt, 4, ent->client->sess.countryCode);
     sqlBindTextOrNull(stmt, 5, ent->client->sess.countryName);
     sqlBindTextOrNull(stmt, 6, ent->client->sess.adminName);
-    sqlite3_bind_int(stmt, 7, ent->s.clientNum);
+    sqlBindTextOrDefault(stmt, 7, ent->client->sess.textColor, "");
+    sqlite3_bind_int(stmt, 8, ent->s.clientNum);
 
     sqlite3_step(stmt);
     sqlite3_finalize(stmt);
@@ -1012,7 +1046,7 @@ void dbReadSession(gentity_t* ent) {
     sqlite3_stmt* stmt;
 
     db = gameDb;
-    char* query = "SELECT team, adminlevel, admintype, countrycode, country, adminname FROM sessions WHERE inuse = 1 AND client = ?";
+    char* query = "SELECT team, adminlevel, admintype, countrycode, country, adminname, textcolor FROM sessions WHERE inuse = 1 AND client = ?";
 
     sqlite3_prepare(db, query, -1, &stmt, 0);
 
@@ -1025,6 +1059,7 @@ void dbReadSession(gentity_t* ent) {
         Q_strncpyz(ent->client->sess.countryCode, sqlite3_column_text(stmt, 3), sizeof(ent->client->sess.countryCode));
         Q_strncpyz(ent->client->sess.countryName, sqlite3_column_text(stmt, 4), sizeof(ent->client->sess.countryName));
         Q_strncpyz(ent->client->sess.adminName, sqlite3_column_text(stmt, 5), sizeof(ent->client->sess.adminName));
+        Q_strncpyz(ent->client->sess.textColor, sqlite3_column_text(stmt, 6), sizeof(ent->client->sess.textColor));
     }    
 
     sqlite3_finalize(stmt);

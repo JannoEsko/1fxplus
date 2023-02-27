@@ -383,14 +383,12 @@ char* concatArgs(int fromArgNum, qboolean shortCmd) {
 
         memcpy(output + totalLength, arg, argLength);
         totalLength += argLength;
+        fromArgNum++;
 
         if (fromArgNum != totalArgs) {
             output[totalLength] = ' ';
             totalLength++;
         }
-
-        fromArgNum++;
-
     }
 
     output[totalLength] = 0;
@@ -1050,9 +1048,9 @@ void stripClient(gentity_t* recipient, qboolean handsUp) {
     recipient->client->ps.stats[STAT_GOGGLES] = GOGGLES_NONE;
     memset(recipient->client->ps.ammo, 0, sizeof(recipient->client->ps.ammo));
     memset(recipient->client->ps.clip, 0, sizeof(recipient->client->ps.clip));
+    recipient->client->ps.stats[STAT_WEAPONS] = 0;
 
     if (handsUp) {
-        recipient->client->ps.stats[STAT_WEAPONS] = 0;
         recipient->client->ps.weapon = WP_NONE;
 
     } else {
@@ -1114,6 +1112,7 @@ void resetSession(gentity_t* ent) {
 
     Q_strncpyz(sess->countryCode, "N/A", sizeof(sess->countryCode));
     Q_strncpyz(sess->countryName, "N/A", sizeof(sess->countryName));
+    memset(sess->textColor, 0, sizeof(sess->textColor));
     sess->clientCheckCount = 0;
 
 }
@@ -1536,7 +1535,7 @@ qboolean setWeaponMods(char* weaponMod) {
     int i, j;
     attackData_t* attack;
     
-    GP2 = trap_GP_ParseFile(va("./1fx/weaponfiles/%s", weaponMod));
+    GP2 = trap_GP_ParseFile(va("weaponfiles/%s", weaponMod));
 
     if (!GP2) {
         logSystem(LOGLEVEL_ERROR, va("Weaponmod %s loading failed.", weaponMod));
@@ -1553,7 +1552,7 @@ qboolean setWeaponMods(char* weaponMod) {
         for (i = 0; i < level.wpNumWeapons; i++) {
 
             if (!Q_stricmp(bg_weaponNames[i], name)) {
-                for (j = 0; j < ATTACK_MAX; j++) {
+                for (j = ATTACK_NORMAL; j < ATTACK_MAX; j++) {
 
                     if (j == ATTACK_NORMAL) {
                         attacksub = trap_GPG_FindSubGroup(attackgroup, "attack");
@@ -1571,30 +1570,30 @@ qboolean setWeaponMods(char* weaponMod) {
 
                     // this monster is from bg_weapons. Non-relevant changes removed.
 
-                    trap_GPG_FindPairValue(attacksub, "mp_range||range", "8192", tmpStr, sizeof(tmpStr));
+                    trap_GPG_FindPairValue(attacksub, "mp_range||range", va("%d", attack->rV.range), tmpStr, sizeof(tmpStr));
                     attack->rV.range = atoi(tmpStr);
-                    trap_GPG_FindPairValue(attacksub, "mp_radius||radius", "0", tmpStr, sizeof(tmpStr));
+                    trap_GPG_FindPairValue(attacksub, "mp_radius||radius", va("%d", attack->splashRadius), tmpStr, sizeof(tmpStr));
                     attack->splashRadius = atoi(tmpStr);
-                    trap_GPG_FindPairValue(attacksub, "mp_fireDelay||fireDelay", "0", tmpStr, sizeof(tmpStr));
+                    trap_GPG_FindPairValue(attacksub, "mp_fireDelay||fireDelay", va("%d", attack->fireDelay), tmpStr, sizeof(tmpStr));
                     attack->fireDelay = atoi(tmpStr);
-                    trap_GPG_FindPairValue(attacksub, "mp_clipSize||clipSize", "0", tmpStr, sizeof(tmpStr));
+                    trap_GPG_FindPairValue(attacksub, "mp_clipSize||clipSize", va("%d", attack->clipSize), tmpStr, sizeof(tmpStr));
                     attack->clipSize = atoi(tmpStr);
-                    trap_GPG_FindPairValue(attacksub, "mp_damage||damage", "0", tmpStr, sizeof(tmpStr));
+                    trap_GPG_FindPairValue(attacksub, "mp_damage||damage", va("%d", attack->damage), tmpStr, sizeof(tmpStr));
                     attack->damage = atoi(tmpStr);
-                    trap_GPG_FindPairValue(attacksub, "mp_inaccuracy||inaccuracy", "0", tmpStr, sizeof(tmpStr));
+                    trap_GPG_FindPairValue(attacksub, "mp_inaccuracy||inaccuracy", va("%.4f", attack->inaccuracy / 1000.0f), tmpStr, sizeof(tmpStr));
                     attack->inaccuracy = (int)(atof(tmpStr)*1000.0f); // FIXME bring back recoilratio cvar?
-                    trap_GPG_FindPairValue(attacksub, "mp_zoominaccuracy", "0", tmpStr, sizeof(tmpStr));
+                    trap_GPG_FindPairValue(attacksub, "mp_zoominaccuracy", va("%.4f", attack->zoomInaccuracy / 1000.0f), tmpStr, sizeof(tmpStr));
                     attack->zoomInaccuracy = (int)(atof(tmpStr)*1000.0f);
-                    trap_GPG_FindPairValue(attacksub, "mp_maxInaccuracy||maxInaccuracy", "0", tmpStr, sizeof(tmpStr));
+                    trap_GPG_FindPairValue(attacksub, "mp_maxInaccuracy||maxInaccuracy", va("%.4f", attack->maxInaccuracy / 1000.0f), tmpStr, sizeof(tmpStr));
                     attack->maxInaccuracy = (int)(atof(tmpStr)*1000.0f);
 
-                    trap_GPG_FindPairValue(attacksub, "mp_extraClips", "0", tmpStr, sizeof(tmpStr));
+                    trap_GPG_FindPairValue(attacksub, "mp_extraClips", va("%d", attack->extraClips), tmpStr, sizeof(tmpStr));
                     attack->extraClips = atoi(tmpStr);
 
                     // max ammo is the combination of all guns that share the ammo
                     ammoData[attack->ammoIndex].max += attack->clipSize * attack->extraClips;
 
-                    trap_GPG_FindPairValue(attacksub,"mp_kickAngles||kickAngles", "0 0 0 0 0 0", tmpStr, sizeof(tmpStr));
+                    trap_GPG_FindPairValue(attacksub,"mp_kickAngles||kickAngles", va("%f %f %f %f %f %f", attack->minKickAngles[0], attack->maxKickAngles[0], attack->minKickAngles[1], attack->maxKickAngles[1], attack->minKickAngles[2], attack->maxKickAngles[2]), tmpStr, sizeof(tmpStr));
                     sscanf( tmpStr, "%f %f %f %f %f %f",
                             &attack->minKickAngles[0],
                             &attack->maxKickAngles[0],
@@ -1608,18 +1607,18 @@ qboolean setWeaponMods(char* weaponMod) {
                         trap_GPG_FindPairValue(attacksub, "mp_spread||spread", "0", tmpStr, sizeof(tmpStr));
                         attack->inaccuracy = atof(tmpStr);
                     }
-                    trap_GPG_FindPairValue(attacksub, "mp_pellets||pellets", "1", tmpStr, sizeof(tmpStr));
+                    trap_GPG_FindPairValue(attacksub, "mp_pellets||pellets", va("%d", attack->pellets), tmpStr, sizeof(tmpStr));
                     attack->pellets = atof(tmpStr);
 
                     sub = trap_GPG_FindSubGroup(attacksub, "projectile");
                     if (sub)
                     {
-                        trap_GPG_FindPairValue(sub, "mp_bounce||bounce", "0", tmpStr, sizeof(tmpStr) );
+                        trap_GPG_FindPairValue(sub, "mp_bounce||bounce", va("%.4f", attack->bounceScale), tmpStr, sizeof(tmpStr) );
                         attack->bounceScale = atof ( tmpStr );
 
-                        trap_GPG_FindPairValue(sub, "mp_speed||speed", "0", tmpStr, sizeof(tmpStr));
+                        trap_GPG_FindPairValue(sub, "mp_speed||speed", va("%d", attack->rV.velocity), tmpStr, sizeof(tmpStr));
                         attack->rV.velocity = atoi(tmpStr);
-                        trap_GPG_FindPairValue(sub, "mp_timer||timer", "10", tmpStr, sizeof(tmpStr));
+                        trap_GPG_FindPairValue(sub, "mp_timer||timer", va("%d", attack->projectileLifetime / 1000), tmpStr, sizeof(tmpStr));
                         attack->projectileLifetime = (int)(atof(tmpStr) * 1000);
                     }
                 }

@@ -4,6 +4,7 @@
 
 #include "g_local.h"
 #include "1fx/1fxFunctions.h"
+#include "bg_weapons.h"
 
 void BotDamageNotification  ( gclient_t *bot, gentity_t *attacker );
 
@@ -106,7 +107,7 @@ void body_die( gentity_t *self, gentity_t *inflictor, gentity_t *attacker, int d
     return;
 }
 
-
+/*
 // these are just for logging, the client prints its own messages
 char *modNames[] =
 {
@@ -150,7 +151,7 @@ char *modNames[] =
     // custom mods from 1fxplus.
 
     "MOD_POP"
-};
+};*/
 
 /*
 ==================

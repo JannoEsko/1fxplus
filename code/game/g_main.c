@@ -154,6 +154,13 @@ vmCvar_t    g_enforce1fxAdditions;
 vmCvar_t    g_instaGib;
 vmCvar_t    g_damage;
 vmCvar_t    g_inviewFile;
+vmCvar_t    g_nosection;
+vmCvar_t    g_compCurrentRound;
+vmCvar_t    g_compModeState;
+vmCvar_t    g_cm;
+vmCvar_t    g_loadEntityFromFile;
+vmCvar_t    g_entityFile;
+vmCvar_t    g_altmap;
 
 // SQLite3 tables.
 sqlite3* gameDb; // will hold anything related to the game itself: admins, bans, aliases and so on.
@@ -342,6 +349,16 @@ static cvarTable_t gameCvarTable[] =
     { &g_instaGib,     "g_instaGib",      "0",       CVAR_ARCHIVE, 0.0, 0.0, 0, qfalse },
     { &g_damage,     "g_damage",      "2",       CVAR_ARCHIVE, 0.0, 0.0, 0, qfalse },
     { &g_inviewFile,     "g_inviewFile",      "",       CVAR_ARCHIVE | CVAR_LATCH, 0.0, 0.0, 0, qfalse },
+    { &g_nosection,     "g_nosection",      "2",       CVAR_ARCHIVE | CVAR_LATCH, 0.0, 0.0, 0, qfalse },
+    { &g_compCurrentRound,     "g_compCurrentRound",      "2",       CVAR_ROM, 0.0, 0.0, 0, qfalse },
+    { &g_compModeState,     "g_compModeState",      "2",       CVAR_ROM, 0.0, 0.0, 0, qfalse },
+    { &g_cm,     "g_cm",      "2",       CVAR_ARCHIVE | CVAR_LATCH, 0.0, 0.0, 0, qfalse },
+
+    { &g_loadEntityFromFile,     "g_loadEntityFromFile",      "0",       CVAR_ROM, 0.0, 0.0, 0, qfalse },
+
+    { &g_entityFile,     "g_entityFile",      "",       CVAR_ROM, 0.0, 0.0, 0, qfalse },
+    { &g_altmap,     "g_altmap",      "0",       CVAR_ROM, 0.0, 1.0, 0, qfalse },
+
 
 };
 
@@ -783,6 +800,10 @@ void G_InitGame( int levelTime, int randomSeed, int restart )
 
     // Give the game a uniqe id
     trap_SetConfigstring ( CS_GAME_ID, va("%d", randomSeed ) );
+    char    serverinfo[MAX_INFO_STRING];
+    trap_GetServerinfo( serverinfo, sizeof( serverinfo ) );
+
+    Q_strncpyz(level.mapname, Info_ValueForKey(serverinfo, "mapname"), sizeof(level.mapname));
 
     if ( g_log.string[0] )
     {
@@ -801,9 +822,7 @@ void G_InitGame( int levelTime, int randomSeed, int restart )
         }
         else
         {
-            char    serverinfo[MAX_INFO_STRING];
-
-            trap_GetServerinfo( serverinfo, sizeof( serverinfo ) );
+            
 
             G_LogPrintf("------------------------------------------------------------\n" );
             G_LogPrintf("InitGame: %s\n", serverinfo );
@@ -872,7 +891,7 @@ void G_InitGame( int levelTime, int randomSeed, int restart )
         level.ammoMax = 14;
         level.grenadeMax = 20;
     }
-
+    BG_InitializeWeaponsAndAmmo();
     BG_ParseInviewFile( level.pickupsDisabled );
 
     if (strlen(g_customWeaponFile.string) > 0) {

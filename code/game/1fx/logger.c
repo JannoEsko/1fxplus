@@ -9,7 +9,10 @@ void logGame() {
 }
 
 void logSystem(int faultLevel, char* message) {
-    Com_Printf("logSystem faultLevel %d message %s\n", faultLevel, message);
+    char msg[1000];
+
+    Q_strncpyz(msg, message, sizeof(msg));
+    Com_Printf("logSystem faultLevel %d message %s\n", faultLevel, msg);
 }
 
 void logAdmin(gentity_t* by, gentity_t* to, char* action, char* reason) {

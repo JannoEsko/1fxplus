@@ -5,6 +5,11 @@
 #ifndef __BG_WEAPONS_H__
 #define __BG_WEAPONS_H__
 
+// Boe!Man 7/30/15: Hard limits, no dynamic configuration should exceed this.
+#define WP_MAX_WEAPONS  25  // Never make this exceed MAX_WEAPONS.
+#define WP_MAX_AMMO     16  // Never make this exceed MAX_AMMO.
+#define WP_MAX_MODS     40
+
 // means of death
 typedef enum
 {
@@ -241,16 +246,18 @@ typedef struct  ammoData_s
 
 } ammoData_t;
 
-extern char *weaponNames[WP_NUM_WEAPONS];
-extern weaponData_t weaponData[WP_NUM_WEAPONS];
-extern char *ammoNames[AMMO_MAX];
-extern ammoData_t ammoData[AMMO_MAX];
+extern char *weaponNames[WP_MAX_WEAPONS];
+extern weaponData_t weaponData[WP_MAX_WEAPONS];
+extern char *ammoNames[WP_MAX_AMMO];
+extern ammoData_t ammoData[WP_MAX_AMMO];
+
+extern char *modNames[WP_MAX_MODS];
 
 // Specific weapon information
 
 #define WP_FIRST_RANGED_WEAPON      WP_M1911A1_PISTOL   // this is the first weapon for next and prev weapon switching
 #define WP_FIRST_MELEE_WEAPON       WP_KNIFE
-#define MAX_PLAYER_WEAPONS          (WP_NUM_WEAPONS-1)  // this is the max you can switch to and get with the give all.
+#define MAX_PLAYER_WEAPONS          (WP_MAX_WEAPONS-1)  // this is the max you can switch to and get with the give all.
 
 #define MAX_WEAPON_SOUNDS       12
 #define MAX_WEAPON_SOUND_SLOTS  3
@@ -368,7 +375,7 @@ typedef struct SWeaponInfo
     struct SWeaponModel         mWeaponModel;
 } TWeaponParseInfo;
 
-extern TWeaponParseInfo weaponParseInfo[WP_NUM_WEAPONS];
+extern TWeaponParseInfo weaponParseInfo[WP_MAX_WEAPONS];
 extern char             weaponLeftHand[MAX_QPATH];
 extern char             weaponRightHand[MAX_QPATH];
 
