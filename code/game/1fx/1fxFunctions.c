@@ -1529,3 +1529,144 @@ void showMotd(gentity_t* ent) {
     G_Broadcast(motd, BROADCAST_MOTD, ent, qfalse);
 }
 
+qboolean setWeaponMods(char* weaponMod) {
+
+    void *GP2, *attackgroup, *attacksub, *sub, *attackType;
+    char name[64], tmpStr[64];
+    int i, j;
+    attackData_t* attack;
+    
+    GP2 = trap_GP_ParseFile(va("./1fx/weaponfiles/%s", weaponMod));
+
+    if (!GP2) {
+        logSystem(LOGLEVEL_ERROR, va("Weaponmod %s loading failed.", weaponMod));
+        return qfalse;
+    }
+
+    logSystem(LOGLEVEL_INFO, va("Loading weapon mods from %s.", weaponMod));
+
+    attackgroup = trap_GPG_GetSubGroups(GP2);
+
+    while (attackgroup) {
+        trap_GPG_FindPairValue(attackgroup, "name", "", name, sizeof(name));
+
+        for (i = 0; i < level.wpNumWeapons; i++) {
+
+            if (!Q_stricmp(bg_weaponNames[i], name)) {
+                for (j = 0; j < ATTACK_MAX; j++) {
+
+                    if (j == ATTACK_NORMAL) {
+                        attacksub = trap_GPG_FindSubGroup(attackgroup, "attack");
+                    } 
+                    
+                    else if (j == ATTACK_ALTERNATE) {
+                        attacksub = trap_GPG_FindSubGroup(attackgroup, "altattack");
+                    } 
+
+                    if (!attacksub) {
+                        continue;
+                    }
+
+                    attack = &weaponData[i].attack[j];
+
+                    // this monster is from bg_weapons. Non-relevant changes removed.
+
+                    trap_GPG_FindPairValue(attacksub, "mp_range||range", "8192", tmpStr, sizeof(tmpStr));
+                    attack->rV.range = atoi(tmpStr);
+                    trap_GPG_FindPairValue(attacksub, "mp_radius||radius", "0", tmpStr, sizeof(tmpStr));
+                    attack->splashRadius = atoi(tmpStr);
+                    trap_GPG_FindPairValue(attacksub, "mp_fireDelay||fireDelay", "0", tmpStr, sizeof(tmpStr));
+                    attack->fireDelay = atoi(tmpStr);
+                    trap_GPG_FindPairValue(attacksub, "mp_clipSize||clipSize", "0", tmpStr, sizeof(tmpStr));
+                    attack->clipSize = atoi(tmpStr);
+                    trap_GPG_FindPairValue(attacksub, "mp_damage||damage", "0", tmpStr, sizeof(tmpStr));
+                    attack->damage = atoi(tmpStr);
+                    trap_GPG_FindPairValue(attacksub, "mp_inaccuracy||inaccuracy", "0", tmpStr, sizeof(tmpStr));
+                    attack->inaccuracy = (int)(atof(tmpStr)*1000.0f); // FIXME bring back recoilratio cvar?
+                    trap_GPG_FindPairValue(attacksub, "mp_zoominaccuracy", "0", tmpStr, sizeof(tmpStr));
+                    attack->zoomInaccuracy = (int)(atof(tmpStr)*1000.0f);
+                    trap_GPG_FindPairValue(attacksub, "mp_maxInaccuracy||maxInaccuracy", "0", tmpStr, sizeof(tmpStr));
+                    attack->maxInaccuracy = (int)(atof(tmpStr)*1000.0f);
+
+                    trap_GPG_FindPairValue(attacksub, "mp_extraClips", "0", tmpStr, sizeof(tmpStr));
+                    attack->extraClips = atoi(tmpStr);
+
+                    // max ammo is the combination of all guns that share the ammo
+                    ammoData[attack->ammoIndex].max += attack->clipSize * attack->extraClips;
+
+                    trap_GPG_FindPairValue(attacksub,"mp_kickAngles||kickAngles", "0 0 0 0 0 0", tmpStr, sizeof(tmpStr));
+                    sscanf( tmpStr, "%f %f %f %f %f %f",
+                            &attack->minKickAngles[0],
+                            &attack->maxKickAngles[0],
+                            &attack->minKickAngles[1],
+                            &attack->maxKickAngles[1],
+                            &attack->minKickAngles[2],
+                            &attack->maxKickAngles[2]  );
+
+                    if (0 == attack->inaccuracy)
+                    {
+                        trap_GPG_FindPairValue(attacksub, "mp_spread||spread", "0", tmpStr, sizeof(tmpStr));
+                        attack->inaccuracy = atof(tmpStr);
+                    }
+                    trap_GPG_FindPairValue(attacksub, "mp_pellets||pellets", "1", tmpStr, sizeof(tmpStr));
+                    attack->pellets = atof(tmpStr);
+
+                    sub = trap_GPG_FindSubGroup(attacksub, "projectile");
+                    if (sub)
+                    {
+                        trap_GPG_FindPairValue(sub, "mp_bounce||bounce", "0", tmpStr, sizeof(tmpStr) );
+                        attack->bounceScale = atof ( tmpStr );
+
+                        trap_GPG_FindPairValue(sub, "mp_speed||speed", "0", tmpStr, sizeof(tmpStr));
+                        attack->rV.velocity = atoi(tmpStr);
+                        trap_GPG_FindPairValue(sub, "mp_timer||timer", "10", tmpStr, sizeof(tmpStr));
+                        attack->projectileLifetime = (int)(atof(tmpStr) * 1000);
+                    }
+                }
+            }
+        }
+
+        attackgroup = trap_GPG_GetNext(attackgroup);
+    }
+
+    trap_GP_Delete(&GP2);
+    return qtrue;
+}
+
+qboolean weaponMod(int weaponModType, qboolean fallback) {
+
+    switch (weaponModType) {
+
+        case WEAPONMOD_ND:
+            return setWeaponMods("nd.wpn");
+
+        case WEAPONMOD_RD:
+            return setWeaponMods("rd.wpn");
+
+        case WEAPONMOD_GT:
+            if (!Q_stricmp(g_realGametype.string, "hns")) {
+                return setWeaponMods("h&s.wpn");
+            } else if (!Q_stricmp(g_realGametype. string, "hnz")) {
+                return setWeaponMods("h&z.wpn");
+            } else if (g_instaGib.integer) {
+                return setWeaponMods("rd.wpn");
+            } else {
+                return setWeaponMods("nd.wpn");
+            }
+
+        case WEAPONMOD_CUSTOM:
+            if (!setWeaponMods(g_customWeaponFile.string)) {
+                if (fallback) {
+                    return weaponMod(WEAPONMOD_GT, qfalse);
+                } 
+                return qfalse;
+                
+            }
+            return qtrue;
+
+        default:
+            return qfalse;
+
+    }
+
+}

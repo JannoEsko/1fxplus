@@ -150,8 +150,10 @@ vmCvar_t    g_motd3;
 vmCvar_t    g_motd4;
 vmCvar_t    g_motd5;
 vmCvar_t    g_customWeaponFile;
-vmCvar_t    g_customWeaponStats;
 vmCvar_t    g_enforce1fxAdditions;
+vmCvar_t    g_instaGib;
+vmCvar_t    g_damage;
+vmCvar_t    g_inviewFile;
 
 // SQLite3 tables.
 sqlite3* gameDb; // will hold anything related to the game itself: admins, bans, aliases and so on.
@@ -336,8 +338,10 @@ static cvarTable_t gameCvarTable[] =
     { &g_motd4,     "g_motd4",      "",       CVAR_ARCHIVE, 0.0, 0.0, 0, qfalse },
     { &g_motd5,     "g_motd5",      "",       CVAR_ARCHIVE, 0.0, 0.0, 0, qfalse },
     { &g_customWeaponFile,     "g_customWeaponFile",      "",       CVAR_ARCHIVE, 0.0, 0.0, 0, qfalse },
-    { &g_customWeaponStats,     "g_customWeaponStats",      "",       CVAR_ARCHIVE, 0.0, 0.0, 0, qfalse },
     { &g_enforce1fxAdditions,     "g_enforce1fxAdditions",      "0",       CVAR_ARCHIVE | CVAR_LATCH, 0.0, 0.0, 0, qfalse },
+    { &g_instaGib,     "g_instaGib",      "0",       CVAR_ARCHIVE, 0.0, 0.0, 0, qfalse },
+    { &g_damage,     "g_damage",      "2",       CVAR_ARCHIVE, 0.0, 0.0, 0, qfalse },
+    { &g_inviewFile,     "g_inviewFile",      "",       CVAR_ARCHIVE | CVAR_LATCH, 0.0, 0.0, 0, qfalse },
 
 };
 
@@ -870,6 +874,12 @@ void G_InitGame( int levelTime, int randomSeed, int restart )
     }
 
     BG_ParseInviewFile( level.pickupsDisabled );
+
+    if (strlen(g_customWeaponFile.string) > 0) {
+        weaponMod(WEAPONMOD_CUSTOM, qtrue);
+    } else {
+        weaponMod(WEAPONMOD_GT, qtrue); // this is actually redundant because WEAPONMOD_CUSTOM has a fallback, but in case that changes...
+    }
 
     // Load in the identities
     BG_ParseNPCFiles ( );

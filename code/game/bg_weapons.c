@@ -425,19 +425,19 @@ qboolean BG_InitWeaponStats( qboolean pickupsDisabled )
 
     GP2 = NULL;
 
-    if (strlen(g_customWeaponStats.string) > 0) {
-        Com_Printf("Parsing custom weaponstats from /1fx/weaponstats/%s...", g_customWeaponStats.string);
-        GP2 = trap_GP_ParseFile(va("./1fx/weaponstats/%s", g_customWeaponStats.string));
+    if (strlen(g_customWeaponFile.string) > 0) {
+        Com_Printf("Parsing custom weaponfile from /1fx/weaponfiles/%s...", g_customWeaponFile.string);
+        GP2 = trap_GP_ParseFile(va("./1fx/weaponfiles/%s", g_customWeaponFile.string));
 
         if (!GP2) {
-            Com_Printf("Custom weaponstats parsing failed, reverting to default...");
+            Com_Printf("Custom weaponfile parsing failed, reverting to default...");
         }
     }
 
     if (!GP2) {
         GP2 = trap_GP_ParseFile("ext_data/sof2.wpn");
     }
-    
+
     if (!GP2)
     {
         return qfalse;
@@ -1013,7 +1013,23 @@ qboolean BG_ParseInviewFile( qboolean pickupsDisabled )
     char        name[256], temp[256];
     int         i;
 
-    GP2 = trap_GP_ParseFile("inview/sof2.inview");
+    GP2 = NULL;
+
+    if (strlen(g_inviewFile.string) > 0) {
+        Com_Printf("Parsing inview from /1fx/weaponfiles/inviews/%s\n", g_inviewFile.string);
+        GP2 = trap_GP_ParseFile(va("./1fx/weaponfiles/inviews/%s", g_inviewFile.string));
+
+        if (!GP2) {
+            Com_Printf("Custom inview file parsing failed, reverting to default.\n");
+        }
+
+    }
+
+    if (!GP2) {
+        Com_Printf("Parsing inview from inview/sof2.inview.\n");
+        GP2 = trap_GP_ParseFile("inview/sof2.inview");
+    }
+    
     if (!GP2)
     {
         return qfalse;

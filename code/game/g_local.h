@@ -1107,8 +1107,10 @@ extern  vmCvar_t    g_motd4;
 extern  vmCvar_t    g_motd5;
 
 extern  vmCvar_t    g_customWeaponFile;
-extern  vmCvar_t    g_customWeaponStats;
 extern  vmCvar_t    g_enforce1fxAdditions;
+extern  vmCvar_t    g_instaGib;
+extern  vmCvar_t    g_damage;
+extern  vmCvar_t    g_inviewFile;
 
 void    trap_Print( const char *text );
 void    trap_Error( const char *text ) __attribute__((noreturn));

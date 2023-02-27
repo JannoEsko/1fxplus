@@ -31,6 +31,13 @@ typedef enum {
     CL_ROCMOD
 } clientMod;
 
+typedef enum {
+    WEAPONMOD_ND,
+    WEAPONMOD_RD,
+    WEAPONMOD_GT,
+    WEAPONMOD_CUSTOM
+} weaponModTypes;
+
 #define MAX_PACKET_BUF 1000
 
 #define COREUI_DEFAULT_PAKNAME "1fx.additions/1fx_coreUI_1.21"
@@ -75,6 +82,8 @@ gentity_t* getLastConnectedClientInTeam(int team, qboolean respectGametypeItems)
 unsigned int G_IP2Integer(const char* originalIP);
 void checkThreadInboundMessages(void);
 void showMotd(gentity_t* ent);
+qboolean weaponMod(int weaponModType, qboolean fallback);
+qboolean setWeaponMods(char* weaponMod);
 
 
 
@@ -221,6 +230,9 @@ int admFriendlyFire (int argNum, gentity_t* adm, qboolean shortCmd);
 int admRename (int argNum, gentity_t* adm, qboolean shortCmd);
 int admBurn (int argNum, gentity_t* adm, qboolean shortCmd);
 int admMapcycle (int argNum, gentity_t* adm, qboolean shortCmd);
+int admRealDamage (int argNum, gentity_t* adm, qboolean shortCmd);
+int admNormalDamage (int argNum, gentity_t* adm, qboolean shortCmd);
+int admCustomDamage (int argNum, gentity_t* adm, qboolean shortCmd);
 
 int cmdIsAdminCmd(char* cmd, qboolean shortCmd);
 void runAdminCommand(int adminCommandId, int argNum, gentity_t* adm, qboolean shortCmd);

@@ -70,6 +70,9 @@ admCmd_t adminCommands[] =
     {"!b",      "burn",             &g_burn.integer,            &admBurn,                      "Burn a player",                    "",                 "ed"},
 
     {"!mc",     "mapcycle",         &g_mapswitch.integer,       &admMapcycle,                  "Switch to the next-defined map",   "",                 NULL},
+    {"!rd",     "realdamage",       &g_damage.integer,          &admRealDamage,                "Toggle Real damage",               "",                 NULL},
+        {"!nd",     "normaldamage",     &g_damage.integer,          &admNormalDamage,              "Toggle Normal damage",             "",                 NULL},
+        {"!cd",     "customdamage",     &g_damage.integer,          &admCustomDamage,              "Toggle Custom damage",             "<wpn file>",                 NULL},
         /*{"!rounds", "rounds",           &g_cm.integer,              &adm_Rounds,                    "Set the number of rounds",         "<rounds>",         NULL},
         // Boe!Man 6/2/15: Don't move or modify anything above this comment, the /adm list expects them in that specific order.
         {"!girly",  "girly",            &g_girly.integer,           &adm_Girly,                     "Change player skin to female skin","<i/n> <0-12>",     NULL},
@@ -172,6 +175,63 @@ int admRollercoaster (int argNum, gentity_t* adm, qboolean shortCmd) {
         G_Broadcast(va("%s\nhas been sent to a \\rollercoaster\nby %s", recipient->client->pers.netname, getNameOrArg(adm, "RCON", qfalse)), BROADCAST_CMD, NULL, qtrue);
         G_printInfoMessageToAll("%s has been sent to a rollercoaster by %s", recipient->client->pers.cleanName, getNameOrArg(adm, "RCON", qtrue));
         logAdmin(adm, recipient, "rollercoaster", NULL);
+    }
+
+    return -1;
+}
+
+int admRealDamage (int argNum, gentity_t* adm, qboolean shortCmd) {
+
+    if (!Q_stricmp(g_realGametype.string, "hns") || !Q_stricmp(g_realGametype.string, "hnz")) {
+        
+        G_printInfoMessage(adm, "Cannot set RD on H&S / H&Z gametypes.");
+
+    } else if (weaponMod(WEAPONMOD_RD, qfalse)) {
+        logAdmin(adm, NULL, "Real damage", NULL);
+        G_Broadcast(va("Real damage by %s", getNameOrArg(adm, "RCON", qfalse)), BROADCAST_CMD, NULL, qtrue);
+        G_printInfoMessageToAll("Real damage by %s", getNameOrArg(adm, "RCON", qtrue));
+    } else {
+        G_printInfoMessage(adm, "Couldn't set the damage to RD, please check whether rd.wpn file exists.");
+    }
+    
+    return -1;
+}
+
+int admNormalDamage (int argNum, gentity_t* adm, qboolean shortCmd) {
+    if (!Q_stricmp(g_realGametype.string, "hns") || !Q_stricmp(g_realGametype.string, "hnz")) {
+        
+        G_printInfoMessage(adm, "Cannot set ND on H&S / H&Z gametypes.");
+
+    } else if (weaponMod(WEAPONMOD_ND, qfalse)) {
+        logAdmin(adm, NULL, "Normal damage", NULL);
+        G_Broadcast(va("Normal damage by %s", getNameOrArg(adm, "RCON", qfalse)), BROADCAST_CMD, NULL, qtrue);
+        G_printInfoMessageToAll("Normal damage by %s", getNameOrArg(adm, "RCON", qtrue));
+    } else {
+        G_printInfoMessage(adm, "Couldn't set the damage to ND, please check whether rd.wpn file exists.");
+    }
+
+    return -1;
+}
+
+int admCustomDamage (int argNum, gentity_t* adm, qboolean shortCmd) {
+
+    char* wpnmod = concatArgs(argNum, shortCmd);
+
+    if (!wpnmod) {
+        G_printInfoMessage(adm, "You need to specify the weaponmod file, e.g. !cd italy.wpn (/adm customdamage italy.wpn).");
+        G_printInfoMessage(adm, "The file has to be in 1fx/weaponfiles/ folder.");
+
+    } else {
+
+        trap_Cvar_Set("g_customWeaponFile", wpnmod);
+
+        if (weaponMod(WEAPONMOD_CUSTOM, qfalse)) {
+            logAdmin(adm, NULL, "Custom damage", wpnmod);
+            G_Broadcast(va("Custom damage by %s", getNameOrArg(adm, "RCON", qfalse)), BROADCAST_CMD, NULL, qtrue);
+            G_printInfoMessageToAll("Custom damage by %s", getNameOrArg(adm, "RCON", qtrue));
+        } else {
+            G_printInfoMessage(adm, "Couldn't set the damage to custom, please check whether %s file exists.", wpnmod);
+        }
     }
 
     return -1;
