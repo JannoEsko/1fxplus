@@ -2,12 +2,12 @@
 //
 
 /*****************************************************************************
- * name:        be_ai_char.h
+ * name:		be_ai_char.h
  *
- * desc:        bot characters
+ * desc:		bot characters
  *
  * $Archive: /source/code/botlib/be_ai_char.h $
- * $Author: Mrelusive $
+ * $Author: Mrelusive $ 
  * $Revision: 2 $
  * $Modtime: 10/05/99 3:32p $
  * $Date: 10/05/99 3:42p $

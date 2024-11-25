@@ -26,7 +26,7 @@ along with this program; if not, see <http://www.gnu.org/licenses/>.
 
 //===================================================================
 
-void QDECL GT_Printf(const char *fmt, ...)
+void QDECL GT_Printf(const char* fmt, ...)
 {
     va_list     argptr;
     char        text[1024];
@@ -38,7 +38,7 @@ void QDECL GT_Printf(const char *fmt, ...)
     trap_Print(text);
 }
 
-void QDECL GT_Error(const char *fmt, ...)
+void QDECL GT_Error(const char* fmt, ...)
 {
     va_list     argptr;
     char        text[1024];
@@ -50,7 +50,8 @@ void QDECL GT_Error(const char *fmt, ...)
     trap_Error(text);
 }
 
-void QDECL Com_Error(int level, const char *error, ...)
+
+void QDECL Com_Error(int level, const char* error, ...)
 {
     va_list     argptr;
     char        text[1024];
@@ -62,7 +63,7 @@ void QDECL Com_Error(int level, const char *error, ...)
     trap_Error(text);
 }
 
-void QDECL Com_Printf(const char *msg, ...)
+void QDECL Com_Printf(const char* msg, ...)
 {
     va_list     argptr;
     char        text[1024];

@@ -6,8 +6,8 @@
 #include "bg_public.h"
 #include "bg_local.h"
 
-gametypeData_t  bg_gametypeData[MAX_GAMETYPES];
-int             bg_gametypeCount;
+gametypeData_t	bg_gametypeData[MAX_GAMETYPES];
+int				bg_gametypeCount;
 
 /*
 ===============
@@ -18,33 +18,33 @@ Parses the photo information for objectives dialog
 */
 static qboolean BG_ParseGametypePhotos ( int gametypeIndex, TGPGroup group )
 {
-    TGPGroup photo;
-    int      index;
-    char     temp[MAX_TOKENLENGTH];
+	TGPGroup photo;
+	int		 index;
+	char	 temp[MAX_TOKENLENGTH];
 
-    // Convienience check
-    if ( !group )
-    {
-        return qtrue;
-    }
+	// Convienience check
+	if ( !group )
+	{
+		return qtrue;
+	}
 
-    index = 0;
-    photo = trap_GPG_GetSubGroups ( group );
+	index = 0;
+	photo = trap_GPG_GetSubGroups ( group );
 
-    while ( photo )
-    {
-        trap_GPG_GetName ( photo, temp, sizeof(temp) );
-        bg_gametypeData[gametypeIndex].photos[index].name = G_StringAlloc ( temp );
+	while ( photo )
+	{
+		trap_GPG_GetName ( photo, temp, sizeof(temp) );
+		bg_gametypeData[gametypeIndex].photos[index].name = G_StringAlloc ( temp );
 
-        trap_GPG_FindPairValue ( photo, "displayname", "unknown", temp, sizeof(temp) );
-        bg_gametypeData[gametypeIndex].photos[index].displayName = G_StringAlloc ( temp );
+		trap_GPG_FindPairValue ( photo, "displayname", "unknown", temp, sizeof(temp) );
+		bg_gametypeData[gametypeIndex].photos[index].displayName = G_StringAlloc ( temp );
 
-        index++;
+		index++;
 
-        photo = trap_GPG_GetNext ( photo );
-    }
+		photo = trap_GPG_GetNext ( photo );
+	}
 
-    return qtrue;
+	return qtrue;
 }
 
 /*
@@ -57,105 +57,98 @@ this information is the name of the gametype and some of its parameters.
 */
 static qboolean BG_ParseGametypeInfo ( int gametypeIndex )
 {
-    gametypeData_t*     gametype;
-    TGenericParser2     GP2;
-    TGPGroup            topGroup;
-    TGPGroup            gtGroup;
-    char                temp[1024];
+	gametypeData_t*		gametype;
+	TGenericParser2		GP2;
+	TGPGroup			topGroup;
+	TGPGroup			gtGroup;
+	char				temp[1024];
 
-    // Get the pointer for the gametype data
-    gametype = &bg_gametypeData[gametypeIndex];
+	// Get the pointer for the gametype data
+	gametype = &bg_gametypeData[gametypeIndex];
+	
+	// Open the gametype's script file
+	GP2 = trap_GP_ParseFile( (char*)gametype->script);
+	if (!GP2)
+	{
+		return qfalse;
+	}
 
-    // Open the gametype's script file
-    GP2 = trap_GP_ParseFile( gametype->script );
-    if (!GP2)
-    {
-        return qfalse;
-    }
+	// Top group should only contain the "gametype" sub group
+	topGroup = trap_GP_GetBaseParseGroup(GP2);
+	if ( !topGroup )
+	{
+		return qfalse;
+	}
 
-    // Top group should only contain the "gametype" sub group
-    topGroup = trap_GP_GetBaseParseGroup(GP2);
-    if ( !topGroup )
-    {
-        return qfalse;
-    }
+	// Grab the gametype sub group
+	gtGroup = trap_GPG_FindSubGroup ( topGroup, "gametype" );
+	if ( !gtGroup )
+	{
+		return qfalse;
+	}
 
-    // Grab the gametype sub group
-    gtGroup = trap_GPG_FindSubGroup ( topGroup, "gametype" );
-    if ( !gtGroup )
-    {
-        return qfalse;
-    }
+	// Parse out the name of the gametype
+	trap_GPG_FindPairValue ( gtGroup, "displayname", "", temp, sizeof(temp));
+	if ( !temp[0] )
+	{
+		return qfalse;
+	}
+	gametype->displayName = G_StringAlloc ( temp );
 
-    // Parse out the name of the gametype
-    trap_GPG_FindPairValue ( gtGroup, "displayname", "", temp, sizeof(temp) );
-    if ( !temp[0] )
-    {
-        return qfalse;
-    }
-    gametype->displayName = G_StringAlloc ( temp );
+	// Description
+	trap_GPG_FindPairValue ( gtGroup, "description", "", temp, sizeof(temp));
+	if ( temp[0] )
+	{
+		gametype->description = G_StringAlloc ( temp );
+	}
 
-    // Description
-    trap_GPG_FindPairValue ( gtGroup, "description", "", temp, sizeof(temp) );
-    if ( temp[0] )
-    {
-        gametype->description = G_StringAlloc ( temp );
-    }
+	// Are pickups enabled?
+	trap_GPG_FindPairValue ( gtGroup, "pickups", "yes", temp, sizeof(temp));
+	if ( !Q_stricmp ( temp, "no" ) )
+	{
+		gametype->pickupsDisabled = qtrue;
+	}
 
-    // Are pickups enabled?
-    trap_GPG_FindPairValue ( gtGroup, "pickups", "yes", temp, sizeof(temp) );
-    if ( !Q_stricmp ( temp, "no" ) )
-    {
-        gametype->pickupsDisabled = qtrue;
-    }
+	// Are teams enabled?
+	trap_GPG_FindPairValue ( gtGroup, "teams", "yes", temp, sizeof(temp));
+	if ( !Q_stricmp ( temp, "yes" ) )
+	{
+		gametype->teams = qtrue;
+	}
 
-    // Are teams enabled?
-    trap_GPG_FindPairValue ( gtGroup, "teams", "yes", temp, sizeof(temp) );
-    if ( !Q_stricmp ( temp, "yes" ) )
-    {
-        gametype->teams = qtrue;
-    }
+	// Display kills
+	trap_GPG_FindPairValue ( gtGroup, "showkills", "no", temp, sizeof(temp));
+	if ( !Q_stricmp ( temp, "yes" ) )
+	{
+		gametype->showKills = qtrue;
+	}
 
-    // Display kills
-    trap_GPG_FindPairValue ( gtGroup, "showkills", "no", temp, sizeof(temp) );
-    if ( !Q_stricmp ( temp, "yes" ) )
-    {
-        gametype->showKills = qtrue;
-    }
+	// Look for the respawn type
+	trap_GPG_FindPairValue ( gtGroup, "respawn", "normal", temp, sizeof(temp));
+	if ( !Q_stricmp ( temp, "none" ) )
+	{
+		gametype->respawnType = RT_NONE;
+	}
+	else if ( !Q_stricmp ( temp, "interval" ) )
+	{
+		gametype->respawnType = RT_INTERVAL;
+	}
+	else
+	{
+		gametype->respawnType = RT_NORMAL;
+	}
 
-    // Look for the respawn type
-    trap_GPG_FindPairValue ( gtGroup, "respawn", "normal", temp, sizeof(temp) );
-    if ( !Q_stricmp ( temp, "none" ) )
-    {
-        gametype->respawnType = RT_NONE;
-    }
-    else if ( !Q_stricmp ( temp, "interval" ) )
-    {
-        gametype->respawnType = RT_INTERVAL;
-    }
-    else
-    {
-        gametype->respawnType = RT_NORMAL;
-    }
+	// What percentage doest he backpack replenish?
+	trap_GPG_FindPairValue ( gtGroup, "backpack", "0", temp, sizeof(temp));
+	gametype->backpack = atoi(temp);
 
-    // A gametype can be based off another gametype which means it uses all the gametypes entities
-    trap_GPG_FindPairValue ( gtGroup, "basegametype", "", temp, sizeof(temp) );
-    if ( temp[0] )
-    {
-        gametype->basegametype = G_StringAlloc ( temp );
-    }
+	// Get the photo information for objectives dialog
+	BG_ParseGametypePhotos ( gametypeIndex, trap_GPG_FindSubGroup ( gtGroup, "photos" ) );
 
-    // What percentage doest he backpack replenish?
-    trap_GPG_FindPairValue ( gtGroup, "backpack", "0", temp, sizeof(temp) );
-    gametype->backpack = atoi(temp);
+	// Cleanup the generic parser
+	trap_GP_Delete ( &GP2 );
 
-    // Get the photo information for objectives dialog
-    BG_ParseGametypePhotos ( gametypeIndex, trap_GPG_FindSubGroup ( gtGroup, "photos" ) );
-
-    // Cleanup the generic parser
-    trap_GP_Delete ( &GP2 );
-
-    return qtrue;
+	return qtrue;
 
 }
 
@@ -169,43 +162,43 @@ information about those gametypes.
 */
 qboolean BG_BuildGametypeList ( void )
 {
-    char        filename[MAX_QPATH];
-    char        filelist[4096];
-    char*       fileptr;
-    char*       s;
-    int         filelen;
-    int         filecount;
-    int         i;
+	char		filename[MAX_QPATH];
+	char		filelist[4096];
+	char*		fileptr;
+	char*		s;
+	int			filelen;
+	int			filecount;
+	int			i;
 
-    bg_gametypeCount = 0;
+	bg_gametypeCount = 0;
 
-    // Retrieve the list of gametype files.  The returned list is a
-    // null separated list with the number of entries returned by the call
-    filecount = trap_FS_GetFileList("scripts", ".gametype", filelist, 4096 );
-    fileptr   = filelist;
+	// Retrieve the list of gametype files.  The returned list is a 
+	// null separated list with the number of entries returned by the call
+	filecount = trap_FS_GetFileList("scripts", ".gametype", filelist, 4096 );
+	fileptr   = filelist;
+	
+	for ( i = 0; i < filecount; i++, fileptr += filelen+1) 
+	{
+		// Grab the length so we can skip this file later
+		filelen = strlen(fileptr);
 
-    for ( i = 0; i < filecount; i++, fileptr += filelen+1)
-    {
-        // Grab the length so we can skip this file later
-        filelen = strlen(fileptr);
+		// Build the full filename
+		strcpy(filename, "scripts/");
+		strcat(filename, fileptr );
 
-        // Build the full filename
-        strcpy(filename, "scripts/");
-        strcat(filename, fileptr );
+		// Fill in what we know so far
+		bg_gametypeData[bg_gametypeCount].script = G_StringAlloc ( filename );
 
-        // Fill in what we know so far
-        bg_gametypeData[bg_gametypeCount].script = G_StringAlloc ( filename );
+		// Kill the dot so we can use the filename as the short name
+		s  = strchr ( fileptr, '.' );
+		*s = '\0';
+		bg_gametypeData[bg_gametypeCount].name   = G_StringAlloc ( fileptr );
+		
+		// TODO: Parse the gametype file
+		BG_ParseGametypeInfo ( bg_gametypeCount++ );
+	}
 
-        // Kill the dot so we can use the filename as the short name
-        s  = strchr ( fileptr, '.' );
-        *s = '\0';
-        bg_gametypeData[bg_gametypeCount].name   = G_StringAlloc ( fileptr );
-
-        // TODO: Parse the gametype file
-        BG_ParseGametypeInfo ( bg_gametypeCount++ );
-    }
-
-    return qtrue;
+	return qtrue;
 }
 
 /*
@@ -218,20 +211,20 @@ then -1 will be returned (and this is bad)
 */
 int BG_FindGametype ( const char* name )
 {
-    int i;
+	int i;
 
-    // Loop through the known gametypes and compare their names to
-    // the name given
-    for ( i = 0; i < bg_gametypeCount; i ++ )
-    {
-        // Do the names match?
-        if ( !Q_stricmp ( bg_gametypeData[i].name, name )  )
-        {
-            return i;
-        }
-    }
+	// Loop through the known gametypes and compare their names to 
+	// the name given
+	for ( i = 0; i < bg_gametypeCount; i ++ )
+	{
+		// Do the names match?
+		if ( !Q_stricmp ( bg_gametypeData[i].name, name )  )
+		{
+			return i;
+		}
+	}
 
-    return -1;
+	return -1;
 }
 
 /*
@@ -242,31 +235,31 @@ Search through the item list for the gametype item with
 the given index.
 ==============
 */
-gitem_t *BG_FindGametypeItem ( int index )
+gitem_t	*BG_FindGametypeItem ( int index ) 
 {
-    return &bg_itemlist[index + MODELINDEX_GAMETYPE_ITEM];
+	return &bg_itemlist[index + MODELINDEX_GAMETYPE_ITEM];
 }
 
 /*
 ==============
 BG_FindGametypeItemByID
 
-Gametype will assign ids to the gametype items for them for future reference, the
+Gametype will assign ids to the gametype items for them for future reference, the 
 id is crammed into the quantity field of the gametype item.  This function will
 find the gametype item with the given item id.
 ==============
 */
 gitem_t *BG_FindGametypeItemByID ( int itemid )
 {
-    int i;
+	int i;
+	
+	for ( i = 0; i < MAX_GAMETYPE_ITEMS; i ++ )
+	{
+		if ( bg_itemlist[i + MODELINDEX_GAMETYPE_ITEM].quantity == itemid )
+		{
+			return &bg_itemlist[i + MODELINDEX_GAMETYPE_ITEM];
+		}
+	}
 
-    for ( i = 0; i < MAX_GAMETYPE_ITEMS; i ++ )
-    {
-        if ( bg_itemlist[i + MODELINDEX_GAMETYPE_ITEM].quantity == itemid )
-        {
-            return &bg_itemlist[i + MODELINDEX_GAMETYPE_ITEM];
-        }
-    }
-
-    return NULL;
+	return NULL;
 }

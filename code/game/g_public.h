@@ -2,71 +2,66 @@
 //
 // g_public.h -- game module information visible to server
 
-#define GAME_API_VERSION    8
+#define	GAME_API_VERSION	8
 
 // entity->svFlags
 // the server does not know how to interpret most of the values
 // in entityStates (level eType), so the game must explicitly flag
 // special server behaviors
-#define SVF_NOCLIENT            0x00000001  // don't send entity to clients, even if it has effects
-#define SVF_BOT                 0x00000008  // set if the entity is a bot
-#define SVF_BROADCAST           0x00000020  // send to all connected clients
-#define SVF_PORTAL              0x00000040  // merge a second pvs at origin2 into snapshots
-#define SVF_USE_CURRENT_ORIGIN  0x00000080  // entity->r.currentOrigin instead of entity->s.origin
-                                            // for link position (missiles and movers)
-#define SVF_SINGLECLIENT        0x00000100  // only send to a single client (entityShared_t->singleClient)
-#define SVF_NOSERVERINFO        0x00000200  // don't send CS_SERVERINFO updates to this client
-                                            // so that it can be updated for ping tools without
-                                            // lagging clients
-#define SVF_CAPSULE             0x00000400  // use capsule for collision detection instead of bbox
-#define SVF_NOTSINGLECLIENT     0x00000800  // send entity to everyone but one client
-                                            // (entityShared_t->singleClient)
+#define	SVF_NOCLIENT			0x00000001	// don't send entity to clients, even if it has effects
+#define SVF_BOT					0x00000008	// set if the entity is a bot
+#define	SVF_BROADCAST			0x00000020	// send to all connected clients
+#define	SVF_PORTAL				0x00000040	// merge a second pvs at origin2 into snapshots
+#define	SVF_USE_CURRENT_ORIGIN	0x00000080	// entity->r.currentOrigin instead of entity->s.origin
+											// for link position (missiles and movers)
+#define SVF_SINGLECLIENT		0x00000100	// only send to a single client (entityShared_t->singleClient)
+#define SVF_NOSERVERINFO		0x00000200	// don't send CS_SERVERINFO updates to this client
+											// so that it can be updated for ping tools without
+											// lagging clients
+#define SVF_CAPSULE				0x00000400	// use capsule for collision detection instead of bbox
+#define SVF_NOTSINGLECLIENT		0x00000800	// send entity to everyone but one client
+											// (entityShared_t->singleClient)
 
-#define SVF_GLASS_BRUSH         0x08000000  // Ent is a glass brush
+#define SVF_GLASS_BRUSH			0x08000000	// Ent is a glass brush
 
-#define SVF_INFLATED_BBOX       0x00001000  // Bounding box has been doubled
-#define SVF_LINKHACK            0x10000000  // Hack to link an entity into extra clusters
-#define SVF_DETAIL              0x20000000  // Entity is a detail entity and can be dropped from the snapshot
-#define SVF_SKIP                0x80000000  // Dont include this entity in the current snapshot (internal use only)
+#define SVF_DOUBLED_BBOX		0x00001000	// Bounding box has been doubled
 
 //===============================================================
 
 
 typedef struct {
-    qboolean    linked;             // qfalse if not in any good cluster
-    int         linkcount;
+	qboolean	linked;				// qfalse if not in any good cluster
+	int			linkcount;
 
-    int         svFlags;            // SVF_NOCLIENT, SVF_BROADCAST, etc
-    int         singleClient;       // only send to this client when SVF_SINGLECLIENT is set
+	int			svFlags;			// SVF_NOCLIENT, SVF_BROADCAST, etc
+	int			singleClient;		// only send to this client when SVF_SINGLECLIENT is set
 
-    qboolean    bmodel;             // if false, assume an explicit mins / maxs bounding box
-                                    // only set by trap_SetBrushModel
-    vec3_t      mins, maxs;
-    int         contents;           // CONTENTS_TRIGGER, CONTENTS_SOLID, CONTENTS_BODY, etc
-                                    // a non-solid entity should set to 0
+	qboolean	bmodel;				// if false, assume an explicit mins / maxs bounding box
+									// only set by trap_SetBrushModel
+	vec3_t		mins, maxs;
+	int			contents;			// CONTENTS_TRIGGER, CONTENTS_SOLID, CONTENTS_BODY, etc
+									// a non-solid entity should set to 0
 
-    vec3_t      absmin, absmax;     // derived from mins/maxs and origin + rotation
+	vec3_t		absmin, absmax;		// derived from mins/maxs and origin + rotation
 
-    // currentOrigin will be used for all collision detection and world linking.
-    // it will not necessarily be the same as the trajectory evaluation for the current
-    // time, because each entity must be moved one at a time after time is advanced
-    // to avoid simultanious collision issues
-    vec3_t      currentOrigin;
-    vec3_t      currentAngles;
+	// currentOrigin will be used for all collision detection and world linking.
+	// it will not necessarily be the same as the trajectory evaluation for the current
+	// time, because each entity must be moved one at a time after time is advanced
+	// to avoid simultanious collision issues
+	vec3_t		currentOrigin;
+	vec3_t		currentAngles;
 
-    // when a trace call is made and passEntityNum != ENTITYNUM_NONE,
-    // an ent will be excluded from testing if:
-    // ent->s.number == passEntityNum   (don't interact with self)
-    // ent->s.ownerNum = passEntityNum  (don't interact with your own missiles)
-    // entity[ent->s.ownerNum].ownerNum = passEntityNum (don't interact with other missiles from owner)
-    int         ownerNum;
+	// when a trace call is made and passEntityNum != ENTITYNUM_NONE,
+	// an ent will be excluded from testing if:
+	// ent->s.number == passEntityNum	(don't interact with self)
+	// ent->s.ownerNum = passEntityNum	(don't interact with your own missiles)
+	// entity[ent->s.ownerNum].ownerNum = passEntityNum	(don't interact with other missiles from owner)
+	int			ownerNum;
 
-    // mask of clients that this entity should be broadcast too.  The first 32 clients
-    // are represented by the first array index and the latter 32 clients are represented
-    // by the second array index.
-    int         broadcastClients[2];
-
-    int         detailTime;
+	// mask of clients that this entity should be broadcast too.  The first 32 clients
+	// are represented by the first array index and the latter 32 clients are represented
+	// by the second array index.
+	int			broadcastClients[2];
 
 } entityShared_t;
 
@@ -74,8 +69,8 @@ typedef struct {
 
 // the server looks at a sharedEntity, which is the start of the game's gentity_t structure
 typedef struct {
-    entityState_t   s;              // communicated by server to clients
-    entityShared_t  r;              // shared by both the server system and game
+	entityState_t	s;				// communicated by server to clients
+	entityShared_t	r;				// shared by both the server system and game
 } sharedEntity_t;
 
 
@@ -130,7 +125,7 @@ typedef enum {
     // are, so it can look at them directly without going through an interface
 
     G_GET_WORLD_BOUNDS,     // ( vec3_t mins, vec3_t maxs )
-                            // Returns the mins and maxs of the world
+    // Returns the mins and maxs of the world
 
     G_RMG_INIT,
 
@@ -435,6 +430,7 @@ typedef enum {
     G_GT_SENDEVENT,
     G_GT_SHUTDOWN
 
+
 } gameImport_t;
 
 
@@ -442,46 +438,44 @@ typedef enum {
 // functions exported by the game subsystem
 //
 typedef enum {
-    GAME_INIT,  // ( int levelTime, int randomSeed, int restart );
-    // init and shutdown will be called every single level
-    // The game should call G_GET_ENTITY_TOKEN to parse through all the
-    // entity configuration text and spawn gentities.
+	GAME_INIT,	// ( int levelTime, int randomSeed, int restart );
+	// init and shutdown will be called every single level
+	// The game should call G_GET_ENTITY_TOKEN to parse through all the
+	// entity configuration text and spawn gentities.
 
-    GAME_SHUTDOWN,  // (void);
+	GAME_SHUTDOWN,	// (void);
 
-    GAME_CLIENT_CONNECT,    // ( int clientNum, qboolean firstTime, qboolean isBot );
-    // return NULL if the client is allowed to connect, otherwise return
-    // a text string with the reason for denial
+	GAME_CLIENT_CONNECT,	// ( int clientNum, qboolean firstTime, qboolean isBot );
+	// return NULL if the client is allowed to connect, otherwise return
+	// a text string with the reason for denial
 
-    GAME_CLIENT_BEGIN,              // ( int clientNum );
+	GAME_CLIENT_BEGIN,				// ( int clientNum );
 
-    GAME_CLIENT_USERINFO_CHANGED,   // ( int clientNum );
+	GAME_CLIENT_USERINFO_CHANGED,	// ( int clientNum );
 
-    GAME_CLIENT_DISCONNECT,         // ( int clientNum );
+	GAME_CLIENT_DISCONNECT,			// ( int clientNum );
 
-    GAME_CLIENT_COMMAND,            // ( int clientNum );
+	GAME_CLIENT_COMMAND,			// ( int clientNum );
 
-    GAME_CLIENT_THINK,              // ( int clientNum );
+	GAME_CLIENT_THINK,				// ( int clientNum );
 
-    GAME_RUN_FRAME,                 // ( int levelTime );
+	GAME_RUN_FRAME,					// ( int levelTime );
 
-    GAME_GHOUL_INIT,
+	GAME_GHOUL_INIT,
 
-    GAME_GHOUL_SHUTDOWN,
+	GAME_GHOUL_SHUTDOWN,
 
-    GAME_CONSOLE_COMMAND,           // ( void );
-    // ConsoleCommand will be called when a command has been issued
-    // that is not recognized as a builtin function.
-    // The game can issue trap_argc() / trap_argv() commands to get the command
-    // and parameters.  Return qfalse if the game doesn't recognize it as a command.
+	GAME_CONSOLE_COMMAND,			// ( void );
+	// ConsoleCommand will be called when a command has been issued
+	// that is not recognized as a builtin function.
+	// The game can issue trap_argc() / trap_argv() commands to get the command
+	// and parameters.  Return qfalse if the game doesn't recognize it as a command.
 
-    BOTAI_START_FRAME,              // ( int time );
+	BOTAI_START_FRAME,				// ( int time );
 
-    GAME_SPAWN_RMG_ENTITY,
+	GAME_SPAWN_RMG_ENTITY,
 
-    GAME_GAMETYPE_COMMAND,          // ( int cmd, int arg0, int arg1, int arg2, int arg3, int arg4 );
-
-    GAME_RCON_LOG,
+	GAME_GAMETYPE_COMMAND,			// ( int cmd, int arg0, int arg1, int arg2, int arg3, int arg4 );
 
 } gameExport_t;
 

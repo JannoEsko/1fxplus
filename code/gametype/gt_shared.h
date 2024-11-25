@@ -32,9 +32,9 @@ along with this program; if not, see <http://www.gnu.org/licenses/>.
 //=============================================
 
 typedef struct {
-    vmCvar_t    *vmCvar;
-    char        *cvarName;
-    char        *defaultString;
+    vmCvar_t* vmCvar;
+    char* cvarName;
+    char* defaultString;
     int         cvarFlags;
     float       mMinValue, mMaxValue;
     int         modificationCount;  // for tracking changes
@@ -48,7 +48,7 @@ typedef struct {
 // gt_shared.c
 //
 
-void QDECL GT_Printf    ( const char *fmt, ... )    __attribute__ ((format (printf, 1, 2)));
-void QDECL GT_Error     ( const char *fmt, ... )    __attribute__ ((noreturn, format (printf, 1, 2)));
+void QDECL GT_Printf(const char* fmt, ...)    __attribute__((format(printf, 1, 2)));
+void QDECL GT_Error(const char* fmt, ...)    __attribute__((noreturn, format(printf, 1, 2)));
 
 #endif // __GT_SHARED_H

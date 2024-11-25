@@ -2,12 +2,12 @@
 //
 
 /*****************************************************************************
- * name:        be_ai_gen.h
+ * name:		be_ai_gen.h
  *
- * desc:        genetic selection
+ * desc:		genetic selection
  *
  * $Archive: /source/code/botlib/be_ai_gen.h $
- * $Author: Mrelusive $
+ * $Author: Mrelusive $ 
  * $Revision: 2 $
  * $Modtime: 10/05/99 3:32p $
  * $Date: 10/05/99 3:42p $
