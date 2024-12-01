@@ -12,6 +12,7 @@
 #include "inv.h"
 
 #define GAME_VERSION        "sof2mp-1.03"
+#define GAME_VERSION_LEGACY "sof2mp-1.00"
 
 #define DEFAULT_GRAVITY     800
 #define ARMOR_PROTECTION    0.55
@@ -385,6 +386,8 @@ typedef struct {
     int         weaponAnimIdx;
     char        weaponAnim[MAX_QPATH];
     char        weaponEndAnim[MAX_QPATH];
+
+    qboolean    legacyProtocol;
 } pmove_t;
 
 extern  pmove_t     *pm;
@@ -659,8 +662,14 @@ typedef struct gitem_s
 } gitem_t;
 
 // included in both the game dll and the client
-extern  gitem_t bg_itemlist[];
-extern  int     bg_numItems;
+extern  gitem_t goldbg_itemlist[];
+extern  int     goldbg_numItems;
+
+extern  gitem_t silverbg_itemlist[];
+extern  int     silverbg_numItems;
+
+extern gitem_t bg_itemlist[];
+extern int bg_numItems;
 
 gitem_t*    BG_FindItem             ( const char *pickupName );
 gitem_t*    BG_FindClassnameItem    ( const char *classname );

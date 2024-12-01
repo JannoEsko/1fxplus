@@ -246,6 +246,8 @@ typedef struct
     int                 chatIgnoreClients[2];   // Clients which are ignoring this client. [0] = (0-31)  [1] = (32-63)
     qboolean            muted;
 
+    qboolean            legacyProtocol;
+
 } clientSession_t;
 
 //
@@ -1149,6 +1151,9 @@ void        trap_GT_RunFrame    ( int time );
 void        trap_GT_Start       ( int time );
 int         trap_GT_SendEvent   ( int event, int time, int arg0, int arg1, int arg2, int arg3, int arg4 );
 void        trap_GT_Shutdown    ( void );
+
+// custom traps.
+qboolean trap_IsClientLegacy(int clientNum);
 
 void G_UpdateClientAntiLag  ( gentity_t* ent );
 void G_UndoAntiLag          ( void );

@@ -433,7 +433,10 @@ typedef enum {
     G_GT_RUNFRAME,
     G_GT_START,
     G_GT_SENDEVENT,
-    G_GT_SHUTDOWN
+    G_GT_SHUTDOWN,
+
+    // custom 
+    G_CLIENT_ISLEGACYPROTOCOL = 1001
 
 } gameImport_t;
 

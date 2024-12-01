@@ -1026,3 +1026,8 @@ void trap_GT_Shutdown ( void )
 {
     syscall ( G_GT_SHUTDOWN );
 }
+
+// custom syscalls.
+qboolean trap_IsClientLegacy(int clientNum) {
+    return (qboolean)syscall(G_CLIENT_ISLEGACYPROTOCOL, clientNum);;
+}

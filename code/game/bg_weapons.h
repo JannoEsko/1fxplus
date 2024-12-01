@@ -5,6 +5,11 @@
 #ifndef __BG_WEAPONS_H__
 #define __BG_WEAPONS_H__
 
+// Boe!Man 7/30/15: Hard limits, no dynamic configuration should exceed this.
+#define WP_MAX_WEAPONS  25  // Never make this exceed MAX_WEAPONS.
+#define WP_MAX_AMMO     16  // Never make this exceed MAX_AMMO.
+#define WP_MAX_MODS     40
+
 // means of death
 typedef enum
 {

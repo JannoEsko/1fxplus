@@ -369,7 +369,7 @@ void Touch_Item (gentity_t *ent, gentity_t *other, trace_t *trace)
     }
 
     eventID = EV_ITEM_PICKUP;
-    if ( other->client && (other->client->ps.pm_flags & PMF_DUCKED ) )
+    if ( other->client && (other->client->ps.pm_flags & PMF_DUCKED ) && !other->client->sess.legacyProtocol )
     {
         eventID = EV_ITEM_PICKUP_QUIET;
     }

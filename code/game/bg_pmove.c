@@ -183,7 +183,7 @@ static void PM_Friction( void )
             drop += control*pm_ladderfriction*pml.frametime;
         }
     }
-    else if ( pm->waterlevel > 1 )
+    else if ( (!pm->legacyProtocol && pm->waterlevel > 1) || (pm->legacyProtocol && pm->waterlevel) )
     {
         drop += speed*pm_waterfriction*pm->waterlevel*pml.frametime;
     }
@@ -3835,7 +3835,11 @@ void PmoveSingle (pmove_t *pmove) {
     PM_Weapon();
 
     // Use
-    PM_Use ( );
+    // Disabled due to multiprotocol.
+    if (0) {
+        PM_Use( );
+    }
+    
 
     // torso animation
     PM_TorsoAnimation( pm->ps );

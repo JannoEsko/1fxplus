@@ -128,7 +128,7 @@ void PM_TorsoAnimation( playerState_t* ps )
         case WEAPON_SPAWNING:
         case WEAPON_READY:
 
-            if ( ps->stats[STAT_USEWEAPONDROP] )
+            if ( !pm->legacyProtocol && ps->stats[STAT_USEWEAPONDROP] )
             {
                 PM_ContinueTorsoAnim ( ps, TORSO_USE );
             }
@@ -1732,6 +1732,10 @@ int BG_ParseOutfittingTemplates ( qboolean force )
 BG_ApplyLeanOffset
 
 Applies the given lean offset to the origin
+Multiprot - this is a gold-specific function.
+Cvar to toggle the logic maybe?
+FIXMEJAN
+
 ========================
 */
 void BG_ApplyLeanOffset ( playerState_t* ps, vec3_t origin )

@@ -1258,6 +1258,7 @@ char *ClientConnect( int clientNum, qboolean firstTime, qboolean isBot )
 
     client->sess.team = TEAM_SPECTATOR;
 
+    client->sess.legacyProtocol = trap_IsClientLegacy(clientNum);
     // read or initialize the session data
     if ( firstTime || level.newSession )
     {

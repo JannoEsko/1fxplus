@@ -551,6 +551,8 @@ void SpectatorThink( gentity_t *ent, usercmd_t *ucmd )
 
         pm.animations = NULL;
 
+        pm.legacyProtocol = client->sess.legacyProtocol;
+
         // perform a pmove
         Pmove (&pm);
 
@@ -899,6 +901,7 @@ void SendPendingPredictableEvents( playerState_t *ps ) {
         extEvent = ps->externalEvent;
         ps->externalEvent = 0;
         // create temporary entity for event
+        Com_Printf("[D GAME] PendingPredictableEvents - eventsq %d, events at seq: %d, sending event %d, extevt: %d\n", ps->entityEventSequence, ps->events[seq], event, extEvent);
         t = G_TempEntity( ps->origin, event );
         number = t->s.number;
         BG_PlayerStateToEntityState( ps, &t->s, qtrue );
@@ -1071,7 +1074,7 @@ void ClientThink_real( gentity_t *ent )
     pm.pmove_msec = pmove_msec.integer;
 
     pm.animations = NULL;
-
+    pm.legacyProtocol = client->sess.legacyProtocol;
     VectorCopy( client->ps.origin, client->oldOrigin );
 
     Pmove (&pm);

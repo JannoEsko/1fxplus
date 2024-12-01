@@ -230,6 +230,25 @@ qboolean ConsoleCommand( void )
 
     trap_Argv( 0, cmd, sizeof( cmd ) );
 
+
+    if (!Q_stricmp(cmd, "showcls")) {
+        Com_Printf("%-3s %-15s %-12s\n", "Num", "Name", "Legacy");
+        for (int i = 0; i < level.numConnectedClients; i++) {
+
+            gentity_t* tent = &g_entities[level.sortedClients[i]];
+
+            if (tent && tent->client && tent->client->pers.connected == CON_CONNECTED) {
+                Com_Printf("%3i %-15s %-12s\n", tent->s.clientNum, tent->client->pers.netname, tent->client->sess.legacyProtocol ? "Legacy" : "Non-legacy");
+            }
+
+            
+
+        }
+
+
+        return qtrue;
+    }
+
     if ( Q_stricmp (cmd, "entitylist") == 0 )
     {
         Svcmd_EntityList_f();
