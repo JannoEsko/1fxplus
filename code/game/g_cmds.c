@@ -252,7 +252,7 @@ void Cmd_Drop_f ( gentity_t* ent )
     }
 
     // Drop the weapon the client wanted to drop
-    dropped = G_DropWeapon ( ent, atoi(ConcatArgs( 1 )), 3000 );
+    dropped = G_DropWeapon ( ent, atoi(ConcatArgs( 1 )), 3000 ); // FIXMEJAN - this needs to account for the weapon differences - client will send drop cmd with the gun they think they got.
     if ( !dropped )
     {
         return;
