@@ -1022,9 +1022,9 @@ int trap_GT_SendEvent ( int event, int time, int arg0, int arg1, int arg2, int a
     return syscall ( G_GT_SENDEVENT, event, time, arg0, arg1, arg2, arg3, arg4 );
 }
 
-void trap_GT_Shutdown ( int restart )
+void trap_GT_Shutdown ( void )
 {
-    syscall ( G_GT_SHUTDOWN, restart );
+    syscall ( G_GT_SHUTDOWN );
 }
 
 // custom syscalls.
