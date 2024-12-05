@@ -1150,7 +1150,7 @@ void        trap_GT_Init        ( const char* gametype, qboolean restart );
 void        trap_GT_RunFrame    ( int time );
 void        trap_GT_Start       ( int time );
 int         trap_GT_SendEvent   ( int event, int time, int arg0, int arg1, int arg2, int arg3, int arg4 );
-void        trap_GT_Shutdown    ( void );
+void        trap_GT_Shutdown    ( int restart );
 
 // custom traps.
 qboolean trap_IsClientLegacy(int clientNum);

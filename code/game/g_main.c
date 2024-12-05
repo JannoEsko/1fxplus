@@ -743,7 +743,7 @@ void G_ShutdownGame( int restart )
 
     // Shutdown the gametype last.
     // Don't make any system calls beyond this point.
-    trap_GT_Shutdown();
+    trap_GT_Shutdown(restart);
 }
 
 
