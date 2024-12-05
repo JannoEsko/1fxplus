@@ -94,10 +94,10 @@ typedef enum
     WP_M15_GRENADE,
 
     // Boe!Man 7/27/15: Extra grenades for 1fx. Client Additions.
-    WP_M67_GRENADE,
-    WP_F1_GRENADE,
-    WP_L2A2_GRENADE,
-    WP_MDN11_GRENADE,
+    //WP_M67_GRENADE,
+    //WP_F1_GRENADE,
+    //WP_L2A2_GRENADE,
+    //WP_MDN11_GRENADE,
 
     WP_NUM_WEAPONS
 } weapon_t;
@@ -122,8 +122,8 @@ typedef enum
     AMMO_762_BELT,
 
     AMMO_MP5_9,
-    AMMO_M67,
-    AMMO_L2A2,
+    //AMMO_M67,
+    //AMMO_L2A2,
     AMMO_MAX,
 
     AMMO_NONE,

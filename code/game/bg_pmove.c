@@ -2942,6 +2942,11 @@ static void PM_Weapon( void )
     // Zoom in animation complete... now set zoom parms.
     if( pm->ps->weaponstate == WEAPON_ZOOMIN )
     {
+
+        if (pm->legacyProtocol && !pm->ps->zoomFov && 0) {
+            pm->ps->zoomFov = 20;
+        }
+
         // The zoomfov may still be remembered from a reload while zooming
         pm->ps->pm_flags |= PMF_ZOOMED;
         pm->ps->pm_flags |= PMF_ZOOM_LOCKED;
@@ -3107,7 +3112,17 @@ static void PM_Weapon( void )
     }
 
     // Handle zooming in/out for sniper rifle.
-    if( weaponData[pm->ps->weapon].zoom[0].fov )
+
+    qboolean isZoomableWeapon = qfalse;
+
+    if (pm->legacyProtocol && 0) {
+        isZoomableWeapon = pm->ps->weapon == WP_MSG90A1 ? qtrue : qfalse;
+    }
+    else {
+        isZoomableWeapon = weaponData[pm->ps->weapon].zoom[0].fov ? qtrue : qfalse;
+    }
+
+    if(isZoomableWeapon)
     {
         if( (attackButtons&BUTTON_ALT_ATTACK) || (pm->ps->pm_flags & PMF_ZOOM_REZOOM) )
         {
@@ -3125,20 +3140,47 @@ static void PM_Weapon( void )
         {
             if(pm->cmd.buttons&BUTTON_ZOOMIN)
             {
-                if ( pm->ps->zoomFov + 1 < ZOOMLEVEL_MAX && weaponData[pm->ps->weapon].zoom[pm->ps->zoomFov+1].fov )
-                {
-                    pm->ps->zoomFov++;
-                    pm->ps->weaponTime=175;
+
+                if (pm->legacyProtocol && 0) {
+                    pm->ps->zoomFov = pm->ps->zoomFov >> 1;
+                    if (pm->ps->zoomFov < 5)
+                    {
+                        pm->ps->zoomFov = 5;
+                    }
+                    pm->ps->weaponTime = 175;
                 }
+                else {
+                    if (pm->ps->zoomFov + 1 < ZOOMLEVEL_MAX && weaponData[pm->ps->weapon].zoom[pm->ps->zoomFov + 1].fov)
+                    {
+                        pm->ps->zoomFov++;
+                        pm->ps->weaponTime = 175;
+                    }
+                }
+
+                
                 return;
             }
             else if(pm->cmd.buttons&BUTTON_ZOOMOUT)
             {
-                if ( pm->ps->zoomFov > 0 )
-                {
-                    pm->ps->zoomFov--;
-                    pm->ps->weaponTime=175;
+
+                if (pm->legacyProtocol && 0) {
+                    pm->ps->zoomFov = pm->ps->zoomFov << 1;
+
+                    if (pm->ps->zoomFov > 20) {
+                        pm->ps->zoomFov = 20;
+                    }
+
+                    pm->ps->weaponTime = 175;
                 }
+                else {
+                    if (pm->ps->zoomFov > 0)
+                    {
+                        pm->ps->zoomFov--;
+                        pm->ps->weaponTime = 175;
+                    }
+                }
+
+                
                 return;
             }
         }
@@ -3252,7 +3294,7 @@ static void PM_Weapon( void )
         return;
     }
 
-    pm->ps->pm_debounce |= PMD_ATTACK;
+    pm->ps->pm_debounce |= PMD_ATTACK; // JANFIXME - multiprot impact?
 
     // Decrease the ammo
     (*ammoSource) -= attackData->fireAmount;
