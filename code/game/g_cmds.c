@@ -252,7 +252,14 @@ void Cmd_Drop_f ( gentity_t* ent )
     }
 
     // Drop the weapon the client wanted to drop
-    dropped = G_DropWeapon ( ent, atoi(ConcatArgs( 1 )), 3000 ); // FIXMEJAN - this needs to account for the weapon differences - client will send drop cmd with the gun they think they got.
+
+    int weapon = atoi(ConcatArgs(1));
+
+    if (ent->client->sess.legacyProtocol) {
+        weapon = trap_TranslateSilverWeaponToGoldWeapon(weapon);
+    }
+
+    dropped = G_DropWeapon ( ent, weapon, 3000 ); // FIXMEJAN - this needs to account for the weapon differences - client will send drop cmd with the gun they think they got.
     if ( !dropped )
     {
         return;

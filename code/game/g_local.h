@@ -1154,6 +1154,7 @@ void        trap_GT_Shutdown    ( void );
 
 // custom traps.
 qboolean trap_IsClientLegacy(int clientNum);
+int trap_TranslateSilverWeaponToGoldWeapon(int weapon);
 
 void G_UpdateClientAntiLag  ( gentity_t* ent );
 void G_UndoAntiLag          ( void );

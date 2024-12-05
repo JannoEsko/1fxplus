@@ -1031,3 +1031,7 @@ void trap_GT_Shutdown ( void )
 qboolean trap_IsClientLegacy(int clientNum) {
     return (qboolean)syscall(G_CLIENT_ISLEGACYPROTOCOL, clientNum);;
 }
+
+int trap_TranslateSilverWeaponToGoldWeapon(int weapon) {
+    return (int)syscall(G_TRANSLATE_SILVER_WPN_TO_GOLD, weapon);
+}
