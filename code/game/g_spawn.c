@@ -733,7 +733,7 @@ qboolean G_ParseSpawnVars( qboolean inSubBSP )
     level.numSpawnVarChars = 0;
 
     // parse the opening brace
-    if ( !trap_GetEntityToken( com_token, sizeof( com_token ) ) )
+    if ( !trap_GetEntityToken( com_token, sizeof( com_token ), inSubBSP ) )
     {
         // end of spawn string
         return qfalse;
@@ -748,7 +748,7 @@ qboolean G_ParseSpawnVars( qboolean inSubBSP )
     while ( 1 )
     {
         // parse key
-        if ( !trap_GetEntityToken( keyname, sizeof( keyname ) ) )
+        if ( !trap_GetEntityToken( keyname, sizeof( keyname ), inSubBSP ) )
         {
             Com_Error( ERR_FATAL, "G_ParseSpawnVars: EOF without closing brace" );
         }
@@ -759,7 +759,7 @@ qboolean G_ParseSpawnVars( qboolean inSubBSP )
         }
 
         // parse value
-        if ( !trap_GetEntityToken( com_token, sizeof( com_token ) ) )
+        if ( !trap_GetEntityToken( com_token, sizeof( com_token ), inSubBSP ) )
         {
             Com_Error( ERR_FATAL, "G_ParseSpawnVars: EOF without closing brace" );
         }

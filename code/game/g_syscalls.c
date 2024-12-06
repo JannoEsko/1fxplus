@@ -193,8 +193,8 @@ void trap_GetUsercmd( int clientNum, usercmd_t *cmd ) {
     syscall( G_GET_USERCMD, clientNum, cmd );
 }
 
-qboolean trap_GetEntityToken( char *buffer, int bufferSize ) {
-    return syscall( G_GET_ENTITY_TOKEN, buffer, bufferSize );
+qboolean trap_GetEntityToken( char *buffer, int bufferSize, qboolean inSubBSP ) {
+    return syscall( G_GET_ENTITY_TOKEN, buffer, bufferSize, inSubBSP );
 }
 
 void *trap_BotGetMemoryGame(int size)

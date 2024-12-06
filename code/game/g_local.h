@@ -972,7 +972,7 @@ qboolean trap_EntityContact( const vec3_t mins, const vec3_t maxs, const gentity
 int     trap_BotAllocateClient( void );
 void    trap_BotFreeClient( int clientNum );
 void    trap_GetUsercmd( int clientNum, usercmd_t *cmd );
-qboolean    trap_GetEntityToken( char *buffer, int bufferSize );
+qboolean    trap_GetEntityToken( char *buffer, int bufferSize, qboolean inSubBSP );
 void        trap_GetWorldBounds ( vec3_t mins, vec3_t maxs );
 
 void    *trap_Mem_Init(int size);
