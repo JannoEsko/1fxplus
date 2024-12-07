@@ -231,6 +231,13 @@ int BG_FindGametype ( const char* name )
         }
     }
 
+    // if I didn't find anything by real gametype, try by the "fake" one.
+    for (i = 0; i < bg_gametypeCount; i++) {
+        if (!Q_stricmp(bg_gametypeData[i].name, G_TranslateGametypeToPublicGametype(name))) {
+            return i;
+        }
+    }
+
     return -1;
 }
 

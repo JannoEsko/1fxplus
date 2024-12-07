@@ -508,7 +508,7 @@ Takes the actual gametype (e.g. h&s) and translates it to a public value.
 Public value will be used for example in info query and in configstring.
 ===============
 */
-static char* G_TranslateGametypeToPublicGametype(char* gametype) {
+char* G_TranslateGametypeToPublicGametype(char* gametype) {
 
     if (!Q_stricmp(gametype, "h&s")) {
         return "inf";

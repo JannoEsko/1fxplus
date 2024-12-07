@@ -247,6 +247,10 @@ qboolean G_DoesMapSupportGametype ( const char* gametype )
         {
             return qtrue;
         }
+
+        if (!Q_stricmp(token, G_TranslateGametypeToPublicGametype(gametype))) {
+            return qtrue;
+        }
     }
 
     return qfalse;

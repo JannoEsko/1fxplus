@@ -1044,4 +1044,7 @@ char        *G_StringAlloc                      ( const char *source );
 
 void        G_InitMemory                        ( void );
 
+
+char* G_TranslateGametypeToPublicGametype(char* gametype);
+
 #endif // __BG_PUBLIC_H__
