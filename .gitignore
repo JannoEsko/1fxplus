@@ -43,3 +43,15 @@ profile
 /code/game/.vs/sof2mp_gamex86_64
 /code/game/enc_temp_folder
 /code/game/x64/Debug
+/code/gametype/gt_csinf/x64/Debug
+/code/gametype/gt_ctf/x64/Debug
+/code/gametype/gt_dem/x64/Debug
+/code/gametype/gt_dm/x64/Debug
+/code/gametype/gt_elim/x64/Debug
+/code/gametype/gt_gg/x64/Debug
+/code/gametype/gt_hns/x64/Debug
+/code/gametype/gt_hnz/x64/Debug
+/code/gametype/gt_inf/x64/Debug
+/code/gametype/gt_prop/x64/Debug
+/code/gametype/gt_tdm/x64/Debug
+/code/gametype/gt_vip/x64/Debug
