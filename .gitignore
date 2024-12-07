@@ -40,3 +40,6 @@ profile
 *.opensdf
 *.suo
 /.vs
+/code/game/.vs/sof2mp_gamex86_64
+/code/game/enc_temp_folder
+/code/game/x64/Debug
