@@ -486,6 +486,47 @@ void G_UpdateAvailableWeapons ( void )
     trap_Cvar_Set ( "g_available", available );
     trap_Cvar_Update ( &g_availableWeapons );
 }
+/*
+===============
+G_TranslateGametypeToPublicGametype
+
+Takes the actual gametype (e.g. h&s) and translates it to a public value.
+Public value will be used for example in info query and in configstring.
+===============
+*/
+static char* G_TranslateGametypeToPublicGametype(char* gametype) {
+
+    if (!Q_stricmp(gametype, "h&s")) {
+        return "inf";
+    }
+
+    if (!Q_stricmp(gametype, "h&z")) {
+        return "inf";
+    }
+
+    if (!Q_stricmp(gametype, "gg")) {
+        return "dm";
+    }
+
+    if (!Q_stricmp(gametype, "vip")) {
+        return "elim";
+    }
+
+    if (!Q_stricmp(gametype, "prop")) {
+        return "inf";
+    }
+
+    if (!Q_stricmp(gametype, "mm")) {
+        return "??"; // Devil once started with this gametype, but I've no idea what were his plans. 
+                     // Perhaps one day I'll get an idea for it, so far adding it just as a placeholder value.
+    }
+
+    if (!Q_stricmp(gametype, "csinf")) {
+        return "inf";
+    }
+
+    return gametype;
+}
 
 /*
 ===============
@@ -550,6 +591,10 @@ void G_SetGametype ( const char* gametype )
         level.pickupsDisabled = qfalse;
         trap_SetConfigstring ( CS_PICKUPSDISABLED, "0" );
     }
+
+    // Update public gametype variable
+    trap_Cvar_Set("g_publicGametype", G_TranslateGametypeToPublicGametype(g_gametype.string));
+
 }
 
 /*
