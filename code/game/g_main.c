@@ -170,6 +170,8 @@ static cvarTable_t gameCvarTable[] =
 
     // 1.03 CHANGE - Rename availableWeapons Cvar which might confuse old map cycles
     { &g_availableWeapons,  "g_available", "0", CVAR_SERVERINFO|CVAR_ROM|CVAR_LATCH, 0.0, 0.0, 0, qfalse },
+    { NULL,  "g_availableWeapons", "0", CVAR_SERVERINFO | CVAR_ROM | CVAR_LATCH, 0.0, 0.0, 0, qfalse },
+    { NULL,  "availableWeapons", "0", CVAR_SERVERINFO | CVAR_ROM | CVAR_LATCH, 0.0, 0.0, 0, qfalse },
 
     { NULL,                 "disable_weapon_knife",                 "0", CVAR_ARCHIVE|CVAR_LATCH, 0.0, 0.0, 0, qfalse },
     { NULL,                 "disable_pickup_weapon_US_SOCOM",       "0", CVAR_ARCHIVE|CVAR_LATCH, 0.0, 0.0, 0, qfalse },
@@ -283,6 +285,9 @@ Q_EXPORT intptr_t vmMain( int command, intptr_t arg0, intptr_t arg1, intptr_t ar
             {
                 G_SpawnGEntityFromSpawnVars(qfalse);
             }
+            return 0;
+        case GAME_RCON_LOG:
+            // JANFIXME TODO Add rconlogging.
             return 0;
     }
 
@@ -484,6 +489,7 @@ void G_UpdateAvailableWeapons ( void )
 
     // 1.03 CHANGE - Rename availableWeapons Cvar which might confuse old map cycles
     trap_Cvar_Set ( "g_available", available );
+    trap_Cvar_Set("availableWeapons", available);
     trap_Cvar_Update ( &g_availableWeapons );
 }
 /*
@@ -617,6 +623,8 @@ void G_InitGame( int levelTime, int randomSeed, int restart )
     level.time = levelTime;
     level.startTime = levelTime;
 
+    level.multiprotocol = trap_Cvar_VariableIntegerValue("net_multiprotocol");
+
     G_RegisterCvars();
 
     // Initialize the game memory system.
@@ -632,6 +640,12 @@ void G_InitGame( int levelTime, int randomSeed, int restart )
     G_SetGametype(g_gametype.string);
 
     // Sets the available weapons cvar from the disable_ cvars.
+    // ... but first disable the weapons which are not in 1.00 if we're in multiprotocol game.
+    if (level.multiprotocol) {
+        trap_Cvar_Set("disable_pickup_weapon_silvertalon", "1");
+        trap_Cvar_Set("disable_pickup_weapon_MP5", "1");
+        trap_Cvar_Set("disable_pickup_weapon_SIG551", "1");
+    }
     G_UpdateAvailableWeapons ( );
 
     // Set the available outfitting

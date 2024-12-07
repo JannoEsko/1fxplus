@@ -971,6 +971,7 @@ extern int                  bg_identityCount;
 extern goutfitting_t        bg_outfittings[];
 extern int                  bg_outfittingCount;
 extern int                  bg_outfittingGroups[][MAX_OUTFITTING_GROUPITEM];
+extern int                  legacy_bg_outfittingGroups[][MAX_OUTFITTING_GROUPITEM];
 extern char                 *bg_weaponNames[WP_NUM_WEAPONS];
 extern stringID_table_t     bg_animTable [MAX_ANIMATIONS+1];
 
@@ -983,7 +984,7 @@ int                 BG_ParseSkin                        ( const char* filename, 
 
 qboolean            BG_IsWeaponAvailableForOutfitting   ( weapon_t weapon, int level );
 void                BG_SetAvailableOutfitting           ( const char* available );
-void                BG_DecompressOutfitting             ( const char* compressed, goutfitting_t* outfitting );
+void                BG_DecompressOutfitting             ( const char* compressed, goutfitting_t* outfitting, qboolean legacyProtocol );
 void                BG_CompressOutfitting               ( goutfitting_t* outfitting, char* compressed, int size );
 int                 BG_ParseOutfittingTemplates         ( qboolean force );
 int                 BG_FindOutfitting                   ( goutfitting_t* outfitting);

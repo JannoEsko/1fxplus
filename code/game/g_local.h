@@ -522,6 +522,8 @@ typedef struct
     char            autokickedName[MAX_AUTOKICKLIST][MAX_NETNAME];
     char            autokickedIP[MAX_AUTOKICKLIST][20];
 
+    qboolean        multiprotocol;
+
 } level_locals_t;
 
 //

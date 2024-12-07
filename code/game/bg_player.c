@@ -27,6 +27,15 @@ int bg_outfittingGroups[OUTFITTING_GROUP_MAX][MAX_OUTFITTING_GROUPITEM] =
     { MODELINDEX_ARMOR,             MODELINDEX_NIGHTVISION,     MODELINDEX_THERMAL,         -1,                         -1, -1, -1, -1, -1, -1, -1, -1 },
 };
 
+int legacy_bg_outfittingGroups[OUTFITTING_GROUP_MAX][MAX_OUTFITTING_GROUPITEM] =
+{
+    { MODELINDEX_WEAPON_AK74,		MODELINDEX_WEAPON_M4,		MODELINDEX_WEAPON_USAS12, MODELINDEX_WEAPON_MSG90A1,	MODELINDEX_WEAPON_M60,		MODELINDEX_WEAPON_RPG7,	 MODELINDEX_WEAPON_MM1, -1, -1, -1 },
+    { MODELINDEX_WEAPON_M590,		MODELINDEX_WEAPON_MICROUZI,	MODELINDEX_WEAPON_M3A1,		-1, -1, -1, -1, -1, -1, -1 },
+    { MODELINDEX_WEAPON_M19,		MODELINDEX_WEAPON_SOCOM,	-1,							-1,							-1, -1, -1, -1, -1, -1 },
+    { MODELINDEX_WEAPON_SMOHG92,	MODELINDEX_WEAPON_M84,		MODELINDEX_WEAPON_M15,		MODELINDEX_WEAPON_ANM14,	-1, -1, -1, -1, -1, -1 },
+    { MODELINDEX_ARMOR,				MODELINDEX_NIGHTVISION,		MODELINDEX_THERMAL,			-1,							-1, -1, -1, -1, -1, -1 },
+};
+
 /*
 ===================
 PM_StartLegsAnim
@@ -1426,7 +1435,7 @@ BG_DecompressOutfitting
 Decompresses the given outfitting string into the outfitting structure
 ========================
 */
-void BG_DecompressOutfitting ( const char* compressed, goutfitting_t* outfitting)
+void BG_DecompressOutfitting ( const char* compressed, goutfitting_t* outfitting, qboolean legacyProtocol)
 {
     int group;
     int origitem;
@@ -1444,7 +1453,13 @@ void BG_DecompressOutfitting ( const char* compressed, goutfitting_t* outfitting
         else
         {
             item = ((*compressed++) - 'A');
+
+            /*if (legacyProtocol) {
+                item = trap_TranslateSilverWeaponToGoldWeapon(item);
+            }*/
         }
+
+        
 
         // Valid item number?
         if ( item < 0 || item >= 10 )
@@ -1453,10 +1468,19 @@ void BG_DecompressOutfitting ( const char* compressed, goutfitting_t* outfitting
         }
 
         // Valid slot for the group ?
-        if ( bg_outfittingGroups[group][item] == -1 )
-        {
-            continue;
+        if (legacyProtocol) {
+            if (legacy_bg_outfittingGroups[group][item] == -1)
+            {
+                continue;
+            }
         }
+        else {
+            if (bg_outfittingGroups[group][item] == -1)
+            {
+                continue;
+            }
+        }
+        
 
         // Ok to set the item now
         outfitting->items[group] = item;
@@ -1468,22 +1492,46 @@ void BG_DecompressOutfitting ( const char* compressed, goutfitting_t* outfitting
         }
 
         // Is it available?
-        if ( bg_itemlist[bg_outfittingGroups[group][item]].giType == IT_WEAPON )
-        {
-            origitem = item;
-            while ( !BG_IsWeaponAvailableForOutfitting ( bg_itemlist[bg_outfittingGroups[group][item]].giTag, 2 ) )
-            {
-                item++;
-                if ( bg_outfittingGroups[group][item] == -1 )
-                {
-                    item = 0;
-                }
 
-                if ( item == origitem )
+        if (legacyProtocol) {
+            if (bg_itemlist[legacy_bg_outfittingGroups[group][item]].giType == IT_WEAPON)
+            {
+                origitem = item;
+                while (!BG_IsWeaponAvailableForOutfitting(bg_itemlist[legacy_bg_outfittingGroups[group][item]].giTag, 2))
                 {
-                    //Com_Error ( ERR_FATAL, "ERROR: There must be at least one weapon available in each category" );
-                    item = -1;
-                    break;
+                    item++;
+                    if (legacy_bg_outfittingGroups[group][item] == -1)
+                    {
+                        item = 0;
+                    }
+
+                    if (item == origitem)
+                    {
+                        //Com_Error ( ERR_FATAL, "ERROR: There must be at least one weapon available in each category" );
+                        item = -1;
+                        break;
+                    }
+                }
+            }
+        }
+        else {
+            if (bg_itemlist[bg_outfittingGroups[group][item]].giType == IT_WEAPON)
+            {
+                origitem = item;
+                while (!BG_IsWeaponAvailableForOutfitting(bg_itemlist[bg_outfittingGroups[group][item]].giTag, 2))
+                {
+                    item++;
+                    if (bg_outfittingGroups[group][item] == -1)
+                    {
+                        item = 0;
+                    }
+
+                    if (item == origitem)
+                    {
+                        //Com_Error ( ERR_FATAL, "ERROR: There must be at least one weapon available in each category" );
+                        item = -1;
+                        break;
+                    }
                 }
             }
         }

@@ -863,7 +863,13 @@ void G_UpdateOutfitting ( int clientNum )
         }
 
         // Grab the item that represents the weapon
-        item = &bg_itemlist[bg_outfittingGroups[group][client->pers.outfitting.items[group]]];
+        if (client->sess.legacyProtocol) {
+            item = &bg_itemlist[legacy_bg_outfittingGroups[group][client->pers.outfitting.items[group]]];
+        }
+        else {
+            item = &bg_itemlist[bg_outfittingGroups[group][client->pers.outfitting.items[group]]];
+        }
+        
 
         client->ps.stats[STAT_WEAPONS] |= (1 << item->giTag);
         ammoIndex = weaponData[item->giTag].attack[ATTACK_NORMAL].ammoIndex;
@@ -1170,7 +1176,7 @@ void ClientUserinfoChanged( int clientNum )
     if ( level.pickupsDisabled )
     {
         // Parse out the new outfitting
-        BG_DecompressOutfitting ( Info_ValueForKey ( userinfo, "outfitting" ), &client->pers.outfitting );
+        BG_DecompressOutfitting ( Info_ValueForKey ( userinfo, "outfitting" ), &client->pers.outfitting, client->sess.legacyProtocol );
         G_UpdateOutfitting ( clientNum );
     }
 
