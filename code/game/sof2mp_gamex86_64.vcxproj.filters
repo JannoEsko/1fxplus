@@ -13,6 +13,21 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="Source Files\ext">
+      <UniqueIdentifier>{bf915a9d-d710-4c4b-8682-2476216acb0b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\ext\sqlite">
+      <UniqueIdentifier>{c1432dbf-a82b-40f6-ba51-3815e4917794}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\ext">
+      <UniqueIdentifier>{30af18bb-1e91-4254-9815-6d37c9c974fe}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\ext\sqlite">
+      <UniqueIdentifier>{4809d561-32d7-4bf3-b500-1968b8114c19}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\1fx">
+      <UniqueIdentifier>{a1665de8-b7d1-4487-9f41-e9b71ae7c182}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ai_main.c">
@@ -114,6 +129,15 @@
     <ClCompile Include="..\qcommon\q_shared.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\ext\sqlite\sqlite3.c">
+      <Filter>Source Files\ext\sqlite</Filter>
+    </ClCompile>
+    <ClCompile Include="1fx\databases.c">
+      <Filter>Source Files\1fx</Filter>
+    </ClCompile>
+    <ClCompile Include="1fx\logging.c">
+      <Filter>Source Files\1fx</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ai_main.h">
@@ -190,6 +214,9 @@
     </ClInclude>
     <ClInclude Include="..\ghoul2\g2_local.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\ext\sqlite\sqlite3.h">
+      <Filter>Header Files\ext\sqlite</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

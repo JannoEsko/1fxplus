@@ -89,6 +89,10 @@ vmCvar_t    g_voiceTalkingGhosts;           // Allow ghosts to talk to alive pla
 vmCvar_t    RMG;
 vmCvar_t    g_debugRMG;
 
+vmCvar_t    ac_allowcross;
+vmCvar_t    ac_norecoil;
+vmCvar_t    rox_support;
+
 static cvarTable_t gameCvarTable[] =
 {
     // don't override the cheat state set by the system
@@ -216,6 +220,10 @@ static cvarTable_t gameCvarTable[] =
     { &g_suddenDeath,           "g_suddenDeath",            "1",        CVAR_ARCHIVE,   0.0f,   0.0f,   0,  qfalse },
 
     { &g_voiceTalkingGhosts,    "g_voiceTalkingGhosts",     "1",        CVAR_ARCHIVE,   0.0f,   0.0f,   0,  qfalse },
+
+    { &ac_allowcross,    "ac_allowcross",     "1",        CVAR_ARCHIVE | CVAR_LATCH | CVAR_SERVERINFO,   0.0f,   0.0f,   0,  qfalse },
+    { &ac_norecoil,    "ac_norecoil",     "0",        CVAR_ARCHIVE | CVAR_LATCH | CVAR_SERVERINFO,   0.0f,   0.0f,   0,  qfalse },
+    { &rox_support,    "rox_support",     "1",        CVAR_ARCHIVE | CVAR_LATCH | CVAR_SERVERINFO,   0.0f,   0.0f,   0,  qfalse },
 };
 
 // bk001129 - made static to avoid aliasing
@@ -757,6 +765,10 @@ void G_InitGame( int levelTime, int randomSeed, int restart )
 #endif
 
     G_RemapTeamShaders();
+
+    // Before gametype starts, we load the databases and also parse the session (once it's built......... :))
+
+    loadDatabases();
 
     // Initialize the gametype
     trap_GT_Init ( g_gametype.string, restart );

@@ -1,2 +1,2 @@
+#include "../g_local.h"
 
-#include "../../ext/sqlite/sqlite3.h"

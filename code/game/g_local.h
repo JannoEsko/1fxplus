@@ -247,6 +247,8 @@ typedef struct
     qboolean            muted;
 
     qboolean            legacyProtocol;
+    int                 adminLevel;
+    int                 adminLogonMethod;
 
 } clientSession_t;
 
@@ -276,6 +278,7 @@ typedef struct
     playerTeamState_t   teamState;                  // status in teamplay games
     int                 voteCount;                  // to prevent people from constantly calling votes
     int                 firemode[MAX_WEAPONS];      // weapon firemodes
+    char                cleanName[MAX_NETNAME];
 
 } clientPersistant_t;
 
@@ -932,6 +935,10 @@ extern  vmCvar_t    g_voiceFloodPenalty;
 extern  vmCvar_t    g_voiceTalkingGhosts;
 extern  vmCvar_t    g_suddenDeath;
 
+extern  vmCvar_t    ac_allowcross;
+extern  vmCvar_t    ac_norecoil;
+extern  vmCvar_t    rox_support;
+
 void    trap_Print( const char *text );
 void    trap_Error( const char *text ) __attribute__((noreturn));
 int     trap_Milliseconds( void );
@@ -1161,4 +1168,13 @@ int trap_TranslateSilverWeaponToGoldWeapon(int weapon);
 void G_UpdateClientAntiLag  ( gentity_t* ent );
 void G_UndoAntiLag          ( void );
 void G_ApplyAntiLag         ( gentity_t* ref, qboolean enlargeHitBox );
+
+#define SQL_GAME_MIGRATION_LEVEL 1
+#define SQL_LOG_MIGRATION_LEVEL 1
+#define MAX_SQL_TEMP_NAME 16
+
+char* getNameOrArg(gentity_t* ent, char* arg, qboolean cleanName);
+void loadDatabases(void);
+
+void logSystem();
 

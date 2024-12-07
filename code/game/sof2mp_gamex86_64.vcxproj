@@ -155,8 +155,11 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\ext\sqlite\sqlite3.c" />
     <ClCompile Include="..\qcommon\q_math.c" />
     <ClCompile Include="..\qcommon\q_shared.c" />
+    <ClCompile Include="1fx\databases.c" />
+    <ClCompile Include="1fx\logging.c" />
     <ClCompile Include="ai_main.c" />
     <ClCompile Include="ai_util.c" />
     <ClCompile Include="ai_wpnav.c" />
@@ -190,6 +193,7 @@
     <ClCompile Include="g_weapon.c" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\ext\sqlite\sqlite3.h" />
     <ClInclude Include="..\ghoul2\g2_local.h" />
     <ClInclude Include="..\qcommon\q_platform.h" />
     <ClInclude Include="..\qcommon\q_shared.h" />

@@ -900,8 +900,8 @@ void SendPendingPredictableEvents( playerState_t *ps ) {
         // set external event to zero before calling BG_PlayerStateToEntityState
         extEvent = ps->externalEvent;
         ps->externalEvent = 0;
+
         // create temporary entity for event
-        Com_Printf("[D GAME] PendingPredictableEvents - eventsq %d, events at seq: %d, sending event %d, extevt: %d\n", ps->entityEventSequence, ps->events[seq], event, extEvent);
         t = G_TempEntity( ps->origin, event );
         number = t->s.number;
         BG_PlayerStateToEntityState( ps, &t->s, qtrue );
