@@ -158,6 +158,7 @@
     <ClCompile Include="..\ext\sqlite\sqlite3.c" />
     <ClCompile Include="..\qcommon\q_math.c" />
     <ClCompile Include="..\qcommon\q_shared.c" />
+    <ClCompile Include="1fx\admin.c" />
     <ClCompile Include="1fx\databases.c" />
     <ClCompile Include="1fx\logging.c" />
     <ClCompile Include="ai_main.c" />

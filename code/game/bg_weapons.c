@@ -423,11 +423,17 @@ qboolean BG_InitWeaponStats( qboolean pickupsDisabled )
     char        name[256];
     int         i;
 
-    GP2 = trap_GP_ParseFile("ext_data/sof2.wpn");
-    if (!GP2)
-    {
-        return qfalse;
+    GP2 = trap_GP_ParseFile(g_weaponFile.string);
+
+    if (!GP2) {
+        logSystem(LOGLEVEL_WARN, "Weapon stats file \"%s\" not found, trying default...\n", g_weaponFile.string);
+        GP2 = trap_GP_ParseFile("ext_data/sof2.wpn");
+        if (!GP2)
+        {
+            return qfalse;
+        }
     }
+    
 
     topGroup = trap_GP_GetBaseParseGroup(GP2);
     topSubs = trap_GPG_GetSubGroups(topGroup);
@@ -999,11 +1005,18 @@ qboolean BG_ParseInviewFile( qboolean pickupsDisabled )
     char        name[256], temp[256];
     int         i;
 
-    GP2 = trap_GP_ParseFile("inview/sof2.inview");
-    if (!GP2)
-    {
-        return qfalse;
+    GP2 = trap_GP_ParseFile(g_inviewFile.string);
+
+    if (!GP2) {
+        logSystem(LOGLEVEL_WARN, "Inview file \"%s\" was not found, trying default...", g_inviewFile.string);
+        GP2 = trap_GP_ParseFile("inview/sof2.inview");
+        if (!GP2)
+        {
+            return qfalse;
+        }
     }
+
+    
 
     weaponLeftHand[0] = 0;
     weaponRightHand[0] = 0;

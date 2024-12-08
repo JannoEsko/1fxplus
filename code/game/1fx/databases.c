@@ -5,6 +5,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #ifndef _MSC_VER
+#include <direct.h>
 #include <unistd.h>
 #endif
 
@@ -70,9 +71,8 @@ static void migrateGameDatabase(sqlite3* db, int gameMigrationLevel) {
             "INSERT INTO migrationlevel (migrationlevel) VALUES (1);";
 
         if (sqlite3_exec(db, migration, 0, 0, 0) != SQLITE_OK) {
-            logSystem();
             sqlite3_close(db);
-            Com_Error(ERR_FATAL, "Game dropped due to failing to migrate the game database to level 1 (starting level: %d).\nSQLite error: %s\nCode: %d", gameMigrationLevel, sqlite3_errmsg(db), sqlite3_errcode(db));
+            logSystem(LOGLEVEL_FATAL_DB, "Game dropped due to failing to migrate the game database to level 1 (starting level: %d).\nSQLite error: %s\nCode: %d", gameMigrationLevel, sqlite3_errmsg(db), sqlite3_errcode(db));
             return;
         }
     }
@@ -99,9 +99,9 @@ static void migrateLogsDatabase(sqlite3* db, int logsMigrationLevel) {
             ;
 
         if (sqlite3_exec(db, migration, 0, 0, 0) != SQLITE_OK) {
-            logSystem();
+            
             sqlite3_close(db);
-            Com_Error(ERR_FATAL, "Game dropped due to failing to migrate the logs database to level 1 (starting level: %d).\nSQLite error: %s\nCode: %d", logsMigrationLevel, sqlite3_errmsg(db), sqlite3_errcode(db));
+            logSystem(LOGLEVEL_FATAL_DB, "Game dropped due to failing to migrate the logs database to level 1 (starting level: %d).\nSQLite error: %s\nCode: %d", logsMigrationLevel, sqlite3_errmsg(db), sqlite3_errcode(db));
             return;
         }
     }
@@ -119,7 +119,7 @@ char* getNameOrArg(gentity_t* ent, char* arg, qboolean cleanName) {
 }
 
 void loadDatabases(void) {
-    Com_Printf("loadDatabases()\n");
+    Com_PrintInfo("loadDatabases()\n");
 	struct stat st = { 0 };
 	sqlite3* db;
 
@@ -138,19 +138,15 @@ void loadDatabases(void) {
 	int rc = sqlite3_open("./1fx/databases/game.db", &db);
 
 	if (rc) {
-		logSystem();
-		// with the gameDb completely failing and we cannot write to it, there's no point continuing.
-		Com_Error(ERR_FATAL, "Game dropped due to failing to write game.db file in databases folder.\n");
+		logSystem(LOGLEVEL_FATAL_DB, "Game dropped due to failing to write game.db file in databases folder.\n");
 		return;
 	}
 
 	// check for the migration level, use create table if not exists to create migration table.
 
 	if (sqlite3_exec(db, "CREATE TABLE IF NOT EXISTS migrationlevel (migrationlevel INTEGER)", 0, 0, 0) != SQLITE_OK) {
-		logSystem();
-		sqlite3_close(db);
-		// with the gameDb completely failing and we cannot write to it, there's no point continuing.
-		Com_Error(ERR_FATAL, "Game dropped due to failing to write migrationlevel table into game.db.\n");
+        sqlite3_close(db);
+		logSystem(LOGLEVEL_FATAL_DB, "Game dropped due to failing to write migrationlevel table into game.db.\n");
 		return;
 	}
 
@@ -165,14 +161,14 @@ void loadDatabases(void) {
 
 	sqlite3_finalize(stmt);
 	if (SQL_GAME_MIGRATION_LEVEL != gameMigrationLevel) {
-		Com_Printf("Migrating gameDb to be migrated from level %d to level %d.\n", gameMigrationLevel, SQL_GAME_MIGRATION_LEVEL);
+		Com_Printf("    Migrating gameDb to be migrated from level %d to level %d.\n", gameMigrationLevel, SQL_GAME_MIGRATION_LEVEL);
 		migrateGameDatabase(db, gameMigrationLevel);
 	}
 	else {
-		Com_Printf("gameDb is up to date!\n");
+		Com_Printf("    gameDb is up to date!\n");
 	}
 
-    Com_Printf("Attaching gameDB to memory...");
+    Com_Printf("    Attaching gameDB to memory...");
     sqlite3_open(":memory:", &gameDb);
 
     sqlite3_exec(db, "BEGIN", NULL, NULL, NULL);
@@ -197,17 +193,14 @@ void loadDatabases(void) {
     rc = sqlite3_open("./1fx/databases/logs.db", &db);
 
     if (rc) {
-        logSystem();
         // with the gameDb completely failing and we cannot write to it, there's no point continuing.
-        Com_Error(ERR_FATAL, "Game dropped due to failing to write game.db file in databases folder.\n");
+        logSystem(LOGLEVEL_FATAL_DB, "Game dropped due to failing to write game.db file in databases folder.\n");
         return;
     }
 
     if (sqlite3_exec(db, "CREATE TABLE IF NOT EXISTS migrationlevel (migrationlevel INTEGER)", 0, 0, 0) != SQLITE_OK) {
-        logSystem();
         sqlite3_close(db);
-        // with the gameDb completely failing and we cannot write to it, there's no point continuing.
-        Com_Error(ERR_FATAL, "Game dropped due to failing to write migrationlevel table into game.db.\n");
+        logSystem(LOGLEVEL_FATAL_DB, "Game dropped due to failing to write migrationlevel table into game.db.\n");
         return;
     }
 
@@ -222,17 +215,57 @@ void loadDatabases(void) {
     sqlite3_finalize(stmt);
 
     if (SQL_LOG_MIGRATION_LEVEL != logMigrationLevel) {
-        Com_Printf("Migrating logsDb from level %d to level %d.\n", logMigrationLevel, SQL_LOG_MIGRATION_LEVEL);
+        Com_Printf("    Migrating logsDb from level %d to level %d.\n", logMigrationLevel, SQL_LOG_MIGRATION_LEVEL);
         migrateLogsDatabase(db, logMigrationLevel);
     }
     else {
-        Com_Printf("logsDb is up to date!\n");
+        Com_Printf("    logsDb is up to date!\n");
     }
 
     sqlite3_close(db); // logs DB can get too large to run just in memory, therefore we're opening / closing it every time when it's needed.
     // can have a performance implication, but haven't seen any lag due to it in 3D which already runs the same logic.
     // FIXME if server gets weird lagouts every second or so, then look here.
-    Com_Printf("Database checks done!\n");
+    Com_PrintInfo("Database checks done!\n");
+}
+
+
+void unloadInMemoryDatabases(void) {
+    backupInMemoryDatabases();
+    sqlite3_exec(gameDb, "DETACH DATABASE game", NULL, NULL, NULL);
+    sqlite3_close(gameDb);
+}
+
+void backupInMemoryDatabases(void) {
+    sqlite3_backup* pBackup;    // Boe!Man 5/27/13: Backup handle used to copy data.
+    sqlite3* pFile;
+    int             rc;
+
+    rc = sqlite3_open("./1fx/databases/game.db", &pFile);
+
+    if (rc) {
+        logSystem(LOGLEVEL_WARN, "Opening in-memory database game.db for backups failed. Code: %d, message: %s\n", rc, sqlite3_errmsg(pFile));
+        return;
+    }
+
+    // Boe!Man 7/1/13: Fixed the backup being very slow when databases are relatively full, can especially be noted when restarting the map.
+    sqlite3_exec(pFile, "PRAGMA synchronous = OFF", NULL, NULL, NULL);
+    sqlite3_exec(pFile, "BEGIN TRANSACTION", NULL, NULL, NULL);
+
+    pBackup = sqlite3_backup_init(pFile, "main", gameDb, "main");
+
+    if (pBackup) {
+        sqlite3_backup_step(pBackup, -1);
+        // Boe!Man 5/27/13: Release resources allocated by backup_init().
+        sqlite3_backup_finish(pBackup);
+    }
+
+    rc = sqlite3_errcode(pFile);
+    if (rc) {
+        logSystem(LOGLEVEL_WARN, "Backing up in-memory databases failed with error code %d. Message: %s\n", rc, sqlite3_errmsg(pFile));
+    }
+
+    sqlite3_exec(pFile, "COMMIT", NULL, NULL, NULL);
+    sqlite3_close(pFile);
 }
 
 

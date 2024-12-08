@@ -1165,7 +1165,7 @@ static void G_SayTo( gentity_t *ent, gentity_t *other, int mode, const char *nam
 {
     qboolean     ghost = qfalse;
     qboolean     spec  = qfalse;
-    const char*  type;
+    const char* teamPrefix, *adminPrefix;
 
     if (!other)
     {
@@ -1222,20 +1222,22 @@ static void G_SayTo( gentity_t *ent, gentity_t *other, int mode, const char *nam
         }
     }
 
-    type = "";
+    teamPrefix = "";
     if ( ghost )
     {
-        type = "*ghost* ";
+        teamPrefix = "*ghost* ";
     }
     else if ( spec )
     {
-        type = "*spec* ";
+        teamPrefix = "*spec* ";
     }
 
-    trap_SendServerCommand( other-g_entities, va("%s %d \"%s%s%s\"",
+    adminPrefix = getAdminNameByAdminLevel(ent->client->sess.adminLevel);
+
+    trap_SendServerCommand( other-g_entities, va("%s %d \"%s%s%s%s%s\"",
                             mode == SAY_TEAM ? "tchat" : "chat",
                             ent->s.number,
-                            type, name, message));
+                            teamPrefix, adminPrefix, strlen(adminPrefix) ? " " : "", name, message));
 }
 
 /*
@@ -1393,8 +1395,17 @@ void G_Say ( gentity_t *ent, gentity_t *target, int mode, const char *chatText )
 Cmd_Say_f
 ==================
 */
-static void Cmd_Say_f( gentity_t *ent, int mode, qboolean arg0 ) {
+static void Cmd_Say_f( gentity_t *ent, int mode, qboolean arg0 ) { // JANFIXME - the purpose of arg0 if it's not in use at all?
     char        *p;
+
+    if (!ent || !ent->client) {
+        return;
+    }
+
+    // Boe!Man 4/30/14: Check if the client said this while in-game and not in the loading screen (to avoid spam).
+    if (!ent->client->pers.enterTime) {
+        return;
+    }
 
     if ( trap_Argc () < 2 && !arg0 ) {
         return;

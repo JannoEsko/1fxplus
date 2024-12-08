@@ -28,12 +28,16 @@ gametypeLocals_t    gametype;
 
 vmCvar_t            gt_flagReturnTime;
 vmCvar_t            gt_simpleScoring;
+vmCvar_t            gt_allowFlagReturns;
+vmCvar_t            gt_flagCaptureType;
 
 static cvarTable_t gametypeCvarTable[] =
 {
     // don't override the cheat state set by the system
     { &gt_flagReturnTime,   "gt_flagReturnTime",    "30", CVAR_ARCHIVE, 0.0f, 0.0f, 0, qfalse },
     { &gt_simpleScoring,    "gt_simpleScoring",     "0",  CVAR_ARCHIVE, 0.0f, 0.0f, 0, qfalse },
+    { &gt_allowFlagReturns,    "gt_allowFlagReturns",     "1",  CVAR_ARCHIVE, 0.0f, 0.0f, 0, qfalse },
+    { &gt_flagCaptureType,    "gt_flagCaptureType",     "0",  CVAR_ARCHIVE, 0.0f, 0.0f, 0, qfalse }, // 0 = dont allow capturing if flag is not at base, 1 => allow capturing
     { NULL, NULL, NULL, 0, 0.0f, 0.0f, 0, qfalse },
 };
 
@@ -160,6 +164,8 @@ void GT_Init ( void )
     memset ( &triggerDef, 0, sizeof(triggerDef) );
     trap_Cmd_RegisterTrigger ( TRIGGER_REDCAPTURE, "red_capture_point", &triggerDef );
     trap_Cmd_RegisterTrigger ( TRIGGER_BLUECAPTURE, "blue_capture_point", &triggerDef );
+    gametype.blueFlagAtBase = qtrue;
+    gametype.redFlagAtBase = qtrue;
 }
 
 /*
@@ -181,6 +187,7 @@ void GT_RunFrame ( int time )
         trap_Cmd_SetHUDIcon ( 0, gametype.iconRedFlag );
         trap_Cmd_StartGlobalSound ( gametype.flagReturnSound );
         gametype.redFlagDropTime = 0;
+        gametype.redFlagAtBase = qtrue;
     }
 
     // See if we need to return the blue flag yet
@@ -191,6 +198,7 @@ void GT_RunFrame ( int time )
         trap_Cmd_SetHUDIcon ( 1, gametype.iconBlueFlag );
         trap_Cmd_StartGlobalSound ( gametype.flagReturnSound );
         gametype.blueFlagDropTime = 0;
+        gametype.blueFlagAtBase = qtrue;
     }
 
     GT_UpdateCvars ( );
@@ -223,6 +231,7 @@ int GT_Event ( int cmd, int time, int arg0, int arg1, int arg2, int arg3, int ar
                     trap_Cmd_StartGlobalSound ( gametype.flagReturnSound );
                     gametype.redFlagDropTime = 0;
                     trap_Cmd_SetHUDIcon ( 0, gametype.iconRedFlag );
+                    gametype.redFlagAtBase = qtrue;
                     return 1;
 
                 case ITEM_BLUEFLAG:
@@ -231,6 +240,7 @@ int GT_Event ( int cmd, int time, int arg0, int arg1, int arg2, int arg3, int ar
                     trap_Cmd_StartGlobalSound ( gametype.flagReturnSound );
                     gametype.blueFlagDropTime = 0;
                     trap_Cmd_SetHUDIcon ( 1, gametype.iconBlueFlag );
+                    gametype.blueFlagAtBase = qtrue;
                     return 1;
             }
 
@@ -273,8 +283,22 @@ int GT_Event ( int cmd, int time, int arg0, int arg1, int arg2, int arg3, int ar
                         trap_Cmd_RadioMessage ( arg1, "got_it" );
                         trap_Cmd_SetHUDIcon ( 1, gametype.iconBlueFlagCarried );
                         gametype.blueFlagDropTime = 0;
+                        gametype.blueFlagAtBase = qfalse;
 
                         return 1;
+                    }
+                    else if (!gametype.blueFlagAtBase && gt_allowFlagReturns.integer && arg2 == TEAM_BLUE) {
+
+                        char clientname[MAX_QPATH];
+                        trap_Cmd_GetClientName(arg1, clientname, MAX_QPATH);
+
+                        trap_Cmd_TextMessage(-1, va("%s has returned the Blue Flag!", clientname));
+                        trap_Cmd_SetHUDIcon(0, gametype.iconBlueFlagCarried);
+                        gametype.blueFlagDropTime = 0;
+                        gametype.blueFlagAtBase = qtrue;
+                        trap_Cmd_ResetItem(ITEM_BLUEFLAG);
+
+                        return 0;
                     }
                     break;
 
@@ -288,8 +312,22 @@ int GT_Event ( int cmd, int time, int arg0, int arg1, int arg2, int arg3, int ar
                         trap_Cmd_RadioMessage ( arg1, "got_it" );
                         trap_Cmd_SetHUDIcon ( 0, gametype.iconRedFlagCarried );
                         gametype.redFlagDropTime = 0;
+                        gametype.redFlagAtBase = qfalse;
 
                         return 1;
+                    }
+                    else if (!gametype.redFlagAtBase && gt_allowFlagReturns.integer && arg2 == TEAM_RED) {
+
+                        char clientname[MAX_QPATH];
+                        trap_Cmd_GetClientName(arg1, clientname, MAX_QPATH);
+
+                        trap_Cmd_TextMessage(-1, va("%s has returned the Red Flag!", clientname));
+                        trap_Cmd_SetHUDIcon(0, gametype.iconRedFlagCarried);
+                        gametype.redFlagDropTime = 0;
+                        gametype.redFlagAtBase = qtrue;
+                        trap_Cmd_ResetItem(ITEM_REDFLAG);
+
+                        return 0;
                     }
                     break;
             }
@@ -300,7 +338,7 @@ int GT_Event ( int cmd, int time, int arg0, int arg1, int arg2, int arg3, int ar
             switch ( arg0 )
             {
                 case TRIGGER_BLUECAPTURE:
-                    if ( trap_Cmd_DoesClientHaveItem ( arg1, ITEM_REDFLAG ) )
+                    if ( trap_Cmd_DoesClientHaveItem ( arg1, ITEM_REDFLAG ) && ((!gt_flagCaptureType.integer && gametype.blueFlagAtBase) || gt_flagCaptureType.integer))
                     {
                         char clientname[MAX_QPATH];
                         trap_Cmd_GetClientName ( arg1, clientname, MAX_QPATH );
@@ -315,12 +353,13 @@ int GT_Event ( int cmd, int time, int arg0, int arg1, int arg2, int arg3, int ar
                             trap_Cmd_AddClientScore ( arg1, 10 );
                         }
                         gametype.redFlagDropTime = 0;
+                        gametype.redFlagAtBase = qtrue;
                         return 1;
                     }
                     break;
 
                 case TRIGGER_REDCAPTURE:
-                    if ( trap_Cmd_DoesClientHaveItem ( arg1, ITEM_BLUEFLAG ) )
+                    if ( trap_Cmd_DoesClientHaveItem ( arg1, ITEM_BLUEFLAG ) && ((!gt_flagCaptureType.integer && gametype.redFlagAtBase) || gt_flagCaptureType.integer))
                     {
                         char clientname[MAX_QPATH];
                         trap_Cmd_GetClientName ( arg1, clientname, MAX_QPATH );
@@ -336,6 +375,7 @@ int GT_Event ( int cmd, int time, int arg0, int arg1, int arg2, int arg3, int ar
                         }
 
                         gametype.blueFlagDropTime = 0;
+                        gametype.blueFlagAtBase = qtrue;
                         return 1;
                     }
                     break;

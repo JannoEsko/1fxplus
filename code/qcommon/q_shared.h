@@ -132,7 +132,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #ifdef _WIN32
   // vsnprintf is ISO/IEC 9899:1999
   // abstracting this to make it portable
-  int Q_vsnprintf(char *str, size_t size, const char *format, va_list ap);
+int Q_vsnprintf(char *str, size_t size, const char *format, va_list ap);
 #else
   #define Q_vsnprintf vsnprintf
 #endif
@@ -272,6 +272,10 @@ void *Hunk_Alloc( int size, ha_pref preference );
 
 #define Com_Memset memset
 #define Com_Memcpy memcpy
+
+#ifdef _WIN32
+#define snprintf _snprintf
+#endif
 
 /*
 ==============================================================
@@ -747,6 +751,9 @@ void Info_NextPair( const char **s, char *key, char *value );
 // this is only here so the functions in q_shared.c and bg_*.c can link
 void    QDECL Com_Error( int level, const char *error, ... ) __attribute__ ((noreturn, format(printf, 2, 3)));
 void    QDECL Com_Printf( const char *msg, ... ) __attribute__ ((format (printf, 1, 2)));
+void    QDECL Com_PrintInfo(const char* msg, ...) __attribute__((format(printf, 1, 2)));
+void    QDECL Com_PrintWarn(const char* msg, ...) __attribute__((format(printf, 1, 2)));
+void    QDECL Com_PrintLog(const char* msg, ...) __attribute__((format(printf, 1, 2)));
 
 
 /*

@@ -1047,7 +1047,8 @@ void ClientUserinfoChanged( int clientNum )
     // set name
     Q_strncpyz ( oldname, client->pers.netname, sizeof( oldname ) );
     s = Info_ValueForKey (userinfo, "name");
-    G_ClientCleanName( s, client->pers.netname, sizeof(client->pers.netname), level.gametypeData->teams?qfalse:qtrue );
+    G_ClientCleanName( s, client->pers.cleanName, sizeof(client->pers.cleanName), qfalse );
+    G_ClientCleanName(s, client->pers.netname, sizeof(client->pers.netname), qtrue);
 
     if ( client->sess.team == TEAM_SPECTATOR )
     {

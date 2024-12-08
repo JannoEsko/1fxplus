@@ -65,6 +65,9 @@ typedef struct {
     int     iconBlueFlagDropped;
     int     iconRedFlagCarried;
     int     iconBlueFlagCarried;
+
+    qboolean    blueFlagAtBase;
+    qboolean    redFlagAtBase;
 } gametypeLocals_t;
 
 //=============================================

@@ -93,6 +93,64 @@ vmCvar_t    ac_allowcross;
 vmCvar_t    ac_norecoil;
 vmCvar_t    rox_support;
 
+vmCvar_t    sv_legacyClientMod;
+vmCvar_t    sv_clientMod;
+
+vmCvar_t    g_badminPrefix;
+vmCvar_t    g_adminPrefix;
+vmCvar_t    g_sadminPrefix;
+vmCvar_t    g_hadminPrefix;
+vmCvar_t    g_rconPrefix;
+
+vmCvar_t    g_inviewFile;
+vmCvar_t    g_weaponFile;
+
+// Admin permissions.
+vmCvar_t    a_adminlist;
+vmCvar_t    a_badmin;
+vmCvar_t    a_admin;
+vmCvar_t    a_sadmin;
+vmCvar_t    a_hadmin;
+vmCvar_t    a_scorelimit;
+vmCvar_t    a_timelimit;
+vmCvar_t    a_swapteams;
+vmCvar_t    a_compmode;
+vmCvar_t    a_plant;
+vmCvar_t    a_roundtimelimit;
+vmCvar_t    a_runover;
+vmCvar_t    a_rollercoaster;
+vmCvar_t    a_respawn;
+vmCvar_t    a_mapswitch;
+vmCvar_t    a_strip;
+vmCvar_t    a_forceteam;
+vmCvar_t    a_blockseek;
+vmCvar_t    a_nosection;
+vmCvar_t    a_shuffleteams;
+vmCvar_t    a_nades;
+vmCvar_t    a_respawninterval;
+vmCvar_t    a_damage;
+vmCvar_t    a_gtrestart;
+vmCvar_t    a_clan;
+vmCvar_t    a_ban;
+vmCvar_t    a_broadcast;
+vmCvar_t    a_subnetban;
+vmCvar_t    a_eventeams;
+vmCvar_t    a_clanvsall;
+vmCvar_t    a_lock;
+vmCvar_t    a_flash;
+vmCvar_t    a_forcevote;
+vmCvar_t    a_pause;
+vmCvar_t    a_burn;
+vmCvar_t    a_kick;
+vmCvar_t    a_mute;
+vmCvar_t    a_friendlyFire;
+vmCvar_t    a_rename;
+vmCvar_t    a_3rd;
+vmCvar_t    a_toggleweapon;
+vmCvar_t    a_anticamp;
+vmCvar_t    a_pop;
+vmCvar_t    a_uppercut;
+
 static cvarTable_t gameCvarTable[] =
 {
     // don't override the cheat state set by the system
@@ -173,9 +231,9 @@ static cvarTable_t gameCvarTable[] =
     { &g_roundstartdelay,   "g_roundstartdelay", "5",       CVAR_ARCHIVE, 0.0, 0.0, 0, qfalse },
 
     // 1.03 CHANGE - Rename availableWeapons Cvar which might confuse old map cycles
-    { &g_availableWeapons,  "g_available", "0", CVAR_SERVERINFO|CVAR_ROM|CVAR_LATCH, 0.0, 0.0, 0, qfalse },
-    { NULL,  "g_availableWeapons", "0", CVAR_SERVERINFO | CVAR_ROM | CVAR_LATCH, 0.0, 0.0, 0, qfalse },
-    { NULL,  "availableWeapons", "0", CVAR_SERVERINFO | CVAR_ROM | CVAR_LATCH, 0.0, 0.0, 0, qfalse },
+    { &g_availableWeapons,  "g_available", "0", CVAR_SERVERINFO|CVAR_LATCH, 0.0, 0.0, 0, qfalse },
+    { NULL,  "g_availableWeapons", "0", CVAR_SERVERINFO | CVAR_ROM, 0.0, 0.0, 0, qfalse },
+    { NULL,  "legacy_availableWpns", "0", CVAR_ROM, 0.0, 0.0, 0, qfalse },
 
     { NULL,                 "disable_weapon_knife",                 "0", CVAR_ARCHIVE|CVAR_LATCH, 0.0, 0.0, 0, qfalse },
     { NULL,                 "disable_pickup_weapon_US_SOCOM",       "0", CVAR_ARCHIVE|CVAR_LATCH, 0.0, 0.0, 0, qfalse },
@@ -224,6 +282,65 @@ static cvarTable_t gameCvarTable[] =
     { &ac_allowcross,    "ac_allowcross",     "1",        CVAR_ARCHIVE | CVAR_LATCH | CVAR_SERVERINFO,   0.0f,   0.0f,   0,  qfalse },
     { &ac_norecoil,    "ac_norecoil",     "0",        CVAR_ARCHIVE | CVAR_LATCH | CVAR_SERVERINFO,   0.0f,   0.0f,   0,  qfalse },
     { &rox_support,    "rox_support",     "1",        CVAR_ARCHIVE | CVAR_LATCH | CVAR_SERVERINFO,   0.0f,   0.0f,   0,  qfalse },
+    { &sv_legacyClientMod,    "sv_legacyClientMod",     "",        CVAR_ARCHIVE | CVAR_LATCH,   0.0f,   0.0f,   0,  qfalse },
+    { &sv_clientMod,    "sv_clientMod",     "",        CVAR_ARCHIVE | CVAR_LATCH,   0.0f,   0.0f,   0,  qfalse },
+
+    { &g_badminPrefix,    "g_badminPrefix",     "^CB^b-^kA^+d^7min",        CVAR_ARCHIVE,   0.0f,   0.0f,   0,  qfalse },
+    { &g_adminPrefix,    "g_adminPrefix",     "^CA^bd^km^+i^7n",        CVAR_ARCHIVE,   0.0f,   0.0f,   0,  qfalse },
+    { &g_sadminPrefix,    "g_sadminPrefix",     "^CS^b-^kA^+d^7min",        CVAR_ARCHIVE,   0.0f,   0.0f,   0,  qfalse },
+    { &g_hadminPrefix,    "g_hadminPrefix",     "^CH^b-^kA^+d^7min",        CVAR_ARCHIVE,   0.0f,   0.0f,   0,  qfalse },
+    { &g_rconPrefix,    "g_rconPrefix",     "^CS^be^kr^+v^7er",        CVAR_ARCHIVE,   0.0f,   0.0f,   0,  qfalse },
+
+    { &g_inviewFile,    "g_inviewFile",     "wpndata/italy.inview",        CVAR_ARCHIVE,   0.0f,   0.0f,   0,  qfalse },
+
+    { &g_weaponFile,    "g_weaponFile",     "wpndata/italy_nd.wpn",        CVAR_ARCHIVE,   0.0f,   0.0f,   0,  qfalse },
+
+    // Admin cvars
+    { &a_adminlist,    "a_adminlist",     "2",        CVAR_ARCHIVE,   0.0f,   0.0f,   0,  qfalse },
+    { &a_badmin,    "a_badmin",     "2",        CVAR_ARCHIVE,   0.0f,   0.0f,   0,  qfalse },
+    { &a_admin,    "a_admin",     "3",        CVAR_ARCHIVE,   0.0f,   0.0f,   0,  qfalse },
+    { &a_sadmin,    "a_sadmin",     "4",        CVAR_ARCHIVE,   0.0f,   0.0f,   0,  qfalse },
+    { &a_hadmin,    "a_hadmin",     "5",        CVAR_ARCHIVE,   0.0f,   0.0f,   0,  qfalse },
+    { &a_scorelimit,    "a_scorelimit",     "2",        CVAR_ARCHIVE,   0.0f,   0.0f,   0,  qfalse },
+    { &a_timelimit,    "a_timelimit",     "2",        CVAR_ARCHIVE,   0.0f,   0.0f,   0,  qfalse },
+    { &a_swapteams,    "a_swapteams",     "2",        CVAR_ARCHIVE,   0.0f,   0.0f,   0,  qfalse },
+    { &a_compmode,    "a_compmode",     "1",        CVAR_ARCHIVE,   0.0f,   0.0f,   0,  qfalse },
+    { &a_plant,    "a_plant",     "1",        CVAR_ARCHIVE,   0.0f,   0.0f,   0,  qfalse },
+    { &a_roundtimelimit,    "a_roundtimelimit",     "2",        CVAR_ARCHIVE,   0.0f,   0.0f,   0,  qfalse },
+    { &a_runover,    "a_runover",     "1",        CVAR_ARCHIVE,   0.0f,   0.0f,   0,  qfalse },
+    { &a_rollercoaster,    "a_rollercoaster",     "1",        CVAR_ARCHIVE,   0.0f,   0.0f,   0,  qfalse },
+    { &a_respawn,    "a_respawn",     "1",        CVAR_ARCHIVE,   0.0f,   0.0f,   0,  qfalse },
+    { &a_mapswitch,    "a_mapswitch",     "2",        CVAR_ARCHIVE,   0.0f,   0.0f,   0,  qfalse },
+    { &a_strip,    "a_strip",     "1",        CVAR_ARCHIVE,   0.0f,   0.0f,   0,  qfalse },
+    { &a_forceteam,    "a_forceteam",     "1",        CVAR_ARCHIVE,   0.0f,   0.0f,   0,  qfalse },
+    { &a_blockseek,    "a_blockseek",     "1",        CVAR_ARCHIVE,   0.0f,   0.0f,   0,  qfalse },
+    { &a_nosection,    "a_nosection",     "3",        CVAR_ARCHIVE,   0.0f,   0.0f,   0,  qfalse },
+    { &a_shuffleteams,    "a_shuffleteams",     "2",        CVAR_ARCHIVE,   0.0f,   0.0f,   0,  qfalse },
+    { &a_nades,    "a_nades",     "2",        CVAR_ARCHIVE,   0.0f,   0.0f,   0,  qfalse },
+    { &a_respawninterval,    "a_respawninterval",     "2",        CVAR_ARCHIVE,   0.0f,   0.0f,   0,  qfalse },
+    { &a_damage,    "a_damage",     "3",        CVAR_ARCHIVE,   0.0f,   0.0f,   0,  qfalse },
+    { &a_gtrestart,    "a_gtrestart",     "1",        CVAR_ARCHIVE,   0.0f,   0.0f,   0,  qfalse },
+    { &a_clan,    "a_clan",     "2",        CVAR_ARCHIVE,   0.0f,   0.0f,   0,  qfalse },
+    { &a_ban,    "a_ban",     "3",        CVAR_ARCHIVE,   0.0f,   0.0f,   0,  qfalse },
+    { &a_broadcast,    "a_broadcast",     "1",        CVAR_ARCHIVE,   0.0f,   0.0f,   0,  qfalse },
+    { &a_subnetban,    "a_subnetban",     "4",        CVAR_ARCHIVE,   0.0f,   0.0f,   0,  qfalse },
+    { &a_eventeams,    "a_eventeams",     "1",        CVAR_ARCHIVE,   0.0f,   0.0f,   0,  qfalse },
+    { &a_clanvsall,    "a_clanvsall",     "2",        CVAR_ARCHIVE,   0.0f,   0.0f,   0,  qfalse },
+    { &a_lock,    "a_lock",     "1",        CVAR_ARCHIVE,   0.0f,   0.0f,   0,  qfalse },
+    { &a_flash,    "a_flash",     "3",        CVAR_ARCHIVE,   0.0f,   0.0f,   0,  qfalse },
+    { &a_forcevote,    "a_forcevote",     "3",        CVAR_ARCHIVE,   0.0f,   0.0f,   0,  qfalse },
+    { &a_pause,    "a_pause",     "1",        CVAR_ARCHIVE,   0.0f,   0.0f,   0,  qfalse },
+    { &a_burn,    "a_burn",     "1",        CVAR_ARCHIVE,   0.0f,   0.0f,   0,  qfalse },
+    { &a_kick,    "a_kick",     "1",        CVAR_ARCHIVE,   0.0f,   0.0f,   0,  qfalse },
+    { &a_mute,    "a_mute",     "1",        CVAR_ARCHIVE,   0.0f,   0.0f,   0,  qfalse },
+    { &a_friendlyFire,    "a_friendlyFire",     "4",        CVAR_ARCHIVE,   0.0f,   0.0f,   0,  qfalse },
+    { &a_rename,    "a_rename",     "1",        CVAR_ARCHIVE,   0.0f,   0.0f,   0,  qfalse },
+    { &a_3rd,    "a_3rd",     "4",        CVAR_ARCHIVE,   0.0f,   0.0f,   0,  qfalse },
+    { &a_toggleweapon,    "a_toggleweapon",     "4",        CVAR_ARCHIVE,   0.0f,   0.0f,   0,  qfalse },
+    { &a_anticamp,    "a_anticamp",     "2",        CVAR_ARCHIVE,   0.0f,   0.0f,   0,  qfalse },
+    { &a_pop,    "a_pop",     "1",        CVAR_ARCHIVE,   0.0f,   0.0f,   0,  qfalse },
+    { &a_uppercut,    "a_uppercut",     "2",        CVAR_ARCHIVE,   0.0f,   0.0f,   0,  qfalse },
+
 };
 
 // bk001129 - made static to avoid aliasing
@@ -296,6 +413,7 @@ Q_EXPORT intptr_t vmMain( int command, intptr_t arg0, intptr_t arg1, intptr_t ar
             return 0;
         case GAME_RCON_LOG:
             // JANFIXME TODO Add rconlogging.
+            logRcon();
             return 0;
     }
 
@@ -457,6 +575,40 @@ void G_UpdateCvars( void )
     }
 }
 
+void G_SetDisabledWeapons(void) {
+
+    for (int i = WP_KNIFE; i < WP_NUM_WEAPONS; i++) {
+        gitem_t* item = BG_FindWeaponItem(i);
+
+        if (g_availableWeapons.string[i - 1] == '0') {
+            trap_Cvar_Set(va("disable_%s", item->classname), "1");
+        }
+        else if (g_availableWeapons.string[i - 1] == '2') {
+            trap_Cvar_Set(va("disable_%s", item->classname), "0");
+        }
+        else {
+            trap_Cvar_Set(va("disable_%s", item->classname), "2");
+        }
+    }
+
+}
+
+static void G_TranslateGoldAvailableWpnsToSilver(const char* input, char* output, int outputSize) {
+
+    memset(output, '0', outputSize);
+    output[outputSize - 1] = '\0';
+
+    for (int i = L_WP_KNIFE; i < L_WP_NUM_WEAPONS; i++) {
+        int goldWpn = trap_TranslateSilverWeaponToGoldWeapon(i);
+        if (goldWpn < WP_KNIFE || goldWpn > WP_NUM_WEAPONS - 1) {
+            output[i - 1] = '0';
+        }
+        else {
+            output[i - 1] = input[goldWpn - 1];
+        }
+    }
+}
+
 /*
 ===============
 G_UpdateAvailableWeapons
@@ -497,7 +649,14 @@ void G_UpdateAvailableWeapons ( void )
 
     // 1.03 CHANGE - Rename availableWeapons Cvar which might confuse old map cycles
     trap_Cvar_Set ( "g_available", available );
-    trap_Cvar_Set("availableWeapons", available);
+    trap_Cvar_Set("g_availableWeapons", available);
+
+    if (level.multiprotocol) {
+        char silverAvailableWeapons[L_WP_NUM_WEAPONS];
+        G_TranslateGoldAvailableWpnsToSilver(available, silverAvailableWeapons, sizeof(silverAvailableWeapons));
+        trap_Cvar_Set("legacy_availableWpns", silverAvailableWeapons);
+    }
+
     trap_Cvar_Update ( &g_availableWeapons );
 }
 /*
@@ -508,7 +667,7 @@ Takes the actual gametype (e.g. h&s) and translates it to a public value.
 Public value will be used for example in info query and in configstring.
 ===============
 */
-char* G_TranslateGametypeToPublicGametype(char* gametype) {
+ char* G_TranslateGametypeToPublicGametype(char* gametype) {
 
     if (!Q_stricmp(gametype, "h&s")) {
         return "inf";
@@ -611,6 +770,50 @@ void G_SetGametype ( const char* gametype )
 
 }
 
+static void G_InitClientMod(void) {
+
+    if (sv_legacyClientMod.string && strlen(sv_legacyClientMod.string) > 0) {
+
+        if (!Q_stricmp(sv_legacyClientMod.string, "RPM")) {
+            trap_Cvar_Register(NULL, "modname", "RPM 2 k 3 v2.00 ^_- ^31fxplus", CVAR_SERVERINFO | CVAR_ROM, 0.0, 0.0);
+            level.legacyMod = CL_RPM;
+            Com_PrintInfo("Legacy clientmod ^1R^3P^4M ^7loaded!\n");
+        }
+        else {
+            Com_PrintWarn("Legacy client mod \"%s\" is unknown.\n", sv_legacyClientMod.string);
+        }
+        
+    }
+
+    if (sv_clientMod.string && strlen(sv_clientMod.string) > 0) {
+        if (!Q_stricmp(sv_clientMod.string, "rocmod")) {
+            // Register ROCmod specific CVARs.
+            //if (!g_enforce1fxAdditions.integer) {
+                // Our ROCmod client with 1fx. additions properly reads the 1fx. Mod server version.
+                trap_Cvar_Register(NULL, "sv_modVersion", "| ^71fx^1plus. 2.1c", CVAR_SYSTEMINFO | CVAR_ROM, 0.0, 0.0);
+            //}
+
+            //trap_Cvar_Register(NULL, "g_allowCustomTeams", "1", CVAR_SYSTEMINFO | CVAR_ROM, 0.0, 0.0);
+            //trap_Cvar_Register(NULL, "g_customRedName", va("%s^7 Team", server_redteamprefix.string), CVAR_SYSTEMINFO | CVAR_ROM, 0.0, 0.0);
+            //trap_Cvar_Register(NULL, "g_customBlueName", va("%s^7 Team", server_blueteamprefix.string), CVAR_SYSTEMINFO | CVAR_ROM, 0.0, 0.0);
+
+            // Automatic demo recording in ROCmod.
+            trap_Cvar_Register(NULL, "g_autoMatchDemo", "1", CVAR_ARCHIVE, 0.0, 0.0);
+            trap_Cvar_Register(NULL, "inMatch", "0", CVAR_SYSTEMINFO | CVAR_ROM | CVAR_TEMP, 0.0, 0.0);
+
+            // Client death messages are handled by client.
+            //g_clientDeathMessages.integer = 1;
+
+            level.goldMod = CL_ROCMOD;
+            Com_PrintInfo("Clientmod ^1ROCmod ^7loaded!\n");
+        }
+        else {
+            Com_PrintWarn("Client mod \"%s\" is unknown.\n", sv_clientMod.string);
+        }
+    }
+
+}
+
 /*
 ============
 G_InitGame
@@ -654,6 +857,7 @@ void G_InitGame( int levelTime, int randomSeed, int restart )
         trap_Cvar_Set("disable_pickup_weapon_MP5", "1");
         trap_Cvar_Set("disable_pickup_weapon_SIG551", "1");
     }
+    G_SetDisabledWeapons();
     G_UpdateAvailableWeapons ( );
 
     // Set the available outfitting
@@ -766,6 +970,9 @@ void G_InitGame( int levelTime, int randomSeed, int restart )
 
     G_RemapTeamShaders();
 
+    // Load clientmod specifics
+    G_InitClientMod();
+
     // Before gametype starts, we load the databases and also parse the session (once it's built......... :))
 
     loadDatabases();
@@ -812,6 +1019,9 @@ void G_ShutdownGame( int restart )
     }
 #endif
 
+    Com_PrintInfo("Unloading in-memory databases...\n");
+    unloadInMemoryDatabases();
+
     // Shutdown the gametype last.
     // Don't make any system calls beyond this point.
     trap_GT_Shutdown();
@@ -840,6 +1050,59 @@ void QDECL Com_Printf( const char *msg, ... ) {
     va_end (argptr);
 
     trap_Print( text );
+}
+
+void QDECL Com_PrintInfo(const char* msg, ...) {
+    va_list argptr;
+    char formattedMsg[1012];
+    char finalMsg[1012 + 12]; // Reserve extra space for the prefix "^l[INFO] ^7"
+
+    // Format the original message
+    va_start(argptr, msg);
+    Q_vsnprintf(formattedMsg, sizeof(formattedMsg), msg, argptr);
+    va_end(argptr);
+
+    // Prepend the prefix
+    snprintf(finalMsg, sizeof(finalMsg), "^l[INFO] ^7%s", formattedMsg);
+
+    // Print the final message
+    trap_Print(finalMsg);
+}
+
+
+void QDECL Com_PrintWarn(const char* msg, ...) {
+    va_list argptr;
+    char formattedMsg[1008];
+    char finalMsg[1008 + 16]; // Reserve extra space for the prefix "^l[INFO] ^7"
+
+    // Format the original message
+    va_start(argptr, msg);
+    Q_vsnprintf(formattedMsg, sizeof(formattedMsg), msg, argptr);
+    va_end(argptr);
+
+    // Prepend the prefix
+    snprintf(finalMsg, sizeof(finalMsg), "^1[WARNING] ^7%s", formattedMsg);
+
+    // Print the final message
+    trap_Print(finalMsg);
+}
+
+
+void QDECL Com_PrintLog(const char* msg, ...) {
+    va_list argptr;
+    char formattedMsg[1012];
+    char finalMsg[1012 + 12]; // Reserve extra space for the prefix "^l[INFO] ^7"
+
+    // Format the original message
+    va_start(argptr, msg);
+    Q_vsnprintf(formattedMsg, sizeof(formattedMsg), msg, argptr);
+    va_end(argptr);
+
+    // Prepend the prefix
+    snprintf(finalMsg, sizeof(finalMsg), "^3[LOG] ^7%s", formattedMsg);
+
+    // Print the final message
+    trap_Print(finalMsg);
 }
 
 /*

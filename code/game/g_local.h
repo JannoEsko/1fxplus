@@ -225,6 +225,24 @@ typedef struct
 #define FOLLOW_ACTIVE1  -1
 #define FOLLOW_ACTIVE2  -2
 
+// Admin levels.
+typedef enum admLevel_e {
+    ADMLVL_NONE,
+    ADMLVL_BADMIN,
+    ADMLVL_ADMIN,
+    ADMLVL_SADMIN,
+    ADMLVL_HADMIN // head admin. At least in 3D, we've had challenges in the past as the s-admin part starts from Captain, that we still need RCON (or dev) for some commands.
+                  // Theoretically headadmin should give us enough room for it - upper staff = headadmin, sadmin = e.g. captains, editors etc.
+} admLevel;
+
+typedef enum admType_e {
+    ADMTYPE_NONE,
+    ADMTYPE_IP,
+    ADMTYPE_LOGIN,
+    ADMTYPE_OTP,
+    ADMTYPE_GUID
+} admType;
+
 // client data that stays across multiple levels or map restarts
 // this is achieved by writing all the data to cvar strings at game shutdown
 // time and reading them back at connection time.  Anything added here
@@ -247,8 +265,8 @@ typedef struct
     qboolean            muted;
 
     qboolean            legacyProtocol;
-    int                 adminLevel;
-    int                 adminLogonMethod;
+    admLevel            adminLevel;
+    admType             adminLogonMethod;
 
 } clientSession_t;
 
@@ -393,6 +411,13 @@ struct gclient_s
     vec3_t          minSave;
 };
 
+typedef enum {
+    CL_NONE,
+    CL_RPM,
+    CL_ROCMOD,
+    CL_1FXROCMOD
+} clientMod;
+
 
 //
 // this structure is cleared as each map is entered
@@ -526,6 +551,8 @@ typedef struct
     char            autokickedIP[MAX_AUTOKICKLIST][20];
 
     qboolean        multiprotocol;
+    clientMod       legacyMod;
+    clientMod       goldMod;
 
 } level_locals_t;
 
@@ -868,7 +895,7 @@ int BotAIStartFrame( int time );
 extern  level_locals_t  level;
 extern  gentity_t       g_entities[MAX_GENTITIES];
 
-#define FOFS(x) ((int)&(((gentity_t *)0)->x))
+#define FOFS(x) ((intptr_t)&(((gentity_t *)0)->x))
 
 extern  vmCvar_t    g_gametype;
 extern  vmCvar_t    g_dedicated;
@@ -938,6 +965,63 @@ extern  vmCvar_t    g_suddenDeath;
 extern  vmCvar_t    ac_allowcross;
 extern  vmCvar_t    ac_norecoil;
 extern  vmCvar_t    rox_support;
+
+extern  vmCvar_t    sv_legacyClientMod;
+extern  vmCvar_t    sv_clientMod;
+
+extern  vmCvar_t    g_badminPrefix;
+extern  vmCvar_t    g_adminPrefix;
+extern  vmCvar_t    g_sadminPrefix;
+extern  vmCvar_t    g_hadminPrefix;
+extern  vmCvar_t    g_rconPrefix;
+extern  vmCvar_t    g_inviewFile;
+
+extern  vmCvar_t    g_weaponFile;
+
+extern vmCvar_t    a_adminlist;
+extern vmCvar_t    a_badmin;
+extern vmCvar_t    a_admin;
+extern vmCvar_t    a_sadmin;
+extern vmCvar_t    a_hadmin;
+extern vmCvar_t    a_scorelimit;
+extern vmCvar_t    a_timelimit;
+extern vmCvar_t    a_swapteams;
+extern vmCvar_t    a_compmode;
+extern vmCvar_t    a_plant;
+extern vmCvar_t    a_roundtimelimit;
+extern vmCvar_t    a_runover;
+extern vmCvar_t    a_rollercoaster;
+extern vmCvar_t    a_respawn;
+extern vmCvar_t    a_mapswitch;
+extern vmCvar_t    a_strip;
+extern vmCvar_t    a_forceteam;
+extern vmCvar_t    a_blockseek;
+extern vmCvar_t    a_nosection;
+extern vmCvar_t    a_shuffleteams;
+extern vmCvar_t    a_nades;
+extern vmCvar_t    a_respawninterval;
+extern vmCvar_t    a_damage;
+extern vmCvar_t    a_gtrestart;
+extern vmCvar_t    a_clan;
+extern vmCvar_t    a_ban;
+extern vmCvar_t    a_broadcast;
+extern vmCvar_t    a_subnetban;
+extern vmCvar_t    a_eventeams;
+extern vmCvar_t    a_clanvsall;
+extern vmCvar_t    a_lock;
+extern vmCvar_t    a_flash;
+extern vmCvar_t    a_forcevote;
+extern vmCvar_t    a_pause;
+extern vmCvar_t    a_burn;
+extern vmCvar_t    a_kick;
+extern vmCvar_t    a_mute;
+extern vmCvar_t    a_friendlyFire;
+extern vmCvar_t    a_rename;
+extern vmCvar_t    a_3rd;
+extern vmCvar_t    a_toggleweapon;
+extern vmCvar_t    a_anticamp;
+extern vmCvar_t    a_pop;
+extern vmCvar_t    a_uppercut;
 
 void    trap_Print( const char *text );
 void    trap_Error( const char *text ) __attribute__((noreturn));
@@ -1164,6 +1248,8 @@ void        trap_GT_Shutdown    ( void );
 // custom traps.
 qboolean trap_IsClientLegacy(int clientNum);
 int trap_TranslateSilverWeaponToGoldWeapon(int weapon);
+int trap_TranslateGoldWeaponToSilverWeapon(int weapon);
+void trap_RegisterAvailableWpnsLegacyTranslation(char* legacyAvailableWpns);
 
 void G_UpdateClientAntiLag  ( gentity_t* ent );
 void G_UndoAntiLag          ( void );
@@ -1175,6 +1261,111 @@ void G_ApplyAntiLag         ( gentity_t* ref, qboolean enlargeHitBox );
 
 char* getNameOrArg(gentity_t* ent, char* arg, qboolean cleanName);
 void loadDatabases(void);
+void backupInMemoryDatabases(void);
+void unloadInMemoryDatabases(void);
 
-void logSystem();
+typedef enum {
+    LOGLEVEL_TEXT,
+    LOGLEVEL_INFO,
+    LOGLEVEL_WARN,
+    LOGLEVEL_ERROR,
+    LOGLEVEL_FATAL,
+    LOGLEVEL_FATAL_DB // this is used if we have a fatal DB-related error (most likely not usable DB), which means that if db logging is turned on, game will not try to log it into the DB because, well..., the DB part failed...
+} loggingLevel;
+
+void logSystem(loggingLevel logLevel, const char* msg, ...) __attribute__((format(printf, 2, 3)));
+void logRcon();
+#define MAX_CLIENT_MOD 10
+
+const char* getAdminNameByAdminLevel(admLevel adminLevel);
+void G_SetDisabledWeapons(void);
+
+// struct from 1fxmod
+typedef struct
+{
+    char* shortCmd; // Short admin command, example: !uc, !p(with space)
+    char* adminCmd; // Full Admin command for /adm and rcon, and with !.
+    int* adminLevel; // The level that the Admin needs to be in order to execute this command.
+    int     (*Function)(int argNum, gentity_t* adm, qboolean shortCmd); // Store pointer to the given function so we can call it later.
+    char* desc; // Description of the command in /adm.
+    char* params; // Description of the command in /adm.
+    char* suffix; // Suffix for post processing broadcast, or NULL when function doesn't use it/has no suffix.
+} admCmd_t;
+
+
+// admin.c
+extern int adminCommandsSize;
+extern admCmd_t adminCommands[];
+
+int adm_adminRemove(int argNum, gentity_t* adm, qboolean shortCmd);
+int adm_adminList(int argNum, gentity_t* adm, qboolean shortCmd);
+int adm_addAdmin(int argNum, gentity_t* adm, qboolean shortCmd);
+int adm_scoreLimit(int argNum, gentity_t* adm, qboolean shortCmd);
+int adm_timeLimit(int argNum, gentity_t* adm, qboolean shortCmd);
+int adm_swapTeams(int argNum, gentity_t* adm, qboolean shortCmd);
+int adm_Rounds(int argNum, gentity_t* adm, qboolean shortCmd);
+int adm_Plant(int argNum, gentity_t* adm, qboolean shortCmd);
+int adm_roundTimeLimit(int argNum, gentity_t* adm, qboolean shortCmd);
+int adm_Runover(int argNum, gentity_t* adm, qboolean shortCmd);
+int adm_Rollercoaster(int argNum, gentity_t* adm, qboolean shortCmd);
+int adm_Respawn(int argNum, gentity_t* adm, qboolean shortCmd);
+int adm_mapRestart(int argNum, gentity_t* adm, qboolean shortCmd);
+int adm_Strip(int argNum, gentity_t* adm, qboolean shortCmd);
+int adm_removeAdmin(int argNum, gentity_t* adm, qboolean shortCmd);
+int adm_forceTeam(int argNum, gentity_t* adm, qboolean shortCmd);
+int adm_blockSeek(int argNum, gentity_t* adm, qboolean shortCmd);
+int adm_blockSeekList(int argNum, gentity_t* adm, qboolean shortCmd);
+int adm_noLower(int argNum, gentity_t* adm, qboolean shortCmd);
+int adm_noRoof(int argNum, gentity_t* adm, qboolean shortCmd);
+int adm_noMiddle(int argNum, gentity_t* adm, qboolean shortCmd);
+int adm_noWhole(int argNum, gentity_t* adm, qboolean shortCmd);
+int adm_shuffleTeams(int argNum, gentity_t* adm, qboolean shortCmd);
+int adm_noNades(int argNum, gentity_t* adm, qboolean shortCmd);
+int adm_respawnInterval(int argNum, gentity_t* adm, qboolean shortCmd);
+int adm_realDamage(int argNum, gentity_t* adm, qboolean shortCmd);
+int adm_normalDamage(int argNum, gentity_t* adm, qboolean shortCmd);
+int adm_customDamage(int argNum, gentity_t* adm, qboolean shortCmd);
+int adm_gametypeRestart(int argNum, gentity_t* adm, qboolean shortCmd);
+int adm_addClanMember(int argNum, gentity_t* adm, qboolean shortCmd);
+int adm_removeClanMember(int argNum, gentity_t* adm, qboolean shortCmd);
+int adm_removeClanMemberFromList(int argNum, gentity_t* adm, qboolean shortCmd);
+int adm_clanList(int argNum, gentity_t* adm, qboolean shortCmd);
+int adm_compMode(int argNum, gentity_t* adm, qboolean shortCmd);
+int adm_banList(int argNum, gentity_t* adm, qboolean shortCmd);
+int adm_Ban(int argNum, gentity_t* adm, qboolean shortCmd);
+int adm_Unban(int argNum, gentity_t* adm, qboolean shortCmd);
+int adm_Broadcast(int argNum, gentity_t* adm, qboolean shortCmd);
+int adm_subnetbanList(int argNum, gentity_t* adm, qboolean shortCmd);
+int adm_subnetBan(int argNum, gentity_t* adm, qboolean shortCmd);
+int adm_subnetUnban(int argNum, gentity_t* adm, qboolean shortCmd);
+int adm_evenTeams(int argNum, gentity_t* adm, qboolean shortCmd);
+int adm_clanVsAll(int argNum, gentity_t* adm, qboolean shortCmd);
+int adm_lockTeam(int argNum, gentity_t* adm, qboolean shortCmd);
+int adm_Flash(int argNum, gentity_t* adm, qboolean shortCmd);
+int adm_Gametype(int argNum, gentity_t* adm, qboolean shortCmd);
+int adm_Map(int argNum, gentity_t* adm, qboolean shortCmd);
+int adm_mapCycle(int argNum, gentity_t* adm, qboolean shortCmd);
+int adm_passVote(int argNum, gentity_t* adm, qboolean shortCmd);
+int adm_cancelVote(int argNum, gentity_t* adm, qboolean shortCmd);
+int adm_Pause(int argNum, gentity_t* adm, qboolean shortCmd);
+int adm_Burn(int argNum, gentity_t* adm, qboolean shortCmd);
+int adm_Kick(int argNum, gentity_t* adm, qboolean shortCmd);
+int adm_Mute(int argNum, gentity_t* adm, qboolean shortCmd);
+int adm_friendlyFire(int argNum, gentity_t* adm, qboolean shortCmd);
+int adm_Rename(int argNum, gentity_t* adm, qboolean shortCmd);
+int adm_Switch(int argNum, gentity_t* adm, qboolean shortCmd);
+int adm_Third(int argNum, gentity_t* adm, qboolean shortCmd);
+int adm_toggleWeapon(int argNum, gentity_t* adm, qboolean shortCmd);
+int adm_Anticamp(int argNum, gentity_t* adm, qboolean shortCmd);
+int adm_endMap(int argNum, gentity_t* adm, qboolean shortCmd);
+int adm_mapList(int argNum, gentity_t* adm, qboolean shortCmd);
+int adm_matchIsBestOf(int argNum, gentity_t* adm, qboolean shortCmd);
+int adm_profanityList(int argNum, gentity_t* adm, qboolean shortCmd);
+int adm_Pop(int argNum, gentity_t* adm, qboolean shortCmd);
+int adm_Uppercut(int argNum, gentity_t* adm, qboolean shortCmd);
+int adm_Punish(int argNum, gentity_t* adm, qboolean shortCmd);
+int adm_punishList(int argNum, gentity_t* adm, qboolean shortCmd);
+int adm_mapCycleList(int argNum, gentity_t* adm, qboolean shortCmd);
+int adm_skipToMap(int argNum, gentity_t* adm, qboolean shortCmd);
+
 

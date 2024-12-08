@@ -102,6 +102,44 @@ typedef enum
     WP_NUM_WEAPONS
 } weapon_t;
 
+typedef enum
+{
+    L_WP_NONE,
+
+    // Knife
+    L_WP_KNIFE,
+
+    // Pistols
+    L_WP_M1911A1_PISTOL,
+    L_WP_USSOCOM_PISTOL,
+
+    // Secondarys
+    L_WP_M590_SHOTGUN,
+    L_WP_MICRO_UZI_SUBMACHINEGUN,
+    L_WP_M3A1_SUBMACHINEGUN,
+
+    // Primaries
+    L_WP_USAS_12_SHOTGUN,
+    L_WP_M4_ASSAULT_RIFLE,
+    L_WP_AK74_ASSAULT_RIFLE,
+    L_WP_MSG90A1,
+    L_WP_M60_MACHINEGUN,
+    L_WP_MM1_GRENADE_LAUNCHER,
+    L_WP_RPG7_LAUNCHER,
+
+    // Grenades
+    L_WP_M67_GRENADE,
+    L_WP_M84_GRENADE,
+    L_WP_F1_GRENADE,
+    L_WP_L2A2_GRENADE,
+    L_WP_MDN11_GRENADE,
+    L_WP_SMOHG92_GRENADE,
+    L_WP_ANM14_GRENADE,
+    L_WP_M15_GRENADE,
+
+    L_WP_NUM_WEAPONS
+} legacyWeapon_t;
+
 #define WP_DELAYED_CHANGE_BIT   (1<<5)
 
 typedef enum

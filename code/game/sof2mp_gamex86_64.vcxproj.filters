@@ -138,6 +138,9 @@
     <ClCompile Include="1fx\logging.c">
       <Filter>Source Files\1fx</Filter>
     </ClCompile>
+    <ClCompile Include="1fx\admin.c">
+      <Filter>Source Files\1fx</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ai_main.h">

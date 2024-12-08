@@ -1,0 +1,400 @@
+#include "../g_local.h"
+
+int minimumAdminLevel = ADMLVL_BADMIN;
+
+/*
+==================
+Admincommand list mostly as-is from current 3D-1fxmod.
+==================
+*/
+admCmd_t adminCommands[] = {
+	{"!adr",    "adminremove",      &minimumAdminLevel,         &adm_adminRemove,               "Remove an Admin from the list",    "<line #>",         NULL},
+	{"!adl",    "adminlist",        &a_adminlist.integer,       &adm_adminList,                 "Show the Adminlist",               "",                 NULL},
+	{"!al",     "adminlist",        &a_adminlist.integer,       &adm_adminList,                 "Show the Adminlist",               "",                 NULL},
+	{"!ab",     "addbadmin",        &a_badmin.integer,          &adm_addAdmin,                  "Basic Admin",                      "<i/n>",            NULL},
+	{"!aa",     "addadmin",         &a_admin.integer,           &adm_addAdmin,                  "Admin",                            "<i/n>",            NULL},
+	{"!as",     "addsadmin",        &a_sadmin.integer,          &adm_addAdmin,                  "Server Admin",                     "<i/n>",            NULL},
+	{"!ah",     "addhadmin",        &a_hadmin.integer,          &adm_addAdmin,                  "Head Admin",                     "<i/n>",            NULL},
+	{"!sl",     "scorelimit",       &a_scorelimit.integer,              &adm_scoreLimit,                "Change the scorelimit",            "<time>",           NULL},
+	{"!tl",     "timelimit",        &a_timelimit.integer,              &adm_timeLimit,                 "Change the timelimit",             "<time>",           NULL},
+	{"!sw",     "swapteams",        &a_swapteams.integer,       &adm_swapTeams,                 "Swap the players from team",       "",                 NULL},
+	{"!rounds", "rounds",           &a_compmode.integer,              &adm_Rounds,                    "Set the number of rounds",         "<rounds>",         NULL},
+	// Boe!Man 6/2/15: Don't move or modify anything above this comment, the /adm list expects them in that specific order.
+	{"!pl",     "plant",            &a_plant.integer,           &adm_Plant,                     "Plant or unplant a player",        "<i/n>",            "ed"},
+	{"!rtl",    "roundtimelimit",   &a_roundtimelimit.integer,             &adm_roundTimeLimit,            "Change the round timelimit",       "<time>",           NULL},
+	{"!ro",     "runover",          &a_runover.integer,         &adm_Runover,                   "Push a player backwards",          "<i/n>",            NULL},
+	{"!c",      "rollercoaster",    &a_rollercoaster.integer,   &adm_Rollercoaster,             "Uppercut and push a player",       "<i/n>",            "ed"},
+	{"!r",      "respawn",          &a_respawn.integer,         &adm_Respawn,                   "Respawn a player",                 "<i/n>",            "ed"},
+	{"!rs",     "respawn",          &a_respawn.integer,         &adm_Respawn,                   "Respawn a player",                 "<i/n>",            "ed"},
+	{"!mr",     "maprestart",       &a_mapswitch.integer,       &adm_mapRestart,                "Restart the current map",          "",                 NULL},
+	{"!mr",     "map_restart",      &a_mapswitch.integer,       &adm_mapRestart,                "Restart the current map",          "",                 NULL},
+	{"!st",     "strip",            &a_strip.integer,           &adm_Strip,                     "Remove weapons from a player",     "<i/n>",            "ped"},
+	{"!ra",     "removeadmin",      &minimumAdminLevel,           &adm_removeAdmin,               "Remove an Admin",                  "<i/n>",            NULL},
+	{"!ft",     "forceteam",        &a_forceteam.integer,       &adm_forceTeam,                 "Force a player to join a team",    "<i/n> <team>",     "ed"},
+	{"!bs",     "blockseek",        &a_blockseek.integer,       &adm_blockSeek,                 "Block player from joining seek",   "<i/n>",            NULL},
+	{"!bsl",    "blockseeklist",    &a_blockseek.integer,       &adm_blockSeekList,             "Show players blocked from seeking","",                 NULL},
+	{"!nl",     "nolower",          &a_nosection.integer,       &adm_noLower,                   "Enable/Disable Nolower",           "",                 NULL},
+	{"!nr",     "noroof",           &a_nosection.integer,       &adm_noRoof,                    "Enable/Disable Noroof",            "",                 NULL},
+	{"!nm",     "nomiddle",         &a_nosection.integer,       &adm_noMiddle,                  "Enable/Disable Nomiddle",          "",                 NULL},
+	{"!nw",     "nowhole",          &a_nosection.integer,       &adm_noWhole,                   "Enable/Disable Nowhole",           "",                 NULL},
+	{"!sh",     "shuffleteams",     &a_shuffleteams.integer,    &adm_shuffleTeams,              "Mix the teams at random",          "",                 NULL},
+	{"!nn",     "nonades",          &a_nades.integer,           &adm_noNades,                   "Enable or disable nades",          "",                 NULL},
+	{"!ri",     "respawninterval",  &a_respawninterval.integer,              &adm_respawnInterval,           "Change the respawn interval",      "<time>",           NULL},
+	{"!rd",     "realdamage",       &a_damage.integer,          &adm_realDamage,                "Toggle Real damage",               "",                 NULL},
+	{"!nd",     "normaldamage",     &a_damage.integer,          &adm_normalDamage,              "Toggle Normal damage",             "",                 NULL},
+	{"!cd",     "customdamage",     &a_damage.integer,          &adm_customDamage,              "Toggle Custom damage",             "<filename>",                 NULL},
+	{"!gr",     "gametyperestart",  &a_gtrestart.integer,              &adm_gametypeRestart,           "Restart the current gametype",     "",                 NULL},
+	{"!acl",    "addclan",          &a_clan.integer,            &adm_addClanMember,             "Add a clan member",                "<i/n>",            NULL},
+	{"!rc",     "removeclan",       &a_clan.integer,            &adm_removeClanMember,          "Remove a clan member",             "<i/n>",            NULL},
+	{"!rcl",    "removeclanlist",   &a_clan.integer,            &adm_removeClanMemberFromList,  "Remove a member from the list",    "<i/line #>",       NULL},
+	{"!cl",     "clanlist",         &a_clan.integer,            &adm_clanList,                  "Show the clanlist",                "",                 NULL},
+	{"!cm",     "compmode",         &a_compmode.integer,              &adm_compMode,                  "Toggles Competition Mode",         "",                 NULL},
+	{"!bl",     "banlist",          &a_ban.integer,             &adm_banList,                   "Shows the current banlist",        "",                 NULL},
+	{"!ba",     "ban",              &a_ban.integer,             &adm_Ban,                       "Ban a player",                     "<XdYhZm> <i/n> <rsn>", "ned"},
+	{"!ub",     "unban",            &a_ban.integer,             &adm_Unban,                     "Unban a banned IP (player)",       "<ip/line #>",      NULL},
+	{"!uba",    "unban",            &a_ban.integer,             &adm_Unban,                     "Unban a banned IP (player)",       "<ip/line #>",      NULL},
+	{"!br",     "broadcast",        &a_broadcast.integer,       &adm_Broadcast,                 "Broadcast a message",              "<message>",        NULL},
+	{"!sbl",    "subnetbanlist",    &a_subnetban.integer,       &adm_subnetbanList,             "Shows the current subnetbanlist",  "",                 NULL},
+	{"!sb",     "subnetban",        &a_subnetban.integer,       &adm_subnetBan,                 "Ban a players' subnet",            "<XdYhZm> <i/n> <rsn>",   "ned"},
+	{"!sbu",    "subnetunban",      &a_subnetban.integer,       &adm_subnetUnban,               "Unban a banned subnet",            "<ip/line #>",      NULL},
+	{"!su",     "subnetunban",      &a_subnetban.integer,       &adm_subnetUnban,               "Unban a banned subnet",            "<ip/line #>",      NULL},
+	{"!et",     "eventeams",        &a_eventeams.integer,       &adm_evenTeams,                 "Make the teams even",              "",                 NULL},
+	{"!cva",    "clanvsall",        &a_clanvsall.integer,       &adm_clanVsAll,                 "Clan versus other players-mode",   "",                 NULL},
+	{"!l",      "lock",             &a_lock.integer,            &adm_lockTeam,                  "Lock/unlock a team",               "<team>",           NULL},
+	{"!fl",     "flash",            &a_flash.integer,           &adm_Flash,                     "Flash a player",                   "<i/n>",            "ed"},
+	{"!g",      "gametype",         &a_mapswitch.integer,       &adm_Gametype,                  "Switch to the given gametype",     "<gametype>",       NULL},
+	{"!gt",     "gametype",         &a_mapswitch.integer,       &adm_Gametype,                  "Switch to the given gametype",     "<gametype>",       NULL},
+	{"!map",    "map",              &a_mapswitch.integer,       &adm_Map,                       "Switch to the specified map",      "<map name>",       NULL},
+	{"!altmap", "altmap",           &a_mapswitch.integer,       &adm_Map,                       "Switch to the specified altmap",   "<map name>",       NULL},
+	{"!devmap", "devmap",           &a_mapswitch.integer,       &adm_Map,                       "Switch to the specified devmap",   "<map name>",       NULL},
+	{"!mc",     "mapcycle",         &a_mapswitch.integer,       &adm_mapCycle,                  "Switch to the next-defined map",   "",                 NULL},
+	{"!pv",     "passvote",         &a_forcevote.integer,       &adm_passVote,                  "Pass the running vote",            "",                 NULL},
+	{"!cv",     "cancelvote",       &a_forcevote.integer,       &adm_cancelVote,                "Cancel the running vote",          "",                 NULL},
+	{"!pa",     "pause",            &a_pause.integer,           &adm_Pause,                     "Pause/resume the game",            "",                 NULL},
+	{"!b",      "burn",             &a_burn.integer,            &adm_Burn,                      "Burn a player",                    "",                 "ed"},
+	{"!k",      "kick",             &a_kick.integer,            &adm_Kick,                      "Kick a player",                    "<i/n>",            "ed"},
+	{"!m",      "mute",             &a_mute.integer,            &adm_Mute,                      "Mute/unmute a player",             "<i/n> <time>",     NULL},
+	{"!s",      "strip",            &a_strip.integer,           &adm_Strip,                     "Remove weapons from a player",     "<i/n>",            "ped"},
+	{"!ff",     "friendlyfire",     &a_friendlyFire.integer,              &adm_friendlyFire,              "Enables/disables friendly fire",   "",                 NULL},
+	{"!rn",     "rename",           &a_rename.integer,          &adm_Rename,                    "Renames a players' name",          "<i/n> <name>",     NULL},
+	{"!swi",    "switch",           &a_forceteam.integer,       &adm_Switch,                    "Switch one to the opposite team",  "<i/n>",            "ed"},
+	{"!3rd",    "3rd",              &a_3rd.integer,             &adm_Third,                     "Toggles Thirdperson on or off",    "",                 NULL},
+	{"!third",  "third",            &a_3rd.integer,             &adm_Third,                     "Toggles Thirdperson on or off",    "",                 NULL},
+	{"!wp",     "weapon",           &a_toggleweapon.integer,    &adm_toggleWeapon,              "Toggles weapon on or off",         "",                 NULL},
+	{"!aca",    "anticamp",         &a_anticamp.integer,        &adm_Anticamp,                  "Toggles anticamp on or off",       "",                 NULL},
+	{"!em",     "endmap",           &a_mapswitch.integer,          &adm_endMap,                    "Requests map to end",              "",                 NULL},
+	{"!ml",     "maplist",          &a_mapswitch.integer,       &adm_mapList,                   "Lists all available maps",         "",                 NULL},
+
+	{"!bo",     "bestof",           &a_compmode.integer,     			&adm_matchIsBestOf,             "Toggles Best-of system",  	   		"",        	NULL},
+	{"!pfl",    "profanitylist",	&minimumAdminLevel,     		&adm_profanityList,             "Show profanity list",  	   		"",        	NULL},
+	{"!p",      "pop",              &a_pop.integer,             &adm_Pop,                       "Pop/explodes a player",            "<i/n>",            "ped"},
+	{"!e",      "explode",          &a_pop.integer,             &adm_Pop,                       "Pop/explodes a player",            "<i/n>",            "ped"},
+	{"!u",		"uppercut",         &a_uppercut.integer,        &adm_Uppercut,                  "Launch a player upwards",          "<i/n>",            NULL},
+	{"!pu",     "punish",           &a_pop.integer,             &adm_Punish,                    "Punishes a player",                "<i/n>",            "ed"},
+	{"!psl",    "punishlist",       &a_pop.integer,             &adm_punishList,                "Show punished players",            "",                 NULL},
+	{"!mcl",    "mapcyclelist",     &a_mapswitch.integer,       &adm_mapCycleList,              "Shows the current mapcycle",       "",                 NULL},
+	{"!stm",    "skiptomap",        &a_mapswitch.integer,       &adm_skipToMap,                 "Skips to the specified map index", "<map num>",        NULL },
+};
+
+int adminCommandsSize = sizeof(adminCommands) / sizeof(adminCommands[0]);
+
+const char* getAdminNameByAdminLevel(admLevel adminLevel) {
+
+	if (adminLevel <= ADMLVL_NONE || adminLevel > ADMLVL_HADMIN) {
+		return "";
+	}
+
+	switch (adminLevel) {
+	case ADMLVL_BADMIN:
+		return g_badminPrefix.string;
+	case ADMLVL_ADMIN:
+		return g_adminPrefix.string;
+	case ADMLVL_SADMIN:
+		return g_sadminPrefix.string;
+	case ADMLVL_HADMIN:
+		return g_hadminPrefix.string;
+	default:
+		return "";
+	}
+
+}
+
+int adm_adminRemove(int argNum, gentity_t* adm, qboolean shortCmd) {
+	return -1;
+}
+
+int adm_adminList(int argNum, gentity_t* adm, qboolean shortCmd) {
+	return -1;
+}
+
+int adm_addAdmin(int argNum, gentity_t* adm, qboolean shortCmd) {
+	return -1;
+}
+
+int adm_scoreLimit(int argNum, gentity_t* adm, qboolean shortCmd) {
+	return -1;
+}
+
+int adm_timeLimit(int argNum, gentity_t* adm, qboolean shortCmd) {
+	return -1;
+}
+
+int adm_swapTeams(int argNum, gentity_t* adm, qboolean shortCmd) {
+	return -1;
+}
+
+int adm_Rounds(int argNum, gentity_t* adm, qboolean shortCmd) {
+	return -1;
+}
+
+int adm_Plant(int argNum, gentity_t* adm, qboolean shortCmd) {
+	return -1;
+}
+
+int adm_roundTimeLimit(int argNum, gentity_t* adm, qboolean shortCmd) {
+	return -1;
+}
+
+int adm_Runover(int argNum, gentity_t* adm, qboolean shortCmd) {
+	return -1;
+}
+
+int adm_Rollercoaster(int argNum, gentity_t* adm, qboolean shortCmd) {
+	return -1;
+}
+
+int adm_Respawn(int argNum, gentity_t* adm, qboolean shortCmd) {
+	return -1;
+}
+
+int adm_mapRestart(int argNum, gentity_t* adm, qboolean shortCmd) {
+	return -1;
+}
+
+int adm_Strip(int argNum, gentity_t* adm, qboolean shortCmd) {
+	return -1;
+}
+
+int adm_removeAdmin(int argNum, gentity_t* adm, qboolean shortCmd) {
+	return -1;
+}
+
+int adm_forceTeam(int argNum, gentity_t* adm, qboolean shortCmd) {
+	return -1;
+}
+
+int adm_blockSeek(int argNum, gentity_t* adm, qboolean shortCmd) {
+	return -1;
+}
+
+int adm_blockSeekList(int argNum, gentity_t* adm, qboolean shortCmd) {
+	return -1;
+}
+
+int adm_noLower(int argNum, gentity_t* adm, qboolean shortCmd) {
+	return -1;
+}
+
+int adm_noRoof(int argNum, gentity_t* adm, qboolean shortCmd) {
+	return -1;
+}
+
+int adm_noMiddle(int argNum, gentity_t* adm, qboolean shortCmd) {
+	return -1;
+}
+
+int adm_noWhole(int argNum, gentity_t* adm, qboolean shortCmd) {
+	return -1;
+}
+
+int adm_shuffleTeams(int argNum, gentity_t* adm, qboolean shortCmd) {
+	return -1;
+}
+
+int adm_noNades(int argNum, gentity_t* adm, qboolean shortCmd) {
+	return -1;
+}
+
+int adm_respawnInterval(int argNum, gentity_t* adm, qboolean shortCmd) {
+	return -1;
+}
+
+int adm_realDamage(int argNum, gentity_t* adm, qboolean shortCmd) {
+	return -1;
+}
+
+int adm_normalDamage(int argNum, gentity_t* adm, qboolean shortCmd) {
+	return -1;
+}
+
+int adm_customDamage(int argNum, gentity_t* adm, qboolean shortCmd) {
+	return -1;
+}
+
+int adm_gametypeRestart(int argNum, gentity_t* adm, qboolean shortCmd) {
+	return -1;
+}
+
+int adm_addClanMember(int argNum, gentity_t* adm, qboolean shortCmd) {
+	return -1;
+}
+
+int adm_removeClanMember(int argNum, gentity_t* adm, qboolean shortCmd) {
+	return -1;
+}
+
+int adm_removeClanMemberFromList(int argNum, gentity_t* adm, qboolean shortCmd) {
+	return -1;
+}
+
+int adm_clanList(int argNum, gentity_t* adm, qboolean shortCmd) {
+	return -1;
+}
+
+int adm_compMode(int argNum, gentity_t* adm, qboolean shortCmd) {
+	return -1;
+}
+
+int adm_banList(int argNum, gentity_t* adm, qboolean shortCmd) {
+	return -1;
+}
+
+int adm_Ban(int argNum, gentity_t* adm, qboolean shortCmd) {
+	return -1;
+}
+
+int adm_Unban(int argNum, gentity_t* adm, qboolean shortCmd) {
+	return -1;
+}
+
+int adm_Broadcast(int argNum, gentity_t* adm, qboolean shortCmd) {
+	return -1;
+}
+
+int adm_subnetbanList(int argNum, gentity_t* adm, qboolean shortCmd) {
+	return -1;
+}
+
+int adm_subnetBan(int argNum, gentity_t* adm, qboolean shortCmd) {
+	return -1;
+}
+
+int adm_subnetUnban(int argNum, gentity_t* adm, qboolean shortCmd) {
+	return -1;
+}
+
+int adm_evenTeams(int argNum, gentity_t* adm, qboolean shortCmd) {
+	return -1;
+}
+
+int adm_clanVsAll(int argNum, gentity_t* adm, qboolean shortCmd) {
+	return -1;
+}
+
+int adm_lockTeam(int argNum, gentity_t* adm, qboolean shortCmd) {
+	return -1;
+}
+
+int adm_Flash(int argNum, gentity_t* adm, qboolean shortCmd) {
+	return -1;
+}
+
+int adm_Gametype(int argNum, gentity_t* adm, qboolean shortCmd) {
+	return -1;
+}
+
+int adm_Map(int argNum, gentity_t* adm, qboolean shortCmd) {
+	return -1;
+}
+
+int adm_mapCycle(int argNum, gentity_t* adm, qboolean shortCmd) {
+	return -1;
+}
+
+int adm_passVote(int argNum, gentity_t* adm, qboolean shortCmd) {
+	return -1;
+}
+
+int adm_cancelVote(int argNum, gentity_t* adm, qboolean shortCmd) {
+	return -1;
+}
+
+int adm_Pause(int argNum, gentity_t* adm, qboolean shortCmd) {
+	return -1;
+}
+
+int adm_Burn(int argNum, gentity_t* adm, qboolean shortCmd) {
+	return -1;
+}
+
+int adm_Kick(int argNum, gentity_t* adm, qboolean shortCmd) {
+	return -1;
+}
+
+int adm_Mute(int argNum, gentity_t* adm, qboolean shortCmd) {
+	return -1;
+}
+
+int adm_friendlyFire(int argNum, gentity_t* adm, qboolean shortCmd) {
+	return -1;
+}
+
+int adm_Rename(int argNum, gentity_t* adm, qboolean shortCmd) {
+	return -1;
+}
+
+int adm_Switch(int argNum, gentity_t* adm, qboolean shortCmd) {
+	return -1;
+}
+
+int adm_Third(int argNum, gentity_t* adm, qboolean shortCmd) {
+	return -1;
+}
+
+int adm_toggleWeapon(int argNum, gentity_t* adm, qboolean shortCmd) {
+	return -1;
+}
+
+int adm_Anticamp(int argNum, gentity_t* adm, qboolean shortCmd) {
+	return -1;
+}
+
+int adm_endMap(int argNum, gentity_t* adm, qboolean shortCmd) {
+	return -1;
+}
+
+int adm_mapList(int argNum, gentity_t* adm, qboolean shortCmd) {
+	return -1;
+}
+
+int adm_matchIsBestOf(int argNum, gentity_t* adm, qboolean shortCmd) {
+	return -1;
+}
+
+int adm_profanityList(int argNum, gentity_t* adm, qboolean shortCmd) {
+	return -1;
+}
+
+int adm_Pop(int argNum, gentity_t* adm, qboolean shortCmd) {
+	return -1;
+}
+
+int adm_Uppercut(int argNum, gentity_t* adm, qboolean shortCmd) {
+	return -1;
+}
+
+int adm_Punish(int argNum, gentity_t* adm, qboolean shortCmd) {
+	return -1;
+}
+
+int adm_punishList(int argNum, gentity_t* adm, qboolean shortCmd) {
+	return -1;
+}
+
+int adm_mapCycleList(int argNum, gentity_t* adm, qboolean shortCmd) {
+	return -1;
+}
+
+int adm_skipToMap(int argNum, gentity_t* adm, qboolean shortCmd) {
+	return -1;
+}
