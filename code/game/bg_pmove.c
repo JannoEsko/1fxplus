@@ -3397,12 +3397,137 @@ static void PM_DropTimers( void )
     }
 }
 
+static void PM_CheckLeanLegacy(void)
+{
+    trace_t     trace;
+    float       leanTime;
+
+
+    qboolean	canlean;
+
+    canlean = qfalse;
+
+
+    if (!pm || !pm->ps)
+    {
+        return;
+    }
+
+    // No leaning as a spectator or a ghost
+    if ((pm->ps->pm_flags & PMF_GHOST) || pm->ps->pm_type == PM_SPECTATOR)
+    {
+        pm->ps->leanTime = LEAN_TIME;
+        pm->ps->pm_flags &= ~PMF_LEANING;
+        return;
+    }
+
+    leanTime = (float)pm->ps->leanTime - LEAN_TIME;
+
+    // If their lean button is being pressed and they are on the ground then perform the lean
+    if ((pm->cmd.buttons & (BUTTON_LEAN_RIGHT | BUTTON_LEAN_LEFT)) && (pm->ps->groundEntityNum != ENTITYNUM_NONE))
+    {
+        vec3_t  start, end, right, mins, maxs;
+        int     leanDir;
+
+        if (pm->cmd.buttons & BUTTON_LEAN_RIGHT)
+        {
+            leanDir = 1;
+        }
+        else
+        {
+            leanDir = -1;
+        }
+
+        // check for collision
+        VectorCopy(pm->ps->origin, start);
+
+        start[2] += pm->ps->viewheight;
+        AngleVectors(pm->ps->viewangles, NULL, right, NULL);
+
+
+        VectorSet(mins, -6, -6, -8);
+        VectorSet(maxs, 6, 6, 8);
+
+
+        // since we're moving the camera over
+        // check that move
+
+        VectorMA(start, leanDir * LEAN_OFFSET * 1.25f, right, end);
+
+        memset(&trace, 0, sizeof(trace));
+
+        if (pm->trace)
+            pm->trace(&trace, start, mins, maxs, end, pm->ps->clientNum, pm->tracemask);
+
+        if (trace.fraction < 0 || trace.fraction >= 1.0f)
+        {
+            leanTime += (leanDir * pml.msec);
+            if (leanTime > LEAN_TIME)
+            {
+                leanTime = LEAN_TIME;
+            }
+            else if (leanTime < -LEAN_TIME)
+            {
+                leanTime = -LEAN_TIME;
+            }
+
+
+            canlean = qtrue;
+
+        }
+        else if ((pm->ps->pm_flags & PMF_LEANING) && trace.fraction < 1.0f)
+        {
+            int templeanTime = (float)leanDir * (float)LEAN_TIME
+                * trace.fraction;
+
+            if (fabs((float)templeanTime) < fabs(leanTime))
+            {
+                leanTime = templeanTime;
+            }
+        }
+    }
+
+
+    if (!canlean)
+    {
+        if (leanTime > 0)
+        {
+            leanTime -= pml.msec;
+            if (leanTime < 0)
+            {
+                leanTime = 0;
+            }
+        }
+        else if (leanTime < 0)
+        {
+            leanTime += pml.msec;
+            if (leanTime > 0)
+            {
+                leanTime = 0;
+            }
+        }
+    }
+
+    // Set a pm flag for leaning for convienience
+    if (leanTime != 0)
+    {
+        pm->ps->pm_flags |= PMF_LEANING;
+    }
+    else
+    {
+        pm->ps->pm_flags &= ~PMF_LEANING;
+    }
+
+    // The lean time is kept positive by adding in the base lean time
+    pm->ps->leanTime = (int)(leanTime + LEAN_TIME);
+}
+
 /*
 ==============
 PM_CheckLean
 ==============
 */
-static void PM_CheckLean( void )
+static void PM_CheckLeanGold( void )
 {
     trace_t     trace;
     qboolean    canlean;
@@ -3557,8 +3682,23 @@ void PM_UpdateViewAngles( playerState_t *ps, const usercmd_t *cmd )
         }
         ps->viewangles[i] = SHORT2ANGLE(temp);
     }
+    
+    if (!g_leanType.integer) {
+        PM_CheckLeanGold();
+    }
+    else if (g_leanType.integer == 1) {
+        PM_CheckLeanLegacy();
+    }
+    else {
+        if (pm->legacyProtocol) {
+            PM_CheckLeanLegacy();
+        }
+        else {
+            PM_CheckLeanGold();
+        }
+    }
 
-    PM_CheckLean ( );
+    
 }
 
 /*

@@ -151,6 +151,11 @@ vmCvar_t    a_anticamp;
 vmCvar_t    a_pop;
 vmCvar_t    a_uppercut;
 
+vmCvar_t    g_leanType;
+
+vmCvar_t    g_serverColors;
+
+
 static cvarTable_t gameCvarTable[] =
 {
     // don't override the cheat state set by the system
@@ -291,9 +296,9 @@ static cvarTable_t gameCvarTable[] =
     { &g_hadminPrefix,    "g_hadminPrefix",     "^CH^b-^kA^+d^7min",        CVAR_ARCHIVE,   0.0f,   0.0f,   0,  qfalse },
     { &g_rconPrefix,    "g_rconPrefix",     "^CS^be^kr^+v^7er",        CVAR_ARCHIVE,   0.0f,   0.0f,   0,  qfalse },
 
-    { &g_inviewFile,    "g_inviewFile",     "wpndata/italy.inview",        CVAR_ARCHIVE,   0.0f,   0.0f,   0,  qfalse },
+    { &g_inviewFile,    "g_inviewFile",     "wpndata/SOF2.inview",        CVAR_ARCHIVE | CVAR_LATCH,   0.0f,   0.0f,   0,  qfalse },
 
-    { &g_weaponFile,    "g_weaponFile",     "wpndata/italy_nd.wpn",        CVAR_ARCHIVE,   0.0f,   0.0f,   0,  qfalse },
+    { &g_weaponFile,    "g_weaponFile",     "wpndata/SOF2.wpn",        CVAR_ARCHIVE | CVAR_LATCH,   0.0f,   0.0f,   0,  qfalse },
 
     // Admin cvars
     { &a_adminlist,    "a_adminlist",     "2",        CVAR_ARCHIVE,   0.0f,   0.0f,   0,  qfalse },
@@ -340,6 +345,12 @@ static cvarTable_t gameCvarTable[] =
     { &a_anticamp,    "a_anticamp",     "2",        CVAR_ARCHIVE,   0.0f,   0.0f,   0,  qfalse },
     { &a_pop,    "a_pop",     "1",        CVAR_ARCHIVE,   0.0f,   0.0f,   0,  qfalse },
     { &a_uppercut,    "a_uppercut",     "2",        CVAR_ARCHIVE,   0.0f,   0.0f,   0,  qfalse },
+
+
+    { &g_leanType,    "g_leanType",     "0",        CVAR_ARCHIVE,   0.0f,   0.0f,   0,  qfalse }, // 0 = gold, 1 = silver, 2 = serve based on client
+    
+    { &g_serverColors,    "g_serverColors",     "Cbk+7",        CVAR_ARCHIVE,   0.0f,   0.0f,   0,  qfalse }, // 0 = gold, 1 = silver, 2 = serve based on client
+    
 
 };
 
@@ -1041,15 +1052,29 @@ void QDECL Com_Error ( int level, const char *error, ... ) {
     trap_Error( text );
 }
 
-void QDECL Com_Printf( const char *msg, ... ) {
+void QDECL Com_DPrintf( const char *msg, ... ) {
     va_list     argptr;
     char        text[1024];
 
-    va_start (argptr, msg);
-    Q_vsnprintf (text, sizeof(text), msg, argptr);
-    va_end (argptr);
+    if (trap_Cvar_VariableIntegerValue("developer")) {
+        va_start(argptr, msg);
+        Q_vsnprintf(text, sizeof(text), msg, argptr);
+        va_end(argptr);
 
-    trap_Print( text );
+        trap_Print(text);
+    }
+}
+
+
+void QDECL Com_Printf(const char* msg, ...) {
+    va_list     argptr;
+    char        text[1024];
+
+    va_start(argptr, msg);
+    Q_vsnprintf(text, sizeof(text), msg, argptr);
+    va_end(argptr);
+
+    trap_Print(text);
 }
 
 void QDECL Com_PrintInfo(const char* msg, ...) {
@@ -2180,6 +2205,17 @@ void G_RunFrame( int levelTime )
         {
             ClientEndFrame( ent );
         }
+    }
+
+    if (level.legacyMod == CL_RPM) {
+        // Henk 06/04/10 -> Update tmi every x sec
+        RPM_UpdateTMI();
+    }
+
+    if (level.goldMod == CL_ROCMOD && level.time > level.lastETIUpdate) {
+        ROCmod_sendExtraTeamInfo(NULL);
+
+        level.lastETIUpdate = level.time + 1000;
     }
 
     // Check warmup rules

@@ -1181,6 +1181,41 @@ void ClientUserinfoChanged( int clientNum )
         G_UpdateOutfitting ( clientNum );
     }
 
+    // Client mods.
+    if (client->sess.legacyProtocol) {
+        memset(client->sess.clientVersion, 0, sizeof(client->sess.clientVersion));
+        if (level.legacyMod == CL_RPM) {
+            s = Info_ValueForKey(userinfo, "cg_rpm");
+            if (*s)
+            {
+                client->sess.clientMod = CL_RPM;
+                Q_strncpyz(client->sess.clientVersion, "0.5", sizeof(client->sess.clientVersion));
+            }
+            // not using older client so lets test for new client
+            else
+            {
+                s = Info_ValueForKey(userinfo, "cg_rpmClient");
+                if (*s)
+                {
+                    char* rox = Info_ValueForKey(userinfo, "cg_roxclient");
+                    if (*rox) {
+                        ent->client->sess.verifyRoxAC = qtrue;
+                    }
+                    // new client sends the version of the client mod eg. 0.6
+                    Q_strncpyz(client->sess.clientVersion, s, sizeof(client->sess.clientVersion));
+
+                    client->sess.clientMod = CL_RPM;
+
+
+                }
+                else { // if no rpm client
+                    client->sess.clientMod = CL_NONE; // To be fair, we could display RPMPro info here, but without proper RPMPro support, I do not see the point.
+                }
+            }
+        }
+
+    }
+
     // send over a subset of the userinfo keys so other clients can
     // print scoreboards, display models, and play custom sounds
     if ( ent->r.svFlags & SVF_BOT )

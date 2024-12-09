@@ -28,6 +28,9 @@
     <Filter Include="Source Files\1fx">
       <UniqueIdentifier>{a1665de8-b7d1-4487-9f41-e9b71ae7c182}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\1fx\clientmods">
+      <UniqueIdentifier>{6831af0b-7516-41c4-8708-daab398a2dd7}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ai_main.c">
@@ -139,6 +142,15 @@
       <Filter>Source Files\1fx</Filter>
     </ClCompile>
     <ClCompile Include="1fx\admin.c">
+      <Filter>Source Files\1fx</Filter>
+    </ClCompile>
+    <ClCompile Include="1fx\clientmods\ROCmod.c">
+      <Filter>Source Files\1fx\clientmods</Filter>
+    </ClCompile>
+    <ClCompile Include="1fx\clientmods\RPM.c">
+      <Filter>Source Files\1fx\clientmods</Filter>
+    </ClCompile>
+    <ClCompile Include="1fx\functions.c">
       <Filter>Source Files\1fx</Filter>
     </ClCompile>
   </ItemGroup>

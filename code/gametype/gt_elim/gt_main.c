@@ -26,8 +26,13 @@ along with this program; if not, see <http://www.gnu.org/licenses/>.
 
 gametypeLocals_t    gametype;
 
+vmCvar_t            gt_redTeamColored;
+vmCvar_t            gt_blueTeamColored;
+
 static cvarTable_t gametypeCvarTable[] =
 {
+    { &gt_blueTeamColored,      "gt_blueTeamColored",   "^yB^Il^fu^+e", 0.0f, 0.0f, 0, qfalse },
+    { &gt_redTeamColored, "gt_redTeamColored", "^$R^Te^Hd", CVAR_ARCHIVE, 0.0, 0.0, 0,  qfalse },
     { NULL, NULL, NULL, 0, 0.0f, 0.0f, 0, qfalse },
 };
 
@@ -156,13 +161,13 @@ int GT_Event ( int cmd, int time, int arg0, int arg1, int arg2, int arg3, int ar
             switch ( arg0 )
             {
                 case TEAM_RED:
-                    trap_Cmd_TextMessage ( -1, "Red team eliminated!" );
+                    trap_Cmd_TextMessage ( -1, va("%s team \\eliminated!", gt_redTeamColored.string) );
                     trap_Cmd_AddTeamScore ( TEAM_BLUE, 1 );
                     trap_Cmd_Restart ( 5 );
                     break;
 
                 case TEAM_BLUE:
-                    trap_Cmd_TextMessage ( -1, "Blue team eliminated!" );
+                    trap_Cmd_TextMessage ( -1, va("%s team \\eliminated!", gt_blueTeamColored.string) );
                     trap_Cmd_AddTeamScore ( TEAM_RED, 1 );
                     trap_Cmd_Restart ( 5 );
                     break;
@@ -170,7 +175,7 @@ int GT_Event ( int cmd, int time, int arg0, int arg1, int arg2, int arg3, int ar
             break;
 
         case GTEV_TIME_EXPIRED:
-            trap_Cmd_TextMessage ( -1, "Round Draw!" );
+            trap_Cmd_TextMessage ( -1, "Round \\Draw!" );
             trap_Cmd_Restart ( 5 );
             break;
     }

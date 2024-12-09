@@ -30,6 +30,8 @@ vmCvar_t            gt_bombFuseTime;
 vmCvar_t            gt_bombDefuseTime;
 vmCvar_t            gt_bombPlantTime;
 vmCvar_t            gt_simpleScoring;
+vmCvar_t            gt_redTeamColored;
+vmCvar_t            gt_blueTeamColored;
 
 static cvarTable_t gametypeCvarTable[] =
 {
@@ -38,6 +40,8 @@ static cvarTable_t gametypeCvarTable[] =
     { &gt_bombDefuseTime,   "gt_bombDefuseTime",    "3",  CVAR_ARCHIVE|CVAR_LATCH, 0.0f, 0.0f, 0, qfalse },
     { &gt_bombPlantTime,    "gt_bombPlantTime",     "3",  CVAR_ARCHIVE|CVAR_LATCH, 0.0f, 0.0f, 0, qfalse },
     { &gt_simpleScoring,    "gt_simpleScoring",     "0",  CVAR_ARCHIVE, 0.0f, 0.0f, 0, qfalse },
+    { &gt_blueTeamColored,      "gt_blueTeamColored",   "^yB^Il^fu^+e", 0.0f, 0.0f, 0, qfalse },
+    { &gt_redTeamColored, "gt_redTeamColored", "^$R^Te^Hd", CVAR_ARCHIVE, 0.0, 0.0, 0,  qfalse },
     { NULL, NULL, NULL, 0, 0.0f, 0.0f, 0, qfalse },
 };
 

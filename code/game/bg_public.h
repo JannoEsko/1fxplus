@@ -1047,4 +1047,6 @@ void        G_InitMemory                        ( void );
 
 char* G_TranslateGametypeToPublicGametype(char* gametype);
 
+extern vmCvar_t g_leanType;
+
 #endif // __BG_PUBLIC_H__

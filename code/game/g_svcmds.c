@@ -308,6 +308,12 @@ qboolean ConsoleCommand( void )
         return qtrue;
     }
 
+    int adminCommand = -1;
+    if ((adminCommand = cmdIsAdminCmd(cmd, qfalse)) != -1) {
+        runAdminCommand(adminCommand, 1, NULL, qfalse);
+        return qtrue;
+    }
+
     if (g_dedicated.integer)
     {
         if (Q_stricmp (cmd, "say") == 0)

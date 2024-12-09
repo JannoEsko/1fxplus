@@ -26,8 +26,14 @@ along with this program; if not, see <http://www.gnu.org/licenses/>.
 
 gametypeLocals_t    gametype;
 
+
+vmCvar_t            gt_redTeamColored;
+vmCvar_t            gt_blueTeamColored;
+
 static cvarTable_t gametypeCvarTable[] =
 {
+    { &gt_blueTeamColored,      "gt_blueTeamColored",   "^yB^Il^fu^+e", 0.0f, 0.0f, 0, qfalse },
+    { &gt_redTeamColored, "gt_redTeamColored", "^$R^Te^Hd", CVAR_ARCHIVE, 0.0, 0.0, 0,  qfalse },
     { NULL, NULL, NULL, 0, 0.0f, 0.0f, 0, qfalse },
 };
 

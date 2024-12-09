@@ -98,7 +98,7 @@ admCmd_t adminCommands[] = {
 
 int adminCommandsSize = sizeof(adminCommands) / sizeof(adminCommands[0]);
 
-const char* getAdminNameByAdminLevel(admLevel adminLevel) {
+const char* getAdminNameByAdminLevel(admLevel_t adminLevel) {
 
 	if (adminLevel <= ADMLVL_NONE || adminLevel > ADMLVL_HADMIN) {
 		return "";
@@ -398,3 +398,72 @@ int adm_mapCycleList(int argNum, gentity_t* adm, qboolean shortCmd) {
 int adm_skipToMap(int argNum, gentity_t* adm, qboolean shortCmd) {
 	return -1;
 }
+
+qboolean canClientRunAdminCommand(gentity_t* adm, int adminCommandId) {
+	if (
+		adminCommandId >= 0
+		&& adminCommandId < adminCommandsSize
+		&& adm
+		&& adm->client
+		&& adm->client->sess.adminLevel >= *adminCommands[adminCommandId].adminLevel
+		) {
+		return qtrue;
+	}
+
+	return qfalse;
+}
+
+int cmdIsAdminCmd(char* cmd, qboolean shortCmd) {
+
+	Q_strlwr(cmd);
+	Q_CleanStr(cmd);
+	for (int i = 0; i < adminCommandsSize; i++) {
+		if (shortCmd && (!Q_stricmp(cmd, adminCommands[i].shortCmd) || !Q_stricmp(cmd, va("!%s", adminCommands[i].adminCmd)))) {
+			return i;
+		}
+		else if (!Q_stricmp(cmd, adminCommands[i].adminCmd)) {
+			return i;
+		}
+	}
+
+	return -1;
+}
+
+void runAdminCommand(int adminCommandId, int argNum, gentity_t* adm, qboolean shortCmd) {
+	postExecuteAdminCommand(
+		adminCommandId,
+		adminCommands[adminCommandId].Function(argNum, adm, shortCmd),
+		adm
+	);
+}
+
+/*
+====================
+postExecuteAdminCommand from 1fx. Mod
+
+	a standard admin command which flow here will not be logged / broadcasted in its own function and will not have a reason.
+	commands with reasons to be captured will be logged in their respective function.
+	hence why idNum check is here. Commands where logs are not needed / need special logging, return -1.
+====================
+*/
+void postExecuteAdminCommand(int funcNum, int idNum, gentity_t* adm) {
+
+	if (idNum < 0) {
+		return;
+	}
+
+
+	if (adm && adm->client) {
+		G_Broadcast(BROADCAST_CMD, NULL, qtrue, "%s\nwas \\%s%s\nby %s", g_entities[idNum].client->pers.netname, adminCommands[funcNum].adminCmd, (adminCommands[funcNum].suffix != NULL) ? adminCommands[funcNum].suffix : "", adm->client->pers.netname);
+		trap_SendServerCommand(-1, va("print\"^3[Admin Action] ^7%s was %s%s by %s.\n\"", g_entities[idNum].client->pers.cleanName, adminCommands[funcNum].adminCmd, (adminCommands[funcNum].suffix != NULL) ? adminCommands[funcNum].suffix : "", adm->client->pers.cleanName));
+	}
+	else {
+		// rcon command.
+		G_Broadcast(BROADCAST_CMD, NULL, qtrue, "%s\nwas \\%s%s", g_entities[idNum].client->pers.netname, adminCommands[funcNum].adminCmd, (adminCommands[funcNum].suffix != NULL) ? adminCommands[funcNum].suffix : "");
+		trap_SendServerCommand(-1, va("print\"^3[Rcon Action] ^7%s was %s%s.\n\"", g_entities[idNum].client->pers.cleanName, adminCommands[funcNum].adminCmd, (adminCommands[funcNum].suffix != NULL) ? adminCommands[funcNum].suffix : ""));
+	}
+
+	logAdmin();
+
+}
+

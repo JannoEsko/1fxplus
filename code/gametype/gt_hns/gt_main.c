@@ -27,11 +27,14 @@ along with this program; if not, see <http://www.gnu.org/licenses/>.
 gametypeLocals_t    gametype;
 
 vmCvar_t            gt_simpleScoring;
+vmCvar_t            gt_hiderTeamColored;
+vmCvar_t            gt_seekerTeamColored;
 
 static cvarTable_t gametypeCvarTable[] =
 {
     { &gt_simpleScoring,    "gt_simpleScoring",     "0",  CVAR_ARCHIVE, 0.0f, 0.0f, 0, qfalse },
-
+    { &gt_seekerTeamColored,      "gt_seekerTeamColored",   "^yS^le^le^+k^7ers", 0.0f, 0.0f, 0, qfalse },
+    { &gt_hiderTeamColored, "gt_hiderTeamColored", "^1H^Ti^od^qe^+r^7s", CVAR_ARCHIVE, 0.0, 0.0, 0,  qfalse },
     { NULL, NULL, NULL, 0, 0.0f, 0.0f, 0, qfalse },
 };
 
@@ -181,7 +184,7 @@ int GT_Event ( int cmd, int time, int arg0, int arg1, int arg2, int arg3, int ar
 
         case GTEV_ITEM_STUCK:
             trap_Cmd_ResetItem ( ITEM_BRIEFCASE );
-            trap_Cmd_TextMessage ( -1, "The Briefcase has returned!" );
+            trap_Cmd_TextMessage ( -1, "The Briefcase has \\returned!" );
             trap_Cmd_StartGlobalSound ( gametype.caseReturnSound );
             return 1;
 
@@ -189,13 +192,13 @@ int GT_Event ( int cmd, int time, int arg0, int arg1, int arg2, int arg3, int ar
             switch ( arg0 )
             {
                 case TEAM_RED:
-                    trap_Cmd_TextMessage ( -1, "Red team eliminated!" );
+                    trap_Cmd_TextMessage ( -1, va("%s team \\eliminated!", gt_hiderTeamColored.string) );
                     trap_Cmd_AddTeamScore ( TEAM_BLUE, 1 );
                     trap_Cmd_Restart ( 5 );
                     break;
 
                 case TEAM_BLUE:
-                    trap_Cmd_TextMessage ( -1, "Blue team eliminated!" );
+                    trap_Cmd_TextMessage ( -1, va("%s team \\eliminated!", gt_seekerTeamColored.string) );
                     trap_Cmd_AddTeamScore ( TEAM_RED, 1 );
                     trap_Cmd_Restart ( 5 );
                     break;
@@ -203,7 +206,7 @@ int GT_Event ( int cmd, int time, int arg0, int arg1, int arg2, int arg3, int ar
             break;
 
         case GTEV_TIME_EXPIRED:
-            trap_Cmd_TextMessage ( -1, "Red team has defended the briefcase!" );
+            trap_Cmd_TextMessage ( -1, va("%s have \\won the round!", gt_hiderTeamColored.string));
             trap_Cmd_AddTeamScore ( TEAM_RED, 1 );
             trap_Cmd_Restart ( 5 );
             break;
@@ -212,7 +215,7 @@ int GT_Event ( int cmd, int time, int arg0, int arg1, int arg2, int arg3, int ar
         {
             char clientname[MAX_QPATH];
             trap_Cmd_GetClientName ( arg1, clientname, MAX_QPATH );
-            trap_Cmd_TextMessage ( -1, va("%s has dropped the briefcase!", clientname ) );
+            trap_Cmd_TextMessage ( -1, va("%s has \\dropped the briefcase!", clientname ) );
             break;
         }
 
@@ -225,7 +228,7 @@ int GT_Event ( int cmd, int time, int arg0, int arg1, int arg2, int arg3, int ar
                     {
                         char clientname[MAX_QPATH];
                         trap_Cmd_GetClientName ( arg1, clientname, MAX_QPATH );
-                        trap_Cmd_TextMessage ( -1, va("%s has taken the briefcase!", clientname ) );
+                        trap_Cmd_TextMessage ( -1, va("%s has \\taken the briefcase!", clientname ) );
                         trap_Cmd_StartGlobalSound ( gametype.caseTakenSound );
                         trap_Cmd_RadioMessage ( arg1, "got_it" );
 
@@ -237,27 +240,6 @@ int GT_Event ( int cmd, int time, int arg0, int arg1, int arg2, int arg3, int ar
             return 0;
 
         case GTEV_TRIGGER_TOUCHED:
-            switch ( arg0 )
-            {
-                case TRIGGER_EXTRACTION:
-                    if ( trap_Cmd_DoesClientHaveItem ( arg1, ITEM_BRIEFCASE ) )
-                    {
-                        char clientname[MAX_QPATH];
-                        trap_Cmd_GetClientName ( arg1, clientname, MAX_QPATH );
-                        trap_Cmd_TextMessage ( -1, va("%s has escaped with the briefcase!", clientname ) );
-                        trap_Cmd_StartGlobalSound ( gametype.caseCaptureSound );
-                        trap_Cmd_TakeClientItem ( arg1, ITEM_BRIEFCASE );
-                        trap_Cmd_AddTeamScore ( arg2, 1 );
-
-                        if ( !gt_simpleScoring.integer )
-                        {
-                            trap_Cmd_AddClientScore ( arg1, 10 );
-                        }
-
-                        trap_Cmd_Restart ( 5 );
-                    }
-                    break;
-            }
 
             return 0;
     }

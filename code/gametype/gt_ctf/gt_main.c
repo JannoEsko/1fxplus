@@ -31,6 +31,9 @@ vmCvar_t            gt_simpleScoring;
 vmCvar_t            gt_allowFlagReturns;
 vmCvar_t            gt_flagCaptureType;
 
+vmCvar_t            gt_redTeamColored;
+vmCvar_t            gt_blueTeamColored;
+
 static cvarTable_t gametypeCvarTable[] =
 {
     // don't override the cheat state set by the system
@@ -38,6 +41,8 @@ static cvarTable_t gametypeCvarTable[] =
     { &gt_simpleScoring,    "gt_simpleScoring",     "0",  CVAR_ARCHIVE, 0.0f, 0.0f, 0, qfalse },
     { &gt_allowFlagReturns,    "gt_allowFlagReturns",     "1",  CVAR_ARCHIVE, 0.0f, 0.0f, 0, qfalse },
     { &gt_flagCaptureType,    "gt_flagCaptureType",     "0",  CVAR_ARCHIVE, 0.0f, 0.0f, 0, qfalse }, // 0 = dont allow capturing if flag is not at base, 1 => allow capturing
+    { &gt_blueTeamColored,      "gt_blueTeamColored",   "^yB^Il^fu^+e", 0.0f, 0.0f, 0, qfalse },
+    { &gt_redTeamColored, "gt_redTeamColored", "^$R^Te^Hd", CVAR_ARCHIVE, 0.0, 0.0, 0,  qfalse },
     { NULL, NULL, NULL, 0, 0.0f, 0.0f, 0, qfalse },
 };
 
@@ -183,7 +188,7 @@ void GT_RunFrame ( int time )
     if ( gametype.redFlagDropTime && time - gametype.redFlagDropTime > gt_flagReturnTime.integer * 1000 )
     {
         trap_Cmd_ResetItem ( ITEM_REDFLAG );
-        trap_Cmd_TextMessage ( -1, "The Red Flag has returned!" );
+        trap_Cmd_TextMessage ( -1, va("The %s^7 Flag has \\returned!", gt_redTeamColored.string) );
         trap_Cmd_SetHUDIcon ( 0, gametype.iconRedFlag );
         trap_Cmd_StartGlobalSound ( gametype.flagReturnSound );
         gametype.redFlagDropTime = 0;
@@ -194,7 +199,7 @@ void GT_RunFrame ( int time )
     if ( gametype.blueFlagDropTime && time - gametype.blueFlagDropTime > gt_flagReturnTime.integer * 1000 )
     {
         trap_Cmd_ResetItem ( ITEM_BLUEFLAG );
-        trap_Cmd_TextMessage ( -1, "The Blue Flag has returned!" );
+        trap_Cmd_TextMessage ( -1, va("The %s^7 Flag has \\returned!", gt_blueTeamColored.string) );
         trap_Cmd_SetHUDIcon ( 1, gametype.iconBlueFlag );
         trap_Cmd_StartGlobalSound ( gametype.flagReturnSound );
         gametype.blueFlagDropTime = 0;
@@ -227,7 +232,7 @@ int GT_Event ( int cmd, int time, int arg0, int arg1, int arg2, int arg3, int ar
             {
                 case ITEM_REDFLAG:
                     trap_Cmd_ResetItem ( ITEM_REDFLAG );
-                    trap_Cmd_TextMessage ( -1, "The Red Flag has returned!" );
+                    trap_Cmd_TextMessage ( -1, va("The %s^7 Flag has \\returned!", gt_redTeamColored.string) );
                     trap_Cmd_StartGlobalSound ( gametype.flagReturnSound );
                     gametype.redFlagDropTime = 0;
                     trap_Cmd_SetHUDIcon ( 0, gametype.iconRedFlag );
@@ -236,7 +241,7 @@ int GT_Event ( int cmd, int time, int arg0, int arg1, int arg2, int arg3, int ar
 
                 case ITEM_BLUEFLAG:
                     trap_Cmd_ResetItem ( ITEM_BLUEFLAG );
-                    trap_Cmd_TextMessage ( -1, "The Blue Flag has returned!" );
+                    trap_Cmd_TextMessage ( -1, va("The %s^7 Flag has \\returned!", gt_blueTeamColored.string) );
                     trap_Cmd_StartGlobalSound ( gametype.flagReturnSound );
                     gametype.blueFlagDropTime = 0;
                     trap_Cmd_SetHUDIcon ( 1, gametype.iconBlueFlag );
@@ -255,13 +260,13 @@ int GT_Event ( int cmd, int time, int arg0, int arg1, int arg2, int arg3, int ar
             switch ( arg0 )
             {
                 case ITEM_BLUEFLAG:
-                    trap_Cmd_TextMessage ( -1, va("%s has dropped the Blue Flag!", clientname ) );
+                    trap_Cmd_TextMessage ( -1, va("%s^7 has \\dropped the %s^7 Flag!", clientname, gt_blueTeamColored.string ) );
                     trap_Cmd_SetHUDIcon ( 1, gametype.iconBlueFlagDropped );
                     gametype.blueFlagDropTime = time;
                     break;
 
                 case ITEM_REDFLAG:
-                    trap_Cmd_TextMessage ( -1, va("%s has dropped the Red Flag!", clientname ) );
+                    trap_Cmd_TextMessage ( -1, va("%s^7 has \\dropped the %s^7 Flag!", clientname, gt_redTeamColored.string ) );
                     trap_Cmd_SetHUDIcon ( 0, gametype.iconRedFlagDropped );
                     gametype.redFlagDropTime = time;
                     break;
@@ -278,7 +283,7 @@ int GT_Event ( int cmd, int time, int arg0, int arg1, int arg2, int arg3, int ar
                     {
                         char clientname[MAX_QPATH];
                         trap_Cmd_GetClientName ( arg1, clientname, MAX_QPATH );
-                        trap_Cmd_TextMessage ( -1, va("%s has taken the Blue Flag!", clientname ) );
+                        trap_Cmd_TextMessage ( -1, va("%s^7 has \\taken the %s^7 Flag!", clientname, gt_blueTeamColored.string ) );
                         trap_Cmd_StartGlobalSound ( gametype.flagTakenSound );
                         trap_Cmd_RadioMessage ( arg1, "got_it" );
                         trap_Cmd_SetHUDIcon ( 1, gametype.iconBlueFlagCarried );
@@ -292,7 +297,7 @@ int GT_Event ( int cmd, int time, int arg0, int arg1, int arg2, int arg3, int ar
                         char clientname[MAX_QPATH];
                         trap_Cmd_GetClientName(arg1, clientname, MAX_QPATH);
 
-                        trap_Cmd_TextMessage(-1, va("%s has returned the Blue Flag!", clientname));
+                        trap_Cmd_TextMessage(-1, va("%s^7 has \\returned the %s^7 Flag!", clientname, gt_blueTeamColored.string));
                         trap_Cmd_SetHUDIcon(0, gametype.iconBlueFlagCarried);
                         gametype.blueFlagDropTime = 0;
                         gametype.blueFlagAtBase = qtrue;
@@ -307,7 +312,7 @@ int GT_Event ( int cmd, int time, int arg0, int arg1, int arg2, int arg3, int ar
                     {
                         char clientname[MAX_QPATH];
                         trap_Cmd_GetClientName ( arg1, clientname, MAX_QPATH );
-                        trap_Cmd_TextMessage ( -1, va("%s has taken the Red Flag!", clientname ) );
+                        trap_Cmd_TextMessage ( -1, va("%s^7 has \\taken the %s^7 Flag!", clientname, gt_redTeamColored.string ) );
                         trap_Cmd_StartGlobalSound ( gametype.flagTakenSound );
                         trap_Cmd_RadioMessage ( arg1, "got_it" );
                         trap_Cmd_SetHUDIcon ( 0, gametype.iconRedFlagCarried );
@@ -321,7 +326,7 @@ int GT_Event ( int cmd, int time, int arg0, int arg1, int arg2, int arg3, int ar
                         char clientname[MAX_QPATH];
                         trap_Cmd_GetClientName(arg1, clientname, MAX_QPATH);
 
-                        trap_Cmd_TextMessage(-1, va("%s has returned the Red Flag!", clientname));
+                        trap_Cmd_TextMessage(-1, va("%s^7 has \\returned the %s^7 Flag!", clientname, gt_redTeamColored.string));
                         trap_Cmd_SetHUDIcon(0, gametype.iconRedFlagCarried);
                         gametype.redFlagDropTime = 0;
                         gametype.redFlagAtBase = qtrue;
@@ -342,7 +347,7 @@ int GT_Event ( int cmd, int time, int arg0, int arg1, int arg2, int arg3, int ar
                     {
                         char clientname[MAX_QPATH];
                         trap_Cmd_GetClientName ( arg1, clientname, MAX_QPATH );
-                        trap_Cmd_TextMessage ( -1, va("%s has captured the Red Flag!", clientname ) );
+                        trap_Cmd_TextMessage ( -1, va("%s^7 has \\captured the %s^7 Flag!", clientname, gt_redTeamColored.string ) );
                         trap_Cmd_ResetItem ( ITEM_REDFLAG );
                         trap_Cmd_StartGlobalSound ( gametype.flagCaptureSound );
                         trap_Cmd_AddTeamScore ( arg2, 1 );
@@ -363,7 +368,7 @@ int GT_Event ( int cmd, int time, int arg0, int arg1, int arg2, int arg3, int ar
                     {
                         char clientname[MAX_QPATH];
                         trap_Cmd_GetClientName ( arg1, clientname, MAX_QPATH );
-                        trap_Cmd_TextMessage ( -1, va("%s has captured the Blue Flag!", clientname ) );
+                        trap_Cmd_TextMessage ( -1, va("%s^7 has \\captured the %s^7 Flag!", clientname, gt_blueTeamColored.string ) );
                         trap_Cmd_ResetItem ( ITEM_BLUEFLAG );
                         trap_Cmd_StartGlobalSound ( gametype.flagCaptureSound );
                         trap_Cmd_AddTeamScore ( arg2, 1 );

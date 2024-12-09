@@ -994,6 +994,44 @@ void ClientThink_real( gentity_t *ent )
         return;
     }
 
+    // Boe!Man 3/30/10: We wait for the motd.
+    if (client->sess.firstTime && !client->sess.motdStartTime && !level.intermissionQueued)
+    {
+        if (ucmd->buttons & BUTTON_ANY)
+        {
+            char* info = G_ColorizeMessage("\\Info:");
+            client->sess.motdStartTime = level.time;
+            client->sess.motdStopTime = level.time + 10000;
+            trap_SendServerCommand(ent - g_entities, va("chat -1 \"%s This server is running %s\n\"", info, "TEST"));
+            trap_SendServerCommand(ent - g_entities, va("chat -1 \"%s Please report any bugs on 1fxmod.org\n\"", info));
+            //Boe_Motd(ent); // JANFIXME add MOTD
+        }
+    }
+    //Ryan
+
+
+    // Boe!Man 5/6/15: Check for the client Mod.
+    if (level.goldMod == CL_ROCMOD && !client->sess.legacyProtocol && client->sess.clientMod != CL_ROCMOD && level.time > client->sess.clientModCheckTime) {
+        if (client->sess.clientModChecks > 25) {
+            char* info = G_ColorizeMessage("\\Info:");
+
+            trap_SendServerCommand(ent - g_entities, va("chat -1 \"%s This TEST server expects you to be running ^1ROCmod 2.1c^7.\n\"", info));
+            trap_SendServerCommand(ent - g_entities, va("chat -1 \"%s You do not appear to be running that specific version of ^1ROCmod^7.\n\"", info));
+            trap_SendServerCommand(ent - g_entities, va("chat -1 \"%s Please ^1download the mod^7, or ^1turn on auto-downloading^7, and re-join the game.\n\"", info));
+
+            // It looks like the client doesn't have the proper client, just continue bothering him every 20 seconds.
+            client->sess.clientModCheckTime = level.time + 20000;
+        }
+        else {
+            // Get the client to verify as soon as possible.
+            client->sess.clientModCheckTime = level.time + 5000;
+        }
+
+        trap_SendServerCommand(ent - g_entities, "verifymod");
+        client->sess.clientModChecks++;
+
+    }
+
     // spectators don't do much
     if ( G_IsClientSpectating ( client ) )
     {

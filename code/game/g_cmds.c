@@ -12,25 +12,37 @@ DeathmatchScoreboardMessage
 void DeathmatchScoreboardMessage( gentity_t *ent )
 {
     char        entry[1024];
-    char        string[1400];
-    int         stringlength;
+    char        string[2048], string2[2048];
+    int         stringlength, stringlength2;
     int         i, j;
-    gclient_t   *cl;
+    gclient_t* cl;
     int         numSorted;
+    char entry2[1024];
+
+    //Ryan may 15 2004
+    //dont let the scores update duing the awards
+    if (level.levelState == LEVELSTATE_AWARDS)
+    {
+        return;
+    }
+    //Ryan
 
     // send the latest information on all clients
-    string[0]    = 0;
+    string[0] = 0;
+    string2[0] = 0;
     stringlength = 0;
+    stringlength2 = 0;
 
     numSorted = level.numConnectedClients;
 
-    for (i=0 ; i < numSorted ; i++)
+    for (i = 0; i < numSorted; i++)
     {
         int ping;
+        qboolean ghost;
 
         cl = &level.clients[level.sortedClients[i]];
 
-        if ( cl->pers.connected == CON_CONNECTING )
+        if (cl->pers.connected == CON_CONNECTING)
         {
             ping = -1;
         }
@@ -39,33 +51,160 @@ void DeathmatchScoreboardMessage( gentity_t *ent )
             ping = cl->ps.ping < 999 ? cl->ps.ping : 999;
         }
 
-        Com_sprintf (entry, sizeof(entry),
-            " %i %i %i %i %i %i %i %i %i",
-            level.sortedClients[i],
-            cl->sess.score,
-            cl->sess.kills,
-            cl->sess.deaths,
-            ping,
-            (level.time - cl->pers.enterTime)/60000,
-            (cl->sess.ghost || cl->ps.pm_type == PM_DEAD) ? qtrue : qfalse,
-            g_entities[level.sortedClients[i]].s.gametypeitems,
-            g_teamkillDamageMax.integer ? 100 * cl->sess.teamkillDamage / g_teamkillDamageMax.integer : 0
+        ghost = cl->sess.ghost;
+#ifdef _3DServer
+        if (!ghost && cl->sess.deadMonkey) {
+            ghost = qtrue;
+        }
+#endif // _3DServer
+
+        /*if (ent->client->sess.hasRoxAC && current_gametype.value == GT_HS) {
+            Com_sprintf(entry, sizeof(entry),
+                " %i %i %i %i %i %i %i %i %i %i %i",
+                level.sortedClients[i],
+                cl->sess.score,
+                cl->sess.kills,
+                cl->sess.deaths,
+                ping,
+                (level.time - cl->pers.enterTime) / 60000,
+                (ghost || cl->ps.pm_type == PM_DEAD) ? qtrue : qfalse,
+                g_entities[level.sortedClients[i]].s.gametypeitems,
+                //	g_teamkillDamageMax.integer ? 100 * cl->sess.teamkillDamage / g_teamkillDamageMax.integer : 0,
+                //	cl->pers.statinfo.accuracy,
+                //	cl->pers.statinfo.headShotKills,
+                cl->sess.weaponsStolen,
+                cl->sess.stunAttacks,
+                cl->sess.seekersCaged
+            );
+        }
+        
+        //Ryan may 12 2004
+        //Add some info for client-side users
+        //RxCxW - 1.20.2005 - NOT compatible with 0.5. #Version
+        else */
+        if (ent->client->sess.legacyProtocol) {
+
+            if (level.legacyMod == CL_RPM && ent->client->sess.clientMod == CL_RPM && atof(ent->client->sess.clientVersion) > 0.5) {
+                if (atof(ent->client->sess.clientVersion) == 1.1) {
+                    Com_sprintf(entry, sizeof(entry),
+                        " %i %i %i %i %i %i %i %i %i",
+                        level.sortedClients[i],
+                        cl->sess.score,
+                        cl->sess.kills,
+                        cl->sess.deaths, // JANFIXME Zombies kills
+                        ping,
+                        (level.time - cl->pers.enterTime) / 60000,
+                        (ghost || cl->ps.pm_type == PM_DEAD) ? qtrue : qfalse,
+                        g_entities[level.sortedClients[i]].s.gametypeitems,
+                        g_teamkillDamageMax.integer ? 100 * cl->sess.teamkillDamage / g_teamkillDamageMax.integer : 0
+                    );
+                } 
+                else {
+                    Com_sprintf(entry, sizeof(entry),
+                        " %i %i %i %i %i %i %i %i %i %.2f %i",
+                        level.sortedClients[i],
+                        cl->sess.score,
+                        cl->sess.kills,
+                        cl->sess.deaths, // JANFIXME Zombies kills
+                        ping,
+                        (level.time - cl->pers.enterTime) / 60000,
+                        (ghost || cl->ps.pm_type == PM_DEAD) ? qtrue : qfalse,
+                        g_entities[level.sortedClients[i]].s.gametypeitems,
+                        g_teamkillDamageMax.integer ? 100 * cl->sess.teamkillDamage / g_teamkillDamageMax.integer : 0,
+                        //cl->pers.statinfo.accuracy, // JANFIXME 
+                        //cl->pers.statinfo.headShotKills // JANFIXME 
+                        0.0f,
+                        0
+                        //cl->pers.statinfo.damageDone
+                    );
+                }
+            }
+
+            else {
+                Com_sprintf(entry, sizeof(entry),
+                    " %i %i %i %i %i %i %i %i %i",
+                    level.sortedClients[i],
+                    cl->sess.score,
+                    cl->sess.kills,
+                    cl->sess.deaths, // JANFIXME zombies
+                    ping,
+                    (level.time - cl->pers.enterTime) / 60000,
+                    (ghost || cl->ps.pm_type == PM_DEAD) ? qtrue : qfalse,
+                    g_entities[level.sortedClients[i]].s.gametypeitems,
+                    g_teamkillDamageMax.integer ? 100 * cl->sess.teamkillDamage / g_teamkillDamageMax.integer : 0
+                );
+            }
+            j = strlen(entry);
+            if (stringlength + j > 1022)
+                break;
+
+            strcpy(string + stringlength, entry);
+            stringlength += j;
+        }
+        else { // Gold client
+            Com_sprintf(entry, sizeof(entry),
+                " %i %i %i %i %i %i %i %i %i",
+                level.sortedClients[i],
+                cl->sess.score,
+                cl->sess.kills,
+                cl->sess.deaths,
+                ping,
+                (level.time - cl->pers.enterTime) / 60000,
+                (ghost || cl->ps.pm_type == PM_DEAD) ? qtrue : qfalse,
+                g_entities[level.sortedClients[i]].s.gametypeitems,
+                g_teamkillDamageMax.integer ? 100 * cl->sess.teamkillDamage / g_teamkillDamageMax.integer : 0
             );
 
-        j = strlen(entry);
-        if (stringlength + j > 1022 )
-        {
-            break;
+            j = strlen(entry);
+            if (stringlength + j > 1022)
+                break;
+
+            strcpy(string + stringlength, entry);
+            stringlength += j;
+
+            if (level.goldMod == CL_ROCMOD) {
+                int admin = 0;
+
+                if (cl->sess.adminLevel >= ADMLVL_ADMIN)
+                    admin = 3;
+                else if (cl->sess.adminLevel > ADMLVL_NONE)
+                    admin = 2;
+                else if (cl->sess.referee)
+                    admin = 1;
+
+                Com_sprintf(entry2, sizeof(entry2),
+                    " %i %i %i %i %i %i %i %i %i %i",
+                    admin,
+                    0,//cl->pers.statinfo.hitcount,
+                    0,//cl->pers.statinfo.shotcount,
+                    0,//cl->pers.statinfo.headShotKills,
+                    0,//cl->pers.statinfo.itemCaptures,
+                    0,//cl->pers.statinfo.bestKillsInARow,
+                    0,//cl->pers.statinfo.knifeKills,
+                    0,//cl->pers.statinfo.explosiveKills,
+                    cl->sess.clanMember,
+                    0//cl->pers.statinfo.itemDefends
+                );
+
+                j = strlen(entry2);
+                if (stringlength2 + j > 1022)
+                    break;
+
+                strcpy(string2 + stringlength2, entry2);
+                stringlength2 += j;
+            }
         }
-
-        strcpy (string + stringlength, entry);
-        stringlength += j;
+    
     }
+    trap_SendServerCommand(ent - g_entities, va("scores %i %i %i%s", i,
+        level.teamScores[TEAM_RED],
+        level.teamScores[TEAM_BLUE],
+        string));
 
-    trap_SendServerCommand( ent-g_entities, va("scores %i %i %i%s", i,
-                            level.teamScores[TEAM_RED],
-                            level.teamScores[TEAM_BLUE],
-                            string ) );
+    if (level.goldMod == CL_ROCMOD && ent->client->sess.clientMod == CL_ROCMOD) {
+        trap_SendServerCommand(ent - g_entities, va("scores4 %i 10 %i%s", g_timelimit.integer ? (g_timelimit.integer + level.timeExtension) : 0, i, string2));
+    }
+    
 }
 
 
@@ -2029,13 +2168,13 @@ void ClientCommand( int clientNum ) {
     if (strstr(cmd, "bot_") && AcceptBotCommand(cmd, ent))
     {
         return;
-    }
-    //end rww
-
+    } 
+    
     if (Q_stricmp (cmd, "say") == 0) {
         Cmd_Say_f (ent, SAY_ALL, qfalse);
         return;
-    }
+    } 
+    
     if (Q_stricmp (cmd, "say_team") == 0) {
         Cmd_Say_f (ent, SAY_TEAM, qfalse);
         return;
@@ -2044,6 +2183,7 @@ void ClientCommand( int clientNum ) {
     if (Q_stricmp (cmd, "tell") == 0)
     {
         Cmd_Tell_f ( ent );
+
         return;
     }
 
@@ -2064,6 +2204,21 @@ void ClientCommand( int clientNum ) {
         return;
     }
 
+    if (!Q_stricmp(cmd, "tmi") && level.legacyMod == CL_RPM) {
+        RPM_UpdateTMI();
+    }
+
+    if (Q_stricmp(cmd, "verified") == 0 && level.goldMod == CL_ROCMOD && !ent->client->sess.legacyProtocol) {
+        ROCmod_verifyClient(ent, clientNum);
+        return qtrue;
+    }
+        
+    if (Q_stricmp(cmd, "uef") == 0 && level.goldMod == CL_ROCMOD && !ent->client->sess.legacyProtocol) {
+        ROCmod_clientUpdate(ent, clientNum);
+        return qtrue;
+    }
+        
+
     // ignore all other commands when at intermission
     if (level.intermissiontime)
     {
@@ -2071,7 +2226,7 @@ void ClientCommand( int clientNum ) {
         return;
     }
 
-    if ( Q_stricmp ( cmd, "drop" ) == 0 )
+     if ( Q_stricmp ( cmd, "drop" ) == 0 )
         Cmd_Drop_f ( ent );
     else if (Q_stricmp (cmd, "dropitem" ) == 0 )
         Cmd_DropItem_f ( ent );

@@ -2,7 +2,7 @@
 #include "../g_local.h"
 
 
-void logSystem(loggingLevel logLevel, const char* msg, ...) {
+void logSystem(loggingLevel_t logLevel, const char* msg, ...) {
     va_list     argptr;
     char        text[1024];
 
@@ -30,5 +30,9 @@ void logSystem(loggingLevel logLevel, const char* msg, ...) {
 }
 
 void logRcon() {
+
+}
+
+void logAdmin() {
 
 }

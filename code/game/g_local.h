@@ -34,6 +34,36 @@
 
 #define MAX_SPAWNS                  128
 
+#define MAX_CLIENT_MOD 10
+#define MAX_AC_GUID 12
+
+typedef enum {
+    CL_NONE,
+    CL_RPM,
+    CL_ROCMOD,
+    CL_1FXROCMOD
+} clientMod_t ;
+
+// BoeMan 8/30/14: Broadcast priorities, from low to high.
+typedef enum {
+    BROADCAST_GAME,             // Regular game messages.
+    BROADCAST_CMD,              // Admin commands such as uppercut, broadcast, etc.
+    BROADCAST_GAME_IMPORTANT,   // More important gametype messages that should override Admin commands.
+    BROADCAST_AWARDS,           // Awards (H&S and regular).
+    BROADCAST_MOTD              // Message of the day when entering the server.
+} broadcastPrio_t;
+
+typedef enum {
+    COMPMODE_NONE,
+    COMPMODE_INITIALIZED,
+    COMPMODE_INMATCH,
+    COMPMODE_END
+} compModeState;
+
+// Flags to determine which extra features the client is willing to accept in ROCmod.
+#define ROC_TEAMINFO    0x00000001
+#define ROC_SPECLIST    0x00000002
+
 // movers are things like doors, plats, buttons, etc
 typedef enum
 {
@@ -226,22 +256,27 @@ typedef struct
 #define FOLLOW_ACTIVE2  -2
 
 // Admin levels.
-typedef enum admLevel_e {
+typedef enum {
     ADMLVL_NONE,
     ADMLVL_BADMIN,
     ADMLVL_ADMIN,
     ADMLVL_SADMIN,
     ADMLVL_HADMIN // head admin. At least in 3D, we've had challenges in the past as the s-admin part starts from Captain, that we still need RCON (or dev) for some commands.
                   // Theoretically headadmin should give us enough room for it - upper staff = headadmin, sadmin = e.g. captains, editors etc.
-} admLevel;
+} admLevel_t;
 
-typedef enum admType_e {
+typedef enum {
     ADMTYPE_NONE,
     ADMTYPE_IP,
     ADMTYPE_LOGIN,
     ADMTYPE_OTP,
     ADMTYPE_GUID
-} admType;
+} admType_t;
+
+typedef enum {
+    LEVELSTATE_GAME,
+    LEVELSTATE_AWARDS
+} levelState_t;
 
 // client data that stays across multiple levels or map restarts
 // this is achieved by writing all the data to cvar strings at game shutdown
@@ -265,8 +300,29 @@ typedef struct
     qboolean            muted;
 
     qboolean            legacyProtocol;
-    admLevel            adminLevel;
-    admType             adminLogonMethod;
+    admLevel_t            adminLevel;
+    admType_t             adminLogonMethod;
+
+    clientMod_t         clientMod;
+    char                clientVersion[MAX_CLIENT_MOD];
+    qboolean            clanMember;
+    qboolean            verifyRoxAC;
+    qboolean            hasRoxAC;
+    char                roxGuid[MAX_AC_GUID];
+
+    qboolean            referee;
+
+    int                 rocExtraFeatures;
+    int                 rocClientChecks;
+    int                 rocClientCheckTime;
+
+    int                 lastMessagePriority;
+    int                 lastMessage;
+    qboolean            firstTime;
+    int                 motdStartTime;
+    int                 motdStopTime;
+    int                 clientModCheckTime;
+    int                 clientModChecks;
 
 } clientSession_t;
 
@@ -411,14 +467,6 @@ struct gclient_s
     vec3_t          minSave;
 };
 
-typedef enum {
-    CL_NONE,
-    CL_RPM,
-    CL_ROCMOD,
-    CL_1FXROCMOD
-} clientMod;
-
-
 //
 // this structure is cleared as each map is entered
 //
@@ -551,8 +599,15 @@ typedef struct
     char            autokickedIP[MAX_AUTOKICKLIST][20];
 
     qboolean        multiprotocol;
-    clientMod       legacyMod;
-    clientMod       goldMod;
+    clientMod_t     legacyMod;
+    clientMod_t     goldMod;
+    
+    qboolean        paused;
+    int             lastTMIUpdate;
+    int             lastETIUpdate;
+
+    levelState_t    levelState;
+
 
 } level_locals_t;
 
@@ -1023,6 +1078,18 @@ extern vmCvar_t    a_anticamp;
 extern vmCvar_t    a_pop;
 extern vmCvar_t    a_uppercut;
 
+extern vmCvar_t     g_serverColors;
+
+extern  vmCvar_t    g_serverColors;
+extern  vmCvar_t    g_redTeamPrefix;
+extern  vmCvar_t    g_blueTeamPrefix;
+extern  vmCvar_t    g_hiderTeamPrefix;
+extern  vmCvar_t    g_seekerTeamPrefix;
+extern  vmCvar_t    g_humanTeamPrefix;
+extern  vmCvar_t    g_zombieTeamPrefix;
+
+//extern vmCvar_t     g_leanType;
+
 void    trap_Print( const char *text );
 void    trap_Error( const char *text ) __attribute__((noreturn));
 int     trap_Milliseconds( void );
@@ -1271,13 +1338,13 @@ typedef enum {
     LOGLEVEL_ERROR,
     LOGLEVEL_FATAL,
     LOGLEVEL_FATAL_DB // this is used if we have a fatal DB-related error (most likely not usable DB), which means that if db logging is turned on, game will not try to log it into the DB because, well..., the DB part failed...
-} loggingLevel;
+} loggingLevel_t;
 
-void logSystem(loggingLevel logLevel, const char* msg, ...) __attribute__((format(printf, 2, 3)));
+void logSystem(loggingLevel_t logLevel, const char* msg, ...) __attribute__((format(printf, 2, 3)));
 void logRcon();
-#define MAX_CLIENT_MOD 10
+void logAdmin();
 
-const char* getAdminNameByAdminLevel(admLevel adminLevel);
+const char* getAdminNameByAdminLevel(admLevel_t adminLevel);
 void G_SetDisabledWeapons(void);
 
 // struct from 1fxmod
@@ -1367,5 +1434,44 @@ int adm_Punish(int argNum, gentity_t* adm, qboolean shortCmd);
 int adm_punishList(int argNum, gentity_t* adm, qboolean shortCmd);
 int adm_mapCycleList(int argNum, gentity_t* adm, qboolean shortCmd);
 int adm_skipToMap(int argNum, gentity_t* adm, qboolean shortCmd);
+qboolean canClientRunAdminCommand(gentity_t* adm, int adminCommandId);
+int cmdIsAdminCmd(char* cmd, qboolean shortCmd);
+void runAdminCommand(int adminCommandId, int argNum, gentity_t* adm, qboolean shortCmd);
+void postExecuteAdminCommand(int funcNum, int idNum, gentity_t* adm);
+
+// RPM.c
+void RPM_UpdateTMI(void);
+void RPM_Awards(void);
+
+// ROCmod.c
+void ROCmod_verifyClient(gentity_t* ent, int clientNum);
+void ROCmod_clientUpdate(gentity_t* ent, int clientNum);
+void ROCmod_sendExtraTeamInfo(gentity_t* ent);
+void ROCmod_sendBestPlayerStats(void);
 
 
+void G_Broadcast(int broadcastLevel, gentity_t* to, qboolean playSound, char* broadcast, ...) __attribute__((format(printf, 3, 4)));
+char* G_ColorizeMessage(char* broadcast);
+int G_ClientNumFromArg(gentity_t* ent, int argNum, const char* action, qboolean aliveOnly, qboolean otherAdmins, qboolean higherLvlAdmins, qboolean shortCmd);
+
+qboolean checkAdminPassword(char* input);
+void G_CloseSound(vec3_t origin, int soundIndex);
+void G_GlobalSound(int soundIndex);
+void G_ClientSound(gentity_t* ent, int soundIndex);
+void G_RemoveAdditionalCarets(char* text);
+void G_RemoveColorEscapeSequences(char* text);
+char* concatArgs(int fromArgNum, qboolean shortCmd);
+char* G_GetArg(int argNum, qboolean shortCmd);
+char* G_GetChatArgument(int argNum);
+int G_GetChatArgumentCount();
+
+void QDECL G_printMessage(qboolean isChat, gentity_t* ent, char* prefix, const char* msg, va_list argptr);
+void QDECL G_printInfoMessage(gentity_t* ent, const char* msg, ...) __attribute__((format(printf, 2, 3)));
+void QDECL G_printChatInfoMessage(gentity_t* ent, const char* msg, ...) __attribute__((format(printf, 2, 3)));
+void QDECL G_printInfoMessageToAll(const char* msg, ...) __attribute__((format(printf, 1, 2)));
+void QDECL G_printChatInfoMessageToAll(const char* msg, ...) __attribute__((format(printf, 1, 2)));
+
+void QDECL G_printCustomMessageToAll(const char* prefix, const char* msg, ...) __attribute__((format(printf, 2, 3)));
+void QDECL G_printCustomMessage(gentity_t* ent, const char* prefix, const char* msg, ...) __attribute__((format(printf, 3, 4)));
+void QDECL G_printCustomChatMessage(gentity_t* ent, const char* prefix, const char* msg, ...) __attribute__((format(printf, 3, 4)));
+void QDECL G_printCustomChatMessageToAll(const char* prefix, const char* msg, ...) __attribute__((format(printf, 2, 3)));

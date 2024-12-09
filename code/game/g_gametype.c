@@ -836,7 +836,7 @@ intptr_t G_GametypeCommand(int command, intptr_t arg0, intptr_t arg1, intptr_t a
             break;
 
         case GT_TEXTMESSAGE:
-            trap_SetConfigstring ( CS_GAMETYPE_MESSAGE, va("%i,%s", level.time + 5000, (const char*)arg1 ) );
+            trap_SetConfigstring ( CS_GAMETYPE_MESSAGE, va("%i,%s", level.time + 5000, (const char*)G_ColorizeMessage(arg1) ) );
             break;
 
         case GT_RADIOMESSAGE:
