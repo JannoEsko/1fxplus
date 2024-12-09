@@ -537,11 +537,17 @@ void G_Broadcast(int broadcastLevel, gentity_t* to, qboolean playSound, char* br
 }
 
 // Generic function to handle both console and chat messages.
-void QDECL G_printMessage(qboolean isChat, gentity_t* ent, char* prefix, const char* msg, va_list argptr)
+void QDECL G_printMessage(qboolean isChat, qboolean toAll, gentity_t* ent, char* prefix, const char* msg, va_list argptr)
 {
     int         len;
     char        text[1024];
     int         remainingSize = sizeof(text) - 4;
+
+    qboolean toConsole = qfalse;
+
+    if (!isChat && !toAll && (!ent || !ent->client)) {
+        toConsole = qtrue;
+    }
 
     memset(text, 0, sizeof(text));
 
@@ -550,8 +556,11 @@ void QDECL G_printMessage(qboolean isChat, gentity_t* ent, char* prefix, const c
         strncat(text, "chat -1 \"", remainingSize);
         prefix = G_ColorizeMessage(prefix);
     }
-    else {
+    else if (!toConsole){
         strncat(text, "print \"^3[", remainingSize);
+    }
+    else {
+        strncat(text, "^3[", remainingSize);
     }
     strncat(text, prefix, remainingSize - strlen(text));
     if (isChat) {
@@ -562,12 +571,23 @@ void QDECL G_printMessage(qboolean isChat, gentity_t* ent, char* prefix, const c
     }
     
     len = vsnprintf(text + strlen(text), remainingSize - strlen(text), msg, argptr);
-    strncat(text + strlen(text), "\n\"", sizeof(text) - strlen(text) - 1);
+
+    if (!toConsole) {
+        strncat(text + strlen(text), "\n\"", sizeof(text) - strlen(text) - 1);
+    }
+    else {
+        strncat(text + strlen(text), "\n", sizeof(text) - strlen(text) - 1);
+    }
+
+    
     if (ent && ent->client) {
         trap_SendServerCommand(ent - g_entities, text);
     }
+    else if (!toConsole) {
+        trap_SendServerCommand(-1, text);
+    }
     else {
-        trap_SendServerCommand(-1, text);  
+        Com_Printf(text);
     }
 }
 
@@ -576,7 +596,7 @@ void QDECL G_printInfoMessage(gentity_t* ent, const char* msg, ...)
     va_list     argptr;
 
     va_start(argptr, msg);
-    G_printMessage(qfalse, ent, "Info", msg, argptr);
+    G_printMessage(qfalse, qfalse, ent, "Info", msg, argptr);
     va_end(argptr);
 }
 
@@ -585,7 +605,7 @@ void QDECL G_printChatInfoMessage(gentity_t* ent, const char* msg, ...)
     va_list     argptr;
 
     va_start(argptr, msg);
-    G_printMessage(qtrue, ent, "\\Info", msg, argptr);
+    G_printMessage(qtrue, qfalse, ent, "\\Info", msg, argptr);
     va_end(argptr);
 }
 
@@ -594,7 +614,7 @@ void QDECL G_printInfoMessageToAll(const char* msg, ...)
     va_list     argptr;
 
     va_start(argptr, msg);
-    G_printMessage(qfalse, NULL, "Info", msg, argptr);
+    G_printMessage(qfalse, qtrue, NULL, "Info", msg, argptr);
     va_end(argptr);
 }
 
@@ -603,7 +623,7 @@ void QDECL G_printChatInfoMessageToAll(const char* msg, ...)
     va_list     argptr;
 
     va_start(argptr, msg);
-    G_printMessage(qtrue, NULL, "\\Info", msg, argptr); 
+    G_printMessage(qtrue, qtrue, NULL, "\\Info", msg, argptr); 
     va_end(argptr);
 
 }
@@ -613,7 +633,7 @@ void QDECL G_printCustomChatMessageToAll(const char* prefix, const char* msg, ..
     va_list     argptr;
 
     va_start(argptr, msg);
-    G_printMessage(qtrue, NULL, va("\\%s", prefix), msg, argptr);
+    G_printMessage(qtrue, qtrue, NULL, va("\\%s", prefix), msg, argptr);
     va_end(argptr);
 
 }
@@ -623,7 +643,7 @@ void QDECL G_printCustomChatMessage(gentity_t* ent, const char* prefix, const ch
     va_list     argptr;
 
     va_start(argptr, msg);
-    G_printMessage(qtrue, ent, va("\\%s", prefix), msg, argptr);
+    G_printMessage(qtrue, qfalse, ent, va("\\%s", prefix), msg, argptr);
     va_end(argptr);
 
 }
@@ -633,7 +653,7 @@ void QDECL G_printCustomMessage(gentity_t* ent, const char* prefix, const char* 
     va_list     argptr;
 
     va_start(argptr, msg);
-    G_printMessage(qfalse, ent, prefix, msg, argptr);
+    G_printMessage(qfalse, qfalse, ent, prefix, msg, argptr);
     va_end(argptr);
 }
 
@@ -642,6 +662,6 @@ void QDECL G_printCustomMessageToAll(const char* prefix, const char* msg, ...)
     va_list     argptr;
 
     va_start(argptr, msg);
-    G_printMessage(qfalse, NULL, prefix, msg, argptr);
+    G_printMessage(qfalse, qtrue, NULL, prefix, msg, argptr);
     va_end(argptr);
 }

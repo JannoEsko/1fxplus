@@ -1017,6 +1017,9 @@ void ClientUserinfoChanged( int clientNum )
         client->pers.localClient = qtrue;
     }
 
+    Q_strncpyz(client->pers.ip, s, sizeof(client->pers.ip));
+    Q_strncpyz(client->pers.subnet, s, 7);
+
     // check the item prediction
     s = Info_ValueForKey( userinfo, "cg_predictItems" );
     if ( !atoi( s ) )

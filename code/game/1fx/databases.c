@@ -13,6 +13,33 @@ char sqlTempName[MAX_SQL_TEMP_NAME];
 sqlite3* gameDb;
 sqlite3* logsDb;
 
+static void sqlBindTextOrNull(sqlite3_stmt* stmt, int argnum, char* text) {
+
+    if (text) {
+        sqlite3_bind_text(stmt, argnum, text, strlen(text), SQLITE_STATIC);
+    }
+    else {
+        sqlite3_bind_null(stmt, argnum);
+    }
+
+}
+
+static void sqlBindTextOrDefault(sqlite3_stmt* stmt, int argnum, char* text, char* def) {
+
+    if (!def) {
+        sqlBindTextOrNull(stmt, argnum, text);
+    }
+    else {
+        if (text) {
+            sqlite3_bind_text(stmt, argnum, text, strlen(text), SQLITE_STATIC);
+        }
+        else {
+            sqlite3_bind_text(stmt, argnum, def, strlen(def), SQLITE_STATIC);
+        }
+    }
+
+}
+
 
 // Boe!Man 5/27/13: Misc. SQLite functions.
 static int processTableStructure(void* pData, int nColumns,
@@ -65,6 +92,7 @@ static void migrateGameDatabase(sqlite3* db, int gameMigrationLevel) {
             "CREATE TABLE IF NOT EXISTS banlist (playername VARCHAR(64), ip VARCHAR(24), adminname VARCHAR(64), reason VARCHAR(512), bannedwhen TIMESTAMP DEFAULT CURRENT_TIMESTAMP, banneduntil TIMESTAMP, endofmap INTEGER DEFAULT 0, adminlevel INTEGER);"
             "CREATE TABLE IF NOT EXISTS subnetbanlist (playername VARCHAR(64), ip VARCHAR(24), adminname VARCHAR(64), reason VARCHAR(512), bannedwhen TIMESTAMP DEFAULT CURRENT_TIMESTAMP, banneduntil TIMESTAMP, endofmap INTEGER DEFAULT 0, adminlevel INTEGER);"
             "CREATE TABLE IF NOT EXISTS adminpasslist (adminname VARCHAR(64) COLLATE NOCASE, adminlevel INTEGER, addedby VARCHAR(64), addedwhen TIMESTAMP DEFAULT CURRENT_TIMESTAMP, password VARCHAR(80));"
+            "CREATE TABLE IF NOT EXISTS adminguidlist (adminname VARCHAR(64) COLLATE NOCASE, adminlevel INTEGER, addedby VARCHAR(64), addedwhen TIMESTAMP DEFAULT CURRENT_TIMESTAMP, acguid VARCHAR(20));"
             "CREATE TABLE IF NOT EXISTS aliases (alias VARCHAR(64), ip VARCHAR(24));"
             "CREATE INDEX IF NOT EXISTS idx_aliases_ip ON aliases (ip);"
             "DELETE FROM migrationlevel;"
@@ -266,6 +294,132 @@ void backupInMemoryDatabases(void) {
 
     sqlite3_exec(pFile, "COMMIT", NULL, NULL, NULL);
     sqlite3_close(pFile);
+}
+
+/*
+======================
+This function gets back the admin level for the respective client.
+On NULL password, the password table can still be queried, expectation 
+is that this is just for a check whether admin exists.
+======================
+*/
+int dbGetAdminLevel(admType_t adminType, gentity_t* ent, char* passguid) {
+
+    sqlite3* db = gameDb;
+    sqlite3_stmt* stmt;
+
+    int returnable = -1;
+
+    char* query = va("SELECT ROWID, adminlevel FROM admin%slist WHERE adminname = ? %s", 
+        adminType == ADMTYPE_PASS ? "pass" : 
+            (adminType == ADMTYPE_GUID ? "guid" : ""), 
+        adminType == ADMTYPE_IP ? "AND ip = ?" : 
+            (adminType == ADMTYPE_PASS && passguid && strlen(passguid) > 0 ? "AND password = ?" : 
+                (adminType == ADMTYPE_GUID && passguid && strlen(passguid) > 0 ? "AND guid = ?" : "")
+            )
+    
+    );
+
+    sqlite3_prepare(db, query, -1, &stmt, 0);
+
+    sqlBindTextOrNull(stmt, 1, ent->client->pers.cleanName);
+
+    if (adminType == ADMTYPE_GUID) {
+        sqlBindTextOrNull(stmt, 2, ent->client->sess.roxGuid);
+    }
+    else if (adminType == ADMTYPE_IP) {
+        sqlBindTextOrNull(stmt, 2, ent->client->pers.ip);
+    }
+    else if ((adminType == ADMTYPE_PASS || adminType == ADMTYPE_GUID) && passguid && strlen(passguid)) {
+        sqlBindTextOrNull(stmt, 2, passguid);
+    }
+
+    if (sqlite3_step(stmt) == SQLITE_ROW) {
+        returnable = sqlite3_column_int(stmt, 1);
+    }
+
+    sqlite3_finalize(stmt);
+
+    return returnable;
+}
+
+static void dbAddIpAdmin(admLevel_t adminLevel, gentity_t* ent, gentity_t* adm) {
+
+    sqlite3* db = gameDb;
+    sqlite3_stmt* stmt;
+
+    char* query = va("INSERT INTO adminlist (adminname, ip, adminlevel, addedby) VALUES (?, ?, ?, ?)");
+
+    sqlite3_prepare(db, query, -1, &stmt, 0);
+
+    sqlBindTextOrNull(stmt, 1, ent->client->pers.cleanName);
+    sqlBindTextOrNull(stmt, 2, ent->client->pers.ip);
+    sqlite3_bind_int(stmt, 3, adminLevel);
+    sqlBindTextOrNull(stmt, 4, getNameOrArg(adm, "RCON", qtrue));
+
+    sqlite3_step(stmt);
+
+    sqlite3_finalize(stmt);
+}
+
+
+static void dbAddPassAdmin(admLevel_t adminLevel, gentity_t* ent, gentity_t* adm, char* pass) {
+
+    sqlite3* db = gameDb;
+    sqlite3_stmt* stmt;
+
+    char* query = va("INSERT INTO adminpasslist (adminname, adminlevel, addedby, password) VALUES (?, ?, ?, ?)");
+
+    sqlite3_prepare(db, query, -1, &stmt, 0);
+
+    sqlBindTextOrNull(stmt, 1, ent->client->pers.cleanName);
+    sqlite3_bind_int(stmt, 2, adminLevel);
+    sqlBindTextOrNull(stmt, 3, getNameOrArg(adm, "RCON", qtrue));
+    
+    sqlBindTextOrNull(stmt, 4, pass);
+
+    sqlite3_step(stmt);
+
+    sqlite3_finalize(stmt);
+
+}
+
+
+static void dbAddGuidAdmin(admLevel_t adminLevel, gentity_t* ent, gentity_t* adm) {
+
+    sqlite3* db = gameDb;
+    sqlite3_stmt* stmt;
+
+    char* query = va("INSERT INTO adminlist (adminname, adminlevel, addedby, acguid) VALUES (?, ?, ?, ?)");
+
+    sqlite3_prepare(db, query, -1, &stmt, 0);
+
+    sqlBindTextOrNull(&stmt, 1, ent->client->pers.cleanName);
+    sqlite3_bind_int(&stmt, 2, adminLevel);
+    sqlBindTextOrNull(&stmt, 3, getNameOrArg(adm, "RCON", qtrue));
+
+    sqlBindTextOrNull(&stmt, 4, ent->client->sess.roxGuid);
+
+    sqlite3_step(stmt);
+
+    sqlite3_finalize(stmt);
+
+}
+
+void dbAddAdmin(admType_t adminType, admLevel_t adminLevel, gentity_t* ent, gentity_t* adm, char* password) {
+
+    switch (adminType) {
+    case ADMTYPE_GUID:
+        dbAddGuidAdmin(adminLevel, ent, adm);
+        break;
+    case ADMTYPE_IP:
+        dbAddIpAdmin(adminLevel, ent, adm);
+        break;
+    case ADMTYPE_PASS:
+        dbAddPassAdmin(adminLevel, ent, adm, password);
+        break;
+    }
+
 }
 
 

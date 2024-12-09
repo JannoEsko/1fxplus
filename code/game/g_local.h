@@ -37,6 +37,13 @@
 #define MAX_CLIENT_MOD 10
 #define MAX_AC_GUID 12
 
+#define MAX_NETNAME         36
+#define MAX_IDENTITY        64
+#define MAX_VOTE_COUNT      3
+
+#define MAX_IP                      40          // ipv6 theoretical max
+
+
 typedef enum {
     CL_NONE,
     CL_RPM,
@@ -268,7 +275,7 @@ typedef enum {
 typedef enum {
     ADMTYPE_NONE,
     ADMTYPE_IP,
-    ADMTYPE_LOGIN,
+    ADMTYPE_PASS,
     ADMTYPE_OTP,
     ADMTYPE_GUID
 } admType_t;
@@ -323,13 +330,11 @@ typedef struct
     int                 motdStopTime;
     int                 clientModCheckTime;
     int                 clientModChecks;
-
+    char                adminName[MAX_NETNAME]; // This holds the name the client had when they got their admin powers.
+    qboolean            setAdminPassword;
 } clientSession_t;
 
 //
-#define MAX_NETNAME         36
-#define MAX_IDENTITY        64
-#define MAX_VOTE_COUNT      3
 
 // client data that stays across multiple respawns, but is cleared
 // on each level change or team change at ClientBegin()
@@ -353,6 +358,8 @@ typedef struct
     int                 voteCount;                  // to prevent people from constantly calling votes
     int                 firemode[MAX_WEAPONS];      // weapon firemodes
     char                cleanName[MAX_NETNAME];
+    char                ip[MAX_IP];
+    char                subnet[MAX_IP];
 
 } clientPersistant_t;
 
@@ -1316,7 +1323,6 @@ void        trap_GT_Shutdown    ( void );
 qboolean trap_IsClientLegacy(int clientNum);
 int trap_TranslateSilverWeaponToGoldWeapon(int weapon);
 int trap_TranslateGoldWeaponToSilverWeapon(int weapon);
-void trap_RegisterAvailableWpnsLegacyTranslation(char* legacyAvailableWpns);
 
 void G_UpdateClientAntiLag  ( gentity_t* ent );
 void G_UndoAntiLag          ( void );
@@ -1330,6 +1336,10 @@ char* getNameOrArg(gentity_t* ent, char* arg, qboolean cleanName);
 void loadDatabases(void);
 void backupInMemoryDatabases(void);
 void unloadInMemoryDatabases(void);
+
+int dbGetAdminLevel(admType_t adminType, gentity_t* ent, char* passguid);
+void dbAddAdmin(admType_t adminType, admLevel_t adminLevel, gentity_t* ent, gentity_t* adm, char* password);
+
 
 typedef enum {
     LOGLEVEL_TEXT,
@@ -1465,7 +1475,7 @@ char* G_GetArg(int argNum, qboolean shortCmd);
 char* G_GetChatArgument(int argNum);
 int G_GetChatArgumentCount();
 
-void QDECL G_printMessage(qboolean isChat, gentity_t* ent, char* prefix, const char* msg, va_list argptr);
+void QDECL G_printMessage(qboolean isChat, qboolean toAll, gentity_t* ent, char* prefix, const char* msg, va_list argptr);
 void QDECL G_printInfoMessage(gentity_t* ent, const char* msg, ...) __attribute__((format(printf, 2, 3)));
 void QDECL G_printChatInfoMessage(gentity_t* ent, const char* msg, ...) __attribute__((format(printf, 2, 3)));
 void QDECL G_printInfoMessageToAll(const char* msg, ...) __attribute__((format(printf, 1, 2)));

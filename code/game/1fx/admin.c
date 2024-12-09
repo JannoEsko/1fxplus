@@ -127,7 +127,115 @@ int adm_adminList(int argNum, gentity_t* adm, qboolean shortCmd) {
 	return -1;
 }
 
+static void addAdmin(int argNum, gentity_t* adm, qboolean shortCmd, admLevel_t admlvl) {
+	
+	int idNum = G_ClientNumFromArg(adm, argNum, "do this to", qfalse, qtrue, qtrue, shortCmd);
+
+	if (idNum < 0) return;
+	gentity_t* ent = g_entities + idNum;
+	char arg[64];
+	admType_t adminType = ADMTYPE_IP;
+
+	if (shortCmd && G_GetChatArgumentCount()) {
+		Q_strncpyz(arg, G_GetChatArgument(2), sizeof(arg));
+	}
+	else {
+		trap_Argv(argNum + 1, arg, sizeof(arg));
+	}
+
+	if (!Q_stricmp(arg, "pass")) {
+		adminType = ADMTYPE_PASS;
+	}
+	else if (!Q_stricmp(arg, "guid")) {
+
+		if (!ent->client->sess.legacyProtocol) {
+
+			G_printInfoMessage(adm, "You can only add GUID-admins for legacy / 1.00 clients.");
+
+			return;
+		}
+		else if (!ent->client->sess.hasRoxAC) {
+			G_printInfoMessage(adm, "Client %s (%d) does not have Rox AC running or the verification failed.", ent->client->pers.cleanName, idNum);
+		}
+
+		adminType = ADMTYPE_GUID;
+	}
+
+	// Check for admin existence in the admin tables.
+	Com_Printf("GOT HERE");
+	int existingAdminLevel = dbGetAdminLevel(adminType, ent, NULL);
+	Com_Printf("GOT THERE");
+	if (existingAdminLevel != -1) {
+
+		if (adminType == ADMTYPE_PASS) {
+			ent->client->sess.setAdminPassword = qtrue;
+			G_printInfoMessage(adm, "Client %s (%d) already had admin powers. They can now change their password.", ent->client->pers.cleanName, idNum);
+			G_printChatInfoMessage(ent, "%s has toggled admin-password reset for you.", getNameOrArg(adm, "RCON", qtrue));
+			G_printChatInfoMessage(ent, "To do so, issue command \"/adm pass\" into console, e.g. \"/adm pass newpass\"");
+			G_printChatInfoMessage(ent, "That will set your password to \"newpass\"");
+
+			logAdmin();
+			return;
+		}
+		else {
+			G_printInfoMessage(adm, "Client %s (%d) already has admin powers. Please remove them before trying to readd.", ent->client->pers.cleanName, idNum);
+
+			return;
+		}
+
+		
+	}
+	Com_Printf("GOT 123");
+	// Client doesn't have admin, so lets perform the action.
+	Com_Printf("\ndbAddAdmin, params: %d, %d, %s, %s\n", adminType, admlvl, getNameOrArg(ent, "WTF", qtrue), getNameOrArg(adm, "RCON?", qtrue));
+	dbAddAdmin(adminType, admlvl, ent, adm, NULL);
+	Com_Printf("GOT 11222333HERE");
+	if (adminType == ADMTYPE_PASS) {
+		ent->client->sess.setAdminPassword = qtrue;
+		G_printChatInfoMessage(ent, "%s has added you to admin passlist as %s.", getNameOrArg(adm, "RCON", qtrue), getAdminNameByAdminLevel(admlvl));
+		G_printChatInfoMessage(ent, "For that, you do need to set a password.");
+		G_printChatInfoMessage(ent, "To do so, issue command \"/adm pass\" into console, e.g. \"/adm pass newpass\"");
+		G_printChatInfoMessage(ent, "That will set your password to \"newpass\"");
+
+		
+	}
+	else {
+		ent->client->sess.adminLevel = admlvl;
+		ent->client->sess.adminLogonMethod = adminType;
+	}
+
+	logAdmin();
+	G_Broadcast(BROADCAST_GAME, NULL, qtrue, "%s\n^7has been added to %s^7list\nby %s", ent->client->pers.netname, getAdminNameByAdminLevel(admlvl), getNameOrArg(adm, "\\RCON", qtrue));
+
+
+
+}
+
 int adm_addAdmin(int argNum, gentity_t* adm, qboolean shortCmd) {
+
+	char            command[64] = "\0";
+
+	if (adm && adm->client) {
+		trap_Argv(1, command, sizeof(command));
+	}
+	else {
+		trap_Argv(0, command, sizeof(command));
+	}
+	Q_strlwr(command); // Boe!Man 2/16/13: Fix capitalized Admin commands resulting in adding S-Admin by converting the command to lower case.
+
+	if (strstr(command, "!ab") || strstr(command, "addbadmin")) {
+		addAdmin(argNum, adm, shortCmd, ADMLVL_BADMIN, "addbadmin");
+	}
+	else if (strstr(command, "!aa") || strstr(command, "addadmin")) {
+		addAdmin(argNum, adm, shortCmd, ADMLVL_ADMIN, "addadmin");
+	}
+	else if (strstr(command, "!as") || strstr(command, "addsadmin")) { 
+		addAdmin(argNum, adm, shortCmd, ADMLVL_SADMIN, "addsadmin");
+	}
+	else if (strstr(command, "!ah") || strstr(command, "addhadmin")) { 
+		addAdmin(argNum, adm, shortCmd, ADMLVL_HADMIN, "addsadmin");
+	}
+
 	return -1;
 }
 
