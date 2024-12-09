@@ -238,7 +238,7 @@ qboolean ConsoleCommand( void )
             gentity_t* tent = &g_entities[level.sortedClients[i]];
 
             if (tent && tent->client && tent->client->pers.connected == CON_CONNECTED) {
-                Com_Printf("%3i %-15s %-12s\n", tent->s.clientNum, tent->client->pers.netname, tent->client->sess.legacyProtocol ? "Legacy" : "Non-legacy");
+                Com_Printf("%3i %-15s %-12s\n", tent->s.clientNum, tent->client->pers.cleanName, tent->client->sess.legacyProtocol ? "Legacy" : "Non-legacy");
             }
 
             

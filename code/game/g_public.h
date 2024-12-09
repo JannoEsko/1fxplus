@@ -437,7 +437,8 @@ typedef enum {
 
     // custom 
     G_CLIENT_ISLEGACYPROTOCOL = 1001,
-    G_TRANSLATE_SILVER_WPN_TO_GOLD
+    G_TRANSLATE_SILVER_WPN_TO_GOLD,
+    G_TRANSLATE_GOLD_WPN_TO_SILVER
 
 } gameImport_t;
 

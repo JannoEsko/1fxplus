@@ -104,7 +104,7 @@ void RPM_UpdateTMI(void)
         }
         */
         damage = 0;
-        string = va("%i", cl->ps.weapon);
+        string = va("%i", trap_TranslateGoldWeaponToSilverWeapon(cl->ps.weapon));
         Com_sprintf(entry, sizeof(entry),
             " %i %i %i %i %i %i %s %i %i",
             level.sortedClients[i],

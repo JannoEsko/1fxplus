@@ -1035,3 +1035,7 @@ qboolean trap_IsClientLegacy(int clientNum) {
 int trap_TranslateSilverWeaponToGoldWeapon(int weapon) {
     return (int)syscall(G_TRANSLATE_SILVER_WPN_TO_GOLD, weapon);
 }
+
+int trap_TranslateGoldWeaponToSilverWeapon(int weapon) {
+    return (int)syscall(G_TRANSLATE_GOLD_WPN_TO_SILVER, weapon);
+}

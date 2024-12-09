@@ -2169,7 +2169,7 @@ void ClientCommand( int clientNum ) {
     {
         return;
     } 
-    
+
     if (Q_stricmp (cmd, "say") == 0) {
         Cmd_Say_f (ent, SAY_ALL, qfalse);
         return;
