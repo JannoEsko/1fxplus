@@ -347,6 +347,7 @@ void backupInMemoryDatabases(void) {
     sqlite3* pFile;
     int             rc;
 
+
     rc = sqlite3_open("./1fx/databases/game.db", &pFile);
 
     if (rc) {
@@ -1052,7 +1053,7 @@ static qboolean dbQueryBan(char* ip, qboolean subnet, char* reason, int reasonSi
 
     qboolean success = qfalse;
 
-    char* query = va("SELECT reason, endofmap, ROUND((JULIANDAY(till) - JULIANDAY()) * 1440) AS timeleft FROM %sbanlist WHERE ip = ?", subnet ? "subnet" : "");
+    char* query = va("SELECT reason, endofmap, ROUND((JULIANDAY(banneduntil) - JULIANDAY()) * 1440) AS timeleft FROM %sbanlist WHERE ip = ?", subnet ? "subnet" : "");
 
     sqlite3_prepare(db, query, -1, &stmt, 0);
 
@@ -1071,14 +1072,14 @@ static qboolean dbQueryBan(char* ip, qboolean subnet, char* reason, int reasonSi
     return success;
 }
 
-qboolean dbCheckBan(gentity_t* ent, char* reason, int reasonSize, int* endOfMap, int* banEnd) {
+qboolean dbCheckBan(char* ip, char* reason, int reasonSize, int* endOfMap, int* banEnd) {
 
     // Try IP first.
-    qboolean banned = dbQueryBan(ent->client->pers.ip, qfalse, reason, reasonSize, endOfMap, banEnd);
+    qboolean banned = dbQueryBan(ip, qfalse, reason, reasonSize, endOfMap, banEnd);
 
     if (!banned) {
         // subnetban
-        banned = dbQueryBan(ent->client->pers.subnet, qtrue, reason, reasonSize, endOfMap, banEnd);
+        banned = dbQueryBan(ip, qtrue, reason, reasonSize, endOfMap, banEnd);
     }
 
     return banned;

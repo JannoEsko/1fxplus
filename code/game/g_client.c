@@ -1291,6 +1291,16 @@ char *ClientConnect( int clientNum, qboolean firstTime, qboolean isBot )
         {
             return va("Invalid password: %s", value );
         }
+
+        // Check for ban information.
+        char banReason[128];
+        int endOfMap = 0, banEnd = 0;
+        qboolean banned = dbCheckBan(ip, banReason, sizeof(banReason), &endOfMap, &banEnd);
+
+        if (banned) {
+            return va("Banned: %s%s", banReason, endOfMap ? " (end of map)" : va(", left: %dd, %02dh, %02dm", banEnd / (60 * 24), (banEnd / 60) % 24, banEnd % 60));
+        }
+
     }
 
     // they can connect

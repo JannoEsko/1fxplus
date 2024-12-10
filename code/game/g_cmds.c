@@ -1541,12 +1541,14 @@ static void Cmd_Say_f( gentity_t *ent, int mode, qboolean arg0 ) { // JANFIXME -
         return;
     }
 
+    int argc = trap_Argc();
+
     // Boe!Man 4/30/14: Check if the client said this while in-game and not in the loading screen (to avoid spam).
     if (!ent->client->pers.enterTime) {
         return;
     }
 
-    if ( trap_Argc () < 2 && !arg0 ) {
+    if ( argc < 2 && !arg0 ) {
         return;
     }
 
@@ -1558,6 +1560,20 @@ static void Cmd_Say_f( gentity_t *ent, int mode, qboolean arg0 ) { // JANFIXME -
     {
         p = ConcatArgs( 1 );
     }
+
+    char* admCmd = G_GetArg(0, qtrue);
+
+    if (ent->client->sess.adminLevel > ADMLVL_NONE) {
+        int adminCommand = cmdIsAdminCmd(admCmd, qtrue);
+
+        if (canClientRunAdminCommand(ent, adminCommand)) {
+            runAdminCommand(adminCommand, argc == 2 ? 1 : 2, ent, (qboolean)argc == 2);
+        }
+        else {
+            G_printInfoMessage(ent, "You're not privileged enough to run this command.");
+        }
+    }
+
 
     G_Say( ent, NULL, mode, p );
 }

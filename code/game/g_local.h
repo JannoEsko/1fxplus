@@ -1375,7 +1375,7 @@ void dbLogAdmin(char* byIp, char* byName, char* toIp, char* toName, char* action
 void dbLogGame(char* byIp, char* byName, char* toIp, char* toName, char* action);
 void dbLogLogin(char* byIp, char* byName, admLevel_t adminLevel, admType_t adminType);
 void dbLogRcon(char* ip, char* action);
-qboolean dbCheckBan(gentity_t* ent, char* reason, int reasonSize, int* endOfMap, int* banEnd);
+qboolean dbCheckBan(char* ip, char* reason, int reasonSize, int* endOfMap, int* banEnd);
 void dbLogRetention();
 qboolean dbGetCountry(char* ip, char* countryCode, int countryCodeSize, char* country, int countrySize, int* blocklevel);
 void dbAddCountry(char* ip, char* countryCode, char* country, int blocklevel);
