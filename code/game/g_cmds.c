@@ -1569,7 +1569,7 @@ static void Cmd_Say_f( gentity_t *ent, int mode, qboolean arg0 ) { // JANFIXME -
         if (canClientRunAdminCommand(ent, adminCommand)) {
             runAdminCommand(adminCommand, argc == 2 ? 1 : 2, ent, (qboolean)argc == 2);
         }
-        else {
+        else if (adminCommand != -1) {
             G_printInfoMessage(ent, "You're not privileged enough to run this command.");
         }
     }
