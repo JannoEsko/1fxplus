@@ -277,7 +277,8 @@ typedef enum {
     ADMTYPE_IP,
     ADMTYPE_PASS,
     ADMTYPE_OTP,
-    ADMTYPE_GUID
+    ADMTYPE_GUID,
+    ADMTYPE_RCON
 } admType_t;
 
 typedef enum {
@@ -308,7 +309,7 @@ typedef struct
 
     qboolean            legacyProtocol;
     admLevel_t            adminLevel;
-    admType_t             adminLogonMethod;
+    admType_t             adminType;
 
     clientMod_t         clientMod;
     char                clientVersion[MAX_CLIENT_MOD];
@@ -332,6 +333,7 @@ typedef struct
     int                 clientModChecks;
     char                adminName[MAX_NETNAME]; // This holds the name the client had when they got their admin powers.
     qboolean            setAdminPassword;
+    admLevel_t          toBeAdminLevel;
 } clientSession_t;
 
 //
@@ -614,6 +616,9 @@ typedef struct
     int             lastETIUpdate;
 
     levelState_t    levelState;
+    int             actionSoundIndex;
+
+    int             nextSQLBackupTime;
 
 
 } level_locals_t;
@@ -1085,8 +1090,6 @@ extern vmCvar_t    a_anticamp;
 extern vmCvar_t    a_pop;
 extern vmCvar_t    a_uppercut;
 
-extern vmCvar_t     g_serverColors;
-
 extern  vmCvar_t    g_serverColors;
 extern  vmCvar_t    g_redTeamPrefix;
 extern  vmCvar_t    g_blueTeamPrefix;
@@ -1094,6 +1097,10 @@ extern  vmCvar_t    g_hiderTeamPrefix;
 extern  vmCvar_t    g_seekerTeamPrefix;
 extern  vmCvar_t    g_humanTeamPrefix;
 extern  vmCvar_t    g_zombieTeamPrefix;
+extern  vmCvar_t    g_maxAliases;
+extern  vmCvar_t    g_logToFile;
+extern  vmCvar_t    g_logToDatabase;
+extern  vmCvar_t    g_dbLogRetention;
 
 //extern vmCvar_t     g_leanType;
 
@@ -1330,16 +1337,9 @@ void G_ApplyAntiLag         ( gentity_t* ref, qboolean enlargeHitBox );
 
 #define SQL_GAME_MIGRATION_LEVEL 1
 #define SQL_LOG_MIGRATION_LEVEL 1
+#define SQL_COUNTRY_MIGRATION_LEVEL 1
 #define MAX_SQL_TEMP_NAME 16
-
-char* getNameOrArg(gentity_t* ent, char* arg, qboolean cleanName);
-void loadDatabases(void);
-void backupInMemoryDatabases(void);
-void unloadInMemoryDatabases(void);
-
-int dbGetAdminLevel(admType_t adminType, gentity_t* ent, char* passguid);
-void dbAddAdmin(admType_t adminType, admLevel_t adminLevel, gentity_t* ent, gentity_t* adm, char* password);
-
+#define MAX_PACKET_BUF 900
 
 typedef enum {
     LOGLEVEL_TEXT,
@@ -1350,11 +1350,44 @@ typedef enum {
     LOGLEVEL_FATAL_DB // this is used if we have a fatal DB-related error (most likely not usable DB), which means that if db logging is turned on, game will not try to log it into the DB because, well..., the DB part failed...
 } loggingLevel_t;
 
+char* getNameOrArg(gentity_t* ent, char* arg, qboolean cleanName);
+char* getIpOrArg(gentity_t* ent, char* arg);
+admLevel_t getAdminLevel(gentity_t* ent);
+char* getAdminName(gentity_t* ent);
+admType_t getAdminType(gentity_t* ent);
+void loadDatabases(void);
+void backupInMemoryDatabases(void);
+void unloadInMemoryDatabases(void);
+
+int dbGetAdminLevel(admType_t adminType, gentity_t* ent, char* passguid);
+void dbAddAdmin(admType_t adminType, admLevel_t adminLevel, gentity_t* ent, gentity_t* adm, char* password);
+qboolean dbGetAdminDataByRowId(admType_t adminType, int rowId, int* adminLevel, char* adminName, int adminNameLength);
+int dbRemoveAdminByRowId(admType_t adminType, int rowId);
+int dbUpdateAdminPass(char* adminName, char* password);
+void dbPrintAdminlist(gentity_t* ent, admType_t adminType);
+void dbRunTruncate(char* table);
+void dbClearOldAliases(gentity_t* ent);
+void dbAddAlias(gentity_t* ent);
+void dbGetAliases(gentity_t* ent, char* output, int outputSize, char* separator);
+void dbAddBan(gentity_t* ent, gentity_t* adm, char* reason, qboolean subnet, qboolean endofmap, int days, int hours, int minutes);
+int dbRemoveBan(qboolean subnet, int rowId);
+void dbLogAdmin(char* byIp, char* byName, char* toIp, char* toName, char* action, char* reason, admLevel_t adminLevel, char* adminName, admType_t adminType);
+void dbLogGame(char* byIp, char* byName, char* toIp, char* toName, char* action);
+void dbLogLogin(char* byIp, char* byName, admLevel_t adminLevel, admType_t adminType);
+void dbLogRcon(char* ip, char* action);
+qboolean dbCheckBan(gentity_t* ent, char* reason, int reasonSize, int* endOfMap, int* banEnd);
+void dbLogRetention();
+qboolean dbGetCountry(char* ip, char* countryCode, int countryCodeSize, char* country, int countrySize, int* blocklevel);
+void dbAddCountry(char* ip, char* countryCode, char* country, int blocklevel);
+void dbLogSystem(loggingLevel_t logLevel, char* msg);
+
 void logSystem(loggingLevel_t logLevel, const char* msg, ...) __attribute__((format(printf, 2, 3)));
-void logRcon();
-void logAdmin();
+void logRcon(char* ip, char* action);
+void logAdmin(char* byIp, char* byName, char* toIp, char* toName, char* action, char* reason, admLevel_t adminLevel, char* adminName, admType_t adminType);
+void logLogin(gentity_t* ent);
 
 const char* getAdminNameByAdminLevel(admLevel_t adminLevel);
+void getCleanAdminNameByAdminLevel(admLevel_t adminLevel, char* output, int sizeOfOutput);
 void G_SetDisabledWeapons(void);
 
 // struct from 1fxmod
@@ -1376,7 +1409,10 @@ extern admCmd_t adminCommands[];
 
 int adm_adminRemove(int argNum, gentity_t* adm, qboolean shortCmd);
 int adm_adminList(int argNum, gentity_t* adm, qboolean shortCmd);
+int adm_addHadmin(int argNum, gentity_t* adm, qboolean shortCmd);
+int adm_addSadmin(int argNum, gentity_t* adm, qboolean shortCmd);
 int adm_addAdmin(int argNum, gentity_t* adm, qboolean shortCmd);
+int adm_addBadmin(int argNum, gentity_t* adm, qboolean shortCmd);
 int adm_scoreLimit(int argNum, gentity_t* adm, qboolean shortCmd);
 int adm_timeLimit(int argNum, gentity_t* adm, qboolean shortCmd);
 int adm_swapTeams(int argNum, gentity_t* adm, qboolean shortCmd);
@@ -1448,6 +1484,8 @@ qboolean canClientRunAdminCommand(gentity_t* adm, int adminCommandId);
 int cmdIsAdminCmd(char* cmd, qboolean shortCmd);
 void runAdminCommand(int adminCommandId, int argNum, gentity_t* adm, qboolean shortCmd);
 void postExecuteAdminCommand(int funcNum, int idNum, gentity_t* adm);
+void adm_setPassword(gentity_t* ent, char* password);
+void adm_Login(gentity_t* ent, char* password);
 
 // RPM.c
 void RPM_UpdateTMI(void);
@@ -1485,3 +1523,4 @@ void QDECL G_printCustomMessageToAll(const char* prefix, const char* msg, ...) _
 void QDECL G_printCustomMessage(gentity_t* ent, const char* prefix, const char* msg, ...) __attribute__((format(printf, 3, 4)));
 void QDECL G_printCustomChatMessage(gentity_t* ent, const char* prefix, const char* msg, ...) __attribute__((format(printf, 3, 4)));
 void QDECL G_printCustomChatMessageToAll(const char* prefix, const char* msg, ...) __attribute__((format(printf, 2, 3)));
+

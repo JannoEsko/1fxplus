@@ -1850,6 +1850,8 @@ void ClientDisconnect( int clientNum )
         BotAIShutdownClient( clientNum, qfalse );
     }
 #endif
+
+    backupInMemoryDatabases();
 }
 
 /*

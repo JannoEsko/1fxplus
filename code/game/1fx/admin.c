@@ -11,10 +11,10 @@ admCmd_t adminCommands[] = {
 	{"!adr",    "adminremove",      &minimumAdminLevel,         &adm_adminRemove,               "Remove an Admin from the list",    "<line #>",         NULL},
 	{"!adl",    "adminlist",        &a_adminlist.integer,       &adm_adminList,                 "Show the Adminlist",               "",                 NULL},
 	{"!al",     "adminlist",        &a_adminlist.integer,       &adm_adminList,                 "Show the Adminlist",               "",                 NULL},
-	{"!ab",     "addbadmin",        &a_badmin.integer,          &adm_addAdmin,                  "Basic Admin",                      "<i/n>",            NULL},
+	{"!ab",     "addbadmin",        &a_badmin.integer,          &adm_addBadmin,                  "Basic Admin",                      "<i/n>",            NULL},
 	{"!aa",     "addadmin",         &a_admin.integer,           &adm_addAdmin,                  "Admin",                            "<i/n>",            NULL},
-	{"!as",     "addsadmin",        &a_sadmin.integer,          &adm_addAdmin,                  "Server Admin",                     "<i/n>",            NULL},
-	{"!ah",     "addhadmin",        &a_hadmin.integer,          &adm_addAdmin,                  "Head Admin",                     "<i/n>",            NULL},
+	{"!as",     "addsadmin",        &a_sadmin.integer,          &adm_addSadmin,                  "Server Admin",                     "<i/n>",            NULL},
+	{"!ah",     "addhadmin",        &a_hadmin.integer,          &adm_addHadmin,                  "Head Admin",                     "<i/n>",            NULL},
 	{"!sl",     "scorelimit",       &a_scorelimit.integer,              &adm_scoreLimit,                "Change the scorelimit",            "<time>",           NULL},
 	{"!tl",     "timelimit",        &a_timelimit.integer,              &adm_timeLimit,                 "Change the timelimit",             "<time>",           NULL},
 	{"!sw",     "swapteams",        &a_swapteams.integer,       &adm_swapTeams,                 "Swap the players from team",       "",                 NULL},
@@ -116,23 +116,245 @@ const char* getAdminNameByAdminLevel(admLevel_t adminLevel) {
 	default:
 		return "";
 	}
+}
+
+void getCleanAdminNameByAdminLevel(admLevel_t adminLevel, char* output, int sizeOfOutput) {
+
+	char tmp[MAX_NETNAME];
+
+	Q_strncpyz(tmp, getAdminNameByAdminLevel(adminLevel), sizeof(tmp));
+	G_RemoveColorEscapeSequences(tmp);
+	Q_strncpyz(output, tmp, sizeOfOutput);
+}
+
+static qboolean adm_removeIngamePlayerPowers(admType_t adminType, char* cleanName, gentity_t* adm) {
+
+	for (int i = 0; i < level.numConnectedClients; i++) {
+		gentity_t* ent = &g_entities[level.sortedClients[i]];
+
+		if (ent->client->sess.adminType == adminType && !Q_stricmp(cleanName, ent->client->sess.adminName)) {
+			ent->client->sess.adminType = ADMTYPE_NONE;
+			ent->client->sess.adminLevel = ADMLVL_NONE;
+			Com_Memset(ent->client->sess.adminName, 0, sizeof(ent->client->sess.adminName));
+
+			G_printInfoMessage(ent, "Your admin powers have been removed by %s.", getNameOrArg(adm, "RCON", qtrue));
+			G_Broadcast(BROADCAST_GAME, NULL, qtrue, "%s\n^7their admin powers were \\removed\n^7by %s", ent->client->pers.netname, getNameOrArg(adm, "RCON", qfalse));
+			return qtrue;
+		}
+	}
+
+	return qfalse;
+
+}
+
+void adm_setPassword(gentity_t* ent, char* password) {
+
+	if (!ent->client->sess.setAdminPassword && ent->client->sess.adminType != ADMTYPE_PASS) {
+		G_printInfoMessage(ent, "You cannot change your admin-password as you're either not an admin or you don't have pass-admin powers.");
+		return;
+	}
+
+	// So there are a couple of entrypoints here.
+	// 1. setAdminPassword = qtrue, toBeAdminLevel != ADMLVL_NONE => fresh admin setting their first password.
+	// 2. setAdminPassword = qtrue, toBeAdminLevel = ADMLVL_NONE => not-logged in admin who can now reset their password.
+	// 3. setAdminPassword = qfalse, adminLevel != ADMLVL_NONE and adminType = ADMTYPE_PASS => player wanting to proactively change their own password.
+
+	if (strlen(password) < 6 || !checkAdminPassword(password)) {
+		G_printInfoMessage(ent, "Your password is either too short or consists of only the same characters (can happen if you use Arabic passwords).");
+		return;
+	}
+
+	int rowsAffected = 0;
+
+	if (ent->client->sess.setAdminPassword) {
+		rowsAffected = dbUpdateAdminPass(ent->client->sess.adminName, password);
+
+		if (rowsAffected != 1) {
+			logSystem(LOGLEVEL_WARN, "rowsAffected on updateadmpass is %s (!= 1)", rowsAffected);
+			G_printInfoMessage(ent, "Something went wrong, please try again...");
+			return;
+		}
+
+		if (ent->client->sess.toBeAdminLevel == ADMLVL_NONE) {
+			G_printInfoMessage(ent, "Your password has been updated. Please use /adm login %s to log in.", password);
+		}
+		else {
+			G_printInfoMessage(ent, "Your password is now set.");
+			ent->client->sess.adminLevel = ent->client->sess.toBeAdminLevel;
+			ent->client->sess.adminType = ADMTYPE_PASS;
+			ent->client->sess.toBeAdminLevel = ADMLVL_NONE;
+			logLogin(ent);
+		}
+		ent->client->sess.setAdminPassword = qfalse;
+	}
+	else if (ent->client->sess.adminLevel > ADMLVL_NONE && ent->client->sess.adminType == ADMTYPE_PASS) {
+		rowsAffected = dbUpdateAdminPass(ent->client->sess.adminName, password);
+
+		if (rowsAffected != 1) {
+			logSystem(LOGLEVEL_WARN, "rowsAffected on updateadmpass is %s (!= 1)", rowsAffected);
+			G_printInfoMessage(ent, "Something went wrong, please try again...");
+			return;
+		}
+
+		G_printInfoMessage(ent, "Your password has been updated.");
+
+	}
+	else {
+		G_printInfoMessage(ent, "You cannot change the password because you're either not an admin or do not have pass-admin rights.");
+	}
+
+}
+
+void adm_Login(gentity_t* ent, char* password) {
+
+	if (ent->client->sess.adminLevel > ADMLVL_NONE && ent->client->sess.adminLevel <= ADMLVL_HADMIN) {
+		G_printInfoMessage(ent, "You already have admin powers.");
+		return;
+	}
+
+	if (!password || strlen(password) < 6) {
+		G_printInfoMessage(ent, "No or too short password entered. Try again.");
+		return;
+	}
+
+	admLevel_t adminLevel = dbGetAdminLevel(ADMTYPE_PASS, ent, password);
+	Com_Printf("check login with admpass on %s psw %s\n", ent->client->pers.cleanName, password);
+	if (adminLevel <= ADMLVL_NONE || adminLevel > ADMLVL_HADMIN) {
+		G_printInfoMessage(ent, "No admin powers found with this name+password combination.");
+		return;
+	}
+
+	char colorFreeAdminName[MAX_NETNAME];
+	getCleanAdminNameByAdminLevel(adminLevel, colorFreeAdminName, sizeof(colorFreeAdminName));
+
+	G_printInfoMessageToAll("%s has been granted %s.", ent->client->pers.cleanName, colorFreeAdminName);
+	logLogin(ent);
+	ent->client->sess.adminLevel = adminLevel;
+	ent->client->sess.adminType = ADMTYPE_PASS;
+	Q_strncpyz(ent->client->sess.adminName, ent->client->pers.cleanName, sizeof(ent->client->sess.adminName));
 
 }
 
 int adm_adminRemove(int argNum, gentity_t* adm, qboolean shortCmd) {
+	// this is removing from the list...
+
+	char removable[64];
+	char table[64];
+	int rowId;
+	admType_t adminType;
+	
+
+	if (shortCmd && G_GetChatArgumentCount()) {
+		Q_strncpyz(removable, G_GetChatArgument(1), sizeof(removable));
+		Q_strncpyz(table, G_GetChatArgument(2), sizeof(table));
+	}
+	else {
+		trap_Argv(argNum, removable, sizeof(removable));
+		trap_Argv(argNum + 1, table, sizeof(table));
+	}
+
+	rowId = atoi(removable);
+
+	if (rowId < 1) {
+		G_printCustomMessage(adm, "Admin Action", "Row %d is not a valid row.", rowId);
+		return -1;
+	}
+
+	if (!Q_stricmp(table, "pass")) {
+		adminType = ADMTYPE_PASS;
+	}
+	else if (!Q_stricmp(table, "guid")) {
+		adminType = ADMTYPE_GUID;
+	}
+	else {
+		adminType = ADMTYPE_IP;
+	}
+
+	char adminName[MAX_NETNAME];
+	int adminLevel = -1;
+
+	qboolean success = dbGetAdminDataByRowId(adminType, rowId, &adminLevel, adminName, sizeof(adminName));
+
+	if (!success) {
+		G_printCustomMessage(adm, "Admin Action", "Row %d was not found.", rowId);
+		return -1;
+	}
+
+	if (adm && adm->client) {
+		// Now check whether admin can actually remove it.
+
+		int comparable = -1;
+
+		if (adminLevel == ADMLVL_BADMIN) comparable = a_badmin.integer;
+		else if (adminLevel == ADMLVL_ADMIN) comparable = a_admin.integer;
+		else if (adminLevel == ADMLVL_SADMIN) comparable = a_sadmin.integer;
+		else if (adminLevel == ADMLVL_HADMIN) comparable = a_hadmin.integer;
+
+		if (comparable == -1) {
+			return -1; // this cannot happen...
+		}
+
+		if (adm->client->sess.adminLevel < comparable) {
+			G_printCustomMessage(adm, "Admin Action", "Your admin level is too low to remove this admin.");
+			return -1;
+		}
+	}
+
+	int rowsAffected = dbRemoveAdminByRowId(adminType, rowId);
+	logAdmin(getIpOrArg(adm, "RCON"), getNameOrArg(adm, "RCON", qtrue), NULL, adminName, "removeadmin", NULL, getAdminLevel(adm), getAdminName(adm), getAdminType(adm));
+
+	if (rowsAffected > 0) {
+		// as this was a list remove, also try to find the client and remove their powers if they're online.
+		adm_removeIngamePlayerPowers(adminType, adminName, adm);
+
+		// feedback to the function caller.
+		G_printCustomMessage(adm, "Admin Action", "Row %d was removed from the list.", rowId);
+	}
+	else {
+		logSystem(LOGLEVEL_WARN, "rowsAffected %d on adminRemove while row was valid initially.", rowsAffected);
+		G_printCustomMessage(adm, "Admin Action", "Row %d was not found.", rowId);
+	}
+
+
 	return -1;
 }
 
 int adm_adminList(int argNum, gentity_t* adm, qboolean shortCmd) {
+
+	char arg[64];
+	admType_t adminType = ADMTYPE_IP;
+
+	if (shortCmd && G_GetChatArgumentCount()) {
+		Q_strncpyz(arg, G_GetChatArgument(1), sizeof(arg));
+	}
+	else {
+		trap_Argv(argNum, arg, sizeof(arg));
+	}
+
+	if (!Q_stricmp(arg, "pass")) {
+		adminType = ADMTYPE_PASS;
+	}
+	else if (!Q_stricmp(arg, "guid")) {
+		adminType = ADMTYPE_GUID;
+	}
+
+	dbPrintAdminlist(adm, adminType);
+
 	return -1;
 }
 
 static void addAdmin(int argNum, gentity_t* adm, qboolean shortCmd, admLevel_t admlvl) {
 	
-	int idNum = G_ClientNumFromArg(adm, argNum, "do this to", qfalse, qtrue, qtrue, shortCmd);
+	int idNum = G_ClientNumFromArg(adm, argNum, "do this to", qfalse, qfalse, qfalse, shortCmd);
 
 	if (idNum < 0) return;
 	gentity_t* ent = g_entities + idNum;
+
+	if (ent->client->sess.adminLevel != ADMLVL_NONE) {
+		G_printInfoMessage(adm, "Client %s (%d) already has admin powers.", ent->client->pers.cleanName, idNum);
+		return;
+	}
+
 	char arg[64];
 	admType_t adminType = ADMTYPE_IP;
 
@@ -156,25 +378,27 @@ static void addAdmin(int argNum, gentity_t* adm, qboolean shortCmd, admLevel_t a
 		}
 		else if (!ent->client->sess.hasRoxAC) {
 			G_printInfoMessage(adm, "Client %s (%d) does not have Rox AC running or the verification failed.", ent->client->pers.cleanName, idNum);
+
+			return;
 		}
 
 		adminType = ADMTYPE_GUID;
 	}
 
 	// Check for admin existence in the admin tables.
-	Com_Printf("GOT HERE");
 	int existingAdminLevel = dbGetAdminLevel(adminType, ent, NULL);
-	Com_Printf("GOT THERE");
+
 	if (existingAdminLevel != -1) {
 
 		if (adminType == ADMTYPE_PASS) {
 			ent->client->sess.setAdminPassword = qtrue;
+			Q_strncpyz(ent->client->sess.adminName, ent->client->pers.cleanName, sizeof(ent->client->sess.adminName));
 			G_printInfoMessage(adm, "Client %s (%d) already had admin powers. They can now change their password.", ent->client->pers.cleanName, idNum);
 			G_printChatInfoMessage(ent, "%s has toggled admin-password reset for you.", getNameOrArg(adm, "RCON", qtrue));
-			G_printChatInfoMessage(ent, "To do so, issue command \"/adm pass\" into console, e.g. \"/adm pass newpass\"");
-			G_printChatInfoMessage(ent, "That will set your password to \"newpass\"");
+			G_printChatInfoMessage(ent, "To do so, issue command /adm pass into console, e.g. /adm pass newpass");
+			G_printChatInfoMessage(ent, "That will set your password to newpass");
 
-			logAdmin();
+			logAdmin(getIpOrArg(adm, "RCON"), getNameOrArg(adm, "RCON", qtrue), ent->client->pers.ip, ent->client->pers.cleanName, "resetpassword", NULL, getAdminLevel(adm), getAdminName(adm), getAdminType(adm));
 			return;
 		}
 		else {
@@ -185,57 +409,52 @@ static void addAdmin(int argNum, gentity_t* adm, qboolean shortCmd, admLevel_t a
 
 		
 	}
-	Com_Printf("GOT 123");
 	// Client doesn't have admin, so lets perform the action.
-	Com_Printf("\ndbAddAdmin, params: %d, %d, %s, %s\n", adminType, admlvl, getNameOrArg(ent, "WTF", qtrue), getNameOrArg(adm, "RCON?", qtrue));
+	Q_strncpyz(ent->client->sess.adminName, ent->client->pers.cleanName, sizeof(ent->client->sess.adminName));
 	dbAddAdmin(adminType, admlvl, ent, adm, NULL);
-	Com_Printf("GOT 11222333HERE");
+
 	if (adminType == ADMTYPE_PASS) {
 		ent->client->sess.setAdminPassword = qtrue;
+		ent->client->sess.toBeAdminLevel = admlvl;
 		G_printChatInfoMessage(ent, "%s has added you to admin passlist as %s.", getNameOrArg(adm, "RCON", qtrue), getAdminNameByAdminLevel(admlvl));
 		G_printChatInfoMessage(ent, "For that, you do need to set a password.");
-		G_printChatInfoMessage(ent, "To do so, issue command \"/adm pass\" into console, e.g. \"/adm pass newpass\"");
-		G_printChatInfoMessage(ent, "That will set your password to \"newpass\"");
+		G_printChatInfoMessage(ent, "To do so, issue command /adm pass into console, e.g. /adm pass newpass");
+		G_printChatInfoMessage(ent, "That will set your password to newpass");
 
-		
 	}
 	else {
+		
 		ent->client->sess.adminLevel = admlvl;
-		ent->client->sess.adminLogonMethod = adminType;
+		ent->client->sess.adminType = adminType;
 	}
 
-	logAdmin();
-	G_Broadcast(BROADCAST_GAME, NULL, qtrue, "%s\n^7has been added to %s^7list\nby %s", ent->client->pers.netname, getAdminNameByAdminLevel(admlvl), getNameOrArg(adm, "\\RCON", qtrue));
+	logAdmin(getIpOrArg(adm, "RCON"), getNameOrArg(adm, "RCON", qtrue), ent->client->pers.ip, ent->client->pers.cleanName, va("addadmin %d", admlvl), NULL, getAdminLevel(adm), getAdminName(adm), getAdminType(adm));
+	G_Broadcast(BROADCAST_GAME, NULL, qtrue, "%s\n^7has been added to %s^7list\nby %s", ent->client->pers.netname, getAdminNameByAdminLevel(admlvl), getNameOrArg(adm, "\\RCON", qfalse));
 
+	char colorFreeAdminName[MAX_NETNAME];
+	getCleanAdminNameByAdminLevel(admlvl, colorFreeAdminName, sizeof(colorFreeAdminName));
 
+	G_printCustomMessageToAll("Admin Action", "%s was added to %slist by %s.", ent->client->pers.cleanName, colorFreeAdminName, getNameOrArg(adm, "RCON", qtrue));
 
 }
 
+int adm_addBadmin(int argNum, gentity_t* adm, qboolean shortCmd) {
+	addAdmin(argNum, adm, shortCmd, ADMLVL_BADMIN);
+	return -1;
+}
+
 int adm_addAdmin(int argNum, gentity_t* adm, qboolean shortCmd) {
+	addAdmin(argNum, adm, shortCmd, ADMLVL_ADMIN);
+	return -1;
+}
 
-	char            command[64] = "\0";
+int adm_addSadmin(int argNum, gentity_t* adm, qboolean shortCmd) {
+	addAdmin(argNum, adm, shortCmd, ADMLVL_SADMIN);
+	return -1;
+}
 
-	if (adm && adm->client) {
-		trap_Argv(1, command, sizeof(command));
-	}
-	else {
-		trap_Argv(0, command, sizeof(command));
-	}
-	Q_strlwr(command); // Boe!Man 2/16/13: Fix capitalized Admin commands resulting in adding S-Admin by converting the command to lower case.
-
-	if (strstr(command, "!ab") || strstr(command, "addbadmin")) {
-		addAdmin(argNum, adm, shortCmd, ADMLVL_BADMIN, "addbadmin");
-	}
-	else if (strstr(command, "!aa") || strstr(command, "addadmin")) {
-		addAdmin(argNum, adm, shortCmd, ADMLVL_ADMIN, "addadmin");
-	}
-	else if (strstr(command, "!as") || strstr(command, "addsadmin")) { 
-		addAdmin(argNum, adm, shortCmd, ADMLVL_SADMIN, "addsadmin");
-	}
-	else if (strstr(command, "!ah") || strstr(command, "addhadmin")) { 
-		addAdmin(argNum, adm, shortCmd, ADMLVL_HADMIN, "addsadmin");
-	}
-
+int adm_addHadmin(int argNum, gentity_t* adm, qboolean shortCmd) {
+	addAdmin(argNum, adm, shortCmd, ADMLVL_HADMIN);
 	return -1;
 }
 
@@ -560,18 +779,20 @@ void postExecuteAdminCommand(int funcNum, int idNum, gentity_t* adm) {
 		return;
 	}
 
+	gentity_t* ent = &g_entities[idNum];
 
 	if (adm && adm->client) {
-		G_Broadcast(BROADCAST_CMD, NULL, qtrue, "%s\nwas \\%s%s\nby %s", g_entities[idNum].client->pers.netname, adminCommands[funcNum].adminCmd, (adminCommands[funcNum].suffix != NULL) ? adminCommands[funcNum].suffix : "", adm->client->pers.netname);
-		trap_SendServerCommand(-1, va("print\"^3[Admin Action] ^7%s was %s%s by %s.\n\"", g_entities[idNum].client->pers.cleanName, adminCommands[funcNum].adminCmd, (adminCommands[funcNum].suffix != NULL) ? adminCommands[funcNum].suffix : "", adm->client->pers.cleanName));
+		G_Broadcast(BROADCAST_CMD, NULL, qtrue, "%s\nwas \\%s%s\nby %s", ent->client->pers.netname, adminCommands[funcNum].adminCmd, (adminCommands[funcNum].suffix != NULL) ? adminCommands[funcNum].suffix : "", adm->client->pers.netname);
+		trap_SendServerCommand(-1, va("print\"^3[Admin Action] ^7%s was %s%s by %s.\n\"", ent->client->pers.cleanName, adminCommands[funcNum].adminCmd, (adminCommands[funcNum].suffix != NULL) ? adminCommands[funcNum].suffix : "", adm->client->pers.cleanName));
 	}
 	else {
 		// rcon command.
-		G_Broadcast(BROADCAST_CMD, NULL, qtrue, "%s\nwas \\%s%s", g_entities[idNum].client->pers.netname, adminCommands[funcNum].adminCmd, (adminCommands[funcNum].suffix != NULL) ? adminCommands[funcNum].suffix : "");
-		trap_SendServerCommand(-1, va("print\"^3[Rcon Action] ^7%s was %s%s.\n\"", g_entities[idNum].client->pers.cleanName, adminCommands[funcNum].adminCmd, (adminCommands[funcNum].suffix != NULL) ? adminCommands[funcNum].suffix : ""));
+		G_Broadcast(BROADCAST_CMD, NULL, qtrue, "%s\nwas \\%s%s", ent->client->pers.netname, adminCommands[funcNum].adminCmd, (adminCommands[funcNum].suffix != NULL) ? adminCommands[funcNum].suffix : "");
+		trap_SendServerCommand(-1, va("print\"^3[Rcon Action] ^7%s was %s%s.\n\"", ent->client->pers.cleanName, adminCommands[funcNum].adminCmd, (adminCommands[funcNum].suffix != NULL) ? adminCommands[funcNum].suffix : ""));
 	}
 
-	logAdmin();
+	logAdmin(getIpOrArg(adm, "RCON"), getNameOrArg(adm, "RCON", qtrue), ent->client->pers.ip, ent->client->pers.cleanName, adminCommands[funcNum].adminCmd, NULL, getAdminLevel(adm), getAdminName(adm), getAdminType(adm));
+	G_GlobalSound(level.actionSoundIndex);
 
 }
 

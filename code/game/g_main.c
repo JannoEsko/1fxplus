@@ -155,6 +155,11 @@ vmCvar_t    g_leanType;
 
 vmCvar_t    g_serverColors;
 
+vmCvar_t    g_maxAliases;
+vmCvar_t    g_logToFile;
+vmCvar_t    g_logToDatabase;
+
+vmCvar_t    g_dbLogRetention;
 
 static cvarTable_t gameCvarTable[] =
 {
@@ -349,8 +354,11 @@ static cvarTable_t gameCvarTable[] =
 
     { &g_leanType,    "g_leanType",     "0",        CVAR_ARCHIVE,   0.0f,   0.0f,   0,  qfalse }, // 0 = gold, 1 = silver, 2 = serve based on client
     
-    { &g_serverColors,    "g_serverColors",     "Cbk+7",        CVAR_ARCHIVE,   0.0f,   0.0f,   0,  qfalse }, // 0 = gold, 1 = silver, 2 = serve based on client
-    
+    { &g_serverColors,    "g_serverColors",     "Cbk+7",        CVAR_ARCHIVE,   0.0f,   0.0f,   0,  qfalse },
+    { &g_maxAliases,    "g_maxAliases",     "10",        CVAR_ARCHIVE,   0.0f,   15.0f,   0,  qfalse },
+    { &g_logToFile,    "g_logToFile",     "0",        CVAR_ARCHIVE | CVAR_LATCH,   0.0f,   0.0f,   0,  qfalse },
+    { &g_logToDatabase,    "g_logToDatabase",     "1",        CVAR_ARCHIVE | CVAR_LATCH,   0.0f,   0.0f,   0,  qfalse },
+    { &g_dbLogRetention,    "g_dbLogRetention",     "120",        CVAR_ARCHIVE | CVAR_LATCH,   0.0f,   0.0f,   0,  qfalse },
 
 };
 
@@ -424,7 +432,7 @@ Q_EXPORT intptr_t vmMain( int command, intptr_t arg0, intptr_t arg1, intptr_t ar
             return 0;
         case GAME_RCON_LOG:
             // JANFIXME TODO Add rconlogging.
-            logRcon();
+            logRcon(arg0, arg1);
             return 0;
     }
 
@@ -844,6 +852,7 @@ void G_InitGame( int levelTime, int randomSeed, int restart )
     memset( &level, 0, sizeof( level ) );
     level.time = levelTime;
     level.startTime = levelTime;
+    level.nextSQLBackupTime = level.time + 50000;
 
     level.multiprotocol = trap_Cvar_VariableIntegerValue("net_multiprotocol");
 
@@ -980,7 +989,7 @@ void G_InitGame( int levelTime, int randomSeed, int restart )
 #endif
 
     G_RemapTeamShaders();
-
+    level.actionSoundIndex = G_SoundIndex("sound/misc/menus/click.wav");
     // Load clientmod specifics
     G_InitClientMod();
 
@@ -2234,6 +2243,10 @@ void G_RunFrame( int levelTime )
 
     // for tracking changes
     CheckCvars();
+
+    if (level.nextSQLBackupTime <= level.time) {
+        backupInMemoryDatabases();
+    }
 
     if (g_listEntity.integer)
     {

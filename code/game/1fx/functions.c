@@ -396,85 +396,139 @@ char* G_ColorizeMessage(char* broadcast)
     int i, newWordLength;
     char* tempBroadcast;
     static char newBroadcast[MAX_STRING_CHARS];
-    int newWordPosition;
+    char line[128], remainingLine[128];
+    int lineLength;
+    int newWordPosition = 0;
     qboolean parseLine = qtrue;
+    char* tempNewline = broadcast;
 
     // Reset broadcast buffer.
     memset(newBroadcast, 0, sizeof(newBroadcast));
 
-    // Loop through the entire broadcast, processing one line at a time.
+    // Loop through whole broadcast.
     while (parseLine) {
-        // Check for newlines to determine line boundaries.
-        char* tempNewline = strstr(broadcast, "\n");
-        int lineLength = tempNewline ? (tempNewline - broadcast) : strlen(broadcast);
+        // Properly reset line to avoid having to NULL terminate it everywhere.
+        memset(line, 0, sizeof(line));
 
-        // Stop processing after the last line.
-        parseLine = (tempNewline != NULL);
+        // Check for more lines.
+        tempNewline = strstr(broadcast, "\n");
+        if (tempNewline == NULL) {
+            lineLength = strlen(broadcast);
 
-        // First we check the line. Should colors be applied to it?
-        // A backslash can never be applied to any command in-game, like broadcast.
-        // Use that to determine what word should be highlighted.
-        tempBroadcast = strstr(broadcast, "\\");
-        if (tempBroadcast && tempBroadcast < broadcast + lineLength) {
-            // OK, a word is in the line. Find position in actual broadcast.
-            newWordPosition = (int)(tempBroadcast - broadcast);
-
-            // Skip the backslash character.
-            tempBroadcast++;
-
-            // Determine the length of the word to highlight.
-            char* wordEnd = strstr(tempBroadcast, " ");
-            newWordLength = wordEnd ? (wordEnd - tempBroadcast) : strlen(tempBroadcast);
-
-            // Now we apply the colors to the broadcast if there are colors to apply it to.
-            if (newWordLength > 0 && newWordLength < 64) {
-                // Add the text before the highlighted word to the new broadcast.
-                strncat(newBroadcast, broadcast, newWordPosition);
-
-                // Check how many colors there are available to use.
-                int availableColors = strlen(g_serverColors.string);
-                char wordToCopy[64];
-                strncpy(wordToCopy, tempBroadcast, newWordLength);
-                wordToCopy[newWordLength] = '\0';
-
-                // Copy each individual char to the new buffer, adding the color associated with it.
-                for (i = 0; i < newWordLength; i++) {
-                    if (i < availableColors) {
-                        strcat(newBroadcast, va("^%c%c", g_serverColors.string[i], wordToCopy[i]));
-                    }
-                    else {
-                        strncat(newBroadcast, &wordToCopy[i], 1);
-                    }
-                }
-
-                // Add a trailing ^7 to reset the colors for the rest of the text.
-                strcat(newBroadcast, "^7");
-
-                // Is there a remaining string after the highlighted word in the line?
-                if (wordEnd) {
-                    strncat(newBroadcast, wordEnd, strlen(wordEnd));
-                }
-            }
-
-            // Move the broadcast pointer forward to process the remaining text.
-            broadcast += newWordPosition + newWordLength + 1;
+            // Last line, don't go further after this.
+            parseLine = qfalse;
         }
         else {
-            // No backslash found in this line, copy it as-is.
-            strncat(newBroadcast, broadcast, lineLength);
-            broadcast += lineLength;
+            lineLength = tempNewline - broadcast + 1;
         }
 
-        // If a newline was found, copy it as well and advance the pointer.
-        if (tempNewline) {
-            strncat(newBroadcast, "\n", 1);
-            broadcast++;
+        // Check if line is too big to copy.
+        if (lineLength >= sizeof(line)) {
+            lineLength = sizeof(line) - 1;
         }
+
+        // Copy line.
+        strncpy(line, broadcast, lineLength);
+
+        // First we check the line. Should colours be applied to it?
+        // A backslash can never be applied to any command in-game, like broadcast. Use that to determine what word should be highlighted.
+        tempBroadcast = strstr(line, "\\");
+        if (tempBroadcast != NULL) {
+            // OK, a word is in the line. Find position in actual broadcast.
+            tempBroadcast = strstr(broadcast, "\\");
+
+            // A word is found that should be highlighted.
+            // First determine the start position of the word in the broadcast.
+            newWordPosition = (int)(tempBroadcast - broadcast);
+
+            // Now determine the length of the string.
+            strncpy(remainingLine, tempBroadcast, strlen(line) - newWordPosition);
+            remainingLine[strlen(line) - newWordPosition] = '\0';
+            tempBroadcast = strstr(remainingLine, " ");
+            if (tempBroadcast == NULL) {
+                // Word is as long as the remaining string.
+                newWordLength = strlen(remainingLine) - 1;
+            }
+            else {
+                // Make sure we properly get the address.
+                char* c = broadcast;
+                c += newWordPosition + 1;
+
+                // Word ends somewhere.
+                newWordLength = strstr(c, " ") - (broadcast + newWordPosition) - 1;
+            }
+
+            // Now we apply the colors to the broadcast if there are colors to apply it to.
+            // Do check the size of the line, if it's getting too big simply cut some colors to make room for the line to fit.
+            if (newWordLength > 0 && newWordLength < 64) {
+                // Check how many colors there are available to use.
+                int availableColors = strlen(g_serverColors.string);
+                strncat(newBroadcast, broadcast, newWordPosition);
+
+                if (!availableColors) {
+                    // Copy the string to it, excluding backslash.
+                    strncat(newBroadcast, broadcast + newWordPosition + 1, strlen(broadcast) - newWordPosition);
+                }
+                else {
+                    // Apply colors.
+                    char wordToCopy[64];
+                    int color, newLineLen;
+
+                    // Check how many colors we can copy.
+                    if (newWordLength >= availableColors) {
+                        color = 0;
+                    }
+                    else {
+                        color = availableColors - newWordLength;
+                    }
+
+                    // Check if everything fits properly.
+                    newLineLen = lineLength - 1 + ((availableColors - color) * 2); // Exclude the \ character and add the colors.
+
+                    while (newLineLen > MAX_BROADCAST_LINE) {
+                        color++;
+                        if (color >= availableColors)
+                            break; // Line will never fit.
+
+                        if ((lineLength - 1 + ((availableColors - color) * 2)) <= MAX_BROADCAST_LINE) {
+                            newLineLen = lineLength - 1 + ((availableColors - color) * 2);
+                            break;
+                        }
+                    }
+
+                    // Copy each individual char to the new buffer, plus the color associated to it.
+                    strncpy(wordToCopy, broadcast + newWordPosition + 1, newWordLength);
+                    for (i = 0; i < newWordLength; i++) {
+                        if (color < availableColors) {
+                            strcat(newBroadcast, va("^%c%c", g_serverColors.string[color], wordToCopy[i]));
+                            color++;
+                        }
+                        else {
+                            strcat(newBroadcast, va("%c", wordToCopy[i]));
+                        }
+                    }
+
+                    // Copy a trailing ^7 so all text won't be messed up if the colors aren't set to fade out correctly.
+                    strcat(newBroadcast, "^7");
+
+                    // Is there a remaining string in the line?
+                    if (tempBroadcast) {
+                        strncat(newBroadcast, broadcast + newWordPosition + newWordLength + 1, strlen(line) - newWordLength - newWordPosition - 1);
+                    }
+                }
+            }
+        }
+        else {
+            strncat(newBroadcast, line, strlen(line));
+        }
+
+        // Advance broadcast.
+        broadcast += (int)(tempNewline - broadcast) + 1;
     }
 
     // Boe!Man 3/13/15: Replace newlines with spaces when the game is paused.
     if (level.paused) {
-        for (i = 0; newBroadcast[i] != '\0'; i++) {
+        for (i = 0; i < strlen(newBroadcast); i++) {
             if (newBroadcast[i] == '\n') {
                 newBroadcast[i] = ' ';
             }
@@ -493,16 +547,12 @@ void G_Broadcast(int broadcastLevel, gentity_t* to, qboolean playSound, char* br
     va_end(argptr);
 
     int i;
-    char* newBroadcast;
-    Com_Printf("TXT: %s\n", text);
-    newBroadcast = G_ColorizeMessage(text);
-    Com_Printf("nB: %s\n", newBroadcast);
-
+    char* newBroadcast = G_ColorizeMessage(text);
     // If to is NULL, we're dealing with a global message (equals old way of broadcasting to -1).
     if (to == NULL) {
 
         if (playSound) {
-            //G_GlobalSound(level.actionSoundIndex);
+            G_GlobalSound(level.actionSoundIndex);
         }
 
         if (!level.paused) {

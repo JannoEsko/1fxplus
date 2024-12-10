@@ -2210,12 +2210,60 @@ void ClientCommand( int clientNum ) {
 
     if (Q_stricmp(cmd, "verified") == 0 && level.goldMod == CL_ROCMOD && !ent->client->sess.legacyProtocol) {
         ROCmod_verifyClient(ent, clientNum);
-        return qtrue;
+        return;
     }
         
     if (Q_stricmp(cmd, "uef") == 0 && level.goldMod == CL_ROCMOD && !ent->client->sess.legacyProtocol) {
         ROCmod_clientUpdate(ent, clientNum);
-        return qtrue;
+        return;
+    }
+
+    if (!Q_stricmp(cmd, "adm")) {
+
+        // There are 4 special commands to cater for here - /adm pass, /adm otplogin, /adm login and /adm ? (/adm help)
+        char arg[MAX_STRING_TOKENS];
+        trap_Argv(1, arg, sizeof(arg));
+
+        if (!Q_stricmp(arg, "pass")) {
+
+            char password[MAX_STRING_TOKENS];
+            trap_Argv(2, password, sizeof(password));
+            adm_setPassword(ent, password);
+
+            return;
+        }
+        else if (!Q_stricmp(arg, "otplogin")) {
+            G_printInfoMessage(ent, "Not yet implemented.");
+        }
+        else if (!Q_stricmp(arg, "login")) {
+
+            char password[MAX_STRING_TOKENS];
+            trap_Argv(2, password, sizeof(password));
+            adm_Login(ent, password);
+
+            return;
+        }
+        // Rest of it will all imply you do have admin rights.
+        else if (ent->client->sess.adminLevel <= ADMLVL_NONE || ent->client->sess.adminLevel > ADMLVL_HADMIN) {
+            G_printInfoMessage(ent, "You do not have admin powers.");
+            return;
+        }
+        else if (!Q_stricmp(arg, "?") || !Q_stricmp(arg, "help")) {
+            // List adm cmds
+
+        }
+        else {
+            int adminCommand = -1;
+            if ((adminCommand = cmdIsAdminCmd(arg, qfalse)) != -1 && canClientRunAdminCommand(ent, adminCommand)) {
+                runAdminCommand(adminCommand, 2, ent, qfalse);
+                return;
+            }
+            else {
+                // List adm cmds
+
+            }
+        }
+
     }
         
 

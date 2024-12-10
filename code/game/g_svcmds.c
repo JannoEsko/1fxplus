@@ -314,6 +314,16 @@ qboolean ConsoleCommand( void )
         return qtrue;
     }
 
+    if (!Q_stricmp(cmd, "cleardb")) {
+        char arg1[MAX_TOKEN_CHARS];
+
+        trap_Argv(1, arg1, sizeof(arg1));
+
+        dbRunTruncate(arg1);
+
+        return qtrue;
+    }
+
     if (g_dedicated.integer)
     {
         if (Q_stricmp (cmd, "say") == 0)
