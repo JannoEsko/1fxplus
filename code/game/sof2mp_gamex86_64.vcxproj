@@ -73,6 +73,8 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <TargetName>sof2mp_gamex86_64</TargetName>
     <OutDir>..\..\..\..\..\..\..\Games\sof2plus\1fx</OutDir>
+    <IncludePath>C:\vcpkg\installed\x64-windows-static\include;$(IncludePath)</IncludePath>
+    <LibraryPath>C:\vcpkg\installed\x64-windows-static\lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <TargetName>sof2mpgamex8664</TargetName>
@@ -82,6 +84,9 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <TargetName>sof2mpgamex8664</TargetName>
+  </PropertyGroup>
+  <PropertyGroup Label="Vcpkg" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <VcpkgUseStatic>true</VcpkgUseStatic>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -133,7 +138,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableUAC>false</EnableUAC>
       <GenerateMapFile>true</GenerateMapFile>
-      <AdditionalDependencies>user32.lib;advapi32.lib;winmm.lib;wsock32.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>user32.lib;advapi32.lib;winmm.lib;wsock32.lib;ws2_32.lib;libcurl.lib;zlib.lib;crypt32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -165,6 +170,7 @@
     <ClCompile Include="1fx\databases.c" />
     <ClCompile Include="1fx\functions.c" />
     <ClCompile Include="1fx\logging.c" />
+    <ClCompile Include="1fx\threads.c" />
     <ClCompile Include="ai_main.c" />
     <ClCompile Include="ai_util.c" />
     <ClCompile Include="ai_wpnav.c" />
@@ -198,6 +204,7 @@
     <ClCompile Include="g_weapon.c" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\ext\jsmn\jsmn.h" />
     <ClInclude Include="..\ext\sqlite\sqlite3.h" />
     <ClInclude Include="..\ghoul2\g2_local.h" />
     <ClInclude Include="..\qcommon\q_platform.h" />

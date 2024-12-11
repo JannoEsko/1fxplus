@@ -1322,6 +1322,26 @@ char *ClientConnect( int clientNum, qboolean firstTime, qboolean isBot )
 
     G_ReadSessionData( client );
 
+    // Check whether country is set.
+
+    if (!strlen(ent->client->sess.countryCode) && g_useCountryDb.integer) {
+        int blockLevel = 0;
+
+        qboolean hasCountry = dbGetCountry(ip, ent->client->sess.countryCode, sizeof(ent->client->sess.countryCode), ent->client->sess.country, sizeof(ent->client->sess.country), &blockLevel);
+        if (!hasCountry) {
+            if (g_useCountryAPI.integer && strlen(g_iphubAPIKey.string) > 0) {
+                int enqueue = enqueueOutbound(THREADACTION_IPHUB_DATA_REQUEST, ent->client->ps.clientNum, ent->client->pers.ip, sizeof(ent->client->pers.ip));
+
+                if (enqueue == THREADRESPONSE_ENQUEUE_COULDNT_MALLOC) {
+                    logSystem(LOGLEVEL_WARN, "Couldn't malloc in thread!");
+                }
+            }
+        }
+        else if (g_vpnAutoKick.integer && blockLevel == IPHUBBLOCK_VPN) {
+            return "VPN Detected!";
+        }
+    }
+
     if( isBot )
     {
         ent->r.svFlags |= SVF_BOT;
@@ -1346,6 +1366,18 @@ char *ClientConnect( int clientNum, qboolean firstTime, qboolean isBot )
         {
             BroadcastTeamChange( client, -1 );
         }
+    }
+
+
+    if (ent->client->sess.adminLevel == ADMLVL_NONE) {
+
+        int admlvl = dbGetAdminLevel(ADMTYPE_IP, ent, NULL);
+
+        if (admlvl > ADMLVL_NONE) {
+            ent->client->sess.adminLevel = admlvl;
+            ent->client->sess.adminType = ADMTYPE_IP;
+        }
+
     }
 
     // count current clients and rank for scoreboard

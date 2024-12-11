@@ -334,6 +334,9 @@ typedef struct
     char                adminName[MAX_NETNAME]; // This holds the name the client had when they got their admin powers.
     qboolean            setAdminPassword;
     admLevel_t          toBeAdminLevel;
+    char                countryCode[10];
+    char                country[50];
+
 } clientSession_t;
 
 //
@@ -1102,6 +1105,12 @@ extern  vmCvar_t    g_logToFile;
 extern  vmCvar_t    g_logToDatabase;
 extern  vmCvar_t    g_dbLogRetention;
 
+extern  vmCvar_t    g_iphubAPIKey;
+extern  vmCvar_t    g_useCountryAPI;
+extern  vmCvar_t    g_useCountryDb;
+extern  vmCvar_t    g_countryAging;
+extern  vmCvar_t    g_vpnAutoKick;
+
 //extern vmCvar_t     g_leanType;
 
 void    trap_Print( const char *text );
@@ -1524,3 +1533,62 @@ void QDECL G_printCustomMessage(gentity_t* ent, const char* prefix, const char* 
 void QDECL G_printCustomChatMessage(gentity_t* ent, const char* prefix, const char* msg, ...) __attribute__((format(printf, 3, 4)));
 void QDECL G_printCustomChatMessageToAll(const char* prefix, const char* msg, ...) __attribute__((format(printf, 2, 3)));
 
+
+typedef struct queueNode_s queueNode;
+
+struct queueNode_s {
+    int action;
+    int playerId;
+    char* message; // in outgoing calls, this can be the value we want to request from whatever (e.g. OTP) 
+    // in incoming calls, this will be the response structured with \.
+    struct queueNode_s* next;
+};
+
+typedef enum {
+    THREADRESPONSE_SUCCESS,
+    THREADRESPONSE_NOTHING_ENQUEUED,
+    THREADRESPONSE_ENQUEUE_COULDNT_MALLOC
+} threadResponse;
+
+typedef enum {
+    THREADACTION_IPHUB_DATA_REQUEST,
+    THREADACTION_IPHUB_DATA_RESPONSE,
+    THREADACTION_RUN_PRINTF
+} threadAction;
+
+struct curlProgressData {
+    char* prvt;
+    size_t size;
+};
+
+#define THREAD_CURL_BIGBUF 8192
+
+#ifdef __linux__
+#define THREAD_SLEEP_DURATION 50000
+#elif defined _WIN32
+#define THREAD_SLEEP_DURATION 50
+#endif
+
+#define IPHUB_API_ENDPOINT "http://v2.api.iphub.info/ip/"
+
+typedef enum {
+    IPHUBBLOCK_SAFE,
+    IPHUBBLOCK_VPN,
+    IPHUBBLOCK_UNSURE
+} ipHubBlock_t;
+
+qboolean performCurlRequest(char* url, struct curl_slist* customHeaders, qboolean verifypeer, char* output);
+size_t curlCallbackWriteToChar(void* contents, size_t size, size_t nmemb, void* userp);
+void shutdownThread(void);
+int dequeueOutbound(int* action, int* playerId, char* message, int sizeOfMessage);
+int dequeueInbound(int* action, int* playerId, char* message, int sizeOfMessage);
+int enqueueOutbound(int action, int playerId, char* message, int sizeOfMessage);
+int enqueueInbound(int action, int playerId, char* message, int sizeOfMessage);
+
+void initMutex(void);
+void acquireInboundMutex(void);
+void acquireOutboundMutex(void);
+void freeInboundMutex(void);
+void freeOutboundMutex(void);
+void startThread(void);
+void closeThread(void);

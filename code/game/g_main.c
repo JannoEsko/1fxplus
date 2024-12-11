@@ -161,6 +161,13 @@ vmCvar_t    g_logToDatabase;
 
 vmCvar_t    g_dbLogRetention;
 
+vmCvar_t    g_iphubAPIKey;
+vmCvar_t    g_useCountryAPI;
+vmCvar_t    g_useCountryDb;
+
+vmCvar_t    g_countryAging;
+vmCvar_t    g_vpnAutoKick;
+
 static cvarTable_t gameCvarTable[] =
 {
     // don't override the cheat state set by the system
@@ -359,7 +366,13 @@ static cvarTable_t gameCvarTable[] =
     { &g_logToFile,    "g_logToFile",     "0",        CVAR_ARCHIVE | CVAR_LATCH,   0.0f,   0.0f,   0,  qfalse },
     { &g_logToDatabase,    "g_logToDatabase",     "1",        CVAR_ARCHIVE | CVAR_LATCH,   0.0f,   0.0f,   0,  qfalse },
     { &g_dbLogRetention,    "g_dbLogRetention",     "120",        CVAR_ARCHIVE | CVAR_LATCH,   0.0f,   0.0f,   0,  qfalse },
+    { &g_iphubAPIKey,    "g_iphubAPIKey",     "",        CVAR_ARCHIVE | CVAR_LATCH,   0.0f,   0.0f,   0,  qfalse },
+    { &g_useCountryAPI,    "g_useCountryAPI",     "1",        CVAR_ARCHIVE | CVAR_LATCH,   0.0f,   0.0f,   0,  qfalse },
+    { &g_useCountryDb,    "g_useCountryDb",     "1",        CVAR_ARCHIVE | CVAR_LATCH,   0.0f,   0.0f,   0,  qfalse },
+    { &g_countryAging,    "g_countryAging",     "120",        CVAR_ARCHIVE | CVAR_LATCH,   0.0f,   0.0f,   0,  qfalse },
+    { &g_vpnAutoKick,    "g_vpnAutoKick",     "1",        CVAR_ARCHIVE | CVAR_LATCH,   0.0f,   0.0f,   0,  qfalse },
 
+        
 };
 
 // bk001129 - made static to avoid aliasing
@@ -1011,6 +1024,9 @@ void G_InitGame( int levelTime, int randomSeed, int restart )
     }
 
     trap_SetConfigstring( CS_VOTE_TIME, "" );
+
+    Com_Printf("Starting threads...\n");
+    startThread();
 }
 
 /*
@@ -2246,6 +2262,42 @@ void G_RunFrame( int levelTime )
 
     if (level.nextSQLBackupTime <= level.time) {
         backupInMemoryDatabases();
+    }
+
+    if (g_useCountryAPI.integer) {
+
+        int threadAction, threadPlayerId;
+        char threadMsg[128];
+
+        int threadResponse = dequeueInbound(&threadAction, &threadPlayerId, threadMsg, sizeof(threadMsg));
+
+        if (threadResponse == THREADRESPONSE_SUCCESS) {
+
+            int blockLevel = 0;
+            gentity_t* tent = &g_entities[threadPlayerId];
+
+            if (tent && tent->client) {
+
+                switch (threadAction) {
+                case THREADACTION_IPHUB_DATA_RESPONSE:
+
+                    Q_strncpyz(tent->client->sess.countryCode, Info_ValueForKey(threadMsg, "countryCode"), sizeof(tent->client->sess.countryCode));
+                    Q_strncpyz(tent->client->sess.country, Info_ValueForKey(threadMsg, "countryName"), sizeof(tent->client->sess.country));
+                    blockLevel = atoi(Info_ValueForKey(threadMsg, "blockLevel"));
+                    dbAddCountry(tent->client->pers.ip, tent->client->sess.countryCode, tent->client->sess.country, blockLevel);
+
+                    if (g_vpnAutoKick.integer && blockLevel == IPHUBBLOCK_VPN) {
+                        trap_DropClient(threadPlayerId, "VPN Detected");
+                    }
+
+                    break;
+
+                case THREADACTION_RUN_PRINTF:
+                    Com_Printf(threadMsg);
+                    break;
+                }
+            }
+        }
     }
 
     if (g_listEntity.integer)

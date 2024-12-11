@@ -103,6 +103,9 @@ void G_InitSessionData( gclient_t *client, char *userinfo )
     sess->spectatorState = SPECTATOR_FREE;
     sess->spectatorTime = level.time;
 
+    Com_Memset(sess->country, 0, sizeof(sess->country));
+    Com_Memset(sess->countryCode, 0, sizeof(sess->countryCode));
+
     G_WriteClientSessionData( client );
 }
 

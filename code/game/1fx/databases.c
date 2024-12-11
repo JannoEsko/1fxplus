@@ -136,7 +136,7 @@ static void migrateLogsDatabase(sqlite3* db, int logsMigrationLevel) {
     }
 
 }
-/*
+
 static void migrateCountryDatabase(sqlite3* db, int countryMigrationLevel) {
 
     // whenever a database structure changes due to updates to the mod, we will note down a new if clause here which basically
@@ -161,7 +161,7 @@ static void migrateCountryDatabase(sqlite3* db, int countryMigrationLevel) {
     }
 
 }
-*/
+
 
 char* getIpOrArg(gentity_t* ent, char* arg) {
     return ent && ent->client ? ent->client->pers.ip : arg;
@@ -297,7 +297,7 @@ void loadDatabases(void) {
     sqlite3_close(db); // logs DB can get too large to run just in memory, therefore we're opening / closing it every time when it's needed.
     // can have a performance implication, but haven't seen any lag due to it in 3D which already runs the same logic.
     // FIXME if server gets weird lagouts every second or so, then look here.
-    /*
+    
     rc = sqlite3_open("./1fx/databases/country.db", &db);
 
     if (rc) {
@@ -331,7 +331,7 @@ void loadDatabases(void) {
     }
 
     sqlite3_close(db);
-    */
+    
     Com_PrintInfo("Database checks done!\n");
 }
 
@@ -1085,7 +1085,7 @@ qboolean dbCheckBan(char* ip, char* reason, int reasonSize, int* endOfMap, int* 
     return banned;
 }
 
-/*
+
 qboolean dbGetCountry(char* ip, char* countryCode, int countryCodeSize, char* country, int countrySize, int* blocklevel) {
 
     sqlite3* db;
@@ -1141,7 +1141,7 @@ void dbAddCountry(char* ip, char* countryCode, char* country, int blocklevel) {
     sqlite3* db;
     sqlite3_stmt* stmt;
 
-    if (!g_useCountryDb.integer || !g_useIPHubAPI.integer) {
+    if (!g_useCountryDb.integer || !g_useCountryAPI.integer) {
         return; 
     }
 
@@ -1166,4 +1166,4 @@ void dbAddCountry(char* ip, char* countryCode, char* country, int blocklevel) {
 
     sqlite3_close(db);
 }
-*/
+

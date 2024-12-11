@@ -31,6 +31,9 @@
     <Filter Include="Source Files\1fx\clientmods">
       <UniqueIdentifier>{6831af0b-7516-41c4-8708-daab398a2dd7}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\ext\jsmn">
+      <UniqueIdentifier>{baa0755b-9fd3-4158-ae90-1352b483007c}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ai_main.c">
@@ -153,6 +156,9 @@
     <ClCompile Include="1fx\functions.c">
       <Filter>Source Files\1fx</Filter>
     </ClCompile>
+    <ClCompile Include="1fx\threads.c">
+      <Filter>Source Files\1fx</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ai_main.h">
@@ -232,6 +238,9 @@
     </ClInclude>
     <ClInclude Include="..\ext\sqlite\sqlite3.h">
       <Filter>Header Files\ext\sqlite</Filter>
+    </ClInclude>
+    <ClInclude Include="..\ext\jsmn\jsmn.h">
+      <Filter>Header Files\ext\jsmn</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
