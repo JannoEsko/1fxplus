@@ -200,7 +200,7 @@ void Svcmd_ForceTeam_f( void )
 
     // set the team
     trap_Argv( 2, str, sizeof( str ) );
-    SetTeam( &g_entities[cl - level.clients], str, NULL );
+    SetTeam( &g_entities[cl - level.clients], str, NULL, qtrue );
 }
 
 /*
@@ -232,13 +232,13 @@ qboolean ConsoleCommand( void )
 
 
     if (!Q_stricmp(cmd, "showcls")) {
-        Com_Printf("%-3s %-15s %-12s\n", "Num", "Name", "Legacy");
+        Com_Printf("%-3s %-15s %-15s %-5s %-20s\n", "Num", "Name", "Legacy", "Ctry", "Ctryname");
         for (int i = 0; i < level.numConnectedClients; i++) {
 
             gentity_t* tent = &g_entities[level.sortedClients[i]];
 
             if (tent && tent->client && tent->client->pers.connected == CON_CONNECTED) {
-                Com_Printf("%3i %-15s %-12s\n", tent->s.clientNum, tent->client->pers.cleanName, tent->client->sess.legacyProtocol ? "Legacy" : "Non-legacy");
+                Com_Printf("%3i %-15s %-15s %-5s %-20s\n", tent->s.clientNum, tent->client->pers.cleanName, tent->client->sess.legacyProtocol ? "Legacy" : "Non-legacy", tent->client->sess.countryCode, tent->client->sess.country);
             }
 
             

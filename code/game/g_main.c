@@ -167,6 +167,7 @@ vmCvar_t    g_useCountryDb;
 
 vmCvar_t    g_countryAging;
 vmCvar_t    g_vpnAutoKick;
+vmCvar_t    g_subnetOctets;
 
 static cvarTable_t gameCvarTable[] =
 {
@@ -196,7 +197,7 @@ static cvarTable_t gameCvarTable[] =
     { &g_friendlyFire, "g_friendlyFire", "0", CVAR_SERVERINFO|CVAR_ARCHIVE, 0.0, 0.0, 0, qtrue  },
 
     { &g_teamAutoJoin, "g_teamAutoJoin", "0", CVAR_ARCHIVE, 0.0, 0.0,   },
-    { &g_teamForceBalance, "g_teamForceBalance", "0", CVAR_ARCHIVE, 0.0, 0.0,   },
+    { &g_teamForceBalance, "g_teamForceBalance", "1", CVAR_ARCHIVE, 0.0, 0.0,   },
 
     { &g_warmup, "g_warmup", "20", CVAR_ARCHIVE, 0.0, 0.0, 0, qtrue  },
     { &g_doWarmup, "g_doWarmup", "0", 0, 0.0, 0.0, 0, qtrue  },
@@ -371,6 +372,8 @@ static cvarTable_t gameCvarTable[] =
     { &g_useCountryDb,    "g_useCountryDb",     "1",        CVAR_ARCHIVE | CVAR_LATCH,   0.0f,   0.0f,   0,  qfalse },
     { &g_countryAging,    "g_countryAging",     "120",        CVAR_ARCHIVE | CVAR_LATCH,   0.0f,   0.0f,   0,  qfalse },
     { &g_vpnAutoKick,    "g_vpnAutoKick",     "1",        CVAR_ARCHIVE | CVAR_LATCH,   0.0f,   0.0f,   0,  qfalse },
+
+    { &g_subnetOctets,    "g_subnetOctets",     "3",        CVAR_ARCHIVE | CVAR_LATCH,   1.0f,   3.0f,   0,  qfalse },
 
         
 };
@@ -859,6 +862,8 @@ void G_InitGame( int levelTime, int randomSeed, int restart )
     Com_Printf ("gamename: %s %s\n", PRODUCT_NAME, PRODUCT_VERSION);
     Com_Printf ("gamedate: %s\n", __DATE__);
 
+    // As system logging goes to DB's as well, we need to init the db before we do any activity. Otherwise, funny things are going to happen... :)
+    loadDatabases();
     srand( randomSeed );
 
     // set some level globals
@@ -1006,9 +1011,7 @@ void G_InitGame( int levelTime, int randomSeed, int restart )
     // Load clientmod specifics
     G_InitClientMod();
 
-    // Before gametype starts, we load the databases and also parse the session (once it's built......... :))
-
-    loadDatabases();
+    
 
     // Initialize the gametype
     trap_GT_Init ( g_gametype.string, restart );
@@ -1057,6 +1060,7 @@ void G_ShutdownGame( int restart )
 
     Com_PrintInfo("Unloading in-memory databases...\n");
     unloadInMemoryDatabases();
+    closeThread();
 
     // Shutdown the gametype last.
     // Don't make any system calls beyond this point.
@@ -2230,6 +2234,52 @@ void G_RunFrame( int levelTime )
         {
             ClientEndFrame( ent );
         }
+        
+        if (ent && ent->inuse && ent->client) {
+            
+            if (ent->client->pers.connected == CON_CONNECTED) {
+
+                if (!G_IsClientSpectating(ent->client) && !G_IsClientDead(ent->client)) {
+                    
+                    
+                    if (ent->client->sess.coaster > 0 && level.time > ent->client->sess.nextCoasterTime) {
+                        
+                        if (ent->client->sess.coaster % COASTERSTATE_SPIN == 0) {
+                            ent->client->sess.spinView = qtrue;
+                            ent->client->sess.spinViewState = SPINVIEW_FAST;
+                            ent->client->sess.lastSpin = level.time + 500;
+                        }
+                        else if (ent->client->sess.coaster % COASTERSTATE_UPPERCUT) {
+                            //ent->client->sess.spinView = qfalse;
+                            uppercutPlayer(ent, 0);
+                        }
+                        else {
+                            //ent->client->sess.spinView = qfalse;
+                            runoverPlayer(ent);
+                        }
+
+                        ent->client->sess.coaster--;
+                        if (ent->client->sess.coaster == 0) {
+                            ent->client->sess.nextCoasterTime = 0;
+                        }
+                        else if (ent->client->sess.spinView) {
+                            ent->client->sess.nextCoasterTime += 50;
+                        } else {
+                            ent->client->sess.nextCoasterTime += 500;
+                        }
+                        
+                    }
+
+
+                    if (ent->client->sess.spinView) {
+                        spinView(ent);
+                    }
+
+                }
+
+            }
+
+        }
     }
 
     if (level.legacyMod == CL_RPM) {
@@ -2267,7 +2317,7 @@ void G_RunFrame( int levelTime )
     if (g_useCountryAPI.integer) {
 
         int threadAction, threadPlayerId;
-        char threadMsg[128];
+        char threadMsg[MAX_THREAD_OUTPUT];
 
         int threadResponse = dequeueInbound(&threadAction, &threadPlayerId, threadMsg, sizeof(threadMsg));
 
@@ -2326,3 +2376,29 @@ void G_ShutdownGhoul ( void )
     level.serverGhoul2 = NULL;
 }
 
+
+/*
+===============
+Boe_setTrackedCvar
+===============
+*/
+void G_setTrackedCvarWithoutTrackMessage(vmCvar_t* cvar, int value) {
+    cvarTable_t* cv = gameCvarTable;
+    int i;
+    qboolean found = qfalse;
+
+    for (i = 0; i < gameCvarTableSize; i++) {
+        if (cv[i].vmCvar == cvar) {
+            found = qtrue;
+            break;
+        }
+    }
+
+    if (found) {
+        cv[i].trackChange = qfalse;
+        trap_Cvar_Set(cv[i].cvarName, va("%d", value));
+        G_UpdateCvars();
+        cv[i].trackChange = qtrue;
+    }
+
+}

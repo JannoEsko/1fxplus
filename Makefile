@@ -30,9 +30,28 @@ endif
 ifndef BUILD_GT_ELIM
   BUILD_GT_ELIM    =
 endif
-ifndef BUILD_GT_DEM
-  BUILD_GT_DEM     =
+ifndef BUILD_GT_HNS
+  BUILD_GT_HNS     =
 endif
+ifndef BUILD_GT_HNZ
+  BUILD_GT_HNZ     =
+endif
+ifndef BUILD_GT_CSINF
+  BUILD_GT_CSINF     =
+endif
+ifndef BUILD_GT_GG
+  BUILD_GT_GG     =
+endif
+ifndef BUILD_GT_PROP
+  BUILD_GT_PROP     =
+endif
+ifndef BUILD_GT_VIP
+  BUILD_GT_VIP     =
+endif
+
+#ifndef BUILD_GT_DEM
+#  BUILD_GT_DEM     =
+#endif
 
 #############################################################################
 #
@@ -132,13 +151,23 @@ BD=$(BUILD_DIR)/debug-$(PLATFORM)-$(ARCH)
 BR=$(BUILD_DIR)/release-$(PLATFORM)-$(ARCH)
 CMDIR=$(MOUNT_DIR)/qcommon
 GDIR=$(MOUNT_DIR)/game
+EXTDIR=$(MOUNT_DIR)/ext
+SQLITEDIR=$(MOUNT_DIR)/ext/sqlite
+FXDIR=$(MOUNT_DIR)/game/1fx
+CLMODDIR=$(MOUNT_DIR)/game/1fx/clientmods
 GTDIR=$(MOUNT_DIR)/gametype
 GTDMDIR=$(MOUNT_DIR)/gametype/gt_dm
 GTTDMDIR=$(MOUNT_DIR)/gametype/gt_tdm
 GTCTFDIR=$(MOUNT_DIR)/gametype/gt_ctf
 GTINFDIR=$(MOUNT_DIR)/gametype/gt_inf
 GTELIMDIR=$(MOUNT_DIR)/gametype/gt_elim
-GTDEMDIR=$(MOUNT_DIR)/gametype/gt_dem
+GTHNSDIR=$(MOUNT_DIR)/gametype/gt_hns
+GTHNZDIR=$(MOUNT_DIR)/gametype/gt_hnz
+GTCSINFDIR=$(MOUNT_DIR)/gametype/gt_csinf
+GTPROPDIR=$(MOUNT_DIR)/gametype/gt_prop
+GTVIPDIR=$(MOUNT_DIR)/gametype/gt_vip
+GTGGDIR=$(MOUNT_DIR)/gametype/gt_gg
+#GTDEMDIR=$(MOUNT_DIR)/gametype/gt_dem
 
 bin_path=$(shell which $(1) 2> /dev/null)
 
@@ -183,7 +212,7 @@ ifneq (,$(findstring "$(PLATFORM)", "linux" "gnu_kfreebsd" "kfreebsd-gnu" "gnu")
   SHLIBCFLAGS=-fPIC -fvisibility=hidden
   SHLIBLDFLAGS=-shared $(LDFLAGS)
 
-  LIBS=-ldl -lm
+  LIBS=-ldl -lm -lpthread -lcurl
 
   ifeq ($(ARCH),x86)
     # linux32 make ...
@@ -317,7 +346,7 @@ ifdef MINGW
   SHLIBEXT=dll
   SHLIBCFLAGS=
   SHLIBLDFLAGS=-shared $(LDFLAGS)
-  LIBS= -lws2_32 -lwinmm -lpsapi
+  LIBS= -lws2_32 -lwinmm -lpsapi -lcurl
 
   ifeq ($(ARCH),x86)
     # build 32bit
@@ -519,9 +548,33 @@ ifneq ($(BUILD_GT_ELIM),0)
   TARGETS += $(B)/gt_elim$(SHLIBNAME)
 endif
 
-ifneq ($(BUILD_GT_DEM),0)
-  TARGETS += $(B)/gt_dem$(SHLIBNAME)
+ifneq ($(BUILD_GT_CSINF),0)
+  TARGETS += $(B)/gt_csinf$(SHLIBNAME)
 endif
+
+ifneq ($(BUILD_GT_HNS),0)
+  TARGETS += $(B)/gt_hns$(SHLIBNAME)
+endif
+
+ifneq ($(BUILD_GT_HNZ),0)
+  TARGETS += $(B)/gt_hnz$(SHLIBNAME)
+endif
+
+ifneq ($(BUILD_GT_PROP),0)
+  TARGETS += $(B)/gt_prop$(SHLIBNAME)
+endif
+
+ifneq ($(BUILD_GT_VIP),0)
+  TARGETS += $(B)/gt_vip$(SHLIBNAME)
+endif
+
+ifneq ($(BUILD_GT_GG),0)
+  TARGETS += $(B)/gt_gg$(SHLIBNAME)
+endif
+
+#ifneq ($(BUILD_GT_DEM),0)
+#  TARGETS += $(B)/gt_dem$(SHLIBNAME)
+#endif
 
 ifeq ("$(CC)", $(findstring "$(CC)", "clang" "clang++"))
   BASE_CFLAGS += -Qunused-arguments
@@ -591,7 +644,7 @@ all: debug release
 
 debug:
 	@$(MAKE) targets B=$(BD) CFLAGS="$(CFLAGS) $(BASE_CFLAGS) $(DEPEND_CFLAGS)" \
-	  OPTIMIZE="$(DEBUG_CFLAGS)" V=$(V)
+	  OPTIMIZE="-D_DEBUG $(DEBUG_CFLAGS)" V=$(V)
 
 release:
 	@$(MAKE) targets B=$(BR) CFLAGS="$(CFLAGS) $(BASE_CFLAGS) $(DEPEND_CFLAGS)" \
@@ -680,14 +733,24 @@ endif
 
 makedirs:
 	@$(MKDIR) $(BUILD_DIR)
+	@$(MKDIR) $(B)/ext
+	@$(MKDIR) $(B)/ext/sqlite
 	@$(MKDIR) $(B)/game
+	@$(MKDIR) $(B)/game/1fx
+	@$(MKDIR) $(B)/game/1fx/clientmods
 	@$(MKDIR) $(B)/gametype
 	@$(MKDIR) $(B)/gametype/gt_dm
 	@$(MKDIR) $(B)/gametype/gt_tdm
 	@$(MKDIR) $(B)/gametype/gt_ctf
 	@$(MKDIR) $(B)/gametype/gt_inf
 	@$(MKDIR) $(B)/gametype/gt_elim
-	@$(MKDIR) $(B)/gametype/gt_dem
+	@$(MKDIR) $(B)/gametype/gt_csinf
+	@$(MKDIR) $(B)/gametype/gt_hns
+	@$(MKDIR) $(B)/gametype/gt_hnz
+	@$(MKDIR) $(B)/gametype/gt_vip
+	@$(MKDIR) $(B)/gametype/gt_gg
+	@$(MKDIR) $(B)/gametype/gt_prop
+#	@$(MKDIR) $(B)/gametype/gt_dem
 	@$(MKDIR) $(B)/qcommon
 
 #############################################################################
@@ -728,6 +791,14 @@ SOF2GOBJ_ = \
   $(B)/game/g_trigger.o \
   $(B)/game/g_utils.o \
   $(B)/game/g_weapon.o \
+  $(B)/ext/sqlite/sqlite3.o \
+  $(B)/game/1fx/clientmods/ROCmod.o \
+  $(B)/game/1fx/clientmods/RPM.o \
+  $(B)/game/1fx/admin.o \
+  $(B)/game/1fx/databases.o \
+  $(B)/game/1fx/functions.o \
+  $(B)/game/1fx/logging.o \
+  $(B)/game/1fx/threads.o \
   \
   $(B)/qcommon/q_math.o \
   $(B)/qcommon/q_shared.o
@@ -736,7 +807,7 @@ SOF2GOBJ = $(SOF2GOBJ_) $(B)/game/g_syscalls.o
 
 $(B)/sof2mp_game$(SHLIBNAME): $(SOF2GOBJ)
 	$(echo_cmd) "LD $@"
-	$(Q)$(CC) $(CFLAGS) $(SHLIBLDFLAGS) -o $@ $(SOF2GOBJ)
+	$(Q)$(CC) $(CFLAGS) $(SHLIBLDFLAGS) -o $@ $(SOF2GOBJ) -lcurl
 
 #############################################################################
 # GT DM MODULE
@@ -845,6 +916,118 @@ GTDEMOBJ = $(GTDEMOBJ_) $(B)/gametype/gt_syscalls.o
 $(B)/gt_dem$(SHLIBNAME): $(GTDEMOBJ)
 	$(echo_cmd) "LD $@"
 	$(Q)$(CC) $(CFLAGS) $(SHLIBLDFLAGS) -o $@ $(GTDEMOBJ)
+	
+#############################################################################
+# GT CSINF MODULE
+#############################################################################
+
+GTCSINFOBJ_ = \
+  $(B)/gametype/gt_csinf/gt_main.o \
+  \
+  $(B)/gametype/gt_shared.o \
+  \
+  $(B)/qcommon/q_math.o \
+  $(B)/qcommon/q_shared.o
+
+GTCSINFOBJ = $(GTCSINFOBJ_) $(B)/gametype/gt_syscalls.o
+
+$(B)/gt_csinf$(SHLIBNAME): $(GTCSINFOBJ)
+	$(echo_cmd) "LD $@"
+	$(Q)$(CC) $(CFLAGS) $(SHLIBLDFLAGS) -o $@ $(GTCSINFOBJ)
+
+#############################################################################
+# GT HNS MODULE
+#############################################################################
+
+GTHNSOBJ_ = \
+  $(B)/gametype/gt_hns/gt_main.o \
+  \
+  $(B)/gametype/gt_shared.o \
+  \
+  $(B)/qcommon/q_math.o \
+  $(B)/qcommon/q_shared.o
+
+GTHNSOBJ = $(GTHNSOBJ_) $(B)/gametype/gt_syscalls.o
+
+$(B)/gt_hns$(SHLIBNAME): $(GTHNSOBJ)
+	$(echo_cmd) "LD $@"
+	$(Q)$(CC) $(CFLAGS) $(SHLIBLDFLAGS) -o $@ $(GTHNSOBJ)
+
+#############################################################################
+# GT HNZ MODULE
+#############################################################################
+
+GTHNZOBJ_ = \
+  $(B)/gametype/gt_hnz/gt_main.o \
+  \
+  $(B)/gametype/gt_shared.o \
+  \
+  $(B)/qcommon/q_math.o \
+  $(B)/qcommon/q_shared.o
+
+GTHNZOBJ = $(GTHNZOBJ_) $(B)/gametype/gt_syscalls.o
+
+$(B)/gt_hnz$(SHLIBNAME): $(GTHNZOBJ)
+	$(echo_cmd) "LD $@"
+	$(Q)$(CC) $(CFLAGS) $(SHLIBLDFLAGS) -o $@ $(GTHNZOBJ)
+
+#############################################################################
+# GT PROP MODULE
+#############################################################################
+
+GTPROPOBJ_ = \
+  $(B)/gametype/gt_prop/gt_main.o \
+  \
+  $(B)/gametype/gt_shared.o \
+  \
+  $(B)/qcommon/q_math.o \
+  $(B)/qcommon/q_shared.o
+
+GTPROPOBJ = $(GTPROPOBJ_) $(B)/gametype/gt_syscalls.o
+
+$(B)/gt_prop$(SHLIBNAME): $(GTPROPOBJ)
+	$(echo_cmd) "LD $@"
+	$(Q)$(CC) $(CFLAGS) $(SHLIBLDFLAGS) -o $@ $(GTPROPOBJ)
+
+
+#############################################################################
+# GT VIP MODULE
+#############################################################################
+
+GTVIPOBJ_ = \
+  $(B)/gametype/gt_vip/gt_main.o \
+  \
+  $(B)/gametype/gt_shared.o \
+  \
+  $(B)/qcommon/q_math.o \
+  $(B)/qcommon/q_shared.o
+
+GTVIPOBJ = $(GTVIPOBJ_) $(B)/gametype/gt_syscalls.o
+
+$(B)/gt_vip$(SHLIBNAME): $(GTVIPOBJ)
+	$(echo_cmd) "LD $@"
+	$(Q)$(CC) $(CFLAGS) $(SHLIBLDFLAGS) -o $@ $(GTVIPOBJ)
+
+
+
+#############################################################################
+# GT GG MODULE
+#############################################################################
+
+GTGGOBJ_ = \
+  $(B)/gametype/gt_gg/gt_main.o \
+  \
+  $(B)/gametype/gt_shared.o \
+  \
+  $(B)/qcommon/q_math.o \
+  $(B)/qcommon/q_shared.o
+
+GTGGOBJ = $(GTGGOBJ_) $(B)/gametype/gt_syscalls.o
+
+$(B)/gt_gg$(SHLIBNAME): $(GTGGOBJ)
+	$(echo_cmd) "LD $@"
+	$(Q)$(CC) $(CFLAGS) $(SHLIBLDFLAGS) -o $@ $(GTGGOBJ)
+
 
 #############################################################################
 ## MAIN RULES
@@ -854,6 +1037,15 @@ $(B)/qcommon/%.o: $(CMDIR)/%.c
 	$(DO_SHLIB_CC)
 
 $(B)/game/%.o: $(GDIR)/%.c
+	$(DO_GAME_CC)
+
+$(B)/ext/sqlite/%.o: $(SQLITEDIR)/%.c
+	$(DO_GAME_CC)
+
+$(B)/game/1fx/clientmods/%.o: $(CLMODDIR)/%.c
+	$(DO_GAME_CC)
+
+$(B)/game/1fx/%.o: $(FXDIR)/%.c
 	$(DO_GAME_CC)
 
 $(B)/gametype/%.o: $(GTDIR)/%.c
@@ -874,8 +1066,26 @@ $(B)/gametype/gt_inf/%.o: $(GTINFDIR)/%.c
 $(B)/gametype/gt_elim/%.o: $(GTELIMDIR)/%.c
 	$(DO_GT_CC)
 
-$(B)/gametype/gt_dem/%.o: $(GTDEMDIR)/%.c
+$(B)/gametype/gt_csinf/%.o: $(GTCSINFDIR)/%.c
 	$(DO_GT_CC)
+
+$(B)/gametype/gt_hns/%.o: $(GTHNSDIR)/%.c
+	$(DO_GT_CC)
+
+$(B)/gametype/gt_hnz/%.o: $(GTHNZDIR)/%.c
+	$(DO_GT_CC)
+
+$(B)/gametype/gt_prop/%.o: $(GTPROPDIR)/%.c
+	$(DO_GT_CC)
+
+$(B)/gametype/gt_vip/%.o: $(GTVIPDIR)/%.c
+	$(DO_GT_CC)
+
+$(B)/gametype/gt_gg/%.o: $(GTGGDIR)/%.c
+	$(DO_GT_CC)
+
+#$(B)/gametype/gt_dem/%.o: $(GTDEMDIR)/%.c
+#	$(DO_GT_CC)
 
 #############################################################################
 # MISC
@@ -902,7 +1112,13 @@ clean2:
 	@rm -f $(GTCTFOBJ)
 	@rm -f $(GTINFOBJ)
 	@rm -f $(GTELIMOBJ)
-	@rm -f $(GTDEMOBJ)
+	@rm -f $(GTCSINFOBJ)
+	@rm -f $(GTHNSOBJ)
+	@rm -f $(GTHNZOBJ)
+	@rm -f $(GTPROPOBJ)
+	@rm -f $(GTVIPOBJ)
+	@rm -f $(GTGGOBJ)
+#	@rm -f $(GTDEMOBJ)
 	@rm -f $(TARGETS)
 
 distclean: clean

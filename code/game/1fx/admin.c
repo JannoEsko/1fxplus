@@ -228,10 +228,10 @@ void adm_Login(gentity_t* ent, char* password) {
 	getCleanAdminNameByAdminLevel(adminLevel, colorFreeAdminName, sizeof(colorFreeAdminName));
 
 	G_printInfoMessageToAll("%s has been granted %s.", ent->client->pers.cleanName, colorFreeAdminName);
-	logLogin(ent);
 	ent->client->sess.adminLevel = adminLevel;
 	ent->client->sess.adminType = ADMTYPE_PASS;
 	Q_strncpyz(ent->client->sess.adminName, ent->client->pers.cleanName, sizeof(ent->client->sess.adminName));
+	logLogin(ent);
 
 }
 
@@ -301,7 +301,7 @@ int adm_adminRemove(int argNum, gentity_t* adm, qboolean shortCmd) {
 	}
 
 	int rowsAffected = dbRemoveAdminByRowId(adminType, rowId);
-	logAdmin(getIpOrArg(adm, "RCON"), getNameOrArg(adm, "RCON", qtrue), NULL, adminName, "removeadmin", NULL, getAdminLevel(adm), getAdminName(adm), getAdminType(adm));
+	logAdmin(adm, NULL, "removeadmin", adminName);
 
 	if (rowsAffected > 0) {
 		// as this was a list remove, also try to find the client and remove their powers if they're online.
@@ -398,7 +398,7 @@ static void addAdmin(int argNum, gentity_t* adm, qboolean shortCmd, admLevel_t a
 			G_printChatInfoMessage(ent, "To do so, issue command /adm pass into console, e.g. /adm pass newpass");
 			G_printChatInfoMessage(ent, "That will set your password to newpass");
 
-			logAdmin(getIpOrArg(adm, "RCON"), getNameOrArg(adm, "RCON", qtrue), ent->client->pers.ip, ent->client->pers.cleanName, "resetpassword", NULL, getAdminLevel(adm), getAdminName(adm), getAdminType(adm));
+			logAdmin(adm, ent, "resetpassword", NULL);
 			return;
 		}
 		else {
@@ -428,7 +428,7 @@ static void addAdmin(int argNum, gentity_t* adm, qboolean shortCmd, admLevel_t a
 		ent->client->sess.adminType = adminType;
 	}
 
-	logAdmin(getIpOrArg(adm, "RCON"), getNameOrArg(adm, "RCON", qtrue), ent->client->pers.ip, ent->client->pers.cleanName, va("addadmin %d", admlvl), NULL, getAdminLevel(adm), getAdminName(adm), getAdminType(adm));
+	logAdmin(adm, ent, va("addadmin %d", admlvl), NULL);
 	G_Broadcast(BROADCAST_GAME, NULL, qtrue, "%s\n^7has been added to %s^7list\nby %s", ent->client->pers.netname, getAdminNameByAdminLevel(admlvl), getNameOrArg(adm, "\\RCON", qfalse));
 
 	char colorFreeAdminName[MAX_NETNAME];
@@ -458,83 +458,351 @@ int adm_addHadmin(int argNum, gentity_t* adm, qboolean shortCmd) {
 	return -1;
 }
 
+// mostly taken from 1fx. Mod, missing competitive mode which will be added along with the rest of compmode functionality.
+static void adm_toggleCVAR(int argNum, gentity_t* adm, qboolean shortCmd, char* cvarName, vmCvar_t* cvar, qboolean availableInCM, char* cmCvarName, vmCvar_t* cmCvar) {
+
+	char* arg = G_GetArg(argNum, shortCmd);
+	int newValue = arg && strlen(arg) > 0 ? atoi(arg) : -1;
+
+	if (newValue < 0) {
+		G_printInfoMessage(adm, "%s is %d.", cvarName, cvar->integer);
+	}
+	else {
+		// means change
+		if (cvar) {
+			G_setTrackedCvarWithoutTrackMessage(cvar, newValue);
+		}
+		else {
+			trap_Cvar_Set(cvarName, va("%d", newValue));
+			trap_Cvar_Update(cvar);
+		}
+
+		G_printInfoMessageToAll("%s was changed to %d by %s.", cvarName, newValue, getNameOrArg(adm, "RCON", qtrue));
+		G_Broadcast(BROADCAST_CMD, NULL, qtrue, "\\%s was changed to %d\nby %s", cvarName, newValue, getNameOrArg(adm, "RCON", qfalse));
+		logAdmin(adm, NULL, va("%s %d", cvarName, newValue), NULL);
+
+		// was only sent for rocmod and gold specific, but this shouldn't impact non-ROCMod clients if we send it again over here as well.
+		for (int i = 0; i < level.numConnectedClients; i++) {
+			DeathmatchScoreboardMessage(&g_entities[level.sortedClients[i]]);
+		}
+	}
+}
+
 int adm_scoreLimit(int argNum, gentity_t* adm, qboolean shortCmd) {
+	adm_toggleCVAR(argNum, adm, shortCmd, "Scorelimit", &g_scorelimit, qtrue, NULL, NULL);
 	return -1;
 }
 
 int adm_timeLimit(int argNum, gentity_t* adm, qboolean shortCmd) {
+	adm_toggleCVAR(argNum, adm, shortCmd, "Timelimit", &g_timelimit, qtrue, NULL, NULL);
 	return -1;
 }
 
 int adm_swapTeams(int argNum, gentity_t* adm, qboolean shortCmd) {
+	swapTeams(qfalse);
+	logAdmin(adm, NULL, "swapteams", NULL);
 	return -1;
 }
 
+// JANFIXME compmode
 int adm_Rounds(int argNum, gentity_t* adm, qboolean shortCmd) {
 	return -1;
 }
 
+static void adm_unPlant(gentity_t* adm, gentity_t* ent) {
+
+	if (!ent->client->sess.planted) return;
+
+	ent->client->ps.origin[2] += 65;
+	VectorCopy(ent->client->ps.origin, ent->s.origin);
+	ent->client->sess.planted = qfalse;
+
+	G_Broadcast(BROADCAST_CMD, NULL, qtrue, "%s\nwas \\unplanted\nby %s", getNameOrArg(ent, NULL, qfalse), getNameOrArg(adm, "RCON", qfalse));
+	G_printCustomMessageToAll("Admin Action", "%s was unplanted by %s", getNameOrArg(ent, NULL, qtrue), getNameOrArg(adm, "RCON", qtrue));
+
+	G_ClientSound(ent, G_SoundIndex("sound/misc/confused/wood_break.mp3"));
+}
+
 int adm_Plant(int argNum, gentity_t* adm, qboolean shortCmd) {
-	return -1;
+
+	int idNum = G_ClientNumFromArg(adm, argNum, "plant", qtrue, qtrue, qfalse, shortCmd);
+
+	if (idNum >= 0) {
+		gentity_t* ent = &g_entities[idNum];
+
+		if (ent->client->sess.planted) {
+			adm_unPlant(adm, ent);
+			return -1;
+		}
+		ent->client->sess.planted = qtrue;
+
+		if (ent->client->ps.pm_flags & PMF_DUCKED) {
+			ent->client->ps.origin[2] -= 40;
+		}
+		else {
+			ent->client->ps.origin[2] -= 65;
+		}
+
+		VectorCopy(ent->client->ps.origin, ent->s.origin);
+		ent->client->sess.planted = qtrue;
+
+		G_ClientSound(ent, G_SoundIndex("sound/misc/confused/wood_break.mp3"));
+	}
+
+	return idNum;
 }
 
 int adm_roundTimeLimit(int argNum, gentity_t* adm, qboolean shortCmd) {
+	adm_toggleCVAR(argNum, adm, shortCmd, "Round Timelimit", &g_roundtimelimit, qfalse, NULL, NULL);
 	return -1;
 }
 
 int adm_Runover(int argNum, gentity_t* adm, qboolean shortCmd) {
-	return -1;
+
+	int idNum = G_ClientNumFromArg(adm, argNum, "runover", qtrue, qtrue, qfalse, shortCmd);
+
+	if (idNum >= 0) {
+		runoverPlayer(&g_entities[idNum]);
+	}
+
+	return idNum;
 }
 
 int adm_Rollercoaster(int argNum, gentity_t* adm, qboolean shortCmd) {
-	return -1;
+
+	int idNum = G_ClientNumFromArg(adm, argNum, "rollercoaster", qtrue, qtrue, qfalse, shortCmd);
+	
+	if (idNum >= 0) {
+		gentity_t* ent = &g_entities[idNum];
+		int coasterTimes;
+		char arg[MAX_SAY_TEXT];
+
+		if (shortCmd && G_GetChatArgumentCount()) {
+			coasterTimes = atoi(G_GetChatArgument(argNum + 1));
+		}
+		else {
+			trap_Argv(argNum + 1, arg, sizeof(arg));
+			coasterTimes = atoi(arg);
+		}
+
+		if (coasterTimes < 2) {
+			coasterTimes = 2;
+		}
+		else if (coasterTimes > 10) {
+			coasterTimes = 10;
+		}
+
+		ent->client->sess.coaster = coasterTimes * 3;
+		ent->client->sess.nextCoasterTime = level.time;
+
+	}
+
+	return idNum;
 }
 
 int adm_Respawn(int argNum, gentity_t* adm, qboolean shortCmd) {
-	return -1;
+
+	int idNum = G_ClientNumFromArg(adm, argNum, "rollercoaster", qtrue, qtrue, qfalse, shortCmd);
+
+	if (idNum >= 0) {
+		gentity_t* ent = &g_entities[idNum];
+
+		if (ent->client->sess.team == TEAM_SPECTATOR) {
+			G_printInfoMessage(adm, "You cannot respawn a spectator.");
+			return -1;
+		}
+
+		if (ent->client->sess.ghost) {
+			G_StopFollowing(ent);
+			ent->client->ps.pm_flags &= ~PMF_GHOST;
+			ent->client->ps.pm_type = PM_NORMAL;
+			ent->client->sess.ghost = qfalse;
+		}
+		else {
+			TossClientItems(ent);
+		}
+
+		ent->client->sess.noTeamChange = qfalse;
+		trap_UnlinkEntity(ent);
+		ClientSpawn(ent);
+		G_ClientSound(ent, G_SoundIndex("sound/ambience/vehicles/telephone_pole.mp3")); 
+	}
+
+	return idNum;
 }
 
+// JANFIXME check this with compmode.
 int adm_mapRestart(int argNum, gentity_t* adm, qboolean shortCmd) {
 	return -1;
 }
 
 int adm_Strip(int argNum, gentity_t* adm, qboolean shortCmd) {
-	return -1;
+
+	int idNum = G_ClientNumFromArg(adm, argNum, "strip", qtrue, qtrue, qfalse, shortCmd);
+
+	if (idNum >= 0) {
+		stripClient(&g_entities[idNum], qtrue);
+	}
+
+	return idNum;
 }
 
 int adm_removeAdmin(int argNum, gentity_t* adm, qboolean shortCmd) {
+
+	int idNum = G_ClientNumFromArg(adm, argNum, "strip", qtrue, qtrue, qfalse, shortCmd);
+
+	if (idNum >= 0) {
+		gentity_t* ent = &g_entities[idNum];
+
+		if (ent->client->sess.adminLevel == ADMLVL_NONE) {
+			G_printInfoMessage(adm, "Client %s (%d) is not an admin.", ent->client->pers.cleanName, idNum);
+			return -1;
+		}
+
+		if (
+			(ent->client->sess.adminLevel == ADMLVL_BADMIN && a_badmin.integer > getAdminLevel(adm)) ||
+			(ent->client->sess.adminLevel == ADMLVL_ADMIN && a_admin.integer > getAdminLevel(adm)) ||
+			(ent->client->sess.adminLevel == ADMLVL_SADMIN && a_sadmin.integer > getAdminLevel(adm)) ||
+			(ent->client->sess.adminLevel == ADMLVL_HADMIN && a_hadmin.integer > getAdminLevel(adm))
+		) {
+			G_printInfoMessage(adm, "You're not privileged enough to remove their admin.");
+			return -1;
+		}
+
+		// Figure out whether we need to perform a DB removal.
+		if (ent->client->sess.adminType == ADMTYPE_IP || ent->client->sess.adminType == ADMTYPE_GUID || ent->client->sess.adminType == ADMTYPE_PASS) {
+			dbRemoveAdminByGentity(ent);
+		}
+
+		ent->client->sess.adminType = ADMTYPE_NONE;
+		ent->client->sess.adminLevel = ADMLVL_NONE;
+
+		G_printCustomMessageToAll("Admin Action", "%s powers were removed by %s", ent->client->pers.cleanName, getNameOrArg(adm, "RCON", qtrue));
+		G_Broadcast(BROADCAST_CMD, NULL, qtrue, "%s\ntheir powers were \\removed\nby %s", ent->client->pers.netname, getNameOrArg(adm, "\\RCON", qfalse));
+		logAdmin(adm, ent, "removeadmin", NULL);
+
+	}
 	return -1;
 }
 
 int adm_forceTeam(int argNum, gentity_t* adm, qboolean shortCmd) {
-	return -1;
+
+	char arg[64];
+	char* teamChar = "s";
+	team_t team;
+
+	if (shortCmd && G_GetChatArgumentCount()) {
+		Q_strncpyz(arg, G_GetChatArgument(2), sizeof(arg));
+	}
+	else {
+		trap_Argv(argNum + 1, arg, sizeof(arg));
+	}
+
+	if (strlen(arg) > 0) {
+		if (tolower(arg[0]) == 'r') {
+			teamChar = "r";
+			team = TEAM_RED;
+		}
+		else if (tolower(arg[0]) == 'b') {
+			teamChar = "b";
+			team = TEAM_BLUE;
+		}
+		else if (tolower(arg[0]) == 's') {
+			teamChar = "s";
+			team = TEAM_SPECTATOR;
+		}
+		else {
+			G_printInfoMessage(adm, "Unknown team specified. Valid values: blue, red, spec");
+			return -1;
+		}
+	}
+
+	
+
+	int idNum = G_ClientNumFromArg(adm, argNum, "forceteam", qfalse, qtrue, qtrue, shortCmd);
+
+	if (idNum >= 0) {
+
+		gentity_t* ent = &g_entities[idNum];
+
+		SetTeam(ent, teamChar, NULL, qtrue);
+	}
+
+	return idNum;
 }
 
 int adm_blockSeek(int argNum, gentity_t* adm, qboolean shortCmd) {
+
+	if (Q_stricmp(g_gametype.string, "h&s")) {
+		G_printInfoMessage(adm, "This command only works in H&S gametype.");
+	}
+
+	int idNum = G_ClientNumFromArg(adm, argNum, "blockseek", qtrue, qfalse, qfalse, shortCmd);
+
+	if (idNum >= 0) {
+
+		gentity_t* ent = &g_entities[idNum];
+
+		if (ent->client->sess.blockseek) {
+			ent->client->sess.blockseek = qfalse;
+			G_Broadcast(BROADCAST_CMD, NULL, qtrue, "%s\ncan seek again", ent->client->pers.netname);
+			G_printCustomMessageToAll("Admin Action", "%s can seek again.", ent->client->pers.cleanName);
+		}
+		else {
+			if (ent->client->sess.team == TEAM_BLUE) {
+				SetTeam(ent, "r", NULL, qtrue);
+			}
+
+			ent->client->sess.blockseek = qtrue;
+
+			G_Broadcast(BROADCAST_CMD, NULL, qtrue, "%s\nwas \\blocked from seeking\nby %s", ent->client->pers.netname, getNameOrArg(adm, "\\RCON", qfalse));
+			G_printCustomMessageToAll("Admin Action", "%s was blocked from seeking by %s.", ent->client->pers.cleanName, getNameOrArg(adm, "RCON", qtrue));
+			logAdmin(adm, ent, "blockseek", NULL);
+		}
+	}
+
 	return -1;
 }
 
+/* JANFIXME build it when it becomes useful (e.g. with H&S) */
 int adm_blockSeekList(int argNum, gentity_t* adm, qboolean shortCmd) {
 	return -1;
 }
-
+/* nosection entity dependent. */
 int adm_noLower(int argNum, gentity_t* adm, qboolean shortCmd) {
 	return -1;
 }
 
+/* nosection entity dependent. */
 int adm_noRoof(int argNum, gentity_t* adm, qboolean shortCmd) {
 	return -1;
 }
 
+/* nosection entity dependent. */
 int adm_noMiddle(int argNum, gentity_t* adm, qboolean shortCmd) {
 	return -1;
 }
 
+/* nosection entity dependent. */
 int adm_noWhole(int argNum, gentity_t* adm, qboolean shortCmd) {
 	return -1;
 }
 
+
 int adm_shuffleTeams(int argNum, gentity_t* adm, qboolean shortCmd) {
+	int shuffle = shuffleTeams(qfalse);
+	if (shuffle == TEAMACTION_DONE) {
+		G_Broadcast(BROADCAST_CMD, NULL, qfalse, "\\Shuffleteams\nby %s", getNameOrArg(adm, "\\RCON", qfalse));
+		G_printCustomMessageToAll("Admin Action", "Shuffleteams by %s", getNameOrArg(adm, "RCON", qtrue));
+		logAdmin(adm, NULL, "shuffleteams", NULL);
+	}
+	else if (shuffle == TEAMACTION_INCOMPATIBLE_GAMETYPE) {
+		G_printInfoMessage(adm, "You cannot shuffle teams in this gametype");
+	}
+	else if (shuffle == TEAMACTION_NOT_ENOUGH_PLAYERS) {
+		G_printInfoMessage(adm, "There aren't enough players in the game to have a meaningful shuffle.");
+	}
+	
 	return -1;
 }
 
@@ -543,6 +811,7 @@ int adm_noNades(int argNum, gentity_t* adm, qboolean shortCmd) {
 }
 
 int adm_respawnInterval(int argNum, gentity_t* adm, qboolean shortCmd) {
+	adm_toggleCVAR(argNum, adm, shortCmd, "g_respawnInterval", &g_respawnInterval, qfalse, NULL, NULL);
 	return -1;
 }
 
@@ -559,9 +828,28 @@ int adm_customDamage(int argNum, gentity_t* adm, qboolean shortCmd) {
 }
 
 int adm_gametypeRestart(int argNum, gentity_t* adm, qboolean shortCmd) {
+
+	// Cannot restart the gametype in intermission mode.
+	if (level.intermissionQueued || level.intermissiontime) {
+		G_printInfoMessage(adm, "You cannot restart the gametype while being in intermission.");
+		return -1;
+	}
+
+	// Cannot restart the gametype while being paused.
+	if (level.paused) {
+		G_printInfoMessage(adm, "You cannot restart the gametype while the game is paused.");
+		return -1;
+	}
+
+	// Broadcast the change and restart it.
+	G_Broadcast(BROADCAST_CMD, NULL, qtrue, "\\Gametype restart!");
+	logAdmin(adm, NULL, "gametype restart", NULL);
+	G_printCustomMessageToAll("Admin Action", "Gametype restart by %s.", getNameOrArg(adm, "RCON", qtrue));
+	trap_SendConsoleCommand(EXEC_APPEND, "gametype_restart\n");
 	return -1;
 }
 
+/* Do we even want clanmember stuff? */
 int adm_addClanMember(int argNum, gentity_t* adm, qboolean shortCmd) {
 	return -1;
 }
@@ -578,6 +866,7 @@ int adm_clanList(int argNum, gentity_t* adm, qboolean shortCmd) {
 	return -1;
 }
 
+/* Build together with rest of the compmode logic */
 int adm_compMode(int argNum, gentity_t* adm, qboolean shortCmd) {
 	return -1;
 }
@@ -586,7 +875,91 @@ int adm_banList(int argNum, gentity_t* adm, qboolean shortCmd) {
 	return -1;
 }
 
+static void getBanDuration(const char* durationArg, int* duration) {
+
+	if (!durationArg || !*durationArg) {
+		duration[0] = -1;
+		return;
+	}
+
+	if (!Q_stricmp(durationArg, "eom")) {
+		duration[0] = 0;
+		return;
+	}
+
+	int days = 0, hours = 0, minutes = 0;
+	const char* ptr = durationArg;
+	qboolean parsed = qfalse;
+
+	while (*ptr) {
+
+		while (*ptr && !isdigit(*ptr)) {
+			ptr++;
+		}
+
+		if (!*ptr) break; 
+
+		// Parse the numeric part
+		char* end;
+		long value = strtol(ptr, &end, 10);
+		if (value < 0 || end == ptr) {
+			duration[0] = -1; // Invalid input
+			return;
+		}
+
+		// Check the unit character
+		ptr = end;
+		if (*ptr == 'd') {
+			days += value;
+			parsed = qtrue;
+		}
+		else if (*ptr == 'h') {
+			hours += value;
+			parsed = qtrue;
+		}
+		else if (*ptr == 'm') {
+			minutes += value;
+			parsed = qtrue;
+		}
+
+		if (*ptr) ptr++; // Move to the next character
+	}
+
+	if (!parsed) {
+		duration[0] = -1; // Invalid input if nothing valid was parsed
+		return;
+	}
+
+	// If we reach here, the input was valid
+	duration[0] = 1;
+	duration[1] = days;
+	duration[2] = hours;
+	duration[3] = minutes;
+}
+
 int adm_Ban(int argNum, gentity_t* adm, qboolean shortCmd) {
+
+	int idNum = G_ClientNumFromArg(adm, argNum, "ban", qtrue, qtrue, qtrue, shortCmd);
+
+	if (idNum >= 0) {
+		gentity_t* ent = &g_entities[idNum];
+		char durationArg[64];
+
+		if (G_GetChatArgumentCount() >= 2 && shortCmd) {
+			strncpy(durationArg, G_GetChatArgument(argNum + 1), sizeof(durationArg));
+		}
+		else {
+			trap_Argv(argNum + 1, durationArg, sizeof(durationArg));
+		}
+
+		int duration[4];
+
+		getBanDuration(durationArg, duration);
+
+		Com_Printf("From durationArg %s I managed to grab out retval %d, %d days, %d hours, %d minutes.\n", durationArg, duration[0], duration[1], duration[2], duration[3]);
+
+	}
+
 	return -1;
 }
 
@@ -781,17 +1154,10 @@ void postExecuteAdminCommand(int funcNum, int idNum, gentity_t* adm) {
 
 	gentity_t* ent = &g_entities[idNum];
 
-	if (adm && adm->client) {
-		G_Broadcast(BROADCAST_CMD, NULL, qtrue, "%s\nwas \\%s%s\nby %s", ent->client->pers.netname, adminCommands[funcNum].adminCmd, (adminCommands[funcNum].suffix != NULL) ? adminCommands[funcNum].suffix : "", adm->client->pers.netname);
-		trap_SendServerCommand(-1, va("print\"^3[Admin Action] ^7%s was %s%s by %s.\n\"", ent->client->pers.cleanName, adminCommands[funcNum].adminCmd, (adminCommands[funcNum].suffix != NULL) ? adminCommands[funcNum].suffix : "", adm->client->pers.cleanName));
-	}
-	else {
-		// rcon command.
-		G_Broadcast(BROADCAST_CMD, NULL, qtrue, "%s\nwas \\%s%s", ent->client->pers.netname, adminCommands[funcNum].adminCmd, (adminCommands[funcNum].suffix != NULL) ? adminCommands[funcNum].suffix : "");
-		trap_SendServerCommand(-1, va("print\"^3[Rcon Action] ^7%s was %s%s.\n\"", ent->client->pers.cleanName, adminCommands[funcNum].adminCmd, (adminCommands[funcNum].suffix != NULL) ? adminCommands[funcNum].suffix : ""));
-	}
+	G_Broadcast(BROADCAST_CMD, NULL, qtrue, "%s\nwas \\%s%s\nby %s", ent->client->pers.netname, adminCommands[funcNum].adminCmd, (adminCommands[funcNum].suffix != NULL) ? adminCommands[funcNum].suffix : "", getNameOrArg(adm, "\\RCON", qfalse));
+	G_printCustomMessageToAll("Admin Action", "%s was %s%s by %s", ent->client->pers.cleanName, adminCommands[funcNum].adminCmd, (adminCommands[funcNum].suffix != NULL) ? adminCommands[funcNum].suffix : "", getNameOrArg(adm, "RCON", qtrue));
 
-	logAdmin(getIpOrArg(adm, "RCON"), getNameOrArg(adm, "RCON", qtrue), ent->client->pers.ip, ent->client->pers.cleanName, adminCommands[funcNum].adminCmd, NULL, getAdminLevel(adm), getAdminName(adm), getAdminType(adm));
+	logAdmin(adm, ent, adminCommands[funcNum].adminCmd, NULL);
 	G_GlobalSound(level.actionSoundIndex);
 
 }

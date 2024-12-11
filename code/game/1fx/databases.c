@@ -5,7 +5,9 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #ifndef _MSC_VER
+#ifdef _WIN32
 #include <direct.h>
+#endif
 #include <unistd.h>
 #endif
 
@@ -168,7 +170,7 @@ char* getIpOrArg(gentity_t* ent, char* arg) {
 }
 
 admLevel_t getAdminLevel(gentity_t* ent) {
-    return ent && ent->client ? ent->client->sess.adminLevel : ADMLVL_NONE;
+    return ent && ent->client ? ent->client->sess.adminLevel : ADMLVL_RCON;
 }
 
 char* getAdminName(gentity_t* ent) {
@@ -1079,7 +1081,12 @@ qboolean dbCheckBan(char* ip, char* reason, int reasonSize, int* endOfMap, int* 
 
     if (!banned) {
         // subnetban
-        banned = dbQueryBan(ip, qtrue, reason, reasonSize, endOfMap, banEnd);
+
+        char subnetIp[MAX_IP];
+
+        getSubnet(ip, subnetIp, sizeof(subnetIp));
+
+        banned = dbQueryBan(subnetIp, qtrue, reason, reasonSize, endOfMap, banEnd);
     }
 
     return banned;
@@ -1165,5 +1172,43 @@ void dbAddCountry(char* ip, char* countryCode, char* country, int blocklevel) {
     sqlite3_finalize(stmt);
 
     sqlite3_close(db);
+}
+
+int dbRemoveAdminByGentity(gentity_t* ent) {
+
+    sqlite3* db = gameDb;
+    sqlite3_stmt* stmt;
+    int rowsAffected = 0;
+
+    // On GUID, you remove by name+GUID.
+    // On IP, you remove by name+IP
+    // On pass, you remove by name
+    char* query = va("DELETE FROM admin%slist WHERE adminname = ? %s", ent->client->sess.adminType == ADMTYPE_PASS ? "pass" : (ent->client->sess.adminType == ADMTYPE_GUID ? "guid" : ""), ent->client->sess.adminType == ADMTYPE_IP ? "AND ip = ?" : (ent->client->sess.adminType == ADMTYPE_GUID ? "AND acguid = ?" : ""));
+
+    int rc = sqlite3_prepare(db, query, -1, &stmt, 0);
+
+    if (rc != SQLITE_OK) {
+        logSystem(LOGLEVEL_WARN, "sqlite3_prepare failed on gameDb. Error: %s", sqlite3_errmsg(db));
+        return;
+    }
+
+    sqlBindTextOrNull(stmt, 1, ent->client->sess.adminName);
+    
+    if (ent->client->sess.adminType == ADMTYPE_GUID) {
+        sqlBindTextOrNull(stmt, 2, ent->client->sess.roxGuid);
+    }
+    else if (ent->client->sess.adminType == ADMTYPE_IP) {
+        sqlBindTextOrNull(stmt, 2, ent->client->pers.ip);
+    }
+
+    sqlite3_step(stmt);
+
+    sqlite3_finalize(stmt);
+
+    rowsAffected = sqlite3_changes(db);
+
+    sqlite3_exec(db, "VACUUM", NULL, NULL, NULL);
+
+    return rowsAffected;
 }
 

@@ -50,11 +50,11 @@ void logRcon(char* ip, char* action) {
 
 }
 
-void logAdmin(char* byIp, char* byName, char* toIp, char* toName, char* action, char* reason, admLevel_t adminLevel, char* adminName, admType_t adminType) {
+void logAdmin(gentity_t* by, gentity_t* to, char* action, char* reason) {
 
     if (g_logToDatabase.integer) {
 
-        dbLogAdmin(byIp, byName, toIp, toName, action, reason, adminLevel, adminName, adminType);
+        dbLogAdmin(getIpOrArg(by, "RCON"), getNameOrArg(by, "RCON", qtrue), getIpOrArg(to, NULL), getNameOrArg(to, NULL, qtrue), action, reason, getAdminLevel(by), getAdminName(by), getAdminType(by));
 
     }
 

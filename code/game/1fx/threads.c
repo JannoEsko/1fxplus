@@ -1,6 +1,5 @@
 #include "../g_local.h"
 #include "../../ext/jsmn/jsmn.h"
-#include <curl/curl.h>
 
 queueNode* outboundHead;
 queueNode* outboundTail;
@@ -9,6 +8,17 @@ queueNode* inboundTail;
 
 int killThread;
 CURL* curl;
+
+static void cleanupQueue(queueNode** head) {
+	queueNode* current = *head;
+	while (current) {
+		queueNode* temp = current;
+		current = current->next;
+		free(temp->message);
+		free(temp);
+	}
+	*head = NULL;
+}
 
 // preprocessor flags to handle both OS's handling the threaded functions in the game library.
 // both in and out will have a mutex on both write and read as we expect to NULL the values after they're used.
@@ -56,8 +66,21 @@ void startThread() {
 }
 
 void closeThread() {
-	killThread = 1;
-	usleep(THREAD_SLEEP_DURATION * 1.5);
+	if (killThread != 1) {
+		killThread = 1;
+		usleep(THREAD_SLEEP_DURATION * 1.5);
+
+		acquireInboundMutex();
+		cleanupQueue(&inboundHead);
+		freeInboundMutex();
+
+		acquireOutboundMutex();
+		cleanupQueue(&outboundHead);
+		freeOutboundMutex();
+
+		pthread_mutex_destroy(&inboundMutex);
+		pthread_mutex_destroy(&outboundMutex);
+	}
 }
 
 
@@ -103,18 +126,34 @@ void startThread() {
 }
 
 void closeThread() {
-	killThread = 1;
 
-	WaitForSingleObject(thread, 1000);
-	CloseHandle(inboundMutex);
-	CloseHandle(outboundMutex);
-	CloseHandle(thread);
+	if (killThread != 1) {
+		killThread = 1;
+
+		WaitForSingleObject(thread, 1000);
+
+		acquireInboundMutex();
+		cleanupQueue(&inboundHead);
+		freeInboundMutex();
+
+		acquireOutboundMutex();
+		cleanupQueue(&outboundHead);
+		freeOutboundMutex();
+
+		CloseHandle(inboundMutex);
+		CloseHandle(outboundMutex);
+		CloseHandle(thread);
+	}
 }
 
 
 #endif
 
 int enqueueInbound(int action, int playerId, char* message, int sizeOfMessage) {
+
+	if (killThread) {
+		return THREADRESPONSE_THREAD_STOPPED;
+	}
 
 	queueNode* tmp = (queueNode*)malloc(sizeof(queueNode));
 
@@ -151,6 +190,10 @@ int enqueueInbound(int action, int playerId, char* message, int sizeOfMessage) {
 
 int enqueueOutbound(int action, int playerId, char* message, int sizeOfMessage) {
 
+	if (killThread) {
+		return THREADRESPONSE_THREAD_STOPPED;
+	}
+
 	queueNode* tmp = (queueNode*)malloc(sizeof(queueNode));
 
 	if (!tmp) {
@@ -186,6 +229,10 @@ int enqueueOutbound(int action, int playerId, char* message, int sizeOfMessage) 
 
 int dequeueInbound(int* action, int* playerId, char* message, int sizeOfMessage) {
 
+	if (killThread) {
+		return THREADRESPONSE_THREAD_STOPPED;
+	}
+
 	queueNode* tmp;
 
 	acquireInboundMutex();
@@ -217,6 +264,10 @@ int dequeueInbound(int* action, int* playerId, char* message, int sizeOfMessage)
 }
 
 int dequeueOutbound(int* action, int* playerId, char* message, int sizeOfMessage) {
+
+	if (killThread) {
+		return THREADRESPONSE_THREAD_STOPPED;
+	}
 
 	queueNode* tmp;
 
@@ -293,7 +344,7 @@ runThread(void* data) {
 						int response = jsmn_parse(&jsonParser, curlOutput, strlen(curlOutput), jsonTokens, 50);
 
 						if (response) {
-							char countryCode[10], countryName[100], blockLevel[10];
+							char countryCode[MAX_COUNTRYCODE], countryName[MAX_COUNTRYNAME], blockLevel[10];
 							Com_Memset(countryCode, 0, sizeof(countryCode));
 							Com_Memset(countryName, 0, sizeof(countryName));
 							Com_Memset(blockLevel, 0, sizeof(blockLevel));
@@ -312,7 +363,7 @@ runThread(void* data) {
 
 							if (strlen(countryCode) > 0 && strlen(countryName) > 0 && strlen(blockLevel) > 0) {
 								// got everything I need.
-								char outputString[128];
+								char outputString[MAX_THREAD_OUTPUT];
 								Q_strncpyz(outputString, va("countryCode\\%s\\countryName\\%s\\blockLevel\\%s", countryCode, countryName, blockLevel), sizeof(outputString));
 								enqueueInbound(THREADACTION_IPHUB_DATA_RESPONSE, playerId, outputString, sizeof(outputString));
 							}
@@ -327,6 +378,10 @@ runThread(void* data) {
 #elif defined _WIN32
 		Sleep(THREAD_SLEEP_DURATION);
 #endif
+	}
+
+	if (iphubCustomHeaders) {
+		curl_slist_free_all(iphubCustomHeaders);
 	}
 
 	shutdownThread();

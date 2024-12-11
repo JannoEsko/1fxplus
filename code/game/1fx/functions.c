@@ -715,3 +715,360 @@ void QDECL G_printCustomMessageToAll(const char* prefix, const char* msg, ...)
     G_printMessage(qfalse, qtrue, NULL, prefix, msg, argptr);
     va_end(argptr);
 }
+
+void getSubnet(char* ip, char* output, int outputSize) {
+
+    char origIp[MAX_IP], subnetIp[MAX_IP];
+
+    Q_strncpyz(origIp, ip, sizeof(origIp));
+    Com_Memset(subnetIp, 0, sizeof(subnetIp));
+
+
+    char* token = strtok(origIp, ".");
+    int i = 0;
+
+    while (token != NULL && i < g_subnetOctets.integer) {
+        if (i > 0) {
+            strcat(subnetIp, ".");  // Add period between octets
+        }
+        strcat(subnetIp, token);  // Append the octet to the subnet IP string
+        token = strtok(NULL, ".");
+        i++;
+    }
+
+    Q_strncpyz(output, subnetIp, outputSize);
+
+}
+
+int swapTeams(qboolean autoSwap) {
+
+    if (!level.gametypeData->teams) {
+        return TEAMACTION_INCOMPATIBLE_GAMETYPE;
+    }
+
+    if (level.numPlayingClients < 2) {
+        return TEAMACTION_NOT_ENOUGH_PLAYERS;
+    }
+
+    for (int i = 0; i < level.numConnectedClients; i++) {
+        gentity_t* tent = &g_entities[level.sortedClients[i]];
+
+        if (G_IsClientSpectating(tent->client)) {
+            continue;
+        }
+
+        SetTeam(tent, tent->client->sess.team == TEAM_RED ? "b" : "r", NULL, qtrue);
+    }
+
+    if (autoSwap) {
+        G_printCustomMessageToAll("Auto Action", "Swapteams!");
+    }
+
+    G_GlobalSound(G_SoundIndex("sound/misc/events/tut_lift02.mp3"));
+
+    return TEAMACTION_DONE;
+
+}
+
+int evenTeams(qboolean autoEven) {
+
+    if (!level.gametypeData->teams) {
+        return TEAMACTION_INCOMPATIBLE_GAMETYPE;
+    }
+
+    if (level.numPlayingClients < 2) {
+        return TEAMACTION_NOT_ENOUGH_PLAYERS;
+    }
+
+    int redPlayers = TeamCount(-1, TEAM_RED, NULL);
+    int bluePlayers = TeamCount(-1, TEAM_BLUE, NULL);
+
+    // JANFIXME H&S / H&Z SPECIFICS
+    int redBlueDiff = abs(redPlayers - bluePlayers);
+    if (redBlueDiff <= 1) {
+        return TEAMACTION_EVEN;
+    }
+
+    redBlueDiff /= 2;
+    team_t teamToPick = TEAM_RED;
+
+    if (bluePlayers < redPlayers) {
+        teamToPick = TEAM_BLUE;
+    }
+
+    qboolean havePlayersBeenMoved = qfalse;
+
+    for (int i = 0; i < redBlueDiff; i++) {
+
+        gentity_t* recipient = getLastConnectedClientInTeam(teamToPick == TEAM_RED ? TEAM_BLUE : TEAM_RED, qtrue);
+
+        if (recipient) {
+            SetTeam(recipient, teamToPick == TEAM_RED ? "r" : "b", NULL, qtrue);
+            havePlayersBeenMoved = qtrue;
+        }
+        else if (!havePlayersBeenMoved) {
+            return TEAMACTION_NOT_ENOUGH_PLAYERS;
+        }
+
+    }
+
+    if (autoEven) {
+        G_printCustomMessageToAll("Auto Action", "Eventeams!");
+    }
+
+    G_GlobalSound(G_SoundIndex("sound/misc/events/tut_lift02.mp3"));
+
+    return TEAMACTION_DONE;
+
+}
+
+/*
+Shuffleteams from 1fxmod.
+*/
+int shuffleTeams(qboolean autoShuffle) {
+
+    if (!level.gametypeData->teams) {
+        return TEAMACTION_INCOMPATIBLE_GAMETYPE;
+    }
+
+    if (level.numPlayingClients < 2) {
+        return TEAMACTION_NOT_ENOUGH_PLAYERS;
+    }
+
+    int redTeamCount = TeamCount(-1, TEAM_RED, NULL);
+    int blueTeamCount = TeamCount(-1, TEAM_BLUE, NULL);
+
+    int currentRedTeamCount = 0;
+    int currentBlueTeamCount = 0;
+
+    team_t newTeam = TEAM_RED;
+    char userinfo[MAX_INFO_STRING];
+
+    // shuffle from here.
+
+    for (int i = 0; i < level.numConnectedClients; i++) {
+
+        // Skip clients that are spectating.
+        if (g_entities[level.sortedClients[i]].client->sess.team == TEAM_SPECTATOR) {
+            continue;
+        }
+
+        // Start shuffling using irand, or put them to the team that needs more players when one is on its preserved rate.
+        if (currentRedTeamCount == redTeamCount) { // Blimey, we're on max.
+            newTeam = TEAM_BLUE;
+        }
+        else if (currentBlueTeamCount == blueTeamCount) {
+            newTeam = TEAM_RED;
+        }
+        else {
+            newTeam = irand(1, 2);
+            if (newTeam == TEAM_RED) {
+                currentRedTeamCount += 1;
+            }
+            else {
+                currentBlueTeamCount += 1;
+            }
+        }
+
+        // Drop any gametype items they might have.
+        if (g_entities[level.sortedClients[i]].s.gametypeitems > 0) {
+            G_DropGametypeItems(&g_entities[level.sortedClients[i]], 0);
+        }
+
+        // Remove their weps and set as ghost.
+        g_entities[level.sortedClients[i]].client->ps.stats[STAT_WEAPONS] = 0;
+        G_StartGhosting(&g_entities[level.sortedClients[i]]);
+
+        // Do the team changing.
+        g_entities[level.sortedClients[i]].client->sess.team = (team_t)newTeam;
+
+        // Take care of the bots.
+        if (g_entities[level.sortedClients[i]].r.svFlags & SVF_BOT) { // Reset bots to set them to another team
+            trap_GetUserinfo(level.sortedClients[i], userinfo, sizeof(userinfo));
+
+            Info_SetValueForKey(userinfo, "team", va("%s", newTeam == TEAM_RED ? "red" : "blue"));
+            trap_SetUserinfo(level.sortedClients[i], userinfo);
+            g_entities[level.sortedClients[i]].client->sess.team = (team_t)newTeam;
+            //if (current_gametype.value != GT_HS) { // JANFIXME - H&S SPECIFICS
+                g_entities[level.sortedClients[i]].client->pers.identity = BG_FindTeamIdentity(level.gametypeTeam[newTeam], -1);
+            //}
+        }
+
+        // Prep. for change & respawn.
+        g_entities[level.sortedClients[i]].client->pers.identity = NULL;
+        ClientUserinfoChanged(level.sortedClients[i]);
+        CalculateRanks();
+
+        G_StopFollowing(&g_entities[level.sortedClients[i]]);
+        G_StopGhosting(&g_entities[level.sortedClients[i]]);
+        trap_UnlinkEntity(&g_entities[level.sortedClients[i]]);
+        ClientSpawn(&g_entities[level.sortedClients[i]]);
+    }
+
+    G_GlobalSound(G_SoundIndex("sound/misc/events/tut_lift02.mp3"));
+    return TEAMACTION_DONE;
+}
+
+gentity_t* getLastConnectedClient(qboolean respectGametypeItems) {
+    return getLastConnectedClientInTeam(-1, respectGametypeItems);
+}
+
+gentity_t* getLastConnectedClientInTeam(int team, qboolean respectGametypeItems) {
+    int maxConnectedTime = 0, client = -1;
+
+    for (int i = 0; i < level.numConnectedClients; i++) {
+        if (g_entities[level.sortedClients[i]].client->pers.connected == CON_DISCONNECTED) {
+            continue;
+        }
+
+        if (respectGametypeItems && g_entities[level.sortedClients[i]].s.gametypeitems) {
+            continue;
+        }
+
+        if (team != -1 && g_entities[level.sortedClients[i]].client->sess.team != team) {
+            continue;
+        }
+
+        if (g_entities[level.sortedClients[i]].client->pers.enterTime > maxConnectedTime) {
+            maxConnectedTime = g_entities[level.sortedClients[i]].client->pers.enterTime;
+            client = i;
+        }
+
+    }
+
+    if (client != -1) {
+        return &g_entities[level.sortedClients[client]];
+    }
+
+    return NULL;
+}
+
+void runoverPlayer(gentity_t* recipient) {
+
+    vec3_t      direction, fireAngles;
+
+    VectorCopy(recipient->client->ps.viewangles, fireAngles);
+    AngleVectors(fireAngles, direction, NULL, NULL);
+    direction[0] *= -1.0;
+    direction[1] *= -1.0;
+    direction[2] = 0.0;
+    VectorNormalize(direction);
+
+    G_ClientSound(recipient, G_SoundIndex("sound/ambience/vehicles/hit_scrape.mp3"));
+
+    // Do the actual action.
+    recipient->client->ps.velocity[2] = 20;
+    recipient->client->ps.weaponTime = 3000;
+    G_Damage(recipient, NULL, NULL, NULL, NULL, 15, 0, MOD_CRUSH, HL_NONE);
+    G_ApplyKnockback(recipient, direction, 400.0f);
+}
+
+void uppercutPlayer(gentity_t* recipient, int ucLevel) {
+
+    recipient->client->ps.pm_flags |= PMF_JUMPING;
+    recipient->client->ps.groundEntityNum = ENTITYNUM_NONE;
+
+    if (ucLevel) {
+        recipient->client->ps.velocity[2] = 200 * ucLevel;
+    }
+    else {
+        recipient->client->ps.velocity[2] = 1000;
+    }
+
+    G_ClientSound(recipient, G_SoundIndex("sound/weapons/rpg7/fire01.mp3"));
+}
+
+void spinView(gentity_t* recipient) {
+
+    if (recipient->client->sess.lastSpin < level.time) {
+        recipient->client->sess.spinViewState = SPINVIEW_NONE;
+        return;
+    }
+
+    switch (recipient->client->sess.spinViewState) {
+    case SPINVIEW_NONE:
+        return;
+    case SPINVIEW_FAST:
+        recipient->client->sess.nextSpin = level.time + 10;
+        break;
+    case SPINVIEW_SLOW:
+        recipient->client->sess.nextSpin = level.time + 250;
+        break;
+    default:
+        recipient->client->sess.spinViewState = SPINVIEW_NONE;
+        return;
+    }
+
+    vec3_t spin;
+    VectorCopy(recipient->client->ps.viewangles, spin);
+    spin[0] = (float)Q_irand(0, 360);
+    spin[1] = fmod(spin[1] + 20, 360.0);
+    SetClientViewAngle(recipient, spin);
+
+    if (recipient->client->sess.nextSpinSound < level.time) {
+        G_ClientSound(recipient, G_SoundIndex("sound/npc/air1/guard02/laughs.mp3"));
+        recipient->client->sess.nextSpinSound = level.time + 500;
+    }
+}
+
+void stripClient(gentity_t* recipient, qboolean handsUp) {
+
+    int idle;
+    handsUp = qfalse;
+    if (recipient->client->sess.team == TEAM_SPECTATOR) {
+        return;
+    }
+
+    recipient->client->ps.zoomFov = 0;
+    recipient->client->ps.pm_flags &= ~(PMF_GOGGLES_ON | PMF_ZOOM_FLAGS);
+
+    recipient->client->ps.stats[STAT_GOGGLES] = GOGGLES_NONE;
+    memset(recipient->client->ps.ammo, 0, sizeof(recipient->client->ps.ammo));
+    memset(recipient->client->ps.clip, 0, sizeof(recipient->client->ps.clip));
+    recipient->client->ps.stats[STAT_WEAPONS] = 0;
+
+    if (handsUp) {
+        recipient->client->ps.weapon = WP_NONE;
+
+    }
+    else {
+        recipient->client->ps.stats[STAT_WEAPONS] |= (1 << WP_KNIFE);
+        recipient->client->ps.clip[ATTACK_NORMAL][WP_KNIFE] = weaponData[WP_KNIFE].attack[ATTACK_NORMAL].clipSize;
+        recipient->client->ps.firemode[WP_KNIFE] = BG_FindFireMode(WP_KNIFE, ATTACK_NORMAL, WP_FIREMODE_AUTO);
+        recipient->client->ps.weapon = WP_KNIFE;
+        BG_GetInviewAnim(recipient->client->ps.weapon, "idle", &idle);
+        recipient->client->ps.weaponAnimId = idle;
+    }
+
+    recipient->client->ps.weaponstate = WEAPON_READY;
+    recipient->client->ps.weaponTime = 0;
+    recipient->client->ps.weaponAnimTime = 0;
+    // Boe!Man 6/23/13: Fixed crash bug in Linux, simply because 'bg_outfittingGroups[-1][client->pers.outfitting.items[-1]]' equals 0.
+    recipient->client->ps.stats[STAT_OUTFIT_GRENADE] = bg_itemlist[0].giTag;
+
+}
+
+void stripTeam(int team, qboolean handsUp) {
+    gentity_t* recipient;
+
+    if (team == TEAM_SPECTATOR) {
+        return;
+    }
+
+    for (int i = 0; i < level.numConnectedClients; i++) {
+        recipient = &g_entities[level.sortedClients[i]];
+
+        if (recipient->client->sess.team == team) {
+            stripClient(recipient, handsUp);
+        }
+    }
+}
+
+void stripEveryone(qboolean handsUp) {
+    gentity_t* recipient;
+
+    for (int i = 0; i < level.numConnectedClients; i++) {
+        recipient = &g_entities[level.sortedClients[i]];
+        stripClient(recipient, handsUp);
+    }
+}

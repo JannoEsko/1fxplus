@@ -730,7 +730,7 @@ void BroadcastTeamChange( gclient_t *client, int oldTeam )
 SetTeam
 =================
 */
-void SetTeam( gentity_t *ent, char *s, const char* identity )
+void SetTeam( gentity_t *ent, char *s, const char* identity, qboolean forced )
 {
     int                 team;
     int                 oldTeam;
@@ -803,7 +803,7 @@ void SetTeam( gentity_t *ent, char *s, const char* identity )
             team = PickTeam( clientNum );
         }
 
-        if ( g_teamForceBalance.integer  )
+        if ( g_teamForceBalance.integer && !forced )
         {
             int     counts[TEAM_NUM_TEAMS];
 
@@ -1130,7 +1130,7 @@ void Cmd_Team_f( gentity_t *ent )
     trap_Argv( 1, team, sizeof( team ) );
     trap_Argv( 2, identity, sizeof( identity ) );
 
-    SetTeam( ent, team, identity[0]?identity:NULL );
+    SetTeam( ent, team, identity[0]?identity:NULL, qfalse );
 
     // Remember the team switch time so they cant do it again really quick
     ent->client->switchTeamTime = level.time + 5000;
@@ -1194,7 +1194,7 @@ void Cmd_Follow_f( gentity_t *ent )
     // first set them to spectator as long as they arent a ghost
     if ( !ent->client->sess.ghost && ent->client->sess.team != TEAM_SPECTATOR )
     {
-        SetTeam( ent, "spectator", NULL );
+        SetTeam( ent, "spectator", NULL, qfalse );
     }
 
     ent->client->sess.spectatorState = SPECTATOR_FOLLOW;
@@ -1215,7 +1215,7 @@ void Cmd_FollowCycle_f( gentity_t *ent, int dir )
     // first set them to spectator
     if ( !ent->client->sess.ghost && ent->client->sess.team != TEAM_SPECTATOR )
     {
-        SetTeam( ent, "spectator", NULL );
+        SetTeam( ent, "spectator", NULL, qfalse );
     }
 
     if ( dir != 1 && dir != -1 )

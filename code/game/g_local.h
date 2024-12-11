@@ -7,6 +7,7 @@
 #include "g_public.h"
 #include "../gametype/gt_public.h"
 #include "../ghoul2/g2_local.h"
+#include <curl/curl.h>
 
 //==================================================================
 
@@ -42,7 +43,9 @@
 #define MAX_VOTE_COUNT      3
 
 #define MAX_IP                      40          // ipv6 theoretical max
-
+#define MAX_COUNTRYCODE             10
+#define MAX_COUNTRYNAME             50
+#define MAX_THREAD_OUTPUT           128
 
 typedef enum {
     CL_NONE,
@@ -66,6 +69,14 @@ typedef enum {
     COMPMODE_INMATCH,
     COMPMODE_END
 } compModeState;
+
+typedef enum {
+    TEAMACTION_DONE,
+    TEAMACTION_INCOMPATIBLE_GAMETYPE,
+    TEAMACTION_EVEN,
+    TEAMACTION_NOT_ENOUGH_PLAYERS,
+    TEAMACTION_FAILED
+} teamAction_t;
 
 // Flags to determine which extra features the client is willing to accept in ROCmod.
 #define ROC_TEAMINFO    0x00000001
@@ -268,8 +279,9 @@ typedef enum {
     ADMLVL_BADMIN,
     ADMLVL_ADMIN,
     ADMLVL_SADMIN,
-    ADMLVL_HADMIN // head admin. At least in 3D, we've had challenges in the past as the s-admin part starts from Captain, that we still need RCON (or dev) for some commands.
+    ADMLVL_HADMIN, // head admin. At least in 3D, we've had challenges in the past as the s-admin part starts from Captain, that we still need RCON (or dev) for some commands.
                   // Theoretically headadmin should give us enough room for it - upper staff = headadmin, sadmin = e.g. captains, editors etc.
+    ADMLVL_RCON
 } admLevel_t;
 
 typedef enum {
@@ -285,6 +297,19 @@ typedef enum {
     LEVELSTATE_GAME,
     LEVELSTATE_AWARDS
 } levelState_t;
+
+typedef enum {
+    COASTERSTATE_NOTHING,
+    COASTERSTATE_RUNOVER,
+    COASTERSTATE_UPPERCUT,
+    COASTERSTATE_SPIN
+} coasterState_t;
+
+typedef enum {
+    SPINVIEW_NONE,
+    SPINVIEW_SLOW,
+    SPINVIEW_FAST
+} spinView_t;
 
 // client data that stays across multiple levels or map restarts
 // this is achieved by writing all the data to cvar strings at game shutdown
@@ -334,8 +359,17 @@ typedef struct
     char                adminName[MAX_NETNAME]; // This holds the name the client had when they got their admin powers.
     qboolean            setAdminPassword;
     admLevel_t          toBeAdminLevel;
-    char                countryCode[10];
-    char                country[50];
+    char                countryCode[MAX_COUNTRYCODE];
+    char                country[MAX_COUNTRYNAME];
+    qboolean            planted;
+    int                 coaster;
+    int                 nextCoasterTime;
+    qboolean            spinView;
+    int                 spinViewState;
+    int                 nextSpin;
+    int                 lastSpin;
+    int                 nextSpinSound;
+    qboolean            blockseek;
 
 } clientSession_t;
 
@@ -623,6 +657,10 @@ typedef struct
 
     int             nextSQLBackupTime;
 
+    qboolean        blueLocked;
+    qboolean        redLocked;
+    qboolean        specLocked;
+
 
 } level_locals_t;
 
@@ -649,7 +687,7 @@ void        G_StopGhosting      ( gentity_t* ent );
 void        G_StartGhosting     ( gentity_t* ent );
 
 void        BroadcastTeamChange( gclient_t *client, int oldTeam );
-void        SetTeam( gentity_t *ent, char *s, const char* identity );
+void        SetTeam( gentity_t *ent, char *s, const char* identity, qboolean forced );
 void        Cmd_FollowCycle_f( gentity_t *ent, int dir );
 qboolean    CheatsOk                ( gentity_t *ent );
 void        G_SpawnDebugCylinder    ( vec3_t origin, float radius, gentity_t* clientent, float viewRadius, int colorIndex );
@@ -767,6 +805,7 @@ int         G_Damage            ( gentity_t *targ, gentity_t *inflictor, gentity
 qboolean    G_RadiusDamage      ( vec3_t origin, gentity_t *attacker, float damage, float radius, gentity_t *ignore, int power, int dflags, int mod );
 void        body_die            ( gentity_t *self, gentity_t *inflictor, gentity_t *attacker, int damage, int meansOfDeath, int hitLocation, vec3_t hitDir );
 void        TossClientItems     ( gentity_t *self );
+void G_ApplyKnockback(gentity_t* targ, vec3_t newDir, float knockback);
 
 // damage flags
 #define DAMAGE_RADIUS               0x00000001  // damage was indirect
@@ -1110,6 +1149,7 @@ extern  vmCvar_t    g_useCountryAPI;
 extern  vmCvar_t    g_useCountryDb;
 extern  vmCvar_t    g_countryAging;
 extern  vmCvar_t    g_vpnAutoKick;
+extern  vmCvar_t    g_subnetOctets;
 
 //extern vmCvar_t     g_leanType;
 
@@ -1389,10 +1429,11 @@ void dbLogRetention();
 qboolean dbGetCountry(char* ip, char* countryCode, int countryCodeSize, char* country, int countrySize, int* blocklevel);
 void dbAddCountry(char* ip, char* countryCode, char* country, int blocklevel);
 void dbLogSystem(loggingLevel_t logLevel, char* msg);
+int dbRemoveAdminByGentity(gentity_t* ent);
 
 void logSystem(loggingLevel_t logLevel, const char* msg, ...) __attribute__((format(printf, 2, 3)));
 void logRcon(char* ip, char* action);
-void logAdmin(char* byIp, char* byName, char* toIp, char* toName, char* action, char* reason, admLevel_t adminLevel, char* adminName, admType_t adminType);
+void logAdmin(gentity_t* by, gentity_t* to, char* action, char* reason);
 void logLogin(gentity_t* ent);
 
 const char* getAdminNameByAdminLevel(admLevel_t adminLevel);
@@ -1507,7 +1548,7 @@ void ROCmod_sendExtraTeamInfo(gentity_t* ent);
 void ROCmod_sendBestPlayerStats(void);
 
 
-void G_Broadcast(int broadcastLevel, gentity_t* to, qboolean playSound, char* broadcast, ...) __attribute__((format(printf, 3, 4)));
+void G_Broadcast(int broadcastLevel, gentity_t* to, qboolean playSound, char* broadcast, ...) __attribute__((format(printf, 4, 5)));
 char* G_ColorizeMessage(char* broadcast);
 int G_ClientNumFromArg(gentity_t* ent, int argNum, const char* action, qboolean aliveOnly, qboolean otherAdmins, qboolean higherLvlAdmins, qboolean shortCmd);
 
@@ -1532,6 +1573,18 @@ void QDECL G_printCustomMessageToAll(const char* prefix, const char* msg, ...) _
 void QDECL G_printCustomMessage(gentity_t* ent, const char* prefix, const char* msg, ...) __attribute__((format(printf, 3, 4)));
 void QDECL G_printCustomChatMessage(gentity_t* ent, const char* prefix, const char* msg, ...) __attribute__((format(printf, 3, 4)));
 void QDECL G_printCustomChatMessageToAll(const char* prefix, const char* msg, ...) __attribute__((format(printf, 2, 3)));
+void getSubnet(char* ip, char* output, int outputSize);
+int swapTeams(qboolean autoSwap);
+int evenTeams(qboolean autoEven);
+int shuffleTeams(qboolean autoShuffle);
+gentity_t* getLastConnectedClient(qboolean respectGametypeItems);
+gentity_t* getLastConnectedClientInTeam(int team, qboolean respectGametypeItems);
+void stripEveryone(qboolean handsUp);
+void stripTeam(int team, qboolean handsUp);
+void stripClient(gentity_t* recipient, qboolean handsUp);
+void spinView(gentity_t* recipient);
+void uppercutPlayer(gentity_t* recipient, int ucLevel);
+void runoverPlayer(gentity_t* recipient);
 
 
 typedef struct queueNode_s queueNode;
@@ -1547,7 +1600,8 @@ struct queueNode_s {
 typedef enum {
     THREADRESPONSE_SUCCESS,
     THREADRESPONSE_NOTHING_ENQUEUED,
-    THREADRESPONSE_ENQUEUE_COULDNT_MALLOC
+    THREADRESPONSE_ENQUEUE_COULDNT_MALLOC,
+    THREADRESPONSE_THREAD_STOPPED
 } threadResponse;
 
 typedef enum {
@@ -1561,7 +1615,7 @@ struct curlProgressData {
     size_t size;
 };
 
-#define THREAD_CURL_BIGBUF 8192
+#define THREAD_CURL_BIGBUF 1024
 
 #ifdef __linux__
 #define THREAD_SLEEP_DURATION 50000
@@ -1592,3 +1646,5 @@ void freeInboundMutex(void);
 void freeOutboundMutex(void);
 void startThread(void);
 void closeThread(void);
+
+void G_setTrackedCvarWithoutTrackMessage(vmCvar_t* cvar, int value);

@@ -1018,7 +1018,7 @@ void ClientUserinfoChanged( int clientNum )
     }
 
     Q_strncpyz(client->pers.ip, s, sizeof(client->pers.ip));
-    Q_strncpyz(client->pers.subnet, s, 7);
+    getSubnet(client->pers.ip, client->pers.subnet, sizeof(client->pers.subnet));
 
     // check the item prediction
     s = Info_ValueForKey( userinfo, "cg_predictItems" );
@@ -1344,7 +1344,7 @@ char *ClientConnect( int clientNum, qboolean firstTime, qboolean isBot )
         qboolean hasCountry = dbGetCountry(ip, ent->client->sess.countryCode, sizeof(ent->client->sess.countryCode), ent->client->sess.country, sizeof(ent->client->sess.country), &blockLevel);
         if (!hasCountry) {
             if (g_useCountryAPI.integer && strlen(g_iphubAPIKey.string) > 0) {
-                int enqueue = enqueueOutbound(THREADACTION_IPHUB_DATA_REQUEST, ent->client->ps.clientNum, ent->client->pers.ip, sizeof(ent->client->pers.ip));
+                int enqueue = enqueueOutbound(THREADACTION_IPHUB_DATA_REQUEST, clientNum, ent->client->pers.ip, sizeof(ent->client->pers.ip));
 
                 if (enqueue == THREADRESPONSE_ENQUEUE_COULDNT_MALLOC) {
                     logSystem(LOGLEVEL_WARN, "Couldn't malloc in thread!");
@@ -1587,7 +1587,7 @@ void ClientSpawn(gentity_t *ent)
     }
     else
     {
-        SetTeam ( ent, "s", NULL );
+        SetTeam ( ent, "s", NULL, qfalse );
         return;
     }
 
