@@ -145,7 +145,7 @@ int enqueueInbound(int action, int playerId, char* message, int sizeOfMessage) {
 	}
 
 	freeInboundMutex();
-	Com_Printf("Enqueued %d %d %s\n", action, playerId, message);
+
 	return THREADRESPONSE_SUCCESS;
 }
 
@@ -180,7 +180,7 @@ int enqueueOutbound(int action, int playerId, char* message, int sizeOfMessage) 
 	}
 
 	freeOutboundMutex();
-
+	
 	return THREADRESPONSE_SUCCESS;
 }
 
@@ -275,7 +275,6 @@ runThread(void* data) {
 
 		if (response == THREADRESPONSE_SUCCESS) {
 			if (action == THREADACTION_IPHUB_DATA_REQUEST) {
-				Com_Printf("GOT MSG %s", message);
 				// message will be the ip address of the player.
 				if (strlen(g_iphubAPIKey.string) > 0 && g_useCountryAPI.integer) {
 
@@ -295,6 +294,9 @@ runThread(void* data) {
 
 						if (response) {
 							char countryCode[10], countryName[100], blockLevel[10];
+							Com_Memset(countryCode, 0, sizeof(countryCode));
+							Com_Memset(countryName, 0, sizeof(countryName));
+							Com_Memset(blockLevel, 0, sizeof(blockLevel));
 							for (int i = 1; i < response; i++) {
 
 								if (jsoneq(curlOutput, &jsonTokens[i], "countryCode") == 0) {

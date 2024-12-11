@@ -1322,6 +1322,20 @@ char *ClientConnect( int clientNum, qboolean firstTime, qboolean isBot )
 
     G_ReadSessionData( client );
 
+    if( isBot )
+    {
+        ent->r.svFlags |= SVF_BOT;
+        ent->inuse = qtrue;
+        if( !G_BotConnect( clientNum, !firstTime ) )
+        {
+            return "BotConnectfailed";
+        }
+    }
+
+    // get and distribute relevent paramters
+    G_LogPrintf( "ClientConnect: %i - %s [%s]\n", clientNum, ip, guid );
+    ClientUserinfoChanged( clientNum );
+
     // Check whether country is set.
 
     if (!strlen(ent->client->sess.countryCode) && g_useCountryDb.integer) {
@@ -1341,20 +1355,6 @@ char *ClientConnect( int clientNum, qboolean firstTime, qboolean isBot )
             return "VPN Detected!";
         }
     }
-
-    if( isBot )
-    {
-        ent->r.svFlags |= SVF_BOT;
-        ent->inuse = qtrue;
-        if( !G_BotConnect( clientNum, !firstTime ) )
-        {
-            return "BotConnectfailed";
-        }
-    }
-
-    // get and distribute relevent paramters
-    G_LogPrintf( "ClientConnect: %i - %s [%s]\n", clientNum, ip, guid );
-    ClientUserinfoChanged( clientNum );
 
     // don't do the "xxx connected" messages if they were caried over from previous level
     if ( firstTime )
