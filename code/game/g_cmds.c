@@ -1561,7 +1561,7 @@ static void Cmd_Say_f( gentity_t *ent, int mode, qboolean arg0 ) { // JANFIXME -
         p = ConcatArgs( 1 );
     }
 
-    char* admCmd = G_GetArg(0, qtrue);
+    char* admCmd = G_GetArg(0, qtrue, qfalse);
 
     if (ent->client->sess.adminLevel > ADMLVL_NONE) {
         int adminCommand = cmdIsAdminCmd(admCmd, qtrue);
@@ -2280,6 +2280,29 @@ void ClientCommand( int clientNum ) {
             }
         }
 
+    }
+
+    if (!Q_stricmp(cmd, "clan")) {
+
+        char arg[MAX_STRING_TOKENS];
+        trap_Argv(1, arg, sizeof(arg));
+
+        if (!Q_stricmp(arg, "pass")) {
+            char password[MAX_STRING_TOKENS];
+            trap_Argv(2, password, sizeof(password));
+            clan_setPassword(ent, password);
+        }
+        else if (!Q_stricmp(arg, "login")) {
+            char password[MAX_STRING_TOKENS];
+            trap_Argv(2, password, sizeof(password));
+            clan_Login(ent, password);
+        }
+        else if (!ent->client->sess.clanMember) {
+            G_printInfoMessage(ent, "You do not have clan-member rights.");
+        }
+
+
+        return;
     }
         
 

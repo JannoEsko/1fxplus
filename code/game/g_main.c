@@ -169,6 +169,11 @@ vmCvar_t    g_countryAging;
 vmCvar_t    g_vpnAutoKick;
 vmCvar_t    g_subnetOctets;
 
+vmCvar_t    g_allowThirdPerson;
+vmCvar_t    g_enforce1fxAdditions;
+vmCvar_t    g_recoilRatio;
+vmCvar_t    g_inaccuracyRatio;
+
 static cvarTable_t gameCvarTable[] =
 {
     // don't override the cheat state set by the system
@@ -363,7 +368,7 @@ static cvarTable_t gameCvarTable[] =
     { &g_leanType,    "g_leanType",     "0",        CVAR_ARCHIVE,   0.0f,   0.0f,   0,  qfalse }, // 0 = gold, 1 = silver, 2 = serve based on client
     
     { &g_serverColors,    "g_serverColors",     "Cbk+7",        CVAR_ARCHIVE,   0.0f,   0.0f,   0,  qfalse },
-    { &g_maxAliases,    "g_maxAliases",     "10",        CVAR_ARCHIVE,   0.0f,   15.0f,   0,  qfalse },
+    { &g_maxAliases,    "g_maxAliases",     "10",        CVAR_ARCHIVE | CVAR_LOCK_RANGE,   0.0f,   15.0f,   0,  qfalse },
     { &g_logToFile,    "g_logToFile",     "0",        CVAR_ARCHIVE | CVAR_LATCH,   0.0f,   0.0f,   0,  qfalse },
     { &g_logToDatabase,    "g_logToDatabase",     "1",        CVAR_ARCHIVE | CVAR_LATCH,   0.0f,   0.0f,   0,  qfalse },
     { &g_dbLogRetention,    "g_dbLogRetention",     "120",        CVAR_ARCHIVE | CVAR_LATCH,   0.0f,   0.0f,   0,  qfalse },
@@ -373,9 +378,12 @@ static cvarTable_t gameCvarTable[] =
     { &g_countryAging,    "g_countryAging",     "120",        CVAR_ARCHIVE | CVAR_LATCH,   0.0f,   0.0f,   0,  qfalse },
     { &g_vpnAutoKick,    "g_vpnAutoKick",     "1",        CVAR_ARCHIVE | CVAR_LATCH,   0.0f,   0.0f,   0,  qfalse },
 
-    { &g_subnetOctets,    "g_subnetOctets",     "3",        CVAR_ARCHIVE | CVAR_LATCH,   1.0f,   3.0f,   0,  qfalse },
+    { &g_subnetOctets,    "g_subnetOctets",     "3",        CVAR_ARCHIVE | CVAR_LATCH | CVAR_LOCK_RANGE,   1.0f,   3.0f,   0,  qfalse },
+    { &g_allowThirdPerson, "g_allowThirdPerson", "1",       CVAR_ARCHIVE | CVAR_SERVERINFO, 0.0f, 0.0f, 0, qfalse },
+    { &g_enforce1fxAdditions, "g_enforce1fxAdditions", "0",       CVAR_ARCHIVE | CVAR_LATCH, 0.0f, 0.0f, 0, qfalse }, // To run H&S/H&Z gametype. For rest, will be optional.
+    { &g_recoilRatio, "g_recoilRatio", "1",       CVAR_ARCHIVE | CVAR_SYSTEMINFO | CVAR_LATCH | CVAR_LOCK_RANGE, 0.0f, 1.0f, 0, qfalse }, 
+    { &g_inaccuracyRatio, "g_inaccuracyRatio", "1",       CVAR_ARCHIVE | CVAR_SYSTEMINFO | CVAR_LATCH | CVAR_LOCK_RANGE, 0.0f, 1.0f, 0, qfalse }, // THese 2 will not alter the attack stats any more, but rather will rely on server wpnfile provided values. This is only for 1fx Client Additions support.
 
-        
 };
 
 // bk001129 - made static to avoid aliasing
@@ -821,7 +829,7 @@ static void G_InitClientMod(void) {
     }
 
     if (sv_clientMod.string && strlen(sv_clientMod.string) > 0) {
-        if (!Q_stricmp(sv_clientMod.string, "rocmod")) {
+        if (!Q_stricmp(sv_clientMod.string, "rocmod") || !Q_stricmp(sv_clientMod.string, "1fx.rocmod")) {
             // Register ROCmod specific CVARs.
             //if (!g_enforce1fxAdditions.integer) {
                 // Our ROCmod client with 1fx. additions properly reads the 1fx. Mod server version.

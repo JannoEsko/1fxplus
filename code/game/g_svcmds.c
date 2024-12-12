@@ -249,6 +249,42 @@ qboolean ConsoleCommand( void )
         return qtrue;
     }
 
+    if (!Q_stricmp(cmd, "showsess")) {
+
+        char clnumArg[10];
+        trap_Argv(1, clnumArg, sizeof(clnumArg));
+
+        if (clnumArg && strlen(clnumArg)) {
+            int clnum = atoi(clnumArg);
+
+            if (clnum < 0 || clnum >= MAX_CLIENTS) {
+                Com_Printf("wrong ID specified [min: 0, max: 63]\n");
+                return qtrue;
+            }
+
+            gentity_t* ent = &g_entities[clnum];
+
+            if (!ent || !ent->inuse || !ent->client || ent->client->pers.connected != CON_CONNECTED) {
+                Com_Printf("this client is not connected...\n");
+                return qtrue;
+            }
+
+            clientSession_t* sess = &ent->client->sess;
+            Com_Printf("Client: %s [%d]\n", ent->client->pers.cleanName, ent->s.number);
+            Com_Printf("Muted: %d\n", sess->muted);
+            Com_Printf("Legacy protocol: %d\n", sess->legacyProtocol);
+            Com_Printf("admLevel: %d, type: %d, admName: \"%s\"\n", sess->adminLevel, sess->adminType, sess->adminName);
+            Com_Printf("clMod: %s [%d]\n", sess->clientVersion, sess->clientMod);
+            Com_Printf("clanMember: %d, clanType: %d, clanName: \"%s\"\n", sess->clanMember, sess->clanType, sess->clanName);
+            Com_Printf("ROX: verif: %d, has: %d, guid: %s\n", sess->verifyRoxAC, sess->hasRoxAC, sess->roxGuid);
+            Com_Printf("Country: \"%s\", countryCode: %s\n", sess->country, sess->countryCode);
+        }
+        else {
+            Com_Printf("usage: showsess <id>\n");
+        }
+        return qtrue;
+    }
+
     if ( Q_stricmp (cmd, "entitylist") == 0 )
     {
         Svcmd_EntityList_f();

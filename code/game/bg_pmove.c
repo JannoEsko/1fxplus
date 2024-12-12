@@ -1932,7 +1932,7 @@ void PM_CheckWeaponNotes ( void )
     ps   = pm->ps;
     aW   = BG_GetInviewAnimFromIndex ( ps->weapon, (ps->weaponAnimId&~ANIM_TOGGLEBIT) );
 
-    assert ( aW );
+    //assert ( aW ); //handsup state
     if ( !aW )
     {
         return;
@@ -2005,7 +2005,7 @@ void PM_SetWeaponAnimChoice(TAnimWeapon *aW)
 
     if(!aW)
     {
-        assert(0);
+        //assert(0); //handsup state
         return;
     }
 

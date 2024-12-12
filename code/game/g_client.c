@@ -1376,6 +1376,19 @@ char *ClientConnect( int clientNum, qboolean firstTime, qboolean isBot )
         if (admlvl > ADMLVL_NONE) {
             ent->client->sess.adminLevel = admlvl;
             ent->client->sess.adminType = ADMTYPE_IP;
+            Q_strncpyz(ent->client->sess.adminName, ent->client->pers.cleanName, sizeof(ent->client->sess.adminName));
+        }
+
+    }
+
+    if (!ent->client->sess.clanMember) {
+
+        qboolean isClanMember = dbGetClan(CLANTYPE_IP, ent, NULL);
+
+        if (isClanMember) {
+            ent->client->sess.clanMember = qtrue;
+            ent->client->sess.clanType = CLANTYPE_IP;
+            Q_strncpyz(ent->client->sess.clanName, ent->client->pers.cleanName, sizeof(ent->client->sess.clanName));
         }
 
     }

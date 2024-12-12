@@ -45,7 +45,7 @@ buffer.
 ============
 */
 
-char* G_GetChatArgument(int argNum)
+char* G_GetChatArgument(int argNum, qboolean retainColors)
 {
     static char newArg[MAX_SAY_TEXT];
     char text[MAX_SAY_TEXT];
@@ -77,8 +77,10 @@ char* G_GetChatArgument(int argNum)
 
     Q_strncpyz(newArg, token, sizeof(newArg));
 
-    // Remove colors from arg.
-    G_RemoveColorEscapeSequences(newArg);
+    if (!retainColors) {
+        // Remove colors from arg.
+        G_RemoveColorEscapeSequences(newArg);
+    }
 
     return newArg;
 }
@@ -90,7 +92,7 @@ G_GetArg
 a wrapper for trap_Argv and G_GetChatArgument
 ============
 */
-char* G_GetArg(int argNum, qboolean shortCmd)
+char* G_GetArg(int argNum, qboolean shortCmd, qboolean retainColors)
 {
     static char arg[MAX_STRING_CHARS];
     memset(arg, 0, sizeof(arg));
@@ -100,13 +102,13 @@ char* G_GetArg(int argNum, qboolean shortCmd)
         trap_Argv(argNum, arg, sizeof(arg));
     }
     else {
-        strncpy(arg, G_GetChatArgument(argNum), sizeof(arg));
+        strncpy(arg, G_GetChatArgument(argNum, retainColors), sizeof(arg));
     }
 
     return arg;
 }
 
-char* concatArgs(int fromArgNum, qboolean shortCmd) {
+char* concatArgs(int fromArgNum, qboolean shortCmd, qboolean retainColors) {
 
     int totalArgs = 0;
     static char output[MAX_STRING_CHARS] = "";
@@ -123,7 +125,7 @@ char* concatArgs(int fromArgNum, qboolean shortCmd) {
     }
 
     while (fromArgNum < totalArgs) {
-        arg = G_GetArg(fromArgNum, shortCmd);
+        arg = G_GetArg(fromArgNum, shortCmd, retainColors);
         argLength = strlen(arg);
 
         if (totalLength + argLength > MAX_STRING_CHARS) {
@@ -271,7 +273,7 @@ int G_ClientNumFromArg(gentity_t* ent, int argNum, const char* action,
     // Not being present could indicate a short command from the console.
     // Now fetch the argument.
     if (shortCmd && argc > 0) {
-        Q_strncpyz(arg, G_GetChatArgument(1), sizeof(arg));
+        Q_strncpyz(arg, G_GetChatArgument(argNum, qfalse), sizeof(arg));
     }
     else {
         trap_Argv(argNum, arg, sizeof(arg));
@@ -545,6 +547,7 @@ void G_Broadcast(int broadcastLevel, gentity_t* to, qboolean playSound, char* br
     va_start(argptr, broadcast);
     Q_vsnprintf(text, sizeof(text), broadcast, argptr);
     va_end(argptr);
+
 
     int i;
     char* newBroadcast = G_ColorizeMessage(text);
@@ -1014,7 +1017,7 @@ void spinView(gentity_t* recipient) {
 void stripClient(gentity_t* recipient, qboolean handsUp) {
 
     int idle;
-    handsUp = qfalse;
+    //handsUp = qfalse;
     if (recipient->client->sess.team == TEAM_SPECTATOR) {
         return;
     }
@@ -1071,4 +1074,142 @@ void stripEveryone(qboolean handsUp) {
         recipient = &g_entities[level.sortedClients[i]];
         stripClient(recipient, handsUp);
     }
+}
+
+/*
+==================
+G_kickPlayer
+
+Kicks player from the server. Includes who did it and the reason.
+==================
+*/
+
+void kickPlayer(gentity_t* to, gentity_t* by, char* action, char* reason) {
+    trap_DropClient(to - g_entities, va("You got %s.\nBy: %s\nReason: %s", action, getNameOrArg(by, "RCON", qtrue), reason));
+}
+
+char* getClanTypeAsText(clanType_t clanType) {
+
+    switch (clanType) {
+    case CLANTYPE_GUID:
+        return "GUID";
+    case CLANTYPE_IP:
+        return "IP";
+    case CLANTYPE_PASS:
+        return "Pass";
+    default:
+        return "";
+    }
+
+}
+
+void clan_setPassword(gentity_t* ent, char* password) {
+
+    if (!ent->client->sess.setClanPassword && ent->client->sess.clanType != CLANTYPE_PASS) {
+        G_printInfoMessage(ent, "You cannot change your clan-password as you're either not a clan member or you don't have pass-clan powers.");
+        return;
+    }
+
+    // So there are a couple of entrypoints here.
+    // 1. setAdminPassword = qtrue, toBeAdminLevel != ADMLVL_NONE => fresh admin setting their first password.
+    // 2. setAdminPassword = qtrue, toBeAdminLevel = ADMLVL_NONE => not-logged in admin who can now reset their password.
+    // 3. setAdminPassword = qfalse, adminLevel != ADMLVL_NONE and adminType = ADMTYPE_PASS => player wanting to proactively change their own password.
+
+    if (strlen(password) < 6 || !checkAdminPassword(password)) {
+        G_printInfoMessage(ent, "Your password is either too short or consists of only the same characters (can happen if you use Arabic passwords).");
+        return;
+    }
+
+    int rowsAffected = 0;
+
+    if (ent->client->sess.setClanPassword || (ent->client->sess.clanMember && ent->client->sess.clanType == CLANTYPE_PASS)) {
+        rowsAffected = dbUpdateClanPass(ent->client->sess.clanName, password);
+
+        if (rowsAffected != 1) {
+            logSystem(LOGLEVEL_WARN, "rowsAffected on updateclanpass is %s (!= 1)", rowsAffected);
+            G_printInfoMessage(ent, "Something went wrong, please try again...");
+            return;
+        }
+
+        G_printInfoMessage(ent, "Your password is now set.");
+        ent->client->sess.clanMember = qtrue;
+        ent->client->sess.setClanPassword = qfalse;
+    }
+    else {
+        G_printInfoMessage(ent, "You cannot change the password because you're either not a clan member or do not have pass-clan rights.");
+    }
+
+}
+
+void clan_Login(gentity_t* ent, char* password) {
+
+    if (ent->client->sess.clanMember) {
+        G_printInfoMessage(ent, "You already have clan powers.");
+        return;
+    }
+
+    if (!password || strlen(password) < 6) {
+        G_printInfoMessage(ent, "No or too short password entered. Try again.");
+        return;
+    }
+
+    qboolean clanMember = dbGetClan(CLANTYPE_PASS, ent, password);
+
+    if (!clanMember) {
+        G_printInfoMessage(ent, "No clan powers found with this name+password combination.");
+        return;
+    }
+
+    ent->client->sess.clanMember = qtrue;
+    ent->client->sess.clanType = CLANTYPE_PASS;
+    Q_strncpyz(ent->client->sess.clanName, ent->client->pers.cleanName, sizeof(ent->client->sess.clanName));
+    ent->client->sess.setClanPassword = qfalse;
+    G_printInfoMessage(ent, "Your clan powers are set.");
+}
+
+gentity_t* NV_projectile(gentity_t* ent, vec3_t start, vec3_t dir, int weapon, int damage) {
+    gentity_t* missile;
+
+    missile = G_Spawn();
+
+    if (weapon == WP_M84_GRENADE || weapon == WP_M15_GRENADE) {
+        missile->r.singleClient = ent->client->ps.clientNum;
+        missile->r.svFlags |= SVF_SINGLECLIENT;
+    }
+    else {
+        missile->r.svFlags |= SVF_BROADCAST;
+        missile->damage = 1;
+        missile->splashDamage = 1;
+    }
+    missile->nextthink = level.time + 1000;
+    missile->think = G_ExplodeMissile;
+    missile->s.eType = ET_MISSILE;
+    missile->s.weapon = weapon;
+    missile->r.ownerNum = ent->s.number;
+    missile->parent = ent;
+    missile->classname = "grenade";
+    missile->splashRadius = 500;
+    missile->s.eFlags = EF_BOUNCE_HALF | EF_BOUNCE;
+    missile->clipmask = MASK_SHOT | CONTENTS_MISSILECLIP;
+    //missile->s.pos.trType         = TR_INTERPOLATE;
+    missile->s.pos.trType = TR_HEAVYGRAVITY;
+    missile->s.pos.trTime = level.time - 50;
+
+    if (weapon == WP_ANM14_GRENADE) {
+        missile->splashRadius = 150;
+        missile->dflags = DAMAGE_AREA_DAMAGE;
+        missile->splashDamage = 1;
+        missile->methodOfDeath = MOD_ANM14_GRENADE;
+    }
+
+    VectorCopy(start, missile->s.pos.trBase);
+    VectorCopy(dir, missile->s.pos.trDelta);
+
+    if (ent->client->ps.pm_flags & PMF_JUMPING)
+        VectorAdd(missile->s.pos.trDelta, ent->s.pos.trDelta, missile->s.pos.trDelta);
+
+    SnapVector(missile->s.pos.trDelta);           // save net bandwidth
+
+    VectorCopy(start, missile->r.currentOrigin);
+    return missile;
 }

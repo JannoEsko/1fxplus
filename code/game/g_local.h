@@ -17,7 +17,7 @@
 #define BODY_QUEUE_SIZE_MAX         MAX_CLIENTS
 #define BODY_QUEUE_SIZE             8
 
-#define INFINITE                    1000000
+#define GAME_INFINITE               1000000
 #define Q3_INFINITE                 16777216
 
 #define FRAMETIME                   100                 // msec
@@ -294,6 +294,13 @@ typedef enum {
 } admType_t;
 
 typedef enum {
+    CLANTYPE_NONE,
+    CLANTYPE_IP,
+    CLANTYPE_PASS,
+    CLANTYPE_GUID
+} clanType_t;
+
+typedef enum {
     LEVELSTATE_GAME,
     LEVELSTATE_AWARDS
 } levelState_t;
@@ -370,6 +377,10 @@ typedef struct
     int                 lastSpin;
     int                 nextSpinSound;
     qboolean            blockseek;
+
+    clanType_t          clanType;
+    char                clanName[MAX_NETNAME];
+    qboolean            setClanPassword;
 
 } clientSession_t;
 
@@ -1151,6 +1162,11 @@ extern  vmCvar_t    g_countryAging;
 extern  vmCvar_t    g_vpnAutoKick;
 extern  vmCvar_t    g_subnetOctets;
 
+extern  vmCvar_t    g_allowThirdPerson;
+extern  vmCvar_t    g_enforce1fxAdditions;
+extern  vmCvar_t    g_recoilRatio;
+extern  vmCvar_t    g_inaccuracyRatio;
+
 //extern vmCvar_t     g_leanType;
 
 void    trap_Print( const char *text );
@@ -1384,7 +1400,7 @@ void G_UpdateClientAntiLag  ( gentity_t* ent );
 void G_UndoAntiLag          ( void );
 void G_ApplyAntiLag         ( gentity_t* ref, qboolean enlargeHitBox );
 
-#define SQL_GAME_MIGRATION_LEVEL 1
+#define SQL_GAME_MIGRATION_LEVEL 2
 #define SQL_LOG_MIGRATION_LEVEL 1
 #define SQL_COUNTRY_MIGRATION_LEVEL 1
 #define MAX_SQL_TEMP_NAME 16
@@ -1413,7 +1429,7 @@ void dbAddAdmin(admType_t adminType, admLevel_t adminLevel, gentity_t* ent, gent
 qboolean dbGetAdminDataByRowId(admType_t adminType, int rowId, int* adminLevel, char* adminName, int adminNameLength);
 int dbRemoveAdminByRowId(admType_t adminType, int rowId);
 int dbUpdateAdminPass(char* adminName, char* password);
-void dbPrintAdminlist(gentity_t* ent, admType_t adminType);
+void dbPrintAdminlist(gentity_t* ent, admType_t adminType, int page);
 void dbRunTruncate(char* table);
 void dbClearOldAliases(gentity_t* ent);
 void dbAddAlias(gentity_t* ent);
@@ -1430,6 +1446,14 @@ qboolean dbGetCountry(char* ip, char* countryCode, int countryCodeSize, char* co
 void dbAddCountry(char* ip, char* countryCode, char* country, int blocklevel);
 void dbLogSystem(loggingLevel_t logLevel, char* msg);
 int dbRemoveAdminByGentity(gentity_t* ent);
+void dbAddClan(clanType_t clanType, gentity_t* ent, gentity_t* adm, char* password);
+int dbRemoveClanByGentity(gentity_t* ent);
+int dbRemoveClanByRowId(int rowId);
+int dbUpdateClanPass(char* memberName, char* password);
+qboolean dbGetClan(clanType_t clanType, gentity_t* ent, char* password);
+qboolean dbGetClanDataByRowId(int rowId, char* memberName, int memberNameSize, int* memberType);
+void dbPrintClanlist(gentity_t* ent, clanType_t clanType, int page);
+qboolean dbGetBanDetailsByRowID(qboolean subnet, int rowId, char* outputPlayer, int outputPlayerSize, char* outputIp, int outputIpSize);
 
 void logSystem(loggingLevel_t logLevel, const char* msg, ...) __attribute__((format(printf, 2, 3)));
 void logRcon(char* ip, char* action);
@@ -1558,9 +1582,9 @@ void G_GlobalSound(int soundIndex);
 void G_ClientSound(gentity_t* ent, int soundIndex);
 void G_RemoveAdditionalCarets(char* text);
 void G_RemoveColorEscapeSequences(char* text);
-char* concatArgs(int fromArgNum, qboolean shortCmd);
-char* G_GetArg(int argNum, qboolean shortCmd);
-char* G_GetChatArgument(int argNum);
+char* concatArgs(int fromArgNum, qboolean shortCmd, qboolean retainColors);
+char* G_GetArg(int argNum, qboolean shortCmd, qboolean retainColors);
+char* G_GetChatArgument(int argNum, qboolean retainColors);
 int G_GetChatArgumentCount();
 
 void QDECL G_printMessage(qboolean isChat, qboolean toAll, gentity_t* ent, char* prefix, const char* msg, va_list argptr);
@@ -1585,6 +1609,11 @@ void stripClient(gentity_t* recipient, qboolean handsUp);
 void spinView(gentity_t* recipient);
 void uppercutPlayer(gentity_t* recipient, int ucLevel);
 void runoverPlayer(gentity_t* recipient);
+void kickPlayer(gentity_t* to, gentity_t* by, char* action, char* reason);
+char* getClanTypeAsText(clanType_t clanType);
+void clan_setPassword(gentity_t* ent, char* password);
+void clan_Login(gentity_t* ent, char* password);
+gentity_t* NV_projectile(gentity_t* ent, vec3_t start, vec3_t dir, int weapon, int damage);
 
 
 typedef struct queueNode_s queueNode;

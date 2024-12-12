@@ -86,8 +86,6 @@ static void migrateGameDatabase(sqlite3* db, int gameMigrationLevel) {
     // if (migrationlevel < 2) then do this
     // .. and so on. Downside is that this will run a lot of queries to catch up, but it's a one-off call, therefore not expensive.
 
-
-
     if (gameMigrationLevel < 1) {
         // fresh database, create all tables.
         char* migration = "CREATE TABLE IF NOT EXISTS adminlist (adminname VARCHAR(64) COLLATE NOCASE, ip VARCHAR(24), adminlevel INTEGER, addedby VARCHAR(64), addedwhen TIMESTAMP DEFAULT CURRENT_TIMESTAMP);"
@@ -95,8 +93,7 @@ static void migrateGameDatabase(sqlite3* db, int gameMigrationLevel) {
             "CREATE TABLE IF NOT EXISTS subnetbanlist (playername VARCHAR(64), ip VARCHAR(24), adminname VARCHAR(64), reason VARCHAR(512), bannedwhen TIMESTAMP DEFAULT CURRENT_TIMESTAMP, banneduntil TIMESTAMP, endofmap INTEGER DEFAULT 0, adminlevel INTEGER);"
             "CREATE TABLE IF NOT EXISTS adminpasslist (adminname VARCHAR(64) COLLATE NOCASE, adminlevel INTEGER, addedby VARCHAR(64), addedwhen TIMESTAMP DEFAULT CURRENT_TIMESTAMP, password VARCHAR(80));"
             "CREATE TABLE IF NOT EXISTS adminguidlist (adminname VARCHAR(64) COLLATE NOCASE, adminlevel INTEGER, addedby VARCHAR(64), addedwhen TIMESTAMP DEFAULT CURRENT_TIMESTAMP, acguid VARCHAR(20));"
-            "CREATE TABLE IF NOT EXISTS aliases (alias VARCHAR(64), ip VARCHAR(24));"
-            "CREATE INDEX IF NOT EXISTS idx_aliases_ip ON aliases (ip);"
+            "CREATE TABLE IF NOT EXISTS aliases (alias VARCHAR(64), ip VARCHAR(24), UNIQUE(alias, ip));"
             "DELETE FROM migrationlevel;"
             "INSERT INTO migrationlevel (migrationlevel) VALUES (1);";
 
@@ -107,7 +104,18 @@ static void migrateGameDatabase(sqlite3* db, int gameMigrationLevel) {
         }
     }
 
+    if (gameMigrationLevel < 2) {
+        // Add clan membership information
+        char* migration = "CREATE TABLE IF NOT EXISTS clanlist (membername VARCHAR(64) COLLATE NOCASE, memberkey VARCHAR(80), membertype INTEGER, addedby VARCHAR(64), addedwhen TIMESTAMP DEFAULT CURRENT_TIMESTAMP);" // memberKey = IP, GUID or pass. Membertype = clanType_t
+            "DELETE FROM migrationlevel;"
+            "INSERT INTO migrationlevel (migrationlevel) VALUES (2);";
 
+        if (sqlite3_exec(db, migration, 0, 0, 0) != SQLITE_OK) {
+            sqlite3_close(db);
+            logSystem(LOGLEVEL_FATAL_DB, "Game dropped due to failing to migrate the game database to level 2 (starting level: %d).\nSQLite error: %s\nCode: %d", gameMigrationLevel, sqlite3_errmsg(db), sqlite3_errcode(db));
+            return;
+        }
+    }
 }
 
 static void migrateLogsDatabase(sqlite3* db, int logsMigrationLevel) {
@@ -226,7 +234,12 @@ void loadDatabases(void) {
 	sqlite3_stmt* stmt;
 	int gameMigrationLevel = -1;
 
-	sqlite3_prepare(db, "SELECT * FROM migrationlevel", -1, &stmt, 0);
+	rc = sqlite3_prepare(db, "SELECT * FROM migrationlevel", -1, &stmt, 0);
+
+    if (rc != SQLITE_OK) {
+        logSystem(LOGLEVEL_FATAL_DB, "miragtionLevel game.db prepare failed: %s", sqlite3_errmsg(db));
+        return;
+    }
 
 	if (sqlite3_step(stmt) != SQLITE_DONE) {
 		gameMigrationLevel = sqlite3_column_int(stmt, 0);
@@ -268,17 +281,22 @@ void loadDatabases(void) {
 
     if (rc) {
         // with the gameDb completely failing and we cannot write to it, there's no point continuing.
-        logSystem(LOGLEVEL_FATAL_DB, "Game dropped due to failing to write game.db file in databases folder.\n");
+        logSystem(LOGLEVEL_FATAL_DB, "Game dropped due to failing to write logs.db file in databases folder.\n");
         return;
     }
 
     if (sqlite3_exec(db, "CREATE TABLE IF NOT EXISTS migrationlevel (migrationlevel INTEGER)", 0, 0, 0) != SQLITE_OK) {
         sqlite3_close(db);
-        logSystem(LOGLEVEL_FATAL_DB, "Game dropped due to failing to write migrationlevel table into game.db.\n");
+        logSystem(LOGLEVEL_FATAL_DB, "Game dropped due to failing to write migrationlevel table into logs.db.\n");
         return;
     }
 
-    sqlite3_prepare(db, "SELECT * FROM migrationlevel", -1, &stmt, 0);
+    rc = sqlite3_prepare(db, "SELECT * FROM migrationlevel", -1, &stmt, 0);
+
+    if (rc != SQLITE_OK) {
+        logSystem(LOGLEVEL_FATAL_DB, "miragtionLevel logsDb prepare failed: %s", sqlite3_errmsg(db));
+        return;
+    }
 
     int logMigrationLevel = -1;
 
@@ -314,7 +332,13 @@ void loadDatabases(void) {
         return;
     }
 
-    sqlite3_prepare(db, "SELECT * FROM migrationlevel", -1, &stmt, 0);
+    rc = sqlite3_prepare(db, "SELECT * FROM migrationlevel", -1, &stmt, 0);
+
+    if (rc != SQLITE_OK) {
+        logSystem(LOGLEVEL_FATAL_DB, "miragtionLevel countryDb prepare failed: %s", sqlite3_errmsg(db));
+        return;
+    }
+
 
     int countryMigrationLevel = -1;
 
@@ -404,7 +428,12 @@ int dbGetAdminLevel(admType_t adminType, gentity_t* ent, char* passguid) {
     
     );
 
-    sqlite3_prepare(db, query, -1, &stmt, 0);
+    int rc = sqlite3_prepare(db, query, -1, &stmt, 0);
+
+    if (rc != SQLITE_OK) {
+        logSystem(LOGLEVEL_WARN, "getAdmnLevel prepare error: %s", sqlite3_errmsg(db));
+        return returnable;
+    }
 
     sqlBindTextOrNull(stmt, 1, ent->client->pers.cleanName);
 
@@ -434,14 +463,23 @@ static void dbAddIpAdmin(admLevel_t adminLevel, gentity_t* ent, gentity_t* adm) 
 
     char* query = va("INSERT INTO adminlist (adminname, ip, adminlevel, addedby) VALUES (?, ?, ?, ?)");
 
-    sqlite3_prepare(db, query, -1, &stmt, 0);
+    int rc = sqlite3_prepare(db, query, -1, &stmt, 0);
+
+    if (rc != SQLITE_OK) {
+        logSystem(LOGLEVEL_WARN, "addAdmin prepare failed: %s", sqlite3_errmsg(db));
+        return;
+    }
 
     sqlBindTextOrNull(stmt, 1, ent->client->pers.cleanName);
     sqlBindTextOrNull(stmt, 2, ent->client->pers.ip);
     sqlite3_bind_int(stmt, 3, adminLevel);
     sqlBindTextOrNull(stmt, 4, getNameOrArg(adm, "RCON", qtrue));
 
-    sqlite3_step(stmt);
+    rc = sqlite3_step(stmt);
+
+    if (rc != SQLITE_DONE) {
+        logSystem(LOGLEVEL_WARN, "addAdmin step error: %s", sqlite3_errmsg(db));
+    }
 
     sqlite3_finalize(stmt);
 }
@@ -454,7 +492,12 @@ static void dbAddPassAdmin(admLevel_t adminLevel, gentity_t* ent, gentity_t* adm
 
     char* query = va("INSERT INTO adminpasslist (adminname, adminlevel, addedby, password) VALUES (?, ?, ?, ?)");
 
-    sqlite3_prepare(db, query, -1, &stmt, 0);
+    int rc = sqlite3_prepare(db, query, -1, &stmt, 0);
+
+    if (rc != SQLITE_OK) {
+        logSystem(LOGLEVEL_WARN, "addPassAdmin prepare failed. Error: %s", sqlite3_errmsg(db));
+        return;
+    }
 
     sqlBindTextOrNull(stmt, 1, ent->client->pers.cleanName);
     sqlite3_bind_int(stmt, 2, adminLevel);
@@ -462,7 +505,10 @@ static void dbAddPassAdmin(admLevel_t adminLevel, gentity_t* ent, gentity_t* adm
     
     sqlBindTextOrNull(stmt, 4, pass);
 
-    sqlite3_step(stmt);
+    rc = sqlite3_step(stmt);
+    if (rc != SQLITE_DONE) {
+        logSystem(LOGLEVEL_WARN, "addPassAdmin step error: %s", sqlite3_errmsg(db));
+    }
 
     sqlite3_finalize(stmt);
 
@@ -476,7 +522,12 @@ static void dbAddGuidAdmin(admLevel_t adminLevel, gentity_t* ent, gentity_t* adm
 
     char* query = va("INSERT INTO adminguidlist (adminname, adminlevel, addedby, acguid) VALUES (?, ?, ?, ?)");
 
-    sqlite3_prepare(db, query, -1, &stmt, 0);
+    int rc = sqlite3_prepare(db, query, -1, &stmt, 0);
+
+    if (rc != SQLITE_OK) {
+        logSystem(LOGLEVEL_WARN, "addGuidAdmin prepare failed. Error: %s", sqlite3_errmsg(db));
+        return;
+    }
 
     sqlBindTextOrNull(stmt, 1, ent->client->pers.cleanName);
     sqlite3_bind_int(stmt, 2, adminLevel);
@@ -484,7 +535,10 @@ static void dbAddGuidAdmin(admLevel_t adminLevel, gentity_t* ent, gentity_t* adm
 
     sqlBindTextOrNull(stmt, 4, ent->client->sess.roxGuid);
 
-    sqlite3_step(stmt);
+    rc = sqlite3_step(stmt);
+    if (rc != SQLITE_DONE) {
+        logSystem(LOGLEVEL_WARN, "addGuidAdmin step error: %s", sqlite3_errmsg(db));
+    }
 
     sqlite3_finalize(stmt);
 
@@ -546,12 +600,15 @@ int dbRemoveAdminByRowId(admType_t adminType, int rowId) {
 
     if (rc != SQLITE_OK) {
         logSystem(LOGLEVEL_WARN, "sqlite3_prepare failed on gameDb. Error: %s", sqlite3_errmsg(db));
-        return;
+        return rowsAffected;
     }
 
     sqlite3_bind_int(stmt, 1, rowId);
 
-    sqlite3_step(stmt);
+    rc = sqlite3_step(stmt);
+    if (rc != SQLITE_DONE) {
+        logSystem(LOGLEVEL_WARN, "removeAdminByRow step error: %s", sqlite3_errmsg(db));
+    }
 
     sqlite3_finalize(stmt);
 
@@ -574,13 +631,16 @@ int dbUpdateAdminPass(char* adminName, char* password) {
 
     if (rc != SQLITE_OK) {
         logSystem(LOGLEVEL_WARN, "sqlite3_prepare failed on gameDb. Error: %s", sqlite3_errmsg(db));
-        return;
+        return rowsAffected;
     }
 
     sqlBindTextOrNull(stmt, 1, password);
     sqlBindTextOrNull(stmt, 2, adminName);
 
-    sqlite3_step(stmt);
+    rc = sqlite3_step(stmt);
+    if (rc != SQLITE_DONE) {
+        logSystem(LOGLEVEL_WARN, "updateAdmPass step error: %s", sqlite3_errmsg(db));
+    }
 
     rowsAffected = sqlite3_changes(db);
 
@@ -590,7 +650,7 @@ int dbUpdateAdminPass(char* adminName, char* password) {
 
 }
 
-void dbPrintAdminlist(gentity_t* ent, admType_t adminType) {
+void dbPrintAdminlist(gentity_t* ent, admType_t adminType, int page) {
 
     sqlite3* db = gameDb;
     sqlite3_stmt* stmt;
@@ -598,8 +658,7 @@ void dbPrintAdminlist(gentity_t* ent, admType_t adminType) {
     qboolean isRcon = ent && ent->client ? qfalse : qtrue;
 
     Com_Memset(buf, 0, sizeof(buf));
-    char* query = va("SELECT ROWID, adminname, adminlevel, addedby, DATE(addedwhen)%s FROM admin%slist", adminType == ADMTYPE_IP ? ", ip" : (adminType == ADMTYPE_GUID ? ", acguid" : ""), adminType == ADMTYPE_PASS ? "pass" : (adminType == ADMTYPE_GUID ? "guid" : ""));
-    
+    char* query = va("SELECT ROWID, adminname, adminlevel, addedby, DATE(addedwhen)%s FROM admin%slist %s", adminType == ADMTYPE_IP ? ", ip" : (adminType == ADMTYPE_GUID ? ", acguid" : ""), adminType == ADMTYPE_PASS ? "pass" : (adminType == ADMTYPE_GUID ? "guid" : ""), !isRcon ? "WHERE ROWID BETWEEN ? AND ?" : "");
     int rc = sqlite3_prepare(db, query, -1, &stmt, 0);
     if (rc != SQLITE_OK) {
         logSystem(LOGLEVEL_WARN, "sqlite3_prepare failed on gameDb. Error: %s", sqlite3_errmsg(db));
@@ -611,9 +670,12 @@ void dbPrintAdminlist(gentity_t* ent, admType_t adminType) {
         Com_Printf("^7-----------------------------------------------------------------------------\n");
     }
     else {
-        Q_strcat(buf, sizeof(buf), va("^3 %-5s%-5s%-16s %-16s %-16s Date\n^7-----------------------------------------------------------------------------\n", "#", "Lvl", "IP (GUID)", "Name", "By"));
+        if (page > 0) page--;
+        Q_strcat(buf, sizeof(buf), va("\n[^3Page %d^7]\n\n^3 %-5s%-5s%-16s %-16s %-16s Date\n^7-----------------------------------------------------------------------------\n", page + 1, "#", "Lvl", "IP (GUID)", "Name", "By"));
+        sqlite3_bind_int(stmt, 1, page * 100);
+        sqlite3_bind_int(stmt, 2, (page + 1) * 100);
     }
-    int i = 0;
+
     while ((rc = sqlite3_step(stmt)) != SQLITE_DONE) {
         if (rc == SQLITE_ROW) {
             int rowId = sqlite3_column_int(stmt, 0);
@@ -632,12 +694,8 @@ void dbPrintAdminlist(gentity_t* ent, admType_t adminType) {
             else {
 
                 if (strlen(buf) + strlen(va("[^3%-3.3d^7] %-5d%-16.16s %-16.16s %-16.16s %s\n", rowId, adminLevel, guidIp, adminName, addedBy, addedWhen)) >= sizeof(buf) - 5) {
-
                     trap_SendServerCommand(ent - g_entities, va("print \"%s\"", buf));
-                    i++;
                     Com_Memset(buf, 0, sizeof(buf));
-
-                    if (i == 20) break; // Above this, clients can start crashing, too much printing...
                 }
 
                 Q_strcat(buf, sizeof(buf), va("[^3%-3.3d^7] %-5d%-16.16s %-16.16s %-16.16s %s\n", rowId, adminLevel, guidIp, adminName, addedBy, addedWhen));
@@ -648,9 +706,7 @@ void dbPrintAdminlist(gentity_t* ent, admType_t adminType) {
     if (!isRcon) {
 
         trap_SendServerCommand(ent - g_entities, va("print \"%s\"", buf));
-        if (i == 20) {
-            trap_SendServerCommand(ent - g_entities, "print \"... rest truncated\"");
-        }
+        trap_SendServerCommand(ent - g_entities, va("print \"\nYou can specify page by adding the page number at the end of the command.\nTo proceed to next page - /adm adminlist %s%d / !al %s%d \"", adminType == ADMTYPE_GUID ? "guid " : (adminType == ADMTYPE_PASS ? "pass " : ""), page + 2, adminType == ADMTYPE_GUID ? "guid " : (adminType == ADMTYPE_PASS ? "pass " : ""), page + 2));
         trap_SendServerCommand(ent - g_entities, "print \"\nUse [^3Page Up^7] and [^3Page Down^7] to scroll\n\"");
     }
     else {
@@ -709,6 +765,7 @@ void dbGetAliases(gentity_t* ent, char* output, int outputSize, char* separator)
     sqlite3* db = gameDb;
     sqlite3_stmt* stmt;
     qboolean first = qtrue;
+    int rc = 0;
 
     if (!g_maxAliases.integer) {
         return;
@@ -718,12 +775,17 @@ void dbGetAliases(gentity_t* ent, char* output, int outputSize, char* separator)
 
     char* query = va("SELECT alias FROM aliases WHERE alias != ? AND ip = ?");
 
-    sqlite3_prepare(db, query, -1, &stmt, 0);
+    rc = sqlite3_prepare(db, query, -1, &stmt, 0);
+
+    if (rc != SQLITE_OK) {
+        logSystem(LOGLEVEL_WARN, "getAliases prepare error: %s", sqlite3_errmsg(db));
+        return;
+    }
 
     sqlBindTextOrNull(stmt, 1, ent->client->pers.cleanName);
     sqlBindTextOrNull(stmt, 2, ent->client->pers.ip);
 
-    int rc = 0;
+    
     while ((rc = sqlite3_step(stmt)) != SQLITE_DONE) {
         if (rc == SQLITE_ROW) {
             char* alias = sqlite3_column_text(stmt, 0);
@@ -757,14 +819,22 @@ void dbAddAlias(gentity_t* ent) {
         return;
     }
 
-    char* query = va("INSERT INTO aliases (alias, ip) VALUES (?, ?)");
+    char* query = va("INSERT OR IGNORE INTO aliases (alias, ip) VALUES (?, ?)");
 
-    sqlite3_prepare(db, query, -1, &stmt, 0);
+    int rc = sqlite3_prepare(db, query, -1, &stmt, 0);
+
+    if (rc != SQLITE_OK) {
+        logSystem(LOGLEVEL_WARN, "addAlias prepare error: %s", sqlite3_errmsg(db));
+        return;
+    }
 
     sqlBindTextOrNull(stmt, 1, ent->client->pers.cleanName);
     sqlBindTextOrNull(stmt, 2, ent->client->pers.ip);
 
-    sqlite3_step(stmt);
+    rc = sqlite3_step(stmt);
+    if (rc != SQLITE_DONE) {
+        logSystem(LOGLEVEL_WARN, "addalias step error: %s", sqlite3_errmsg(db));
+    }
 
     sqlite3_finalize(stmt);
 
@@ -778,13 +848,21 @@ void dbClearOldAliases(gentity_t* ent) {
 
     char* query = va("DELETE FROM aliases WHERE ROWID IN (SELECT ROWID FROM aliases WHERE ip = ? ORDER BY ROWID ASC LIMIT (SELECT COUNT(*) - ? FROM aliases WHERE ip = ?))");
 
-    sqlite3_prepare(db, query, -1, &stmt, 0);
+    int rc = sqlite3_prepare(db, query, -1, &stmt, 0);
+
+    if (rc != SQLITE_OK) {
+        logSystem(LOGLEVEL_WARN, "clearOldAliases prepare error: %s", sqlite3_errmsg(db));
+        return;
+    }
 
     sqlBindTextOrNull(stmt, 1, ent->client->pers.ip);
     sqlite3_bind_int(stmt, 2, g_maxAliases.integer);
     sqlBindTextOrNull(stmt, 3, ent->client->pers.ip);
 
-    sqlite3_step(stmt);
+    rc = sqlite3_step(stmt);
+    if (rc != SQLITE_DONE) {
+        logSystem(LOGLEVEL_WARN, "clearaliases step error: %s", sqlite3_errmsg(db));
+    }
 
     sqlite3_finalize(stmt);
 }
@@ -803,15 +881,24 @@ void dbAddBan(gentity_t* ent, gentity_t* adm, char* reason, qboolean subnet, qbo
     }
 
     char* query = va("INSERT INTO %sbanlist (playername, ip, adminname, reason, banneduntil, endofmap) VALUES (?, ?, ?, ?, %s, ?)", subnet ? "subnet" : "", banDurationString);
-    sqlite3_prepare(db, query, -1, &stmt, 0);
+    int rc = sqlite3_prepare(db, query, -1, &stmt, 0);
+
+    if (rc != SQLITE_OK) {
+        logSystem(LOGLEVEL_WARN, "Addban prepare error: %s", sqlite3_errmsg(db));
+        return;
+    }
 
     sqlBindTextOrNull(stmt, 1, ent->client->pers.cleanName);
-    sqlBindTextOrNull(stmt, 2, subnet ? ent->client->pers.ip : ent->client->pers.subnet);
+    sqlBindTextOrNull(stmt, 2, subnet ? ent->client->pers.subnet : ent->client->pers.ip);
     sqlBindTextOrNull(stmt, 3, getNameOrArg(adm, "RCON", qtrue));
     sqlBindTextOrNull(stmt, 4, reason);
     sqlite3_bind_int(stmt, 5, endofmap);
 
-    sqlite3_step(stmt);
+    rc = sqlite3_step(stmt);
+
+    if (rc != SQLITE_DONE) {
+        logSystem(LOGLEVEL_WARN, "Addban step error: %s", sqlite3_errmsg(db));
+    }
 
     sqlite3_finalize(stmt);
 
@@ -825,11 +912,19 @@ int dbRemoveBan(qboolean subnet, int rowId) {
     int rowsAffected = 0;
 
     char* query = va("DELETE FROM %sbanlist WHERE ROWID = ?", subnet ? "subnet" : "");
-    sqlite3_prepare(db, query, -1, &stmt, 0);
+    int rc = sqlite3_prepare(db, query, -1, &stmt, 0);
+
+    if (rc != SQLITE_OK) {
+        logSystem(LOGLEVEL_WARN, "removeBan prepare failed: %s", sqlite3_errmsg(db));
+        return rowsAffected;
+    }
 
     sqlite3_bind_int(stmt, 1, rowId);
 
-    sqlite3_step(stmt);
+    rc = sqlite3_step(stmt);
+    if (rc != SQLITE_DONE) {
+        logSystem(LOGLEVEL_WARN, "removeBan step error: %s", sqlite3_errmsg(db));
+    }
 
     sqlite3_finalize(stmt);
 
@@ -854,7 +949,13 @@ void dbLogAdmin(char* byIp, char* byName, char* toIp, char* toName, char* action
 
     char* query = "INSERT INTO adminlog (byip, byname, toip, toname, action, reason, adminlevel, adminname, admintype) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
-    sqlite3_prepare(db, query, -1, &stmt, 0);
+    rc = sqlite3_prepare(db, query, -1, &stmt, 0);
+
+    if (rc != SQLITE_OK) {
+        logSystem(LOGLEVEL_WARN, "logAdmin prepare failed: %s", sqlite3_errmsg(db));
+        sqlite3_close(db);
+        return;
+    }
 
     sqlBindTextOrNull(stmt, 1, byIp);
     sqlBindTextOrNull(stmt, 2, byName);
@@ -866,7 +967,10 @@ void dbLogAdmin(char* byIp, char* byName, char* toIp, char* toName, char* action
     sqlBindTextOrNull(stmt, 8, adminName);
     sqlite3_bind_int(stmt, 9, adminType);
 
-    sqlite3_step(stmt);
+    rc = sqlite3_step(stmt);
+    if (rc != SQLITE_DONE) {
+        logSystem(LOGLEVEL_WARN, "logAdmin step error: %s", sqlite3_errmsg(db));
+    }
     sqlite3_finalize(stmt);
 
     sqlite3_close(db);
@@ -890,7 +994,13 @@ void dbLogGame(char* byIp, char* byName, char* toIp, char* toName, char* action)
 
     char* query = "INSERT INTO gameslog (byip, byname, toip, toname, action) VALUES (?, ?, ?, ?, ?)";
 
-    sqlite3_prepare(db, query, -1, &stmt, 0);
+    rc = sqlite3_prepare(db, query, -1, &stmt, 0);
+
+    if (rc != SQLITE_OK) {
+        logSystem(LOGLEVEL_WARN, "logGame prepare failed: %s", sqlite3_errmsg(db));
+        sqlite3_close(db);
+        return;
+    }
 
     sqlBindTextOrNull(stmt, 1, byIp);
     sqlBindTextOrNull(stmt, 2, byName);
@@ -898,7 +1008,10 @@ void dbLogGame(char* byIp, char* byName, char* toIp, char* toName, char* action)
     sqlBindTextOrNull(stmt, 4, toName);
     sqlBindTextOrNull(stmt, 5, action);
 
-    sqlite3_step(stmt);
+    rc = sqlite3_step(stmt);
+    if (rc != SQLITE_DONE) {
+        logSystem(LOGLEVEL_WARN, "logGame step error: %s", sqlite3_errmsg(db));
+    }
     sqlite3_finalize(stmt);
 
     sqlite3_close(db);
@@ -922,14 +1035,23 @@ void dbLogLogin(char* byIp, char* byName, admLevel_t adminLevel, admType_t admin
 
     char* query = "INSERT INTO loginlog (byip, byname, adminlevel, admintype) VALUES (?, ?, ?, ?)";
 
-    sqlite3_prepare(db, query, -1, &stmt, 0);
+    rc = sqlite3_prepare(db, query, -1, &stmt, 0);
+
+    if (rc != SQLITE_OK) {
+        logSystem(LOGLEVEL_WARN, "logLogin prepare failed: %s", sqlite3_errmsg(db));
+        sqlite3_close(db);
+        return;
+    }
 
     sqlBindTextOrNull(stmt, 1, byIp);
     sqlBindTextOrNull(stmt, 2, byName);
     sqlite3_bind_int(stmt, 3, adminLevel);
     sqlite3_bind_int(stmt, 4, adminType);
 
-    sqlite3_step(stmt);
+    rc = sqlite3_step(stmt);
+    if (rc != SQLITE_DONE) {
+        logSystem(LOGLEVEL_WARN, "loginLog step error: %s", sqlite3_errmsg(db));
+    }
     sqlite3_finalize(stmt);
 
     sqlite3_close(db);
@@ -953,12 +1075,23 @@ void dbLogRcon(char* ip, char* action) {
 
     char* query = "INSERT INTO rconlog (ip, action) VALUES (?, ?)";
 
-    sqlite3_prepare(db, query, -1, &stmt, 0);
+    rc = sqlite3_prepare(db, query, -1, &stmt, 0);
+
+    if (rc != SQLITE_OK) {
+        logSystem(LOGLEVEL_WARN, "logRcon prepare failed: %s", sqlite3_errmsg(db));
+        sqlite3_close(db);
+        return;
+    }
 
     sqlBindTextOrNull(stmt, 1, ip);
     sqlBindTextOrNull(stmt, 2, action);
 
-    sqlite3_step(stmt);
+    rc = sqlite3_step(stmt);
+
+    if (rc != SQLITE_DONE) {
+        logSystem(LOGLEVEL_WARN, "rconLog step error: %s", sqlite3_errmsg(db));
+    }
+
     sqlite3_finalize(stmt);
 
     sqlite3_close(db);
@@ -980,12 +1113,23 @@ void dbLogSystem(loggingLevel_t logLevel, char* msg) {
 
     char* query = "INSERT INTO systemlog (loglevel, logmsg) VALUES (?, ?)";
 
-    sqlite3_prepare(db, query, -1, &stmt, 0);
+    rc = sqlite3_prepare(db, query, -1, &stmt, 0);
+
+    if (rc != SQLITE_OK) {
+        Com_PrintWarn("Failed to logSystem, db error: %s\n", sqlite3_errmsg(db));
+        sqlite3_close(db);
+        return;
+    }
 
     sqlite3_bind_int(stmt, 1, logLevel);
     sqlBindTextOrNull(stmt, 2, msg);
 
-    sqlite3_step(stmt);
+    rc = sqlite3_step(stmt);
+
+    if (rc != SQLITE_DONE) {
+        Com_PrintWarn("Failed to run step on logSystem, db error: %s", sqlite3_errmsg(db));
+    }
+
     sqlite3_finalize(stmt);
 
     sqlite3_close(db);
@@ -1010,38 +1154,50 @@ void dbLogRetention() {
 
     char* query = "DELETE FROM adminlog WHERE dt < DATETIME('now', '-' || ? || ' days')";
 
-    sqlite3_prepare(db, query, -1, &stmt, 0);
-    sqlite3_bind_int(stmt, 1, g_dbLogRetention.integer);
-    sqlite3_step(stmt);
-    sqlite3_finalize(stmt);
+    rc = sqlite3_prepare(db, query, -1, &stmt, 0);
+    if (rc == SQLITE_OK) {
+        sqlite3_bind_int(stmt, 1, g_dbLogRetention.integer);
+        sqlite3_step(stmt);
+        sqlite3_finalize(stmt);
+    }
 
     query = "DELETE FROM gameslog WHERE dt < DATETIME('now', '-' || ? || ' days')";
 
-    sqlite3_prepare(db, query, -1, &stmt, 0);
-    sqlite3_bind_int(stmt, 1, g_dbLogRetention.integer);
-    sqlite3_step(stmt);
-    sqlite3_finalize(stmt);
+    rc = sqlite3_prepare(db, query, -1, &stmt, 0);
+    if (rc == SQLITE_OK) {
+        sqlite3_bind_int(stmt, 1, g_dbLogRetention.integer);
+        sqlite3_step(stmt);
+        sqlite3_finalize(stmt);
+    }
 
     query = "DELETE FROM loginlog WHERE dt < DATETIME('now', '-' || ? || ' days')";
 
-    sqlite3_prepare(db, query, -1, &stmt, 0);
-    sqlite3_bind_int(stmt, 1, g_dbLogRetention.integer);
-    sqlite3_step(stmt);
-    sqlite3_finalize(stmt);
+    rc = sqlite3_prepare(db, query, -1, &stmt, 0);
+    if (rc == SQLITE_OK) {
+        sqlite3_bind_int(stmt, 1, g_dbLogRetention.integer);
+        sqlite3_step(stmt);
+        sqlite3_finalize(stmt);
+    }
 
     query = "DELETE FROM rconlog WHERE dt < DATETIME('now', '-' || ? || ' days')";
 
-    sqlite3_prepare(db, query, -1, &stmt, 0);
-    sqlite3_bind_int(stmt, 1, g_dbLogRetention.integer);
-    sqlite3_step(stmt);
-    sqlite3_finalize(stmt);
+    rc = sqlite3_prepare(db, query, -1, &stmt, 0);
+    if (rc == SQLITE_OK) {
+        sqlite3_bind_int(stmt, 1, g_dbLogRetention.integer);
+        sqlite3_step(stmt);
+        sqlite3_finalize(stmt);
+    }
 
     query = "DELETE FROM systemlog WHERE dt < DATETIME('now', '-' || ? || ' days')";
 
-    sqlite3_prepare(db, query, -1, &stmt, 0);
-    sqlite3_bind_int(stmt, 1, g_dbLogRetention.integer);
-    sqlite3_step(stmt);
-    sqlite3_finalize(stmt);
+    rc = sqlite3_prepare(db, query, -1, &stmt, 0);
+
+    if (rc == SQLITE_OK) {
+        sqlite3_bind_int(stmt, 1, g_dbLogRetention.integer);
+        sqlite3_step(stmt);
+        sqlite3_finalize(stmt);
+    }
+    
 
 
     sqlite3_close(db);
@@ -1057,7 +1213,12 @@ static qboolean dbQueryBan(char* ip, qboolean subnet, char* reason, int reasonSi
 
     char* query = va("SELECT reason, endofmap, ROUND((JULIANDAY(banneduntil) - JULIANDAY()) * 1440) AS timeleft FROM %sbanlist WHERE ip = ?", subnet ? "subnet" : "");
 
-    sqlite3_prepare(db, query, -1, &stmt, 0);
+    int rc = sqlite3_prepare(db, query, -1, &stmt, 0);
+
+    if (rc != SQLITE_OK) {
+        logSystem(LOGLEVEL_WARN, "queryBan prepare error: %s", sqlite3_errmsg(db));
+        return success;
+    }
 
     sqlBindTextOrNull(stmt, 1, ip);
 
@@ -1100,14 +1261,14 @@ qboolean dbGetCountry(char* ip, char* countryCode, int countryCodeSize, char* co
     qboolean success = qfalse;
 
     if (!g_useCountryDb.integer) {
-        return; 
+        return success; 
     }
 
     int rc = sqlite3_open_v2("./1fx/databases/country.db", &db, SQLITE_OPEN_READWRITE, NULL);
 
     if (rc) {
         logSystem(LOGLEVEL_WARN, "Failed to open country.db file to add a new country. Error: %s\n", sqlite3_errmsg(db));
-        return;
+        return success;
     }
 
     // First, clean out aged country rows.
@@ -1116,15 +1277,33 @@ qboolean dbGetCountry(char* ip, char* countryCode, int countryCodeSize, char* co
     if (g_countryAging.integer) {
         query = "DELETE FROM ip2country WHERE added < DATETIME('now', '-' || ? || ' days')";
 
-        sqlite3_prepare(db, query, -1, &stmt, 0);
+        rc = sqlite3_prepare(db, query, -1, &stmt, 0);
+
+        if (rc != SQLITE_OK) {
+            logSystem(LOGLEVEL_WARN, "countryDb clearaging prepare error: %s", sqlite3_errmsg(db));
+            sqlite3_close(db);
+            return success;
+        }
+
         sqlite3_bind_int(stmt, 1, g_countryAging.integer);
-        sqlite3_step(stmt);
+        rc = sqlite3_step(stmt);
+
+        if (rc != SQLITE_DONE) {
+            logSystem(LOGLEVEL_WARN, "countryDb aging step error: %s", sqlite3_errmsg(db));
+        }
+
         sqlite3_finalize(stmt);
     }
 
     query = "SELECT countrycode, country, blocklevel FROM ip2country WHERE ip = ?";
 
-    sqlite3_prepare(db, query, -1, &stmt, 0);
+    rc = sqlite3_prepare(db, query, -1, &stmt, 0);
+
+    if (rc != SQLITE_OK) {
+        logSystem(LOGLEVEL_WARN, "getCountry select prepare error: %s", sqlite3_errmsg(db));
+        sqlite3_close(db);
+        return success;
+    }
 
     sqlBindTextOrNull(stmt, 1, ip);
 
@@ -1161,14 +1340,24 @@ void dbAddCountry(char* ip, char* countryCode, char* country, int blocklevel) {
 
     char* query = "INSERT INTO ip2country (ip, countrycode, country, blocklevel) VALUES (?, ?, ?, ?)";
 
-    sqlite3_prepare(db, query, -1, &stmt, 0);
+    rc = sqlite3_prepare(db, query, -1, &stmt, 0);
+
+    if (rc != SQLITE_OK) {
+        logSystem(LOGLEVEL_WARN, "addCountry prepare error: %s", sqlite3_errmsg(db));
+        return;
+    }
 
     sqlBindTextOrNull(stmt, 1, ip);
     sqlBindTextOrNull(stmt, 2, countryCode);
     sqlBindTextOrNull(stmt, 3, country);
     sqlite3_bind_int(stmt, 4, blocklevel);
 
-    sqlite3_step(stmt);
+    rc = sqlite3_step(stmt);
+
+    if (rc != SQLITE_DONE) {
+        logSystem(LOGLEVEL_WARN, "addCountry step error: %s", sqlite3_errmsg(db));
+    }
+
     sqlite3_finalize(stmt);
 
     sqlite3_close(db);
@@ -1189,7 +1378,7 @@ int dbRemoveAdminByGentity(gentity_t* ent) {
 
     if (rc != SQLITE_OK) {
         logSystem(LOGLEVEL_WARN, "sqlite3_prepare failed on gameDb. Error: %s", sqlite3_errmsg(db));
-        return;
+        return rowsAffected;
     }
 
     sqlBindTextOrNull(stmt, 1, ent->client->sess.adminName);
@@ -1201,7 +1390,11 @@ int dbRemoveAdminByGentity(gentity_t* ent) {
         sqlBindTextOrNull(stmt, 2, ent->client->pers.ip);
     }
 
-    sqlite3_step(stmt);
+    rc = sqlite3_step(stmt);
+
+    if (rc != SQLITE_DONE) {
+        logSystem(LOGLEVEL_WARN, "removeAdmin step error: %s", sqlite3_errmsg(db));
+    }
 
     sqlite3_finalize(stmt);
 
@@ -1212,3 +1405,318 @@ int dbRemoveAdminByGentity(gentity_t* ent) {
     return rowsAffected;
 }
 
+
+void dbAddClan(clanType_t clanType, gentity_t* ent, gentity_t* adm, char* password) {
+
+    sqlite3* db = gameDb;
+    sqlite3_stmt* stmt;
+
+    char* query = "INSERT INTO clanlist (membername, memberkey, membertype, addedby) VALUES (?, ?, ?, ?)";
+
+    int rc = sqlite3_prepare(db, query, -1, &stmt, 0);
+
+    if (rc != SQLITE_OK) {
+        logSystem(LOGLEVEL_WARN, "addClan prepare failed on gameDb. Error: %s", sqlite3_errmsg(db));
+        return;
+    }
+
+    sqlBindTextOrNull(stmt, 1, ent->client->pers.cleanName);
+    if (clanType == CLANTYPE_GUID) {
+        sqlBindTextOrNull(stmt, 2, ent->client->sess.roxGuid);
+    }
+    else if (clanType == CLANTYPE_IP) {
+        sqlBindTextOrNull(stmt, 2, ent->client->pers.ip);
+    }
+    else {
+        sqlBindTextOrNull(stmt, 2, password);
+    }
+    sqlite3_bind_int(stmt, 3, clanType);
+    sqlBindTextOrNull(stmt, 4, getNameOrArg(adm, "RCON", qtrue));
+
+    rc = sqlite3_step(stmt);
+
+    if (rc != SQLITE_DONE) {
+        logSystem(LOGLEVEL_WARN, "addIpClan step error: %s", sqlite3_errmsg(db));
+    }
+
+    sqlite3_finalize(stmt);
+
+}
+
+int dbRemoveClanByGentity(gentity_t* ent) {
+
+    sqlite3* db = gameDb;
+    sqlite3_stmt* stmt;
+    int rowsAffected = 0;
+
+    char* query = va("DELETE FROM clanlist WHERE membername = ? AND membertype = ? %s", ent->client->sess.clanType == CLANTYPE_IP || ent->client->sess.clanType == CLANTYPE_GUID ? "AND memberkey = ?" : "");
+
+    int rc = sqlite3_prepare(db, query, -1, &stmt, 0);
+
+    if (rc != SQLITE_OK) {
+        logSystem(LOGLEVEL_WARN, "removeClanByGentity prepare failed on gameDb. Error: %s", sqlite3_errmsg(db));
+        return;
+    }
+
+    sqlBindTextOrNull(stmt, 1, ent->client->sess.clanName);
+    sqlite3_bind_int(stmt, 2, ent->client->sess.clanType);
+
+    if (ent->client->sess.clanType == CLANTYPE_IP) {
+        sqlBindTextOrNull(stmt, 3, ent->client->pers.ip);
+    }
+    else if (ent->client->sess.clanType == CLANTYPE_GUID) {
+        sqlBindTextOrNull(stmt, 3, ent->client->sess.roxGuid);
+    }
+
+    rc = sqlite3_step(stmt);
+
+    if (rc != SQLITE_DONE) {
+        logSystem(LOGLEVEL_WARN, "addIpClan step error: %s", sqlite3_errmsg(db));
+    }
+    else {
+        rowsAffected = sqlite3_changes(db);
+    }
+
+    sqlite3_finalize(stmt);
+
+    return rowsAffected;
+
+}
+
+int dbRemoveClanByRowId(int rowId) {
+
+    sqlite3* db = gameDb;
+    sqlite3_stmt* stmt;
+    int rowsAffected = 0;
+
+    char* query = "DELETE FROM clanlist WHERE ROWID = ?";
+
+    int rc = sqlite3_prepare(db, query, -1, &stmt, 0);
+
+    if (rc != SQLITE_OK) {
+        logSystem(LOGLEVEL_WARN, "sqlite3_prepare failed on gameDb. Error: %s", sqlite3_errmsg(db));
+        return rowsAffected;
+    }
+
+    sqlite3_bind_int(stmt, 1, rowId);
+
+    rc = sqlite3_step(stmt);
+    if (rc != SQLITE_DONE) {
+        logSystem(LOGLEVEL_WARN, "removeClanByRow step error: %s", sqlite3_errmsg(db));
+    }
+
+    sqlite3_finalize(stmt);
+
+    rowsAffected = sqlite3_changes(db);
+
+    sqlite3_exec(db, "VACUUM", NULL, NULL, NULL);
+
+    return rowsAffected;
+}
+
+int dbUpdateClanPass(char* memberName, char* password) {
+
+    sqlite3* db = gameDb;
+    sqlite3_stmt* stmt;
+    int rowsAffected = 0;
+
+    char* query = "UPDATE clanlist SET memberkey = ? WHERE membername = ? AND membertype = ?";
+
+    int rc = sqlite3_prepare(db, query, -1, &stmt, 0);
+
+    if (rc != SQLITE_OK) {
+        logSystem(LOGLEVEL_WARN, "sqlite3_prepare failed on gameDb. Error: %s", sqlite3_errmsg(db));
+        return rowsAffected;
+    }
+
+    sqlBindTextOrNull(stmt, 1, password);
+    sqlBindTextOrNull(stmt, 2, memberName);
+    sqlite3_bind_int(stmt, 3, CLANTYPE_PASS);
+
+    rc = sqlite3_step(stmt);
+    if (rc != SQLITE_DONE) {
+        logSystem(LOGLEVEL_WARN, "updateClanlistPass step error: %s", sqlite3_errmsg(db));
+    }
+
+    rowsAffected = sqlite3_changes(db);
+
+    sqlite3_finalize(stmt);
+
+    return rowsAffected;
+
+}
+
+/*
+As with admin command - NULL password is allowed. NULL passwords will be used to query existing information if you're tryign to add a new clan member.
+When doing an actual password check, then a NULL should never be passed.
+*/
+qboolean dbGetClan(clanType_t clanType, gentity_t* ent, char* password) {
+
+    sqlite3* db = gameDb;
+    sqlite3_stmt* stmt;
+
+    qboolean returnable = qfalse;
+
+    char* query = va("SELECT ROWID FROM clanlist WHERE membername = ? AND membertype = ? %s", clanType != CLANTYPE_PASS || (clanType == CLANTYPE_PASS && password && *password) ? "AND memberkey = ?" : "");
+
+    int rc = sqlite3_prepare(db, query, -1, &stmt, 0);
+
+    if (rc != SQLITE_OK) {
+        logSystem(LOGLEVEL_WARN, "getClan prepare error: %s", sqlite3_errmsg(db));
+        return returnable;
+    }
+
+    sqlBindTextOrNull(stmt, 1, ent->client->pers.cleanName);
+    sqlite3_bind_int(stmt, 2, clanType);
+
+    if (clanType == CLANTYPE_GUID) {
+        sqlBindTextOrNull(stmt, 3, ent->client->sess.roxGuid);
+    }
+    else if (clanType == CLANTYPE_PASS) {
+        sqlBindTextOrNull(stmt, 3, password);
+    }
+    else {
+        sqlBindTextOrNull(stmt, 3, ent->client->pers.ip);
+    }
+
+    if (sqlite3_step(stmt) == SQLITE_ROW && sqlite3_column_int(stmt, 0) > 0) {
+        returnable = qtrue;
+    }
+
+    sqlite3_finalize(stmt);
+
+    return returnable;
+}
+
+qboolean dbGetClanDataByRowId(int rowId, char* memberName, int memberNameSize, int* memberType) {
+
+    sqlite3* db = gameDb;
+    sqlite3_stmt* stmt;
+    qboolean success = qfalse;
+
+    char* query = "SELECT membername, membertype FROM clanlist WHERE ROWID = ?";
+
+    int rc = sqlite3_prepare(db, query, -1, &stmt, 0);
+
+    if (rc != SQLITE_OK) {
+        logSystem(LOGLEVEL_WARN, "getClanData prepare error: %s", sqlite3_errmsg(db));
+        return success;
+    }
+
+    sqlite3_bind_int(stmt, 1, rowId);
+
+    if (sqlite3_step(stmt) == SQLITE_ROW) {
+        success = qtrue;
+        Q_strncpyz(memberName, sqlite3_column_text(stmt, 0), memberNameSize);
+        *memberType = sqlite3_column_int(stmt, 1);
+    }
+
+    sqlite3_finalize(stmt);
+
+    return success;
+
+}
+
+void dbPrintClanlist(gentity_t* ent, clanType_t clanType, int page) {
+
+    sqlite3* db = gameDb;
+    sqlite3_stmt* stmt;
+    char buf[MAX_PACKET_BUF];
+    qboolean isRcon = ent && ent->client ? qfalse : qtrue;
+
+    Com_Memset(buf, 0, sizeof(buf));
+    char* query = va("SELECT ROWID, membername, memberkey, membertype, addedby, DATE(addedwhen) FROM clanlist WHERE %s %s", isRcon ? "1=1" : "ROWID BETWEEN ? AND ?", clanType != CLANTYPE_NONE ? "AND membertype = ?" : "");
+    int rc = sqlite3_prepare(db, query, -1, &stmt, 0);
+    if (rc != SQLITE_OK) {
+        logSystem(LOGLEVEL_WARN, "sqlite3_prepare failed on gameDb. Error: %s", sqlite3_errmsg(db));
+        return;
+    }
+
+    if (isRcon) {
+        Com_Printf("\n^3 %-5s%-6s%-15s %-16s %-16s Date\n", "#", "Type", "IP (GUID)", "Name", "By");
+        Com_Printf("^7-----------------------------------------------------------------------------\n");
+
+        if (clanType != CLANTYPE_NONE) {
+            sqlite3_bind_int(stmt, 1, clanType);
+        }
+    }
+    else {
+        if (page > 0) page--;
+        Q_strcat(buf, sizeof(buf), va("\n[^3Page %d^7]\n\n^3 %-5s%-6s%-15s %-16s %-16s Date\n^7-----------------------------------------------------------------------------\n", page + 1, "#", "Type", "IP (GUID)", "Name", "By"));
+
+        sqlite3_bind_int(stmt, 1, page * 100);
+        sqlite3_bind_int(stmt, 2, (page + 1) * 100);
+
+        if (clanType != CLANTYPE_NONE) {
+            sqlite3_bind_int(stmt, 3, clanType);
+        }
+    }
+
+    while ((rc = sqlite3_step(stmt)) != SQLITE_DONE) {
+        if (rc == SQLITE_ROW) {
+            int rowId = sqlite3_column_int(stmt, 0);
+            char* memberName = sqlite3_column_text(stmt, 1);
+            char* memberKey = sqlite3_column_text(stmt, 2);
+            clanType_t memberType = sqlite3_column_int(stmt, 3);
+            char* addedBy = sqlite3_column_text(stmt, 4);
+            char* addedWhen = sqlite3_column_text(stmt, 5);
+            
+            if (memberType == CLANTYPE_PASS) {
+                memberKey = "";
+            }
+
+            if (isRcon) {
+                Com_Printf("[^3%-3.3d^7] %-6d%-15.15s %-16.16s %-16.16s %s\n", rowId, getClanTypeAsText(memberType), memberKey, memberName, addedBy, addedWhen);
+            }
+            else {
+
+                if (strlen(buf) + strlen(va("[^3%-3.3d^7] %-6s%-15.15s %-16.16s %-16.16s %s\n", rowId, getClanTypeAsText(memberType), memberKey, memberName, addedBy, addedWhen)) >= sizeof(buf) - 5) {
+                    trap_SendServerCommand(ent - g_entities, va("print \"%s\"", buf));
+                    Com_Memset(buf, 0, sizeof(buf));
+                }
+
+                Q_strcat(buf, sizeof(buf), va("[^3%-3.3d^7] %-6s%-15.15s %-16.16s %-16.16s %s\n", rowId, getClanTypeAsText(memberType), memberKey, memberName, addedBy, addedWhen));
+            }
+        }
+    }
+
+    if (!isRcon) {
+
+        trap_SendServerCommand(ent - g_entities, va("print \"%s\"", buf));
+        trap_SendServerCommand(ent - g_entities, va("print \"\nYou can specify page by adding the page number at the end of the command.\nTo proceed to next page - /adm clanlist %s%d / !cl %s%d \"", clanType == CLANTYPE_GUID ? "guid " : (clanType == CLANTYPE_PASS ? "pass " : (clanType == CLANTYPE_IP ? "ip " : "")), page + 2, clanType == CLANTYPE_GUID ? "guid " : (clanType == CLANTYPE_PASS ? "pass " : (clanType == CLANTYPE_IP ? "ip " : "")), page + 2));
+        trap_SendServerCommand(ent - g_entities, "print \"\nUse [^3Page Up^7] and [^3Page Down^7] to scroll\n\"");
+    }
+    else {
+        Com_Printf("\nUse [^3Page Up^7] and [^3Page Down^7] to scroll\n");
+    }
+
+    sqlite3_finalize(stmt);
+
+}
+
+qboolean dbGetBanDetailsByRowID(qboolean subnet, int rowId, char* outputPlayer, int outputPlayerSize, char* outputIp, int outputIpSize) {
+
+    sqlite3* db = gameDb;
+    sqlite3_stmt* stmt;
+    qboolean success = qfalse;
+
+    char* query = va("SELECT playername, ip FROM %sbanlist WHERE ROWID = ?", subnet ? "subnet" : "");
+
+    int rc = sqlite3_prepare(db, query, -1, &stmt, 0);
+    if (rc != SQLITE_OK) {
+        logSystem(LOGLEVEL_WARN, "sqlite3_prepare failed on gameDb. Error: %s", sqlite3_errmsg(db));
+        return success;
+    }
+
+    sqlite3_bind_int(stmt, 1, rowId);
+
+    if (sqlite3_step(stmt) == SQLITE_ROW) {
+        success = qtrue;
+        Q_strncpyz(outputPlayer, sqlite3_column_text(stmt, 0), outputPlayerSize);
+        Q_strncpyz(outputIp, sqlite3_column_text(stmt, 0), outputIpSize);
+    }
+
+    sqlite3_finalize(stmt);
+
+    return success;
+}

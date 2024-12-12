@@ -232,7 +232,7 @@ void adm_Login(gentity_t* ent, char* password) {
 	ent->client->sess.adminType = ADMTYPE_PASS;
 	Q_strncpyz(ent->client->sess.adminName, ent->client->pers.cleanName, sizeof(ent->client->sess.adminName));
 	logLogin(ent);
-
+	ent->client->sess.setAdminPassword = qfalse;
 }
 
 int adm_adminRemove(int argNum, gentity_t* adm, qboolean shortCmd) {
@@ -245,8 +245,8 @@ int adm_adminRemove(int argNum, gentity_t* adm, qboolean shortCmd) {
 	
 
 	if (shortCmd && G_GetChatArgumentCount()) {
-		Q_strncpyz(removable, G_GetChatArgument(1), sizeof(removable));
-		Q_strncpyz(table, G_GetChatArgument(2), sizeof(table));
+		Q_strncpyz(removable, G_GetChatArgument(argNum, qfalse), sizeof(removable));
+		Q_strncpyz(table, G_GetChatArgument(argNum + 1, qfalse), sizeof(table));
 	}
 	else {
 		trap_Argv(argNum, removable, sizeof(removable));
@@ -321,24 +321,35 @@ int adm_adminRemove(int argNum, gentity_t* adm, qboolean shortCmd) {
 
 int adm_adminList(int argNum, gentity_t* adm, qboolean shortCmd) {
 
-	char arg[64];
+	char arg[64], pageArg[64];
 	admType_t adminType = ADMTYPE_IP;
+	int page = 0;
 
 	if (shortCmd && G_GetChatArgumentCount()) {
-		Q_strncpyz(arg, G_GetChatArgument(1), sizeof(arg));
+		Q_strncpyz(arg, G_GetChatArgument(argNum, qfalse), sizeof(arg));
+		Q_strncpyz(pageArg, G_GetChatArgument(argNum + 1, qfalse), sizeof(pageArg));
 	}
 	else {
 		trap_Argv(argNum, arg, sizeof(arg));
+		trap_Argv(argNum + 1, pageArg, sizeof(pageArg));
 	}
 
 	if (!Q_stricmp(arg, "pass")) {
 		adminType = ADMTYPE_PASS;
+		if (pageArg && strlen(pageArg)) {
+			page = atoi(pageArg);
+		}
 	}
 	else if (!Q_stricmp(arg, "guid")) {
 		adminType = ADMTYPE_GUID;
+		if (pageArg && strlen(pageArg)) {
+			page = atoi(pageArg);
+		}
 	}
-
-	dbPrintAdminlist(adm, adminType);
+	else if (arg && strlen(arg)) {
+		page = atoi(arg);
+	}
+	dbPrintAdminlist(adm, adminType, page);
 
 	return -1;
 }
@@ -359,7 +370,7 @@ static void addAdmin(int argNum, gentity_t* adm, qboolean shortCmd, admLevel_t a
 	admType_t adminType = ADMTYPE_IP;
 
 	if (shortCmd && G_GetChatArgumentCount()) {
-		Q_strncpyz(arg, G_GetChatArgument(2), sizeof(arg));
+		Q_strncpyz(arg, G_GetChatArgument(argNum + 1, qfalse), sizeof(arg));
 	}
 	else {
 		trap_Argv(argNum + 1, arg, sizeof(arg));
@@ -459,10 +470,10 @@ int adm_addHadmin(int argNum, gentity_t* adm, qboolean shortCmd) {
 }
 
 // mostly taken from 1fx. Mod, missing competitive mode which will be added along with the rest of compmode functionality.
-static void adm_toggleCVAR(int argNum, gentity_t* adm, qboolean shortCmd, char* cvarName, vmCvar_t* cvar, qboolean availableInCM, char* cmCvarName, vmCvar_t* cmCvar) {
+static void adm_toggleCVAR(int argNum, gentity_t* adm, qboolean shortCmd, qboolean isToggle, char* cvarName, vmCvar_t* cvar, qboolean availableInCM, char* cmCvarName, vmCvar_t* cmCvar) {
 
-	char* arg = G_GetArg(argNum, shortCmd);
-	int newValue = arg && strlen(arg) > 0 ? atoi(arg) : -1;
+	char* arg = G_GetArg(argNum, shortCmd, qfalse);
+	int newValue = arg && strlen(arg) > 0 ? atoi(arg) : (isToggle && cvar ? !cvar->integer : -1);
 
 	if (newValue < 0) {
 		G_printInfoMessage(adm, "%s is %d.", cvarName, cvar->integer);
@@ -477,9 +488,16 @@ static void adm_toggleCVAR(int argNum, gentity_t* adm, qboolean shortCmd, char* 
 			trap_Cvar_Update(cvar);
 		}
 
-		G_printInfoMessageToAll("%s was changed to %d by %s.", cvarName, newValue, getNameOrArg(adm, "RCON", qtrue));
-		G_Broadcast(BROADCAST_CMD, NULL, qtrue, "\\%s was changed to %d\nby %s", cvarName, newValue, getNameOrArg(adm, "RCON", qfalse));
-		logAdmin(adm, NULL, va("%s %d", cvarName, newValue), NULL);
+		if (isToggle) {
+			G_printInfoMessageToAll("%s %s by %s.", cvarName, newValue ? "enabled" : "disabled", getNameOrArg(adm, "RCON", qtrue));
+			G_Broadcast(BROADCAST_CMD, NULL, qtrue, "\\%s %s\nby %s", cvarName, newValue ? "enabled" : "disabled", getNameOrArg(adm, "RCON", qfalse));
+			logAdmin(adm, NULL, va("%s %s", cvarName, newValue ? "enabled" : "disabled"), NULL);
+		}
+		else {
+			G_printInfoMessageToAll("%s was changed to %d by %s.", cvarName, newValue, getNameOrArg(adm, "RCON", qtrue));
+			G_Broadcast(BROADCAST_CMD, NULL, qtrue, "\\%s was changed to %d\nby %s", cvarName, newValue, getNameOrArg(adm, "RCON", qfalse));
+			logAdmin(adm, NULL, va("%s %d", cvarName, newValue), NULL);
+		}
 
 		// was only sent for rocmod and gold specific, but this shouldn't impact non-ROCMod clients if we send it again over here as well.
 		for (int i = 0; i < level.numConnectedClients; i++) {
@@ -489,12 +507,12 @@ static void adm_toggleCVAR(int argNum, gentity_t* adm, qboolean shortCmd, char* 
 }
 
 int adm_scoreLimit(int argNum, gentity_t* adm, qboolean shortCmd) {
-	adm_toggleCVAR(argNum, adm, shortCmd, "Scorelimit", &g_scorelimit, qtrue, NULL, NULL);
+	adm_toggleCVAR(argNum, adm, shortCmd, qfalse, "Scorelimit", &g_scorelimit, qtrue, NULL, NULL);
 	return -1;
 }
 
 int adm_timeLimit(int argNum, gentity_t* adm, qboolean shortCmd) {
-	adm_toggleCVAR(argNum, adm, shortCmd, "Timelimit", &g_timelimit, qtrue, NULL, NULL);
+	adm_toggleCVAR(argNum, adm, shortCmd, qfalse, "Timelimit", &g_timelimit, qtrue, NULL, NULL);
 	return -1;
 }
 
@@ -553,7 +571,7 @@ int adm_Plant(int argNum, gentity_t* adm, qboolean shortCmd) {
 }
 
 int adm_roundTimeLimit(int argNum, gentity_t* adm, qboolean shortCmd) {
-	adm_toggleCVAR(argNum, adm, shortCmd, "Round Timelimit", &g_roundtimelimit, qfalse, NULL, NULL);
+	adm_toggleCVAR(argNum, adm, shortCmd, qfalse, "Round Timelimit", &g_roundtimelimit, qfalse, NULL, NULL);
 	return -1;
 }
 
@@ -578,7 +596,7 @@ int adm_Rollercoaster(int argNum, gentity_t* adm, qboolean shortCmd) {
 		char arg[MAX_SAY_TEXT];
 
 		if (shortCmd && G_GetChatArgumentCount()) {
-			coasterTimes = atoi(G_GetChatArgument(argNum + 1));
+			coasterTimes = atoi(G_GetChatArgument(argNum + 1, qfalse));
 		}
 		else {
 			trap_Argv(argNum + 1, arg, sizeof(arg));
@@ -692,7 +710,7 @@ int adm_forceTeam(int argNum, gentity_t* adm, qboolean shortCmd) {
 	team_t team;
 
 	if (shortCmd && G_GetChatArgumentCount()) {
-		Q_strncpyz(arg, G_GetChatArgument(2), sizeof(arg));
+		Q_strncpyz(arg, G_GetChatArgument(argNum + 1, qfalse), sizeof(arg));
 	}
 	else {
 		trap_Argv(argNum + 1, arg, sizeof(arg));
@@ -811,7 +829,7 @@ int adm_noNades(int argNum, gentity_t* adm, qboolean shortCmd) {
 }
 
 int adm_respawnInterval(int argNum, gentity_t* adm, qboolean shortCmd) {
-	adm_toggleCVAR(argNum, adm, shortCmd, "g_respawnInterval", &g_respawnInterval, qfalse, NULL, NULL);
+	adm_toggleCVAR(argNum, adm, shortCmd, qfalse, "g_respawnInterval", &g_respawnInterval, qfalse, NULL, NULL);
 	return -1;
 }
 
@@ -849,20 +867,232 @@ int adm_gametypeRestart(int argNum, gentity_t* adm, qboolean shortCmd) {
 	return -1;
 }
 
-/* Do we even want clanmember stuff? */
 int adm_addClanMember(int argNum, gentity_t* adm, qboolean shortCmd) {
+
+	int idNum = G_ClientNumFromArg(adm, argNum, "do this to", qfalse, qtrue, qfalse, shortCmd);
+
+	if (idNum >= 0) {
+
+		gentity_t* ent = &g_entities[idNum];
+
+		if (ent->client->sess.clanMember) {
+			G_printInfoMessage(adm, "%s is already a clan member.", ent->client->pers.cleanName);
+			return -1;
+		}
+
+		// Figure out whether an additional arg was given.
+		char arg[64];
+		clanType_t clanType = CLANTYPE_IP;
+		if (shortCmd && G_GetChatArgumentCount()) {
+			Q_strncpyz(arg, G_GetChatArgument(argNum + 1, qfalse), sizeof(arg));
+		}
+		else {
+			trap_Argv(argNum + 1, arg, sizeof(arg));
+		}
+
+		if (arg && strlen(arg)) {
+			if (!Q_stricmp(arg, "pass")) {
+				clanType = CLANTYPE_PASS;
+			}
+			else if (!Q_stricmp(arg, "guid")) {
+
+				if (!ent->client->sess.hasRoxAC) {
+					G_printInfoMessage(adm, "%s (%d) is not using Rox AC.", ent->client->pers.cleanName, idNum);
+					return -1;
+				}
+
+				clanType = CLANTYPE_GUID;
+
+			}
+		}
+
+		// Run a check for existence first.
+
+		qboolean isMember = dbGetClan(clanType, ent, NULL);
+
+		if (isMember) {
+
+			if (clanType == CLANTYPE_PASS) {
+
+				ent->client->sess.setClanPassword = qtrue;
+				G_printInfoMessage(adm, "%s (%d) is already in the clan-member passlist. They can now change their password.", ent->client->pers.cleanName, idNum);
+				G_printChatInfoMessage(ent, "%s has toggled clan-password reset for you.", getNameOrArg(adm, "RCON", qtrue));
+				G_printChatInfoMessage(ent, "To do so, issue command /clan pass into console, e.g. /clan pass newpass");
+				G_printChatInfoMessage(ent, "That will set your password to newpass");
+				logAdmin(adm, ent, "resetclanpassword", NULL);
+				return -1;
+			}
+			else {
+				// Theoretically this is not a possibility. GUID or IP based clan, but they do not have it. But...
+				G_printInfoMessage(adm, "%s (%d) is already in the clanmember list.", ent->client->pers.cleanName, idNum);
+				return -1;
+			}
+		}
+
+		// good to go.
+		Q_strncpyz(ent->client->sess.clanName, ent->client->pers.cleanName, sizeof(ent->client->sess.clanName));
+		ent->client->sess.clanType = clanType;
+		dbAddClan(clanType, ent, adm, NULL);
+		if (clanType == CLANTYPE_PASS) {
+			ent->client->sess.setClanPassword = qtrue;
+			G_printChatInfoMessage(ent, "%s has added you to the clanlist with password.", getNameOrArg(adm, "RCON", qtrue));
+			G_printChatInfoMessage(ent, "To do so, issue command /clan pass into console, e.g. /clan pass newpass");
+			G_printChatInfoMessage(ent, "That will set your password to newpass");
+		}
+		else {
+			ent->client->sess.clanMember = qtrue;
+		}
+
+		G_Broadcast(BROADCAST_CMD, NULL, qtrue, "%s\nhas been added to the \\clanlist\nby %s", ent->client->pers.netname, getNameOrArg(adm, "\\RCON", qfalse));
+		G_printCustomMessageToAll("Admin Action", "%s has been added to the clanlist by %s.", ent->client->pers.cleanName, getNameOrArg(adm, "RCON", qtrue));
+		logAdmin(adm, ent, "addclan", NULL);
+
+	}
+
 	return -1;
 }
 
 int adm_removeClanMember(int argNum, gentity_t* adm, qboolean shortCmd) {
+
+	int idNum = G_ClientNumFromArg(adm, argNum, "do this to", qfalse, qtrue, qfalse, shortCmd);
+
+	if (idNum >= 0) {
+
+		gentity_t* ent = &g_entities[idNum];
+
+		if (ent->client->sess.clanMember) {
+			int rowsAffected = dbRemoveClanByGentity(ent);
+
+			if (rowsAffected) {
+				ent->client->sess.clanMember = qfalse;
+				ent->client->sess.clanType = CLANTYPE_NONE;
+				Com_Memset(ent->client->sess.clanName, 0, sizeof(ent->client->sess.clanName));
+				logAdmin(adm, ent, "removeclan", NULL);
+				G_Broadcast(BROADCAST_CMD, NULL, qtrue, "%s\ntheir clan status was \\removed\nby %s", ent->client->pers.netname, getNameOrArg(adm, "\\RCON", qfalse));
+				G_printCustomMessageToAll("Admin Action", "%s clan status was removed by %s.", ent->client->pers.cleanName, getNameOrArg(adm, "RCON", qtrue));
+			}
+			else {
+				G_printInfoMessage(adm, "Something went wrong with your action.");
+				logSystem(LOGLEVEL_WARN, "removeClanMember: !rowsAffected (%d)", rowsAffected);
+			}
+		}
+		else {
+			G_printInfoMessage(adm, "%s (%d) does not have clan powers.", ent->client->pers.cleanName, idNum);
+		}
+
+	}
+
 	return -1;
 }
 
+static void adm_removeIngameClanPowers(clanType_t clanType, char* clanName, gentity_t* adm) {
+
+	for (int i = 0; i < level.numConnectedClients; i++) {
+		gentity_t* ent = &g_entities[level.sortedClients[i]];
+
+		if (ent->client->sess.clanType == clanType && !Q_stricmp(ent->client->sess.clanName, clanName)) {
+			ent->client->sess.clanType = CLANTYPE_NONE;
+			ent->client->sess.clanMember = qfalse;
+			Com_Memset(ent->client->sess.clanName, 0, sizeof(ent->client->sess.clanName));
+
+			G_printInfoMessage(ent, "Your clan powers were removed by %s.", getNameOrArg(adm, "RCON", qtrue));
+			return;
+		}
+	}
+
+}
+
 int adm_removeClanMemberFromList(int argNum, gentity_t* adm, qboolean shortCmd) {
+
+	char arg[64];
+	int rowId = 0;
+
+	if (shortCmd && G_GetChatArgumentCount()) {
+		Q_strncpyz(arg, G_GetChatArgument(argNum, qfalse), sizeof(arg));
+	}
+	else {
+		trap_Argv(argNum, arg, sizeof(arg));
+	}
+
+	if (arg && strlen(arg)) {
+		rowId = atoi(arg);
+	}
+
+	if (rowId) {
+
+		char clanName[MAX_NETNAME];
+		clanType_t clanType = CLANTYPE_NONE;
+
+		qboolean success = dbGetClanDataByRowId(rowId, clanName, sizeof(clanName), &clanType);
+
+		if (success) {
+			int rowsAffected = dbRemoveClanByRowId(rowId);
+
+			if (rowsAffected) {
+
+				adm_removeIngameClanPowers(clanType, clanName, adm);
+
+				G_printCustomMessage(adm, "Admin Command", "Row %d was removed.", rowId);
+				logAdmin(adm, NULL, "removeclan", NULL);
+			}
+			else {
+				G_printInfoMessage(adm, "Row %d was not found.", rowId);
+				logSystem(LOGLEVEL_WARN, "!rowsAffected removeClan but initial call was success?");
+			}
+		}
+		else {
+			G_printInfoMessage(adm, "Row %d was not found.", rowId);
+		}
+
+		
+	}
+	else {
+		G_printInfoMessage(adm, "Please enter a valid row ID");
+	}
+
+	
 	return -1;
 }
 
 int adm_clanList(int argNum, gentity_t* adm, qboolean shortCmd) {
+
+	char arg[64], pageArg[64];
+	clanType_t clanType = CLANTYPE_NONE;
+	int page = 0;
+
+	if (shortCmd && G_GetChatArgumentCount()) {
+		Q_strncpyz(arg, G_GetChatArgument(argNum, qfalse), sizeof(arg));
+		Q_strncpyz(pageArg, G_GetChatArgument(argNum + 1, qfalse), sizeof(pageArg));
+	}
+	else {
+		trap_Argv(argNum, arg, sizeof(arg));
+		trap_Argv(argNum + 1, pageArg, sizeof(pageArg));
+	}
+
+	if (!Q_stricmp(arg, "pass")) {
+		clanType = CLANTYPE_PASS;
+		if (pageArg && strlen(pageArg)) {
+			page = atoi(pageArg);
+		}
+	}
+	else if (!Q_stricmp(arg, "guid")) {
+		clanType = CLANTYPE_GUID;
+		if (pageArg && strlen(pageArg)) {
+			page = atoi(pageArg);
+		}
+	}
+	else if (!Q_stricmp(arg, "ip")) {
+		clanType = CLANTYPE_IP;
+		if (pageArg && strlen(pageArg)) {
+			page = atoi(pageArg);
+		}
+	}
+	else if (arg && strlen(arg)) {
+		page = atoi(arg);
+	}
+
+	dbPrintClanlist(adm, clanType, page);
+
 	return -1;
 }
 
@@ -937,37 +1167,126 @@ static void getBanDuration(const char* durationArg, int* duration) {
 	duration[3] = minutes;
 }
 
-int adm_Ban(int argNum, gentity_t* adm, qboolean shortCmd) {
+static void adm_banPlayer(int argNum, gentity_t* adm, qboolean shortCmd, qboolean subnet) {
 
-	int idNum = G_ClientNumFromArg(adm, argNum, "ban", qtrue, qtrue, qtrue, shortCmd);
+	int idNum = G_ClientNumFromArg(adm, argNum, subnet ? "subnetban" : "ban", qfalse, qfalse, qfalse, shortCmd);
 
 	if (idNum >= 0) {
 		gentity_t* ent = &g_entities[idNum];
+
 		char durationArg[64];
 
 		if (G_GetChatArgumentCount() >= 2 && shortCmd) {
-			strncpy(durationArg, G_GetChatArgument(argNum + 1), sizeof(durationArg));
+			strncpy(durationArg, G_GetChatArgument(argNum + 1, qfalse), sizeof(durationArg));
 		}
 		else {
 			trap_Argv(argNum + 1, durationArg, sizeof(durationArg));
 		}
 
-		int duration[4];
+		int duration[4] = { 0, 0, 0, 0 };
 
 		getBanDuration(durationArg, duration);
 
-		Com_Printf("From durationArg %s I managed to grab out retval %d, %d days, %d hours, %d minutes.\n", durationArg, duration[0], duration[1], duration[2], duration[3]);
+		qboolean durationNotFound = duration[0] == -1 ? qtrue : qfalse;
+		qboolean isEom = duration[0] <= 0 ? qtrue : qfalse;
 
+		char reason[MAX_STRING_CHARS];
+		Q_strncpyz(reason, concatArgs(argNum + 2 - durationNotFound, shortCmd, qfalse), sizeof(reason));
+
+		dbAddBan(ent, adm, reason, subnet, isEom, duration[1], duration[2], duration[3]);
+		G_Broadcast(BROADCAST_CMD, NULL, qtrue, "%s\nwas \\%s\nby %s", ent->client->pers.netname, subnet ? "subnetbanned" : "banned", getNameOrArg(adm, "\\RCON", qfalse));
+		G_printCustomMessageToAll("Admin Command", "%s was %s by %s.", ent->client->pers.cleanName, subnet ? "subnetbanned" : "banned", getNameOrArg(adm, "RCON", qtrue));
+		logAdmin(adm, ent, subnet ? "subnetban" : "ban", reason);
+		// and then drop the client as well.
+
+		char kickAction[MAX_SAY_TEXT];
+		Q_strncpyz(kickAction, va("%sbanned %s", isEom ? "until the end of map" : va("for %d days, %d hours, %d minutes", subnet ? "subnet" : "", duration[1], duration[2], duration[3])), sizeof(kickAction));
+
+		kickPlayer(ent, adm, kickAction, reason);
+	}
+}
+
+int adm_Ban(int argNum, gentity_t* adm, qboolean shortCmd) {
+
+	adm_banPlayer(argNum, adm, shortCmd, qfalse);
+	return -1;
+
+}
+
+static void adm_removeBan(int argNum, gentity_t* adm, qboolean shortCmd, qboolean subnet) {
+
+	char rowArg[64];
+
+	if (G_GetChatArgumentCount() >= 2 && shortCmd) {
+		strncpy(rowArg, G_GetChatArgument(argNum, qfalse), sizeof(rowArg));
+	}
+	else {
+		trap_Argv(argNum, rowArg, sizeof(rowArg));
 	}
 
-	return -1;
+	if (rowArg && strlen(rowArg)) {
+		int rowId = atoi(rowArg);
+
+		if (rowId > 0) {
+
+			// Get ban data by row ID first so that we can log it.
+			char bannedPlayer[MAX_NETNAME];
+			char bannedIp[MAX_IP];
+
+			qboolean found = dbGetBanDetailsByRowID(subnet, rowId, bannedPlayer, sizeof(bannedPlayer), bannedIp, sizeof(bannedIp));
+
+			if (found) {
+				int rowsAffected = dbRemoveBan(subnet, rowId);
+
+				if (rowsAffected) {
+					G_printInfoMessage(adm, "Unbanned %s [%s] from row %d.", bannedPlayer, bannedIp, rowId);
+					logAdmin(adm, NULL, "unban", va("%s / %s", bannedPlayer, bannedIp));
+
+				}
+				else { // this happening is very weird..
+					logSystem(LOGLEVEL_WARN, "dbRemoveBan !rowsAffected while a row was found initially...");
+					G_printInfoMessage(adm, "Row %d was not found.", rowId);
+
+				}
+			}
+			else {
+				G_printInfoMessage(adm, "Row %d was not found.", rowId);
+			}
+
+			
+		}
+		else {
+			G_printInfoMessage(adm, "Please enter a valid row ID");
+		}
+
+	}
+	else {
+		G_printInfoMessage(adm, "Please enter a valid row ID");
+	}
+
 }
 
 int adm_Unban(int argNum, gentity_t* adm, qboolean shortCmd) {
+
+	adm_removeBan(argNum, adm, shortCmd, qfalse);
 	return -1;
+
 }
 
 int adm_Broadcast(int argNum, gentity_t* adm, qboolean shortCmd) {
+
+	char* msg = concatArgs(argNum, shortCmd, qtrue);
+	if (!msg || !*msg || !strlen(msg)) {
+		G_printInfoMessage(adm, "Please specify a message to broadcast.");
+	}
+	else {
+		G_Broadcast(BROADCAST_CMD, NULL, qfalse, va("Broadcast from %s\n%s", getNameOrArg(adm, "\\RCON", qfalse), msg));
+		G_GlobalSound(G_SoundIndex("sound/misc/menus/invalid.wav"));
+		logAdmin(adm, NULL, "broadcast", msg);
+		G_printCustomMessageToAll("Admin Action", "Broadcast by %s.", getNameOrArg(adm, "RCON", qtrue));
+	}
+
+	
 	return -1;
 }
 
@@ -976,11 +1295,17 @@ int adm_subnetbanList(int argNum, gentity_t* adm, qboolean shortCmd) {
 }
 
 int adm_subnetBan(int argNum, gentity_t* adm, qboolean shortCmd) {
+
+	adm_banPlayer(argNum, adm, shortCmd, qtrue);
 	return -1;
+
 }
 
 int adm_subnetUnban(int argNum, gentity_t* adm, qboolean shortCmd) {
+
+	adm_removeBan(argNum, adm, shortCmd, qtrue);
 	return -1;
+
 }
 
 int adm_evenTeams(int argNum, gentity_t* adm, qboolean shortCmd) {
@@ -992,10 +1317,121 @@ int adm_clanVsAll(int argNum, gentity_t* adm, qboolean shortCmd) {
 }
 
 int adm_lockTeam(int argNum, gentity_t* adm, qboolean shortCmd) {
+
+	char teamArg[64];
+	if (G_GetChatArgumentCount() >= 2 && shortCmd) {
+		strncpy(teamArg, G_GetChatArgument(argNum, qfalse), sizeof(teamArg));
+	}
+	else {
+		trap_Argv(argNum, teamArg, sizeof(teamArg));
+	}
+
+	if (teamArg && strlen(teamArg) > 0) {
+		qboolean isLock = qtrue;
+		char* teamName = "";
+		char teamArgChar = toupper(teamArg[0]);
+		if (teamArgChar == 'A') {
+
+			if (level.blueLocked || level.redLocked || level.specLocked) {
+				isLock = qfalse;
+			}
+
+			level.blueLocked = isLock;
+			level.redLocked = isLock;
+			level.specLocked = isLock;
+
+			G_Broadcast(BROADCAST_CMD, NULL, qtrue, "%s\nhas \\%slocked all teams", getNameOrArg(adm, "\\RCON", qfalse), !isLock ? "un" : "");
+			G_printCustomMessageToAll("Admin Action", "%s has %slocked all teams.", getNameOrArg(adm, "RCON", qtrue), !isLock ? "un" : "");
+			logAdmin(adm, NULL, va("%slock allteams", !isLock ? "un" : ""), NULL);
+		}
+		else {
+
+			if (teamArgChar == 'B') {
+				if (level.blueLocked) {
+					isLock = qfalse;
+				}
+
+				level.blueLocked = isLock;
+				teamName = "Blue";
+			}
+			else if (teamArgChar == 'R') {
+				if (level.redLocked) {
+					isLock = qfalse;
+				}
+
+				level.redLocked = isLock;
+				teamName = "Red";
+			}
+			else if (teamArgChar == 'S') {
+				if (level.specLocked) {
+					isLock = qfalse;
+				}
+
+				level.specLocked = isLock;
+				teamName = "Spectators";
+			}
+			else {
+				G_printInfoMessage(adm, "Wrong team specified. Valid values: blue, red, spec");
+				return -1;
+			}
+
+
+			G_Broadcast(BROADCAST_CMD, NULL, qtrue, "%s\nhas \\%slocked the %s team", getNameOrArg(adm, "\\RCON", qfalse), !isLock ? "un" : "", teamName);
+			G_printCustomMessageToAll("Admin Action", "%s has %slocked the %s team.", getNameOrArg(adm, "RCON", qtrue), !isLock ? "un" : "", teamName);
+			logAdmin(adm, NULL, va("%slock %s", !isLock ? "un" : "", teamName), NULL);
+			
+		}
+
+	}
+	else {
+		G_printInfoMessage(adm, "Please specify a team to lock/unlock.");
+	}
+
 	return -1;
 }
 
 int adm_Flash(int argNum, gentity_t* adm, qboolean shortCmd) {
+
+	char arg[64];
+
+	if (!shortCmd || shortCmd && !G_GetChatArgumentCount()) {
+		trap_Argv(argNum, arg, sizeof(arg));
+	}
+	else {
+		Q_strncpyz(arg, G_GetChatArgument(argNum, qfalse), sizeof(arg));
+	}
+
+	weapon_t weapon = WP_M84_GRENADE;
+	vec3_t dir = { 100, 0, 300 };
+	gentity_t* missile;
+
+	if (!Q_stricmp(arg, "all")) {
+
+		for (int i = 0; i < level.numConnectedClients; i++) {
+			missile = NV_projectile(&g_entities[level.sortedClients[i]], g_entities[level.sortedClients[i]].r.currentOrigin, dir, weapon, 0);
+			missile->nextthink = level.time + 250;
+		}
+
+		G_Broadcast(BROADCAST_GAME, NULL, qtrue, "Everyone has been \\flashed\nby %s", getNameOrArg(adm, "\\RCON", qfalse));
+		G_printCustomMessageToAll("Admin Action", "Everyone has been flashed by %s.", getNameOrArg(adm, "RCON", qtrue));
+		logAdmin(adm, NULL, "flashall", NULL);
+	}
+	else {
+
+		int idNum = G_ClientNumFromArg(adm, argNum, "flash", qtrue, qtrue, qtrue, shortCmd);
+
+		if (idNum >= 0) {
+
+			gentity_t* ent = &g_entities[idNum];
+			missile = NV_projectile(ent, ent->r.currentOrigin, dir, weapon, 0);
+			missile->nextthink = level.time + 250;
+
+		}
+
+		
+		return idNum;
+	}
+
 	return -1;
 }
 
@@ -1028,6 +1464,23 @@ int adm_Burn(int argNum, gentity_t* adm, qboolean shortCmd) {
 }
 
 int adm_Kick(int argNum, gentity_t* adm, qboolean shortCmd) {
+
+	int idNum = G_ClientNumFromArg(adm, argNum, "kick", qfalse, qfalse, qfalse, shortCmd);
+
+	if (idNum >= 0) {
+
+		gentity_t* ent = &g_entities[idNum];
+
+		char reason[MAX_SAY_TEXT];
+		Q_strncpyz(reason, concatArgs(argNum + 1, shortCmd, qfalse), sizeof(reason));
+
+		logAdmin(adm, ent, "kick", reason);
+		G_Broadcast(BROADCAST_CMD, NULL, qtrue, "%s\nhas been \\kicked\nby %s", ent->client->pers.netname, getNameOrArg(adm, "\\RCON", qfalse));
+		G_printCustomMessageToAll("Admin Action", "%s has been kicked by %s. Reason: %s.", ent->client->pers.cleanName, getNameOrArg(adm, "RCON", qtrue), reason);
+		kickPlayer(ent, adm, "kicked", reason);
+
+	}
+
 	return -1;
 }
 
@@ -1036,6 +1489,7 @@ int adm_Mute(int argNum, gentity_t* adm, qboolean shortCmd) {
 }
 
 int adm_friendlyFire(int argNum, gentity_t* adm, qboolean shortCmd) {
+	adm_toggleCVAR(argNum, adm, shortCmd, qtrue, "Friendlyfire", &g_friendlyFire, qfalse, NULL, NULL);
 	return -1;
 }
 
