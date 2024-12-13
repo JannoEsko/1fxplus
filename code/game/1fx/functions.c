@@ -102,7 +102,7 @@ char* G_GetArg(int argNum, qboolean shortCmd, qboolean retainColors)
         trap_Argv(argNum, arg, sizeof(arg));
     }
     else {
-        strncpy(arg, G_GetChatArgument(argNum, retainColors), sizeof(arg));
+        Q_strncpyz(arg, G_GetChatArgument(argNum, retainColors), sizeof(arg));
     }
 
     return arg;
@@ -1212,4 +1212,403 @@ gentity_t* NV_projectile(gentity_t* ent, vec3_t start, vec3_t dir, int weapon, i
 
     VectorCopy(start, missile->r.currentOrigin);
     return missile;
+}
+
+void popPlayer(gentity_t* ent, popAction_t popAction) {
+
+    G_ClientSound(ent, G_SoundIndex("sound/npc/air1/guard02/laughs.mp3"));
+
+    // Allow to pop players in godmode.
+    ent->flags &= ~FL_GODMODE;
+
+    // Do the actual damage.
+    G_Damage(ent, NULL, NULL, NULL, NULL, 10000, 0, MOD_POP, HL_HEAD | HL_FOOT_RT | HL_FOOT_LT | HL_LEG_UPPER_RT | HL_LEG_UPPER_LT | HL_HAND_RT | HL_HAND_LT | HL_WAIST | HL_CHEST | HL_NECK);
+
+    if (popAction == POPACTION_CAMP) {
+        G_Broadcast(BROADCAST_CMD, NULL, qtrue, "%s\nwas \\popped for camping!", ent->client->pers.netname);
+        G_printCustomMessageToAll("Auto Action", "%s was popped for camping!", ent->client->pers.cleanName);
+    }
+}
+
+void muteClient(gentity_t* ent, int duration) {
+
+    ent->client->sess.muted = qtrue;
+
+    for (int i = 0; i < MAX_CLIENTS; i++) {
+
+        mute_t* muteInfo = &level.mutedClients[i];
+
+        if (muteInfo->used) {
+            continue;
+        }
+
+        Q_strncpyz(muteInfo->ip, ent->client->pers.ip, sizeof(muteInfo->ip));
+        muteInfo->time = duration * 60000;
+        muteInfo->totalDuration = duration;
+        muteInfo->startTime = level.time;
+        muteInfo->used = qtrue;
+        level.numMutedClients++;
+
+        break;
+
+    }
+}
+
+void unmuteClient(gentity_t* ent) {
+
+    ent->client->sess.muted = qfalse;
+
+    for (int i = 0; i < MAX_CLIENTS; i++) {
+
+        mute_t* muteInfo = &level.mutedClients[i];
+
+        if (muteInfo->used && !Q_stricmp(ent->client->pers.ip, muteInfo->ip)) {
+            Com_Memset(muteInfo, 0, sizeof(mute_t));
+            level.numMutedClients--;
+            // We do not stop checking here.
+            // Mutes are IP based, if there are multiple clients getting muted with the same IP, we have to remove them. Otherwise we reapply the mute on recon.
+            // So, unfortunate side-effect.
+        }
+
+        gentity_t* tent = &g_entities[i];
+
+        if (tent && tent->inuse && tent->client) {
+            if (!Q_stricmp(tent->client->pers.ip, ent->client->pers.ip)) {
+                tent->client->sess.muted = qfalse;
+            }
+        }
+
+    }
+
+}
+
+void checkMutes() {
+
+    if (level.numMutedClients > 0) {
+        for (int i = 0; i < MAX_CLIENTS && level.numMutedClients > 0; i++) {
+            mute_t* muteInfo = &level.mutedClients[i];
+
+            // There is a potential edge-case scenario here.
+            // If there is more than 1 client on the same IP muted, then they will get unmuted when the first client gets automatically unmuted.
+            // But the mute will remain in the array. It will be cleared out (and will not have a matching "muted" client) when its time comes.
+            // BUT, when the map changes, the mutes will be reapplied given that they're still valid.
+            // FIXME if people complain about mutes.
+            if (muteInfo->used) {
+                if (level.time > (muteInfo->startTime + muteInfo->time)) {
+
+                    for (int j = 0; j < level.numConnectedClients; j++) {
+                        gentity_t* ent = &g_entities[level.sortedClients[j]];
+
+                        if (!Q_stricmp(ent->client->pers.ip, muteInfo->ip) && ent->client->sess.muted) {
+                            G_printCustomMessageToAll("Auto Action", "%s has been unmuted.", ent->client->pers.cleanName);
+                            ent->client->sess.muted = qfalse;
+                        }
+                    }
+
+                    Com_Memset(muteInfo, 0, sizeof(mute_t));
+                    level.numMutedClients--;
+                }
+            }
+            
+        }
+    }
+}
+
+/*
+Run only during initgame.
+This will re-read mutes into the mutes struct array
+*/
+void reapplyMuteAfterConnect(gentity_t* ent) {
+
+    for (int i = 0; i < MAX_CLIENTS && level.numMutedClients > 0; i++) {
+
+        mute_t* muteInfo = &level.mutedClients[i];
+
+        if (muteInfo->used && !Q_stricmp(ent->client->pers.ip, muteInfo->ip)) {
+            ent->client->sess.muted = qtrue;
+            return;
+        }
+
+    }
+}
+
+qboolean isClientMuted(gentity_t* ent, qboolean printMsg) {
+
+    if (ent->client->sess.muted) {
+
+        if (level.numMutedClients == 0) {
+            ent->client->sess.muted = qfalse;
+            return qfalse;
+        }
+
+        for (int i = 0; i < MAX_CLIENTS; i++) {
+
+            mute_t* muteInfo = &level.mutedClients[i];
+
+            if (muteInfo->used && !Q_stricmp(muteInfo->ip, ent->client->pers.ip)) {
+                if (printMsg) {
+                    int remainingMinutes = (muteInfo->startTime + muteInfo->time - level.time) / 1000 / 60;
+                    int remainingSeconds = (muteInfo->startTime + muteInfo->time - level.time) / 1000 % 60;
+                    G_printInfoMessage(ent, "You were muted for %d minutes. Time remaining: %d minutes %d seconds.", muteInfo->totalDuration, remainingMinutes, remainingSeconds);
+                }
+
+                return qtrue;
+            }
+
+        }
+
+    }
+
+    return qfalse;
+}
+
+// Section states from 1fxmod.
+
+void blockSection(gentity_t* ent, mapSection_t section) {
+    if (section < MAPSECTION_NOMIDDLE) {
+        G_SpawnVector("origin", "0", level.noLR[section]);
+
+        // Boe!Man 11/26/13: Not depending on the original state, if this check fails, it's always disabled..
+        if (level.noLR[section][2] == 0) {
+            level.autoSectionActive[section] = qfalse;
+        }
+    }
+
+    // Boe!Man 11/21/13: The entity is found.
+    level.noSectionEntFound[section] = qtrue;
+
+    // Boe!Man 11/21/13: Is auto nolower enabled?
+    if (ent->autoSection && strstr(ent->autoSection, "yes") && ent->min_players > 0) {
+        if (!ent->wait) { // There should be a delay. Default is to wait 10 seconds.
+            ent->wait = 10;
+        }
+
+        // Check if a team is defined.
+        if (ent->team && strlen(ent->team) > 0) {
+            if (strstr(ent->team, "red")) {
+                ent->team2 = TEAM_RED;
+            }
+            else if (strstr(ent->team, "blue")) {
+                ent->team2 = TEAM_BLUE;
+            }
+            else if (strstr(ent->team, "r")) {
+                ent->team2 = TEAM_RED;
+            }
+            else if (strstr(ent->team, "b")) {
+                ent->team2 = TEAM_BLUE;
+            }
+            else { // All.
+                ent->team2 = TEAM_FREE;
+            }
+        }
+        else { // All.
+            ent->team2 = TEAM_FREE;
+        }
+
+        // The think function needs to know what section is about to be closed/opened.
+        ent->section = section;
+        ent->sectionState = MAPSECTIONSTATE_INIT;
+
+        // Boe!Man 11/21/13: Create the event.
+        ent->think = sectionAutoCheck;
+        ent->nextthink = level.time + 1000; // Check every 10 seconds, except the first time (init).
+        //on roundtype start, check level.noLRMWEntFound entities, check the current players, perform the actions.
+    }
+    else { // No auto system.
+        G_FreeEntity(ent);
+    }
+}
+
+void checkSectionState() {
+    // Nolower.
+    if (g_useNoLower.integer) {
+        level.autoSectionActive[MAPSECTION_NOLOWER] = qtrue;
+    }
+
+    // Noroof.
+    if (g_useNoRoof.integer) {
+        level.autoSectionActive[MAPSECTION_NOROOF] = qtrue;
+    }
+
+    // Nomiddle.
+    if (g_useNoMiddle.integer) {
+        level.autoSectionActive[MAPSECTION_NOMIDDLE] = qtrue;
+    }
+
+    // Nowhole.
+    if (g_useNoWhole.integer) {
+        level.autoSectionActive[MAPSECTION_NOWHOLE] = qtrue;
+    }
+}
+
+
+void writeGametypeTeamNames(const char* redTeam, const char* blueTeam) {
+
+    trap_Cvar_Set("g_customRedName", redTeam);
+    trap_Cvar_Set("g_customBlueName", blueTeam);
+    trap_Cvar_Update(&g_customRedName);
+    trap_Cvar_Update(&g_customBlueName);
+
+}
+
+void sectionAddOrDelInstances(gentity_t* ent, qboolean add) {
+    gentity_t* ent2 = NULL;
+
+    while (NULL != (ent2 = G_Find(ent2, FOFS(target), ent->classname))) {
+        if (ent2 != ent) { // Make sure we don't get the parent ent.
+            if (!add) { // Upon removal, just make sure they are not drawed and clients can't interact with them.
+                trap_UnlinkEntity(ent2);
+            }
+            else { // Same as removal, but the other way around.
+                trap_LinkEntity(ent2);
+            }
+        }
+    }
+}
+
+
+/*
+This is an alias function run by think functions.
+*/
+void sectionAutoCheck(gentity_t* ent) {
+    realSectionAutoCheck(ent, qfalse);
+}
+
+void realSectionAutoCheck(gentity_t* ent, qboolean override) {
+
+    if (!override && level.gametypeData->respawnType == RT_NONE) {
+        // Without override being set, we do not run the section auto checking if it's not a respawn-gametype.
+        return;
+    }
+
+    // If current gametype runs on 
+
+    if (level.autoSectionActive[ent->section]) {
+        // Check what needs to be done depending on its current state.
+        switch (ent->sectionState) {
+        case MAPSECTIONSTATE_INIT:
+            if (((ent->team2 == TEAM_FREE) ? (TeamCount(-1, TEAM_RED, NULL) + TeamCount(-1, TEAM_BLUE, NULL)) : (TeamCount(-1, (team_t)ent->team2, NULL))) >= ent->min_players) {
+                // Section should be open, so hide the linking entities.
+                ent->sectionState = MAPSECTIONSTATE_OPENED;
+                sectionAddOrDelInstances(ent, qfalse);
+            }
+            else {
+                ent->sectionState = MAPSECTIONSTATE_CLOSED;
+                sectionAddOrDelInstances(ent, qtrue);
+            }
+            break;
+        case MAPSECTIONSTATE_CLOSED:
+            if (((ent->team2 == TEAM_FREE) ? (TeamCount(-1, TEAM_RED, NULL) + TeamCount(-1, TEAM_BLUE, NULL)) : (TeamCount(-1, (team_t)ent->team2, NULL))) >= ent->min_players) {
+                // Open the section.
+                ent->sectionState = MAPSECTIONSTATE_OPENING;
+                G_Broadcast(BROADCAST_GAME, NULL, qfalse, "%s^7 will be opened in %0.f seconds!", ent->message, ent->wait);
+                G_printInfoMessageToAll("%s will be opened in %0.f seconds.", ent->message2 + 1, ent->wait);
+            }
+            break;
+        case MAPSECTIONSTATE_OPENED:
+            if (((ent->team2 == TEAM_FREE) ? (TeamCount(-1, TEAM_RED, NULL) + TeamCount(-1, TEAM_BLUE, NULL)) : (TeamCount(-1, (team_t)ent->team2, NULL))) < ent->min_players) {
+                // Close the section.
+                ent->sectionState = MAPSECTIONSTATE_CLOSING;
+                G_Broadcast(BROADCAST_GAME, NULL, qfalse, "%s^7 will be closed in %0.f seconds!", ent->message, ent->wait);
+                G_printInfoMessageToAll("%s will be closed in %0.f seconds.", ent->message2 + 1, ent->wait);
+            }
+            break;
+        case MAPSECTIONSTATE_CLOSING:
+            // Close it now, the wait has passed.
+            ent->sectionState = MAPSECTIONSTATE_CLOSED;
+            sectionAddOrDelInstances(ent, qtrue);
+            //if (ent->section < NOMIDDLE)
+            //    level.noLROpened[ent->section] = qfalse;
+
+            G_Broadcast(BROADCAST_GAME, NULL, qfalse, "%s^7 closed!", ent->message);
+            G_printInfoMessageToAll("%s is now closed.", ent->message2 + 1);
+            break;
+        case MAPSECTIONSTATE_OPENING:
+            // Open it now, the wait has passed.
+            ent->sectionState = MAPSECTIONSTATE_OPENED;
+            sectionAddOrDelInstances(ent, qfalse);
+            //if (ent->section < NOMIDDLE)
+            //    level.noLROpened[ent->section] = qtrue;
+
+            G_Broadcast(BROADCAST_GAME, NULL, qfalse, "%s^7 opened!", ent->message);
+            G_printInfoMessageToAll("%s is now opened.", ent->message2 + 1);
+            break;
+        default:
+            break;
+        }
+    }
+
+    // Boe!Man 11/22/13: When's our next check?
+    if (ent->sectionState == MAPSECTIONSTATE_CLOSING || ent->sectionState == MAPSECTIONSTATE_OPENING) {
+        ent->nextthink = level.time + (int)ent->wait * 1000;
+    }
+    else {
+        ent->nextthink = level.time + 10000;
+    }
+}
+
+
+void checkEnts(gentity_t* ent) {
+    if (ent->model && ent->model != NULL && !strcmp(ent->model, "BLOCKED_TRIGGER"))
+    {
+        if (ent->count) {
+            ///Team Games
+            if (level.gametypeData->teams) {
+                if (ent->count <= (TeamCount(-1, TEAM_RED, NULL)) && ent->count <= (TeamCount(-1, TEAM_BLUE, NULL))) {
+                    if (ent->r.linked) {
+                        trap_UnlinkEntity(ent);
+                        if (ent->message != NULL)
+                            G_Broadcast(BROADCAST_GAME, NULL, qfalse, ent->message);
+                    }
+                }
+                else if (!ent->r.linked) {
+                    trap_LinkEntity(ent);
+                    if (ent->message2 != NULL)
+                        G_Broadcast(BROADCAST_GAME, NULL, qfalse, ent->message2);
+                }
+            }
+            ///Non-Team Games
+            else if (ent->count >= level.numPlayingClients) {
+                if (ent->r.linked) {
+                    trap_UnlinkEntity(ent);
+                    if (ent->message != NULL)
+                        G_Broadcast(BROADCAST_GAME, NULL, qfalse, ent->message);
+                }
+            }
+            else if (!ent->r.linked) {
+                trap_LinkEntity(ent);
+                if (ent->message2 != NULL)
+                    G_Broadcast(BROADCAST_GAME, NULL, qfalse, ent->message2);
+            }
+        }
+        return;
+    }
+    if (level.numPlayingClients < ent->min_players && ent->min_players != 0) {
+        if (ent->r.linked) {
+            trap_UnlinkEntity(ent);
+            g_entities[ent->effect_index].disabled = qtrue;
+        }
+    }
+    else if (level.numPlayingClients >= ent->min_players && ent->min_players != 0) {
+        if (level.numPlayingClients <= ent->max_players) {
+            if (!ent->r.linked) {
+                trap_LinkEntity(ent);
+                g_entities[ent->effect_index].disabled = qfalse;
+            }
+        }
+    }
+    if (level.numPlayingClients < ent->max_players && ent->max_players != 0) {
+        if (level.numPlayingClients > ent->min_players) {
+            if (!ent->r.linked) {
+                trap_LinkEntity(ent);
+                g_entities[ent->effect_index].disabled = qfalse;
+            }
+        }
+    }
+    else if (level.numPlayingClients >= ent->max_players && ent->max_players != 0) {
+        if (ent->r.linked) {
+            trap_UnlinkEntity(ent);
+            g_entities[ent->effect_index].disabled = qtrue;
+        }
+    }
 }

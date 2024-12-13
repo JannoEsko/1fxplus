@@ -1317,7 +1317,7 @@ char *ClientConnect( int clientNum, qboolean firstTime, qboolean isBot )
     // read or initialize the session data
     if ( firstTime || level.newSession )
     {
-        G_InitSessionData( client, userinfo );
+        G_InitSessionData( client, userinfo, firstTime );
     }
 
     G_ReadSessionData( client );
@@ -1399,6 +1399,8 @@ char *ClientConnect( int clientNum, qboolean firstTime, qboolean isBot )
     // Make sure they are unlinked
     ent->s.number = clientNum;
     trap_UnlinkEntity ( ent );
+
+    reapplyMuteAfterConnect(ent);
 
     return NULL;
 }

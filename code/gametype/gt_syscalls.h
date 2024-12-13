@@ -51,3 +51,5 @@ void        trap_Cmd_GetClientOrigin        ( int clientid, vec3_t origin );
 void        trap_Cmd_GiveClientItem         ( int clientid, int itemid );
 void        trap_Cmd_TakeClientItem         ( int clientid, int itemid );
 int         trap_Cmd_GetClientList          ( team_t team, int* clients, int clientcount );
+
+void		trap_Cmd_Teamnames				( const char* redTeam, const char* blueTeam );

@@ -1552,30 +1552,37 @@ static void Cmd_Say_f( gentity_t *ent, int mode, qboolean arg0 ) { // JANFIXME -
         return;
     }
 
-    if (arg0)
-    {
-        p = ConcatArgs( 0 );
-    }
-    else
-    {
-        p = ConcatArgs( 1 );
-    }
+    // Check for mutes every time someone writes.
+    checkMutes();
+    qboolean muted = isClientMuted(ent, qtrue);
 
-    char* admCmd = G_GetArg(0, qtrue, qfalse);
+    if (!muted) {
 
-    if (ent->client->sess.adminLevel > ADMLVL_NONE) {
-        int adminCommand = cmdIsAdminCmd(admCmd, qtrue);
-
-        if (canClientRunAdminCommand(ent, adminCommand)) {
-            runAdminCommand(adminCommand, argc == 2 ? 1 : 2, ent, (qboolean)argc == 2);
+        if (arg0)
+        {
+            p = ConcatArgs(0);
         }
-        else if (adminCommand != -1) {
-            G_printInfoMessage(ent, "You're not privileged enough to run this command.");
+        else
+        {
+            p = ConcatArgs(1);
         }
+
+        char* admCmd = G_GetArg(0, qtrue, qfalse);
+
+        if (ent->client->sess.adminLevel > ADMLVL_NONE) {
+            int adminCommand = cmdIsAdminCmd(admCmd, qtrue);
+
+            if (canClientRunAdminCommand(ent, adminCommand)) {
+                runAdminCommand(adminCommand, argc == 2 ? 1 : 2, ent, (qboolean)argc == 2);
+            }
+            else if (adminCommand != -1) {
+                G_printInfoMessage(ent, "You're not privileged enough to run this command.");
+            }
+        }
+
+
+        G_Say(ent, NULL, mode, p);
     }
-
-
-    G_Say( ent, NULL, mode, p );
 }
 
 /*
@@ -2266,7 +2273,7 @@ void ClientCommand( int clientNum ) {
         }
         else if (!Q_stricmp(arg, "?") || !Q_stricmp(arg, "help")) {
             // List adm cmds
-
+            adm_printAdminCommands(ent);
         }
         else {
             int adminCommand = -1;
@@ -2274,12 +2281,15 @@ void ClientCommand( int clientNum ) {
                 runAdminCommand(adminCommand, 2, ent, qfalse);
                 return;
             }
+            else if (adminCommand != -1) {
+                G_printInfoMessage(ent, "You're not privileged enough to use this command.");
+            }
             else {
-                // List adm cmds
-
+                G_printInfoMessage(ent, "Unknown command.");
+                adm_printAdminCommands(ent);
             }
         }
-
+        return;
     }
 
     if (!Q_stricmp(cmd, "clan")) {

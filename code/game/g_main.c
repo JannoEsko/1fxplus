@@ -174,6 +174,18 @@ vmCvar_t    g_enforce1fxAdditions;
 vmCvar_t    g_recoilRatio;
 vmCvar_t    g_inaccuracyRatio;
 
+vmCvar_t    g_allowCustomTeams;
+
+// We will be using the ROCmod custom* variables so their scoreboard show the correct team name and we can use it across functions in the game module.
+// The gametype module dictates these values.
+vmCvar_t    g_customBlueName; // Will be given to us from the gametype module.
+vmCvar_t    g_customRedName; // Will be given to us from the gametype module.
+
+vmCvar_t    g_useNoLower;
+vmCvar_t    g_useNoRoof;
+vmCvar_t    g_useNoMiddle;
+vmCvar_t    g_useNoWhole;
+
 static cvarTable_t gameCvarTable[] =
 {
     // don't override the cheat state set by the system
@@ -383,7 +395,15 @@ static cvarTable_t gameCvarTable[] =
     { &g_enforce1fxAdditions, "g_enforce1fxAdditions", "0",       CVAR_ARCHIVE | CVAR_LATCH, 0.0f, 0.0f, 0, qfalse }, // To run H&S/H&Z gametype. For rest, will be optional.
     { &g_recoilRatio, "g_recoilRatio", "1",       CVAR_ARCHIVE | CVAR_SYSTEMINFO | CVAR_LATCH | CVAR_LOCK_RANGE, 0.0f, 1.0f, 0, qfalse }, 
     { &g_inaccuracyRatio, "g_inaccuracyRatio", "1",       CVAR_ARCHIVE | CVAR_SYSTEMINFO | CVAR_LATCH | CVAR_LOCK_RANGE, 0.0f, 1.0f, 0, qfalse }, // THese 2 will not alter the attack stats any more, but rather will rely on server wpnfile provided values. This is only for 1fx Client Additions support.
-
+    { &g_customRedName, "g_customRedName", "Red Team",       CVAR_ROM | CVAR_SYSTEMINFO, 0.0f, 0.0f, 0, qfalse },
+    { &g_customBlueName, "g_customBlueName", "Blue Team",       CVAR_ROM | CVAR_SYSTEMINFO, 0.0f, 0.0f, 0, qfalse },
+    { &g_allowCustomTeams, "g_allowCustomTeams", "1",       CVAR_ROM | CVAR_SYSTEMINFO, 0.0f, 0.0f, 0, qfalse },
+    { &g_useNoLower, "g_useNoLower", "1",       CVAR_ARCHIVE, 0.0f, 0.0f, 0, qfalse },
+    { &g_useNoRoof, "g_useNoRoof", "1",       CVAR_ARCHIVE, 0.0f, 0.0f, 0, qfalse },
+    { &g_useNoMiddle, "g_useNoMiddle", "1",       CVAR_ARCHIVE, 0.0f, 0.0f, 0, qfalse },
+    { &g_useNoWhole, "g_useNoWhole", "1",       CVAR_ARCHIVE, 0.0f, 0.0f, 0, qfalse },
+        
+        
 };
 
 // bk001129 - made static to avoid aliasing
@@ -1018,8 +1038,6 @@ void G_InitGame( int levelTime, int randomSeed, int restart )
     level.actionSoundIndex = G_SoundIndex("sound/misc/menus/click.wav");
     // Load clientmod specifics
     G_InitClientMod();
-
-    
 
     // Initialize the gametype
     trap_GT_Init ( g_gametype.string, restart );
@@ -2193,7 +2211,7 @@ void G_RunFrame( int levelTime )
                 trap_UnlinkEntity( ent );
             }
         }
-
+        checkEnts(ent);
         // temporary entities don't think
         if ( ent->freeAfterEvent )
         {

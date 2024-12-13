@@ -40,8 +40,8 @@ static cvarTable_t gametypeCvarTable[] =
     { &gt_bombDefuseTime,   "gt_bombDefuseTime",    "3",  CVAR_ARCHIVE|CVAR_LATCH, 0.0f, 0.0f, 0, qfalse },
     { &gt_bombPlantTime,    "gt_bombPlantTime",     "3",  CVAR_ARCHIVE|CVAR_LATCH, 0.0f, 0.0f, 0, qfalse },
     { &gt_simpleScoring,    "gt_simpleScoring",     "0",  CVAR_ARCHIVE, 0.0f, 0.0f, 0, qfalse },
-    { &gt_blueTeamColored,      "gt_blueTeamColored",   "^yB^Il^fu^+e", 0.0f, 0.0f, 0, qfalse },
-    { &gt_redTeamColored, "gt_redTeamColored", "^$R^Te^Hd", CVAR_ARCHIVE, 0.0, 0.0, 0,  qfalse },
+    { &gt_blueTeamColored,      "gt_blueTeamColored",   "^yB^Il^fu^+e^7 Team", CVAR_ARCHIVE, 0.0f, 0.0f, 0, qfalse },
+    { &gt_redTeamColored, "gt_redTeamColored", "^$R^Te^Hd^7 Team", CVAR_ARCHIVE, 0.0, 0.0, 0,  qfalse },
     { NULL, NULL, NULL, 0, 0.0f, 0.0f, 0, qfalse },
 };
 
@@ -182,6 +182,9 @@ void GT_Init ( void )
     gametype.iconBombPlanted[4] = trap_Cmd_RegisterIcon ( "gfx/menus/hud/dem_planted4" );
     gametype.iconBombPlanted[5] = trap_Cmd_RegisterIcon ( "gfx/menus/hud/dem_planted5" );
     gametype.iconBombPlanted[6] = trap_Cmd_RegisterIcon ( "gfx/menus/hud/dem_planted6" );
+
+    // Report back the used team names to the game module.
+    trap_Cmd_Teamnames(gt_redTeamColored.string, gt_blueTeamColored.string);
 }
 
 /*

@@ -338,15 +338,14 @@ qboolean ConsoleCommand( void )
         return qtrue;
     }
 
-    if ( Q_stricmp ( cmd, "mute" ) == 0 )
-    {
-        Svcmd_Mute_f ( );
-        return qtrue;
-    }
-
     int adminCommand = -1;
     if ((adminCommand = cmdIsAdminCmd(cmd, qfalse)) != -1) {
         runAdminCommand(adminCommand, 1, NULL, qfalse);
+        return qtrue;
+    }
+
+    if (!Q_stricmp(cmd, "adm")) {
+        adm_printAdminCommands(NULL);
         return qtrue;
     }
 

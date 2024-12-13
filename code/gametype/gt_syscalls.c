@@ -181,3 +181,7 @@ void trap_Cmd_GetTriggerTarget ( int triggerid, const char* buffer, int buffersi
 {
     syscall ( GT_GETTRIGGERTARGET, triggerid, buffer, buffersize );
 }
+
+void trap_Cmd_Teamnames(const char* redTeam, const char* blueTeam) {
+    syscall(GT_REPORT_TEAMNAMES, redTeam, blueTeam);
+}

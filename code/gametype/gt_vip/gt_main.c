@@ -32,8 +32,8 @@ vmCvar_t            gt_blueTeamColored;
 
 static cvarTable_t gametypeCvarTable[] =
 {
-    { &gt_blueTeamColored,      "gt_blueTeamColored",   "^yB^Il^fu^+e", 0.0f, 0.0f, 0, qfalse },
-    { &gt_redTeamColored, "gt_redTeamColored", "^$R^Te^Hd", CVAR_ARCHIVE, 0.0, 0.0, 0,  qfalse },
+    { &gt_blueTeamColored,      "gt_blueTeamColored",   "^yB^Il^fu^+e^7 Team", CVAR_ARCHIVE, 0.0f, 0.0f, 0, qfalse },
+    { &gt_redTeamColored, "gt_redTeamColored", "^$R^Te^Hd^7 Team", CVAR_ARCHIVE, 0.0, 0.0, 0,  qfalse },
     { NULL, NULL, NULL, 0, 0.0f, 0.0f, 0, qfalse },
 };
 
@@ -131,6 +131,9 @@ void GT_Init ( void )
 
     // Register all cvars for this gametype
     GT_RegisterCvars ( );
+
+    // Report back the used team names to the game module.
+    trap_Cmd_Teamnames(gt_redTeamColored.string, gt_blueTeamColored.string);
 }
 
 /*

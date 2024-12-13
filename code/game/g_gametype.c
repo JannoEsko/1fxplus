@@ -1075,9 +1075,35 @@ intptr_t G_GametypeCommand(int command, intptr_t arg0, intptr_t arg1, intptr_t a
             G_UseTargetsByName ( (const char*) arg0, NULL, NULL );
             break;
 
+        case GT_REPORT_TEAMNAMES:
+            writeGametypeTeamNames((const char*)arg0, (const char*)arg1);
+            break;
+
         default:
             break;
     }
 
     return -1;
+}
+
+
+/*QUAKED monkey_player (0 1 0) (-16 -16 -46) (16 16 48)
+Potential spawning position for dead monkey players in the Hide&Seek gametype.
+*/
+void SP_monkey_player(gentity_t* ent)
+{
+    // Cant take any more spawns!!
+    if (level.monkeySpawnCount >= MAX_SPAWNS)
+    {
+        G_FreeEntity(ent);
+        return;
+    }
+
+    G_AddClientSpawn(ent, (team_t)TEAM_RED, qtrue);
+    G_FreeEntity(ent);
+}
+
+void SP_hideseek_cageplayer(gentity_t* ent)
+{
+    trap_UnlinkEntity(ent);
 }

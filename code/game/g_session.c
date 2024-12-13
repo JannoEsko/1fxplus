@@ -19,14 +19,8 @@ Called on game shutdown
 */
 void G_WriteClientSessionData( gclient_t *client )
 {
-    const char  *s;
-    const char  *var;
-
-    s = va("%i", client->sess.team );
-
-    var = va( "session%i", client - level.clients );
-
-    trap_Cvar_Set( var, s );
+    dbRemoveSessionDataById(client - level.clients);
+    dbWriteSessionDataForClient(client);
 }
 
 /*
@@ -38,17 +32,7 @@ Called on a reconnect
 */
 void G_ReadSessionData( gclient_t *client )
 {
-    char        s[MAX_STRING_CHARS];
-    const char  *var;
-    int         sessionTeam;
-
-    var = va( "session%i", client - level.clients );
-    trap_Cvar_VariableStringBuffer( var, s, sizeof(s) );
-
-    sscanf( s, "%i", &sessionTeam );
-
-    // bk001205 - format issues
-    client->sess.team = (team_t)sessionTeam;
+    dbReadSessionDataForClient(client, level.newSession);
 }
 
 
@@ -59,7 +43,7 @@ G_InitSessionData
 Called on a first-time connect
 ================
 */
-void G_InitSessionData( gclient_t *client, char *userinfo )
+void G_InitSessionData( gclient_t *client, char *userinfo, qboolean firstTime )
 {
     clientSession_t *sess;
     const char      *value;
@@ -102,11 +86,23 @@ void G_InitSessionData( gclient_t *client, char *userinfo )
 
     sess->spectatorState = SPECTATOR_FREE;
     sess->spectatorTime = level.time;
-
+    
+    sess->adminLevel = ADMLVL_NONE;
+    sess->adminType = ADMTYPE_NONE;
+    sess->clanMember = qfalse;
+    sess->hasRoxAC = qfalse;
+    Com_Memset(sess->roxGuid, 0, sizeof(sess->roxGuid));
+    Com_Memset(sess->adminName, 0, sizeof(sess->adminName));
     Com_Memset(sess->country, 0, sizeof(sess->country));
     Com_Memset(sess->countryCode, 0, sizeof(sess->countryCode));
+    sess->blockseek = qfalse;
+    sess->clanType = CLANTYPE_NONE;
+    Com_Memset(sess->clanName, 0, sizeof(sess->clanName));
 
-    G_WriteClientSessionData( client );
+    if (firstTime) {
+        G_WriteClientSessionData(client);
+    }
+
 }
 
 
@@ -130,7 +126,7 @@ void G_InitWorldSession( void )
     if ( level.gametype != gt )
     {
         level.newSession = qtrue;
-        Com_Printf( "Gametype changed, clearing session data.\n" );
+        logSystem(LOGLEVEL_INFO, "Gametype has changed, will discard team data.");
     }
 }
 

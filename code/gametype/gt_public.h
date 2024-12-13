@@ -55,6 +55,7 @@ typedef enum
     GT_GETCLIENTLIST,               // int  ( team_t team, int* clients, int clientcount );
 
     GT_SETHUDICON,                  // void ( int index, int icon );
+    GT_REPORT_TEAMNAMES,
 
 } gametypeImport_t;
 

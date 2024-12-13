@@ -11,7 +11,7 @@ void logSystem(loggingLevel_t logLevel, const char* msg, ...) {
     va_end(argptr);
 
     if (logLevel == LOGLEVEL_FATAL_DB) {
-        trap_Error(text);
+        trap_Error(va("%s\n", text));
         return;
     } else if (logLevel == LOGLEVEL_ERROR || logLevel == LOGLEVEL_FATAL) {
 
@@ -20,20 +20,20 @@ void logSystem(loggingLevel_t logLevel, const char* msg, ...) {
         }
 
         backupInMemoryDatabases();
-        trap_Error(text);
+        trap_Error(va("%s\n", text));
         return;
     }
     else if (logLevel == LOGLEVEL_INFO) {
-        Com_PrintInfo(text);
+        Com_PrintInfo(va("%s\n", text));
     }
     else if (logLevel == LOGLEVEL_WARN) {
-        Com_PrintWarn(text);
+        Com_PrintWarn(va("%s\n", text));
     }
     else if (logLevel == LOGLEVEL_TEXT) {
-        Com_PrintLog(text);
+        Com_PrintLog(va("%s\n", text));
     }
     else {
-        Com_Printf(text);
+        Com_Printf(va("%s\n", text));
     }
 
     if (g_logToDatabase.integer) {

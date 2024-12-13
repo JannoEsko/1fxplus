@@ -33,8 +33,8 @@ vmCvar_t            gt_seekerTeamColored;
 static cvarTable_t gametypeCvarTable[] =
 {
     { &gt_simpleScoring,    "gt_simpleScoring",     "0",  CVAR_ARCHIVE, 0.0f, 0.0f, 0, qfalse },
-    { &gt_seekerTeamColored,      "gt_seekerTeamColored",   "^yS^le^le^+k^7ers", 0.0f, 0.0f, 0, qfalse },
-    { &gt_hiderTeamColored, "gt_hiderTeamColored", "^1H^Ti^od^qe^+r^7s", CVAR_ARCHIVE, 0.0, 0.0, 0,  qfalse },
+    { &gt_seekerTeamColored,      "gt_seekerTeamColored",   "^yS^le^le^+k^7ers^7 Team", CVAR_ARCHIVE, 0.0f, 0.0f, 0, qfalse },
+    { &gt_hiderTeamColored, "gt_hiderTeamColored", "^1H^Ti^od^qe^+r^7s^7 Team", CVAR_ARCHIVE, 0.0, 0.0, 0,  qfalse },
     { NULL, NULL, NULL, 0, 0.0f, 0.0f, 0, qfalse },
 };
 
@@ -148,6 +148,9 @@ void GT_Init ( void )
     // Register the triggers
     memset ( &triggerDef, 0, sizeof(triggerDef) );
     trap_Cmd_RegisterTrigger ( TRIGGER_EXTRACTION, "briefcase_destination", &triggerDef );
+
+    // Report back the used team names to the game module.
+    trap_Cmd_Teamnames(gt_hiderTeamColored.string, gt_seekerTeamColored.string);
 }
 
 /*

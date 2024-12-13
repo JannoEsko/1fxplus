@@ -226,34 +226,43 @@ void SP_misc_portal_camera(gentity_t *ent)
 /*QUAKED misc_bsp (1 0 0) (-16 -16 -16) (16 16 16)
 "bspmodel"      arbitrary .bsp file to display
 */
-void SP_misc_bsp(gentity_t *ent)
+void SP_misc_bsp(gentity_t* ent)
 {
     char    temp[MAX_QPATH];
-    char    *out;
-    float   newAngle;
+    char* out;
+    vec3_t  newAngle;
     int     tempint;
 
-    G_SpawnFloat( "angle", "0", &newAngle );
-    if (newAngle != 0.0)
-    {
-        ent->s.angles[1] = newAngle;
+    // Boe!Man 5/24/12: Using a float isn't foolproof, use a vector instead.
+    if (G_SpawnVector("angles", "0 0 0", newAngle)) {
+        ent->s.angles[0] = newAngle[0];
+        ent->s.angles[1] = newAngle[1];
+        ent->s.angles[2] = newAngle[2];
     }
-    // don't support rotation any other way
-    ent->s.angles[0] = 0.0;
-    ent->s.angles[2] = 0.0;
 
     G_SpawnString("bspmodel", "", &out);
 
-    ent->s.eFlags = EF_PERMANENT;
+    // Boe!Man 11/24/15: Make this entity permanent if spawned upon start of the map.
+    if (level.time == level.startTime) {
+        // Boe!Man 12/16/15: Make sure they are not part of any section blocker.
+        if (Q_stricmp(ent->target, "nolower")
+            && Q_stricmp(ent->target, "noroof")
+            && Q_stricmp(ent->target, "nomiddle")
+            && Q_stricmp(ent->target, "nowhole")
+            && Q_stricmp(ent->target, "hideseek_cageextra")
+            ) {
+            ent->s.eFlags = EF_PERMANENT;
+        }
+    }
 
     // Mainly for debugging
-    G_SpawnInt( "spacing", "0", &tempint);
+    G_SpawnInt("spacing", "0", &tempint);
     ent->s.time2 = tempint;
-    G_SpawnInt( "flatten", "0", &tempint);
+    G_SpawnInt("flatten", "0", &tempint);
     ent->s.time = tempint;
 
     Com_sprintf(temp, MAX_QPATH, "#%s", out);
-    trap_SetBrushModel( ent, temp );  // SV_SetBrushModel -- sets mins and maxs
+    trap_SetBrushModel(ent, temp);  // SV_SetBrushModel -- sets mins and maxs
     G_BSPIndex(temp);
 
     level.mNumBSPInstances++;
@@ -268,29 +277,39 @@ void SP_misc_bsp(gentity_t *ent)
     G_SpawnString("teamfilter", "", &out);
     strcpy(level.mTeamFilter, out);
 
-    VectorCopy( ent->s.origin, ent->s.pos.trBase );
-    VectorCopy( ent->s.origin, ent->r.currentOrigin );
-    VectorCopy( ent->s.angles, ent->s.apos.trBase );
-    VectorCopy( ent->s.angles, ent->r.currentAngles );
+    VectorCopy(ent->s.origin, ent->s.pos.trBase);
+    VectorCopy(ent->s.origin, ent->r.currentOrigin);
+    VectorCopy(ent->s.angles, ent->s.apos.trBase);
+    VectorCopy(ent->s.angles, ent->r.currentAngles);
 
     ent->s.eType = ET_MOVER;
 
-    trap_LinkEntity (ent);
+    if (Q_stricmp(ent->target, "hideseek_cageextra")) {
+        trap_LinkEntity(ent);
+    }
+    else {
+        ent->classname = "hideseek_cageextra";
+        level.cagefightextras = qtrue;
+    }
+
+
 
     trap_SetActiveSubBSP(ent->s.modelindex);
+    //level.mSpawnFlags = ent->spawnflags; //JANFIXME - used in func_wall which is disabled at the moment.
     G_SpawnEntitiesFromString(qtrue);
+    //level.mSpawnFlags = 0;
     trap_SetActiveSubBSP(-1);
 
     level.mBSPInstanceDepth--;
     level.mFilter[0] = level.mTeamFilter[0] = 0;
 
-    if ( g_debugRMG.integer )
+    if (g_debugRMG.integer)
     {
-        G_SpawnDebugCylinder ( ent->s.origin, ent->s.time2, &g_entities[0], 2000, COLOR_WHITE );
+        G_SpawnDebugCylinder(ent->s.origin, ent->s.time2, &g_entities[0], 2000, COLOR_WHITE);
 
-        if ( ent->s.time )
+        if (ent->s.time)
         {
-            G_SpawnDebugCylinder ( ent->s.origin, ent->s.time, &g_entities[0], 2000, COLOR_RED );
+            G_SpawnDebugCylinder(ent->s.origin, ent->s.time, &g_entities[0], 2000, COLOR_RED);
         }
     }
 }

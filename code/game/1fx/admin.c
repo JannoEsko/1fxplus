@@ -218,7 +218,6 @@ void adm_Login(gentity_t* ent, char* password) {
 	}
 
 	admLevel_t adminLevel = dbGetAdminLevel(ADMTYPE_PASS, ent, password);
-	Com_Printf("check login with admpass on %s psw %s\n", ent->client->pers.cleanName, password);
 	if (adminLevel <= ADMLVL_NONE || adminLevel > ADMLVL_HADMIN) {
 		G_printInfoMessage(ent, "No admin powers found with this name+password combination.");
 		return;
@@ -786,23 +785,88 @@ int adm_blockSeek(int argNum, gentity_t* adm, qboolean shortCmd) {
 int adm_blockSeekList(int argNum, gentity_t* adm, qboolean shortCmd) {
 	return -1;
 }
+
+/*
+================
+adm_toggleSection
+
+Disables or enables a section if an entity of such kind is specified on the current map.
+================
+*/
+
+static void adm_toggleSection(gentity_t* adm, mapSection_t mapSection) {
+
+	char* sectionName = "Nolower";
+	int useSection = g_useNoLower.integer;
+
+	if (mapSection == MAPSECTION_NOMIDDLE) {
+		sectionName = "Nomiddle";
+		useSection = g_useNoMiddle.integer;
+	}
+	else if (mapSection == MAPSECTION_NOWHOLE) {
+		sectionName = "Nowhole";
+		useSection = g_useNoWhole.integer;
+	}
+	else if (mapSection == MAPSECTION_NOROOF) {
+		sectionName = "Noroof";
+		useSection = g_useNoRoof.integer;
+	}
+
+	char sectionLowercase[10];
+	Q_strncpyz(sectionLowercase, sectionName, sizeof(sectionLowercase));
+	Q_strlwr(sectionLowercase);
+
+	// Boe!Man 2/27/11: If people don't want to use this section they can specify to disable it.
+	if (useSection <= 0) {
+		G_printInfoMessage(adm, "%s has been disabled on this server.", sectionName);
+		return;
+	}
+	// Boe!Man 1/8/12: If people want to use nolower but if there's no such entity found, inform the user.
+	if (!level.noSectionEntFound[mapSection]) {
+		G_printInfoMessage(adm, "No entity found to toggle %s.", sectionLowercase);
+		return;
+	}
+
+	level.autoSectionActive[mapSection] = !level.autoSectionActive[mapSection];
+	qboolean enabled = level.autoSectionActive[mapSection];
+
+	// Custom broadcasts.
+	G_Broadcast(BROADCAST_CMD, NULL, qtrue, "\\%s %s!", sectionName, enabled ? "enabled" : "disabled");
+	logAdmin(adm, NULL, va("%s %s", sectionName, enabled ? "enabled" : "disabled"), NULL);
+	G_printCustomMessageToAll("Admin Action", "%s has been %s by %s.", sectionName, enabled ? "enabled" : "disabled", getNameOrArg(adm, "RCON", qtrue));
+
+	// Boe!Man 11/24/13: Also open the section.
+	//if (!level.autoSectionActive[mapSection]) {
+	gentity_t* ent = NULL;
+	while (NULL != (ent = G_Find(ent, FOFS(classname), sectionLowercase))) {
+		sectionAddOrDelInstances(ent, level.autoSectionActive[mapSection]);
+		ent->sectionState = enabled ? MAPSECTIONSTATE_CLOSED : MAPSECTIONSTATE_OPENED; // Reset state to Opened.
+	}
+	//}
+}
+
+
 /* nosection entity dependent. */
 int adm_noLower(int argNum, gentity_t* adm, qboolean shortCmd) {
+	adm_toggleSection(adm, MAPSECTION_NOLOWER);
 	return -1;
 }
 
 /* nosection entity dependent. */
 int adm_noRoof(int argNum, gentity_t* adm, qboolean shortCmd) {
+	adm_toggleSection(adm, MAPSECTION_NOROOF);
 	return -1;
 }
 
 /* nosection entity dependent. */
 int adm_noMiddle(int argNum, gentity_t* adm, qboolean shortCmd) {
+	adm_toggleSection(adm, MAPSECTION_NOMIDDLE);
 	return -1;
 }
 
 /* nosection entity dependent. */
 int adm_noWhole(int argNum, gentity_t* adm, qboolean shortCmd) {
+	adm_toggleSection(adm, MAPSECTION_NOWHOLE);
 	return -1;
 }
 
@@ -1101,7 +1165,32 @@ int adm_compMode(int argNum, gentity_t* adm, qboolean shortCmd) {
 	return -1;
 }
 
+static void adm_printBanlist(int argNum, gentity_t* adm, qboolean shortCmd, qboolean subnet) {
+
+	char pageArg[64];
+	int page = 0;
+
+	if (shortCmd && G_GetChatArgumentCount()) {
+		Q_strncpyz(pageArg, G_GetChatArgument(argNum, qfalse), sizeof(pageArg));
+	}
+	else {
+		trap_Argv(argNum, pageArg, sizeof(pageArg));
+	}
+
+	if (pageArg && strlen(pageArg)) {
+		page = atoi(pageArg);
+	}
+
+	dbPrintBanlist(adm, subnet, page);
+
+	return -1;
+
+}
+
 int adm_banList(int argNum, gentity_t* adm, qboolean shortCmd) {
+
+	adm_printBanlist(argNum, adm, shortCmd, qfalse);
+
 	return -1;
 }
 
@@ -1177,7 +1266,7 @@ static void adm_banPlayer(int argNum, gentity_t* adm, qboolean shortCmd, qboolea
 		char durationArg[64];
 
 		if (G_GetChatArgumentCount() >= 2 && shortCmd) {
-			strncpy(durationArg, G_GetChatArgument(argNum + 1, qfalse), sizeof(durationArg));
+			Q_strncpyz(durationArg, G_GetChatArgument(argNum + 1, qfalse), sizeof(durationArg));
 		}
 		else {
 			trap_Argv(argNum + 1, durationArg, sizeof(durationArg));
@@ -1218,7 +1307,7 @@ static void adm_removeBan(int argNum, gentity_t* adm, qboolean shortCmd, qboolea
 	char rowArg[64];
 
 	if (G_GetChatArgumentCount() >= 2 && shortCmd) {
-		strncpy(rowArg, G_GetChatArgument(argNum, qfalse), sizeof(rowArg));
+		Q_strncpyz(rowArg, G_GetChatArgument(argNum, qfalse), sizeof(rowArg));
 	}
 	else {
 		trap_Argv(argNum, rowArg, sizeof(rowArg));
@@ -1291,6 +1380,9 @@ int adm_Broadcast(int argNum, gentity_t* adm, qboolean shortCmd) {
 }
 
 int adm_subnetbanList(int argNum, gentity_t* adm, qboolean shortCmd) {
+
+	adm_printBanlist(argNum, adm, shortCmd, qtrue);
+
 	return -1;
 }
 
@@ -1320,7 +1412,7 @@ int adm_lockTeam(int argNum, gentity_t* adm, qboolean shortCmd) {
 
 	char teamArg[64];
 	if (G_GetChatArgumentCount() >= 2 && shortCmd) {
-		strncpy(teamArg, G_GetChatArgument(argNum, qfalse), sizeof(teamArg));
+		Q_strncpyz(teamArg, G_GetChatArgument(argNum, qfalse), sizeof(teamArg));
 	}
 	else {
 		trap_Argv(argNum, teamArg, sizeof(teamArg));
@@ -1485,6 +1577,45 @@ int adm_Kick(int argNum, gentity_t* adm, qboolean shortCmd) {
 }
 
 int adm_Mute(int argNum, gentity_t* adm, qboolean shortCmd) {
+
+	int idNum = G_ClientNumFromArg(adm, argNum, "mute", qfalse, qfalse, qfalse, shortCmd);
+
+	if (idNum >= 0) {
+		gentity_t* ent = &g_entities[idNum];
+		qboolean isMute = ent->client->sess.muted ? qfalse : qtrue;
+
+		if (ent->client->sess.muted) {
+			unmuteClient(ent);
+		}
+		else {
+
+			char muteArg[64];
+			int muteDuration = 0;
+
+			if (!shortCmd || shortCmd && !G_GetChatArgumentCount() >= argNum + 1) {
+				trap_Argv(argNum + 1, muteArg, sizeof(muteArg));
+			}
+			else {
+				Q_strncpyz(muteArg, G_GetChatArgument(argNum + 1, qfalse), sizeof(muteArg));
+			}
+
+			if (muteArg && strlen(muteArg) > 0) {
+				muteDuration = atoi(muteArg);
+			}
+
+			if (muteDuration > 60) {
+				G_printInfoMessage(adm, "Max duration is 60 minutes, changed the duration to 60.");
+			}
+
+			muteDuration = Com_Clamp(5, 60, muteDuration);
+			muteClient(ent, muteDuration);
+		}
+
+		logAdmin(adm, ent, va("%smute", isMute ? "" : "un"), NULL);
+		G_Broadcast(BROADCAST_CMD, NULL, qtrue, "%s\nwas \\%smuted\nby %s", ent->client->pers.netname, isMute ? "" : "un", getNameOrArg(adm, "\\RCON", qfalse));
+		G_printCustomMessageToAll("Admin Action", "%s was %smuted by %s.", ent->client->pers.cleanName, isMute ? "" : "un", getNameOrArg(adm, "RCON", qtrue));
+	}
+
 	return -1;
 }
 
@@ -1498,10 +1629,38 @@ int adm_Rename(int argNum, gentity_t* adm, qboolean shortCmd) {
 }
 
 int adm_Switch(int argNum, gentity_t* adm, qboolean shortCmd) {
-	return -1;
+
+	if (!level.gametypeData->teams) {
+		G_printInfoMessage(adm, "This command only works in team-based gametypes.");
+		return -1;
+	}
+
+	int idNum = G_ClientNumFromArg(adm, argNum, "switch", qfalse, qtrue, qtrue, shortCmd);
+
+	if (idNum >= 0) {
+		
+		gentity_t* ent = &g_entities[idNum];
+
+		if (ent->client->sess.team == TEAM_BLUE) {
+			SetTeam(ent, "r", NULL, qtrue);
+		}
+		else if (ent->client->sess.team == TEAM_RED) {
+			SetTeam(ent, "b", NULL, qtrue);
+		}
+		else {
+			G_printInfoMessage(adm, "Player has to be in a team to switch them.");
+			return -1;
+		}
+
+	}
+
+	return idNum;
 }
 
 int adm_Third(int argNum, gentity_t* adm, qboolean shortCmd) {
+
+	adm_toggleCVAR(argNum, adm, shortCmd, qtrue, "Thirdperson", &g_allowThirdPerson, qfalse, NULL, NULL);
+
 	return -1;
 }
 
@@ -1530,11 +1689,48 @@ int adm_profanityList(int argNum, gentity_t* adm, qboolean shortCmd) {
 }
 
 int adm_Pop(int argNum, gentity_t* adm, qboolean shortCmd) {
-	return -1;
+
+	int idNum = G_ClientNumFromArg(adm, argNum, "pop", qtrue, qfalse, qfalse, shortCmd);
+
+	if (idNum >= 0) {
+
+		gentity_t* ent = &g_entities[idNum];
+		popPlayer(ent, POPACTION_ADMIN);
+
+	}
+
+	return idNum;
 }
 
 int adm_Uppercut(int argNum, gentity_t* adm, qboolean shortCmd) {
-	return -1;
+
+	int idNum = G_ClientNumFromArg(adm, argNum, "uppercut", qtrue, qtrue, qtrue, shortCmd);
+
+	if (idNum >= 0) {
+
+		gentity_t* ent = &g_entities[idNum];
+
+		char ucArg[64];
+		int ucLevel = 0;
+
+		if (!shortCmd || shortCmd && !G_GetChatArgumentCount() >= argNum + 1) {
+			trap_Argv(argNum + 1, ucArg, sizeof(ucArg));
+		}
+		else {
+			Q_strncpyz(ucArg, G_GetChatArgument(argNum + 1, qfalse), sizeof(ucArg));
+		}
+
+		if (ucArg && strlen(ucArg) > 0) {
+			ucLevel = atoi(ucArg);
+		}
+
+		ucLevel = Com_Clamp(0, 10, ucLevel);
+
+		uppercutPlayer(ent, ucLevel);
+
+	}
+
+	return idNum;
 }
 
 int adm_Punish(int argNum, gentity_t* adm, qboolean shortCmd) {
@@ -1551,6 +1747,111 @@ int adm_mapCycleList(int argNum, gentity_t* adm, qboolean shortCmd) {
 
 int adm_skipToMap(int argNum, gentity_t* adm, qboolean shortCmd) {
 	return -1;
+}
+
+typedef struct tempAdmcmd_s {
+	const admCmd_t* cmd;
+	int level;
+} tempAdmcmd_t;
+
+/*
+There are about 80-90 admin commands. We use tempAdmcmd struct as an array to sort and print out relevant commands to avoid iterations.
+*/
+
+static int _compareTempAdmcmds(const void* a, const void* b) {
+	const tempAdmcmd_t* cmdA = (const tempAdmcmd_t*)a;
+	const tempAdmcmd_t* cmdB = (const tempAdmcmd_t*)b;
+	return cmdA->level - cmdB->level; 
+}
+
+static int filterAdminCommands(int adminLevel, tempAdmcmd_t* tempAdmCmds) {
+	int count = 0;
+
+	for (int i = 0; i < sizeof(adminCommands) / sizeof(adminCommands[0]); i++) {
+		const admCmd_t* cmd = &adminCommands[i];
+		int cmdLevel = *cmd->adminLevel; 
+
+		// Skip commands above player's level unless they are RCON
+		if (adminLevel < ADMLVL_RCON && cmdLevel > adminLevel) {
+			continue;
+		}
+
+		// Add to the temporary list
+		tempAdmCmds[count].cmd = cmd;
+		tempAdmCmds[count].level = cmdLevel;
+		count++;
+	}
+
+	return count;
+}
+
+void adm_printAdminCommands(gentity_t* adm) {
+
+	int admLvl = adm && adm->client ? adm->client->sess.adminLevel : ADMLVL_RCON;
+	qboolean isRcon = admLvl == ADMLVL_RCON ? qtrue : qfalse;
+
+	tempAdmcmd_t* tempAdminCommands = (tempAdmcmd_t*)malloc(adminCommandsSize * sizeof(tempAdmcmd_t));
+
+	if (!tempAdminCommands) {
+		logSystem(LOGLEVEL_WARN, "malloc failed on tempAdminCommands, out of memory?");
+		G_printInfoMessage(adm, "Something went wrong, please try again.");
+		return;
+	}
+
+	int cmdCount = filterAdminCommands(admLvl, tempAdminCommands);
+
+	qsort(tempAdminCommands, cmdCount, sizeof(tempAdmcmd_t), _compareTempAdmcmds);
+	char pakBuf[1024];
+	Com_Memset(pakBuf, 0, sizeof(pakBuf));
+
+	if (isRcon) {
+		Com_Printf("\n^3%-16.16s%-8.8s%-4.4s%-34.34s%-16.16s\n", "Command", "Short", "Lvl", "Description", "Params");
+		Com_Printf("-----------------------------------------------------------------------------\n");
+	}
+	else {
+		Q_strncpyz(pakBuf, va("\n^3%-16.16s%-8.8s%-4.4s%-33.33s%-16.16s\n^7-----------------------------------------------------------------------------\n", "Command", "Short", "Lvl", "Description", "Params"), sizeof(pakBuf));
+	}
+	char maxDesc[1024];
+	int maxDescLen = 0;
+	// Print the commands
+	for (int i = 0; i < cmdCount; i++) {
+		const admCmd_t* admCmd = tempAdminCommands[i].cmd;
+
+		char admLvlWithoutColors[MAX_NETNAME];
+		Q_strncpyz(admLvlWithoutColors, getAdminNameByAdminLevel(tempAdminCommands[i].level), sizeof(admLvlWithoutColors));
+		G_RemoveColorEscapeSequences(admLvlWithoutColors);
+
+		if (strlen(admCmd->desc) > maxDescLen) {
+			maxDescLen = strlen(admCmd->desc);
+			Q_strncpyz(maxDesc, admCmd->desc, sizeof(maxDesc));
+		}
+
+		if (isRcon) {
+			Com_Printf("%-16.16s%-8.8s%-4d%-34.34s%-16.16s\n", admCmd->adminCmd, admCmd->shortCmd, *admCmd->adminLevel, admCmd->desc, admCmd->params);
+		}
+		else {
+
+			if (strlen(pakBuf) + strlen(va("%-16.16s%-8.8s%-4d%-33.33s%-16.16s\n", admCmd->adminCmd, admCmd->shortCmd, *admCmd->adminLevel, admCmd->desc, admCmd->params)) > sizeof(pakBuf) - 155) {
+				trap_SendServerCommand(adm - g_entities, va("print \"%s\"", pakBuf));
+				Com_Memset(pakBuf, 0, sizeof(pakBuf));
+			}
+
+			Q_strcat(pakBuf, sizeof(pakBuf), va("%-16.16s%-8.8s%-4d%-33.33s%-16.16s\n", admCmd->adminCmd, admCmd->shortCmd, *admCmd->adminLevel, admCmd->desc, admCmd->params));
+
+		}
+	}
+
+	if (isRcon) {
+		Com_Printf("\n^3Short commands are textual representations what you can use in chat\n^3Admin levels: 1 = B-Admin, 2 = Admin, 3 = S-Admin, 4 = H-Admin, 5 = RCON\nUse ^3[Page Up]^7 or ^3[Page Down]^7 to scroll.\n");
+	}
+	else {
+		trap_SendServerCommand(adm - g_entities, va("print \"%s\"", pakBuf));
+		trap_SendServerCommand(adm - g_entities, "print \"\n^3Short commands are textual representations what you can use in chat\n^3Admin levels: 1 = B-Admin, 2 = Admin, 3 = S-Admin, 4 = H-Admin, 5 = RCON\n^7Use [^3Page Up^7] or [^3Page Down^7] to scroll.\n\"");
+	}
+	
+	// Free the allocated memory
+	free(tempAdminCommands);
+
 }
 
 qboolean canClientRunAdminCommand(gentity_t* adm, int adminCommandId) {

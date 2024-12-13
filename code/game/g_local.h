@@ -47,6 +47,9 @@
 #define MAX_COUNTRYNAME             50
 #define MAX_THREAD_OUTPUT           128
 
+#define TOTAL_SECTIONS              4
+#define MAX_CUSTOM_ET_AMOUNT        16
+
 typedef enum {
     CL_NONE,
     CL_RPM,
@@ -77,6 +80,42 @@ typedef enum {
     TEAMACTION_NOT_ENOUGH_PLAYERS,
     TEAMACTION_FAILED
 } teamAction_t;
+
+typedef enum {
+    POPACTION_NONE,
+    POPACTION_ADMIN,
+    POPACTION_CAMP
+} popAction_t;
+
+/*
+Mutes from 1fxmod.
+*/
+typedef struct mute_s {
+    char        ip[MAX_IP];     // IP of the muted client.
+    int         time;           // Total duration of the mute in msec.
+    int         startTime;      // level.time of when the mute started.
+    qboolean    used;           // True if this slot is used.
+    int         totalDuration;  // Total duration in minutes, so we still have the original value when reading the session data.
+} mute_t;
+
+/* Section information from 1fxmod */
+
+typedef enum
+{
+    MAPSECTION_NOLOWER,
+    MAPSECTION_NOROOF,
+    MAPSECTION_NOMIDDLE,
+    MAPSECTION_NOWHOLE
+} mapSection_t;
+
+typedef enum
+{
+    MAPSECTIONSTATE_INIT,
+    MAPSECTIONSTATE_OPENING,
+    MAPSECTIONSTATE_OPENED,
+    MAPSECTIONSTATE_CLOSING,
+    MAPSECTIONSTATE_CLOSED
+} mapSectionState_t;
 
 // Flags to determine which extra features the client is willing to accept in ROCmod.
 #define ROC_TEAMINFO    0x00000001
@@ -204,6 +243,51 @@ struct gentity_s
     int         delay;
 
     gitem_t     *item;          // for bonus items
+
+
+    // Additions from 1fxmod.
+    char*       bspmodel;
+    int         minimumhiders;
+    vec3_t      apos1;
+    vec3_t      apos2;
+    float       distance;
+    char*       message2; // purpose of message2?
+    int         up;
+    int         forward;
+    vec3_t      origin_from;
+    vec3_t      origin_to;
+    vec3_t      angles_from;
+    vec3_t      angles_to;
+    char*       both_sides;
+    int         max_players;
+    int         min_players;
+    char*       autoSection;
+    char*       invisible;
+    int         hideseek;
+
+    char*       endround;
+    int         endround2; // needs rename?
+    int         score;
+    char*       broadcast;
+    char*       effect_touch;
+
+    // Boe!Man 5/22/12: Noise for specific entities (e.g. booster).
+    char* sound;
+
+    // Boe!Man 6/30/12: Size, for the hideseek_cage.
+    char* size;
+
+    // Boe!Man 11/21/13: Used for the auto section block system.
+    team_t      team2;
+    int         section;
+    int         sectionState;
+
+    // Boe!Man 11/26/15: Used for anticamp.
+    vec3_t      camperOrigin;
+
+    int         effect_index;
+    qboolean    disabled;
+
 };
 
 typedef struct gspawn_s
@@ -381,6 +465,10 @@ typedef struct
     clanType_t          clanType;
     char                clanName[MAX_NETNAME];
     qboolean            setClanPassword;
+    int                 lastmsg;
+    int                 lastTele;
+    int                 acceleratorCooldown;
+    int                 lastjump;
 
 } clientSession_t;
 
@@ -522,6 +610,8 @@ struct gclient_s
 
     vec3_t          maxSave;
     vec3_t          minSave;
+
+    int             sunRespawnTimer;
 };
 
 //
@@ -672,6 +762,25 @@ typedef struct
     qboolean        redLocked;
     qboolean        specLocked;
 
+    mute_t          mutedClients[MAX_CLIENTS];
+    int             numMutedClients;
+
+    /* 1fx mod defines */
+    vec3_t          hideseek_cage;
+    int             hideseek_cageSize;
+    qboolean        cageFightLoaded;
+    qboolean        cageFightExtras;
+
+    // Boe!Man 11/21/13: Nolower, Noroof, Nomiddle and Nowhole combined into one system.
+    qboolean        noSectionEntFound[TOTAL_SECTIONS];  // If the no* entity was found.
+    qboolean        autoSectionActive[TOTAL_SECTIONS];  // True if the auto systems are active.
+
+    vec3_t          noLR[2];            // Location for nolower/noroof.
+    int             tempent;
+
+    int             monkeySpawnCount;
+    int             customETHiderAmount[MAX_CUSTOM_ET_AMOUNT];
+    qboolean        cagefightextras;
 
 } level_locals_t;
 
@@ -684,7 +793,7 @@ qboolean    G_SpawnFloat( const char *key, const char *defaultString, float *out
 qboolean    G_SpawnInt( const char *key, const char *defaultString, int *out );
 qboolean    G_SpawnVector( const char *key, const char *defaultString, float *out );
 qboolean    G_ParseSpawnVars( qboolean inSubBSP );
-void        G_SpawnGEntityFromSpawnVars( qboolean inSubBSP );
+int         G_SpawnGEntityFromSpawnVars( qboolean inSubBSP );
 void        G_SpawnEntitiesFromString( qboolean inSubBSP );
 char        *G_NewString( const char *string );
 void        AddSpawnField(char *field, char *value);
@@ -846,6 +955,9 @@ void        G_GrenadeThink      ( gentity_t* ent );
 void        G_RunMover          ( gentity_t *ent );
 void        Touch_DoorTrigger   ( gentity_t *ent, gentity_t *other, trace_t *trace );
 void        G_ResetGlass        ( void );
+void SP_func_door_rotating(gentity_t* ent);
+void Touch_2WayRotDoorTrigger(gentity_t* ent, gentity_t* other, trace_t* trace);
+void Think_Spawn2WayRotDoorTrigger(gentity_t* ent);
 
 
 //
@@ -853,7 +965,20 @@ void        G_ResetGlass        ( void );
 //
 void        trigger_teleporter_touch        ( gentity_t *self, gentity_t *other, trace_t *trace );
 void        InitTrigger                     ( gentity_t *self );
-
+void NV_blocked_trigger(gentity_t* ent);
+void NV_blocked_Teleport(gentity_t* ent);
+void SP_accelerator(gentity_t* ent);
+void SP_accelerator_delay(gentity_t* self);
+void SP_accelerator_touch(gentity_t* self, gentity_t* other, trace_t* trace);
+void SP_sun(gentity_t* ent);
+void SP_booster(gentity_t* ent);
+void SP_teleporter(gentity_t* ent);
+void hideseek_cage(gentity_t* ent);
+void hideseek_cageextra(gentity_t* ent);
+void trigger_NewTeleporter_touch(gentity_t* self, gentity_t* other, trace_t* trace);
+void ReachableObject_events(gentity_t* self);
+void trigger_ReachableObject_touch(gentity_t* self, gentity_t* other, trace_t* trace);
+void trigger_booster_touch(gentity_t* self, gentity_t* other, trace_t* trace);
 //
 // g_misc.c
 //
@@ -955,7 +1080,7 @@ void Team_CheckDroppedItem( gentity_t *dropped );
 // g_session.c
 //
 void G_ReadSessionData( gclient_t *client );
-void G_InitSessionData( gclient_t *client, char *userinfo );
+void G_InitSessionData( gclient_t *client, char *userinfo, qboolean firstTime );
 
 void G_InitWorldSession( void );
 void G_WriteSessionData( void );
@@ -989,6 +1114,8 @@ qboolean    G_CanGametypeTriggerBeUsed          ( gentity_t* self, gentity_t* ac
 void        G_ResetGametypeItem                 ( gitem_t* item );
 void        gametype_item_use                   ( gentity_t* self, gentity_t* other );
 void        G_DropGametypeItems                 ( gentity_t* self, int delayPickup );
+void SP_monkey_player(gentity_t* ent);
+void SP_hideseek_cageplayer(gentity_t* ent);
 
 // ai_main.c
 #define MAX_FILEPATH            144
@@ -1144,12 +1271,6 @@ extern vmCvar_t    a_pop;
 extern vmCvar_t    a_uppercut;
 
 extern  vmCvar_t    g_serverColors;
-extern  vmCvar_t    g_redTeamPrefix;
-extern  vmCvar_t    g_blueTeamPrefix;
-extern  vmCvar_t    g_hiderTeamPrefix;
-extern  vmCvar_t    g_seekerTeamPrefix;
-extern  vmCvar_t    g_humanTeamPrefix;
-extern  vmCvar_t    g_zombieTeamPrefix;
 extern  vmCvar_t    g_maxAliases;
 extern  vmCvar_t    g_logToFile;
 extern  vmCvar_t    g_logToDatabase;
@@ -1166,6 +1287,15 @@ extern  vmCvar_t    g_allowThirdPerson;
 extern  vmCvar_t    g_enforce1fxAdditions;
 extern  vmCvar_t    g_recoilRatio;
 extern  vmCvar_t    g_inaccuracyRatio;
+
+extern  vmCvar_t    g_allowCustomTeams; 
+extern  vmCvar_t    g_customBlueName; // Will be given to us from the gametype module.
+extern  vmCvar_t    g_customRedName; // Will be given to us from the gametype module.
+
+extern  vmCvar_t    g_useNoLower;
+extern  vmCvar_t    g_useNoRoof;
+extern  vmCvar_t    g_useNoMiddle;
+extern  vmCvar_t    g_useNoWhole;
 
 //extern vmCvar_t     g_leanType;
 
@@ -1400,7 +1530,7 @@ void G_UpdateClientAntiLag  ( gentity_t* ent );
 void G_UndoAntiLag          ( void );
 void G_ApplyAntiLag         ( gentity_t* ref, qboolean enlargeHitBox );
 
-#define SQL_GAME_MIGRATION_LEVEL 2
+#define SQL_GAME_MIGRATION_LEVEL 3
 #define SQL_LOG_MIGRATION_LEVEL 1
 #define SQL_COUNTRY_MIGRATION_LEVEL 1
 #define MAX_SQL_TEMP_NAME 16
@@ -1441,7 +1571,7 @@ void dbLogGame(char* byIp, char* byName, char* toIp, char* toName, char* action)
 void dbLogLogin(char* byIp, char* byName, admLevel_t adminLevel, admType_t adminType);
 void dbLogRcon(char* ip, char* action);
 qboolean dbCheckBan(char* ip, char* reason, int reasonSize, int* endOfMap, int* banEnd);
-void dbLogRetention();
+void dbLogRetention(void);
 qboolean dbGetCountry(char* ip, char* countryCode, int countryCodeSize, char* country, int countrySize, int* blocklevel);
 void dbAddCountry(char* ip, char* countryCode, char* country, int blocklevel);
 void dbLogSystem(loggingLevel_t logLevel, char* msg);
@@ -1454,6 +1584,10 @@ qboolean dbGetClan(clanType_t clanType, gentity_t* ent, char* password);
 qboolean dbGetClanDataByRowId(int rowId, char* memberName, int memberNameSize, int* memberType);
 void dbPrintClanlist(gentity_t* ent, clanType_t clanType, int page);
 qboolean dbGetBanDetailsByRowID(qboolean subnet, int rowId, char* outputPlayer, int outputPlayerSize, char* outputIp, int outputIpSize);
+void dbPrintBanlist(gentity_t* ent, qboolean subnet, int page);
+void dbReadSessionDataForClient(gclient_t* client, qboolean gametypeChanged);
+void dbWriteSessionDataForClient(gclient_t* client);
+void dbRemoveSessionDataById(int clientNum);
 
 void logSystem(loggingLevel_t logLevel, const char* msg, ...) __attribute__((format(printf, 2, 3)));
 void logRcon(char* ip, char* action);
@@ -1560,6 +1694,7 @@ void runAdminCommand(int adminCommandId, int argNum, gentity_t* adm, qboolean sh
 void postExecuteAdminCommand(int funcNum, int idNum, gentity_t* adm);
 void adm_setPassword(gentity_t* ent, char* password);
 void adm_Login(gentity_t* ent, char* password);
+void adm_printAdminCommands(gentity_t* adm);
 
 // RPM.c
 void RPM_UpdateTMI(void);
@@ -1585,7 +1720,7 @@ void G_RemoveColorEscapeSequences(char* text);
 char* concatArgs(int fromArgNum, qboolean shortCmd, qboolean retainColors);
 char* G_GetArg(int argNum, qboolean shortCmd, qboolean retainColors);
 char* G_GetChatArgument(int argNum, qboolean retainColors);
-int G_GetChatArgumentCount();
+int G_GetChatArgumentCount(void);
 
 void QDECL G_printMessage(qboolean isChat, qboolean toAll, gentity_t* ent, char* prefix, const char* msg, va_list argptr);
 void QDECL G_printInfoMessage(gentity_t* ent, const char* msg, ...) __attribute__((format(printf, 2, 3)));
@@ -1614,6 +1749,19 @@ char* getClanTypeAsText(clanType_t clanType);
 void clan_setPassword(gentity_t* ent, char* password);
 void clan_Login(gentity_t* ent, char* password);
 gentity_t* NV_projectile(gentity_t* ent, vec3_t start, vec3_t dir, int weapon, int damage);
+void popPlayer(gentity_t* ent, popAction_t popAction);
+void muteClient(gentity_t* ent, int duration);
+void unmuteClient(gentity_t* ent);
+void checkMutes(void);
+void reapplyMuteAfterConnect(gentity_t* ent);
+qboolean isClientMuted(gentity_t* ent, qboolean printMsg);
+void blockSection(gentity_t* ent, mapSection_t section);
+void checkSectionState(void);
+void writeGametypeTeamNames(const char* redTeam, const char* blueTeam);
+void realSectionAutoCheck(gentity_t* ent, qboolean override);
+void sectionAutoCheck(gentity_t* ent);
+void sectionAddOrDelInstances(gentity_t* ent, qboolean add);
+void checkEnts(gentity_t* ent);
 
 
 typedef struct queueNode_s queueNode;

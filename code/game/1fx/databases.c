@@ -116,6 +116,21 @@ static void migrateGameDatabase(sqlite3* db, int gameMigrationLevel) {
             return;
         }
     }
+
+    if (gameMigrationLevel < 3) {
+        // Add session details to DB.
+        // Intention is to make it persist even across gametype changes.
+        // If the gametype changed, then refrain from reading information not relevant, but do read back e.g. clan, admin, country etc.
+        char* migration = "CREATE TABLE IF NOT EXISTS sessions (clientnum INTEGER DEFAULT 0, team INTEGER DEFAULT 0, adminlevel INTEGER DEFAULT 0, admintype INTEGER DEFAULT 0, clanmember INTEGER DEFAULT 0, hasroxac INTEGER DEFAULT 0, roxguid VARCHAR(15), adminname VARCHAR(40), countrycode VARCHAR(10), country VARCHAR(50), blockseek INTEGER DEFAULT 0, clantype INTEGER DEFAULT 0, clanname VARCHAR(36));"
+            "DELETE FROM migrationlevel;"
+            "INSERT INTO migrationlevel (migrationlevel) VALUES (3);";
+
+        if (sqlite3_exec(db, migration, 0, 0, 0) != SQLITE_OK) {
+            sqlite3_close(db);
+            logSystem(LOGLEVEL_FATAL_DB, "Game dropped due to failing to migrate the game database to level 3 (starting level: %d).\nSQLite error: %s\nCode: %d", gameMigrationLevel, sqlite3_errmsg(db), sqlite3_errcode(db));
+            return;
+        }
+    }
 }
 
 static void migrateLogsDatabase(sqlite3* db, int logsMigrationLevel) {
@@ -729,7 +744,7 @@ void dbRunTruncate(char* table) {
         sqlite3_exec(db, "DELETE FROM banlist", NULL, NULL, NULL);
         sqlite3_exec(db, "DELETE FROM subnetbanlist", NULL, NULL, NULL);
 
-        logSystem(LOGLEVEL_INFO, "All tables truncated.\n");
+        logSystem(LOGLEVEL_INFO, "All tables truncated.");
         backupInMemoryDatabases();
         return;
     }
@@ -752,11 +767,11 @@ void dbRunTruncate(char* table) {
         sqlite3_exec(db, "DELETE FROM subnetbanlist", NULL, NULL, NULL);
     }
     else {
-        logSystem(LOGLEVEL_INFO, "No table \"%s\" found.\n", table);
+        logSystem(LOGLEVEL_INFO, "No table \"%s\" found.", table);
         return;
     }
     backupInMemoryDatabases();
-    logSystem(LOGLEVEL_INFO, "Table \"%s\" truncated.\n", table);
+    logSystem(LOGLEVEL_INFO, "Table \"%s\" truncated.", table);
 
 }
 
@@ -793,7 +808,7 @@ void dbGetAliases(gentity_t* ent, char* output, int outputSize, char* separator)
             if (!alias) continue;
 
             if (strlen(alias) + 1 + strlen(output) > outputSize) {
-                logSystem(LOGLEVEL_WARN, "Alias buffer overflow.\n");
+                logSystem(LOGLEVEL_WARN, "Alias buffer overflow.");
                 break;
             }
 
@@ -1719,4 +1734,222 @@ qboolean dbGetBanDetailsByRowID(qboolean subnet, int rowId, char* outputPlayer, 
     sqlite3_finalize(stmt);
 
     return success;
+}
+
+
+void dbPrintBanlist(gentity_t* ent, qboolean subnet, int page) {
+
+    sqlite3* db = gameDb;
+    sqlite3_stmt* stmt;
+    char buf[MAX_PACKET_BUF];
+    qboolean isRcon = ent && ent->client ? qfalse : qtrue;
+
+    Com_Memset(buf, 0, sizeof(buf));
+    char* query = va("SELECT ROWID, playername, ip, adminname, reason, ROUND((JULIANDAY(banneduntil) - JULIANDAY()) * 1440) AS timeleft, endofmap FROM %sbanlist %s", subnet ? "subnet" : "", ent && ent->client ? "WHERE ROWID BETWEEN ? AND ?" : "");
+    int rc = sqlite3_prepare(db, query, -1, &stmt, 0);
+    if (rc != SQLITE_OK) {
+        logSystem(LOGLEVEL_WARN, "sqlite3_prepare failed on gameDb. Error: %s", sqlite3_errmsg(db));
+        return;
+    }
+
+    if (isRcon) {
+        Com_Printf("\n^3 %-5s%-12.12s%-16.16s%-12.12s%-11.11s%-20.20s\n", "#", "Player", "IP", "Banned by", "Time left", "Reason");
+        Com_Printf("^7-----------------------------------------------------------------------------\n");
+
+
+    }
+    else {
+        if (page > 0) page--;
+        Q_strcat(buf, sizeof(buf), va("\n[^3Page %d^7]\n\n^3 %-5s%-12.12s%-16.16s%-12.12s%-11.11s%-20.20s\n^7-----------------------------------------------------------------------------\n", page + 1, "#", "Player", "IP", "Banned by", "Time left", "Reason"));
+
+        sqlite3_bind_int(stmt, 1, page * 100);
+        sqlite3_bind_int(stmt, 2, (page + 1) * 100);
+
+    }
+
+    while ((rc = sqlite3_step(stmt)) != SQLITE_DONE) {
+        if (rc == SQLITE_ROW) {
+            int rowId = sqlite3_column_int(stmt, 0);
+            char* playerName = sqlite3_column_text(stmt, 1);
+            char* playerIp = sqlite3_column_text(stmt, 2);
+            char* adminName = sqlite3_column_text(stmt, 3);
+            char* reason = sqlite3_column_text(stmt, 4);
+            int timeleft = sqlite3_column_int(stmt, 5);
+            qboolean endofmap = (qboolean) sqlite3_column_int(stmt, 6);
+
+            char displayTimeLeft[64];
+
+            if (endofmap) {
+                Q_strncpyz(displayTimeLeft, "End of map", sizeof(displayTimeLeft));
+            }
+            else {
+                Q_strncpyz(displayTimeLeft, va("%dd%02dh%02dm", timeleft / (60 * 24), (timeleft / 60) % 24, timeleft % 60), sizeof(displayTimeLeft));
+            }
+
+            if (isRcon) {
+                Com_Printf("[^3%-3.3d^7] %-12.12s%-16.16s%-12.12s%-11.11s%-20.20s\n", rowId, playerName, playerIp, adminName, displayTimeLeft, reason);
+            }
+            else {
+
+                if (strlen(buf) + strlen(va("[^3%-3.3d^7] %-12.12s%-16.16s%-12.12s%-10.10s%-20.20s\n", rowId, playerName, playerIp, adminName, displayTimeLeft, reason)) >= sizeof(buf) - 5) {
+                    trap_SendServerCommand(ent - g_entities, va("print \"%s\"", buf));
+                    Com_Memset(buf, 0, sizeof(buf));
+                }
+
+                Q_strcat(buf, sizeof(buf), va("[^3%-3.3d^7] %-12.12s%-16.16s%-12.12s%-11.11s%-20.20s\n", rowId, playerName, playerIp, adminName, displayTimeLeft, reason));
+            }
+        }
+    }
+
+    if (!isRcon) {
+
+        trap_SendServerCommand(ent - g_entities, va("print \"%s\"", buf));
+        trap_SendServerCommand(ent - g_entities, va("print \"\nYou can specify page by adding the page number at the end of the command.\nTo proceed to next page - /adm %sbanlist %d / !%sbl %d \"", subnet ? "subnet" : "", page + 2, subnet ? "s" : "", page + 2));
+        trap_SendServerCommand(ent - g_entities, "print \"\nUse [^3Page Up^7] and [^3Page Down^7] to scroll\n\"");
+    }
+    else {
+        Com_Printf("\nUse [^3Page Up^7] and [^3Page Down^7] to scroll\n");
+    }
+
+    sqlite3_finalize(stmt);
+
+}
+
+void dbRemoveSessionDataById(int clientNum) {
+    sqlite3* db = gameDb;
+    sqlite3_stmt* stmt;
+
+    char* query = "DELETE FROM sessions WHERE clientnum = ?";
+
+    int rc = sqlite3_prepare(db, query, -1, &stmt, 0);
+    if (rc != SQLITE_OK) {
+        logSystem(LOGLEVEL_WARN, "sqlite3_prepare failed on gameDb session writing. Error: %s", sqlite3_errmsg(db));
+        return;
+    }
+
+    sqlite3_bind_int(stmt, 1, clientNum);
+
+    sqlite3_step(stmt);
+    sqlite3_finalize(stmt);
+}
+
+void dbWriteSessionDataForClient(gclient_t* client) {
+
+    clientSession_t* sess = &client->sess;
+    int clientNum = client - level.clients;
+
+    sqlite3* db = gameDb;
+    sqlite3_stmt* stmt;
+
+    char* query = "INSERT INTO sessions (clientnum, team, adminlevel, admintype, clanmember, hasroxac, roxguid, adminname, countrycode, country, blockseek, clantype, clanname) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+
+    int rc = sqlite3_prepare(db, query, -1, &stmt, 0);
+    if (rc != SQLITE_OK) {
+        logSystem(LOGLEVEL_WARN, "sqlite3_prepare failed on gameDb session writing. Error: %s", sqlite3_errmsg(db));
+        return;
+    }
+
+    sqlite3_bind_int(stmt, 1, clientNum);
+    sqlite3_bind_int(stmt, 2, sess->team);
+    sqlite3_bind_int(stmt, 3, sess->adminLevel);
+    sqlite3_bind_int(stmt, 4, sess->adminType);
+    sqlite3_bind_int(stmt, 5, sess->clanMember);
+    sqlite3_bind_int(stmt, 6, sess->hasRoxAC);
+    sqlBindTextOrNull(stmt, 7, sess->roxGuid);
+    sqlBindTextOrNull(stmt, 8, sess->adminName);
+    sqlBindTextOrNull(stmt, 9, sess->countryCode);
+    sqlBindTextOrNull(stmt, 10, sess->country);
+    sqlite3_bind_int(stmt, 11, sess->blockseek);
+    sqlite3_bind_int(stmt, 12, sess->clanType);
+    sqlBindTextOrNull(stmt, 13, sess->clanName);
+
+    rc = sqlite3_step(stmt);
+    if (rc != SQLITE_DONE) {
+        logSystem(LOGLEVEL_WARN, "writeSession step error: %s", sqlite3_errmsg(db));
+    }
+
+    sqlite3_finalize(stmt);
+
+}
+
+void dbReadSessionDataForClient(gclient_t* client, qboolean gametypeChanged) {
+
+    clientSession_t* sess = &client->sess;
+    int clientNum = client - level.clients;
+
+    sqlite3* db = gameDb;
+    sqlite3_stmt* stmt;
+
+    char* query = "SELECT team, adminlevel, admintype, clanmember, hasroxac, roxguid, adminname, countrycode, country, blockseek, clantype, clanname FROM sessions WHERE clientnum = ?";
+
+    int rc = sqlite3_prepare(db, query, -1, &stmt, 0);
+    if (rc != SQLITE_OK) {
+        logSystem(LOGLEVEL_WARN, "sqlite3_prepare failed on gameDb session writing. Error: %s", sqlite3_errmsg(db));
+        return;
+    }
+
+    sqlite3_bind_int(stmt, 1, clientNum);
+
+    rc = sqlite3_step(stmt);
+    if (rc == SQLITE_ROW) {
+
+        if (!gametypeChanged) {
+            sess->team = sqlite3_column_int(stmt, 0);
+        }
+
+        sess->adminLevel = sqlite3_column_int(stmt, 1);
+        sess->adminType = sqlite3_column_int(stmt, 2);
+        sess->clanMember = sqlite3_column_int(stmt, 3);
+        sess->hasRoxAC = sqlite3_column_int(stmt, 4);
+
+        char roxAc[MAX_AC_GUID];
+        Com_Memset(roxAc, 0, sizeof(roxAc));
+
+        if (sqlite3_column_type(stmt, 5) != SQLITE_NULL) {
+            Q_strncpyz(roxAc, sqlite3_column_text(stmt, 5), sizeof(roxAc));
+        }
+        Q_strncpyz(sess->roxGuid, roxAc, sizeof(sess->roxGuid));
+
+        char adminName[MAX_NETNAME];
+        Com_Memset(adminName, 0, sizeof(adminName));
+
+        if (sqlite3_column_type(stmt, 6) != SQLITE_NULL) {
+            Q_strncpyz(adminName, sqlite3_column_text(stmt, 6), sizeof(adminName));
+        }
+        Q_strncpyz(sess->adminName, adminName, sizeof(sess->adminName));
+
+        char countryCode[MAX_COUNTRYCODE];
+        char country[MAX_COUNTRYNAME];
+
+        Com_Memset(countryCode, 0, sizeof(countryCode));
+        Com_Memset(country, 0, sizeof(country));
+
+        // if one of them is null, both will be kept on null.
+
+        if (sqlite3_column_type(stmt, 7) != SQLITE_NULL && sqlite3_column_type(stmt, 8) != SQLITE_NULL) {
+            Q_strncpyz(countryCode, sqlite3_column_text(stmt, 7), sizeof(countryCode));
+            Q_strncpyz(country, sqlite3_column_text(stmt, 8), sizeof(country));
+        } 
+
+        Q_strncpyz(sess->countryCode, countryCode, sizeof(sess->countryCode));
+        Q_strncpyz(sess->country, country, sizeof(sess->country));
+
+        sess->blockseek = sqlite3_column_int(stmt, 9);
+        sess->clanType = sqlite3_column_int(stmt, 10);
+
+        char clanName[MAX_NETNAME];
+        Com_Memset(clanName, 0, sizeof(clanName));
+
+        if (sqlite3_column_type(stmt, 11) != SQLITE_NULL) {
+            Q_strncpyz(clanName, sqlite3_column_text(stmt, 11), sizeof(clanName));
+        }
+
+        Q_strncpyz(sess->clanName, clanName, sizeof(sess->clanName));
+        
+    }
+    else if (rc != SQLITE_DONE) {
+        logSystem(LOGLEVEL_WARN, "readSession step error: %s", sqlite3_errmsg(db));
+    }
+    sqlite3_finalize(stmt);
+
 }

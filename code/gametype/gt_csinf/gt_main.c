@@ -33,8 +33,8 @@ vmCvar_t            gt_blueTeamColored;
 static cvarTable_t gametypeCvarTable[] =
 {
     { &gt_simpleScoring,    "gt_simpleScoring",     "0",  CVAR_ARCHIVE, 0.0f, 0.0f, 0, qfalse },
-    { &gt_blueTeamColored,  "gt_blueTeamColored",   "^yB^Il^fu^+e", 0.0f, 0.0f, 0, qfalse },
-    { &gt_redTeamColored, "gt_redTeamColored", "^$R^Te^Hd", CVAR_ARCHIVE, 0.0, 0.0, 0,  qfalse },
+    { &gt_blueTeamColored,  "gt_blueTeamColored",   "^yB^Il^fu^+e ^7Team", CVAR_ARCHIVE, 0.0f, 0.0f, 0, qfalse },
+    { &gt_redTeamColored, "gt_redTeamColored", "^$R^Te^Hd ^7Team", CVAR_ARCHIVE, 0.0, 0.0, 0,  qfalse },
 
     { NULL, NULL, NULL, 0, 0.0f, 0.0f, 0, qfalse },
 };
@@ -110,6 +110,8 @@ void GT_UpdateCvars( void )
 
             if ( cv->modificationCount != cv->vmCvar->modificationCount )
             {
+                Com_Printf("VAR CHANGED???????\n");
+                Com_Printf("Var: %s, val: %s\n", cv->cvarName, cv->vmCvar->string);
                 cv->modificationCount = cv->vmCvar->modificationCount;
             }
         }
@@ -149,6 +151,9 @@ void GT_Init ( void )
     // Register the triggers
     memset ( &triggerDef, 0, sizeof(triggerDef) );
     trap_Cmd_RegisterTrigger ( TRIGGER_EXTRACTION, "briefcase_destination", &triggerDef );
+
+    // Report back the used team names to the game module.
+    trap_Cmd_Teamnames(gt_redTeamColored.string, gt_blueTeamColored.string);
 }
 
 /*

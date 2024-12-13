@@ -41,8 +41,8 @@ static cvarTable_t gametypeCvarTable[] =
     { &gt_simpleScoring,    "gt_simpleScoring",     "0",  CVAR_ARCHIVE, 0.0f, 0.0f, 0, qfalse },
     { &gt_allowFlagReturns,    "gt_allowFlagReturns",     "1",  CVAR_ARCHIVE, 0.0f, 0.0f, 0, qfalse },
     { &gt_flagCaptureType,    "gt_flagCaptureType",     "0",  CVAR_ARCHIVE, 0.0f, 0.0f, 0, qfalse }, // 0 = dont allow capturing if flag is not at base, 1 => allow capturing
-    { &gt_blueTeamColored,      "gt_blueTeamColored",   "^yB^Il^fu^+e", 0.0f, 0.0f, 0, qfalse },
-    { &gt_redTeamColored, "gt_redTeamColored", "^$R^Te^Hd", CVAR_ARCHIVE, 0.0, 0.0, 0,  qfalse },
+    { &gt_blueTeamColored,      "gt_blueTeamColored",   "^yB^Il^fu^+e ^7Team", CVAR_ARCHIVE, 0.0f, 0.0f, 0, qfalse },
+    { &gt_redTeamColored, "gt_redTeamColored", "^$R^Te^Hd ^7Team", CVAR_ARCHIVE, 0.0, 0.0, 0,  qfalse },
     { NULL, NULL, NULL, 0, 0.0f, 0.0f, 0, qfalse },
 };
 
@@ -171,6 +171,9 @@ void GT_Init ( void )
     trap_Cmd_RegisterTrigger ( TRIGGER_BLUECAPTURE, "blue_capture_point", &triggerDef );
     gametype.blueFlagAtBase = qtrue;
     gametype.redFlagAtBase = qtrue;
+
+    // Report back the used team names to the game module.
+    trap_Cmd_Teamnames(gt_redTeamColored.string, gt_blueTeamColored.string);
 }
 
 /*
