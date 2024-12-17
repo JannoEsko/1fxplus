@@ -377,6 +377,8 @@ void mvchat_parseFiles()
             // Advance to the next sound in this file.
             mvchatGroup = trap_GPG_GetNext(mvchatGroup);
         }
+
+        trap_GP_Delete(&mvchatFile); // Free the mvchat parsed file as well. This fixes a crash in Z_Malloc over continuous restarts.
     }
 
     // All files are parsed.
