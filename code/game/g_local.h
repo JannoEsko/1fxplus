@@ -1939,7 +1939,7 @@ void showMotd(gentity_t* ent);
 qboolean weaponMod(weaponMod_t weaponMod, char* wpnModName);
 void printMapActionDenialReason(gentity_t* adm);
 int getChatModeFromCommand(gentity_t* ent, const char* cmd, chatMode_t mode, int adminCommand);
-char* getChatAdminPrefixByMode(gentity_t* ent, chatMode_t mode);
+char* getChatAdminPrefixByMode(gentity_t* ent, chatMode_t mode, char* output, int sizeofOutput);
 qboolean shouldChatModeBeep(chatMode_t mode);
 void printStatsInfo(gentity_t* ent);
 void printPlayersInfo(gentity_t* ent);

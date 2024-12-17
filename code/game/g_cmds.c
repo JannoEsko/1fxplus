@@ -1414,7 +1414,7 @@ static void G_SayTo( gentity_t *ent, gentity_t *other, int mode, const char *nam
     else if (ent->client->sess.team == TEAM_RED) {
         teamPrefix = "^7[^1r^7] ";
     }
-    Q_strncpyz(adminPrefix, getChatAdminPrefixByMode(ent, mode), sizeof(adminPrefix));
+    getChatAdminPrefixByMode(ent, mode, adminPrefix, sizeof(adminPrefix));
     char* starPrefixSuffix = "";
 
     char newMessage[MAX_SAY_TEXT];
@@ -1462,7 +1462,7 @@ static void G_SayTo( gentity_t *ent, gentity_t *other, int mode, const char *nam
         int remainingSpace = sizeof(newMessage) - msgBeforeCommand;
 
         // Ensure we don't copy more than the remaining space in the buffer
-        if (remainingSpace > 0) {
+        if (remainingSpace > 0 && cmdEnd && *cmdEnd) {
             Q_strncpyz(newMessage + msgBeforeCommand, cmdEnd, remainingSpace);
         }
     }

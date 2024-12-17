@@ -2243,33 +2243,27 @@ int getChatModeFromCommand(gentity_t* ent, const char* cmd, chatMode_t mode, int
 
 }
 
-char* getChatAdminPrefixByMode(gentity_t* ent, chatMode_t mode) {
+char* getChatAdminPrefixByMode(gentity_t* ent, chatMode_t mode, char* output, int outputSize) {
 
-    if (!ent || !ent->client) {
-        return "";
-    }
+    Com_Memset(output, 0, outputSize);
 
-    if (mode <= SAY_ADMTALK) {
-        return getAdminNameByAdminLevel(ent->client->sess.adminLevel);
+    if (ent && ent->client) {
+        if (mode <= SAY_ADMTALK) {
+            Q_strncpyz(output, getAdminNameByAdminLevel(ent->client->sess.adminLevel), outputSize);
+        }
+        else if (mode == SAY_ADMCHAT) {
+            Q_strncpyz(output, va("%ss Only", g_adminPrefix.string), outputSize);
+        }
+        else if (mode == SAY_SADMCHAT) {
+            Q_strncpyz(output, va("%ss Only", g_sadminPrefix.string), outputSize);
+        }
+        else if (mode == SAY_HADMCHAT) {
+            Q_strncpyz(output, va("%ss Only", g_hadminPrefix.string), outputSize);
+        }
+        else if (mode == SAY_CALLADMCHAT) {
+            Q_strncpyz(output, va("^7Hey %s!", g_adminPrefix.string), outputSize);
+        }
     }
-
-    char newPrefix[MAX_SAY_TEXT];
-    Com_Memset(newPrefix, 0, sizeof(newPrefix));
-
-    if (mode == SAY_ADMCHAT) {
-        Q_strncpyz(newPrefix, va("%ss Only", g_adminPrefix.string), sizeof(newPrefix));
-    }
-    else if (mode == SAY_SADMCHAT) {
-        Q_strncpyz(newPrefix, va("%ss Only", g_sadminPrefix.string), sizeof(newPrefix));
-    }
-    else if (mode == SAY_HADMCHAT) {
-        Q_strncpyz(newPrefix, va("%ss Only", g_hadminPrefix.string), sizeof(newPrefix));
-    }
-    else if (mode == SAY_CALLADMCHAT) {
-        Q_strncpyz(newPrefix, va("^7Hey %s!", g_adminPrefix.string), sizeof(newPrefix));
-    }
-
-    return newPrefix;
 }
 
 qboolean shouldChatModeBeep(chatMode_t mode) {
@@ -2350,9 +2344,6 @@ void printStatsInfo(gentity_t* ent) {
 
         gentity_t* tent = &g_entities[idNum];
 
-        char packetBuf[1000];
-        Com_Memset(packetBuf, 0, sizeof(packetBuf));
-
         /*
         1fxmod:
         aliases, admin, country, client, rate, snaps, protocol
@@ -2365,10 +2356,14 @@ void printStatsInfo(gentity_t* ent) {
         pageup pagedown
         */
 
-        Q_strncpyz(packetBuf, va("\n^3Player statistics for %s\n-----------------------------------------------------------------------------\n", tent->client->pers.netname), sizeof(packetBuf));
-        
+        trap_SendServerCommand(idNum, va("print \"\n^3Player statistics for %s\n^7-----------------------------------------------------------------------------\n\n\"", tent->client->pers.netname));
+        char aliases[MAX_STRING_CHARS];
+        dbGetAliases(ent, aliases, sizeof(aliases), "\n\t\t");
+        trap_SendServerCommand(idNum, va("print \"Aliases: %s\"", aliases));
 
     }
+
+    
 
 }
 
