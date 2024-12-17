@@ -2195,3 +2195,90 @@ void printMapActionDenialReason(gentity_t* adm) {
     }
 
 }
+
+int getChatModeFromCommand(gentity_t* ent, const char* cmd, chatMode_t mode, int adminCommand) {
+
+    // If the first character is not !, we break out early.
+    if (ent && ent->client) {
+        if (cmd && *cmd && strlen(cmd) > 0 && cmd[0] == '!' && adminCommand == -1) { // Don't run custom modes if an admin command is used, e.g. chaining together broadcast with !at.
+
+            // Chat modes we support are triggered here.
+
+            if (!Q_stricmp(cmd, "!at")) {
+                if (ent->client->sess.adminLevel > ADMLVL_NONE) {
+                    return SAY_ADMTALK;
+                }
+                else {
+                    return SAY_CALLADMCHAT;
+                }
+            }
+
+            if (!Q_stricmp(cmd, "!ca") || !Q_stricmp(cmd, "!ac")) {
+                if (ent->client->sess.adminLevel > ADMLVL_NONE) {
+                    return SAY_ADMCHAT;
+                }
+                else {
+                    return SAY_CALLADMCHAT;
+                }
+            }
+
+            if (!Q_stricmp(cmd, "!sc") && ent->client->sess.adminLevel >= ADMLVL_SADMIN) {
+                return SAY_SADMCHAT;
+            }
+
+            if (!Q_stricmp(cmd, "!hc") && ent->client->sess.adminLevel == ADMLVL_HADMIN) {
+                return SAY_HADMCHAT;
+            }
+
+        }
+
+        // Wasn't a command, are we in compmode?
+        if ((cm_state.integer == COMPMODE_ROUND1 || cm_state.integer == COMPMODE_ROUND2) && ent->client->sess.team == TEAM_SPECTATOR) {
+            return SAY_TEAM;
+        }
+    }
+    
+    // If none returned first, we retain the original mode.
+    return mode;
+
+}
+
+char* getChatAdminPrefixByMode(gentity_t* ent, chatMode_t mode) {
+
+    if (!ent || !ent->client) {
+        return "";
+    }
+
+    if (mode <= SAY_ADMTALK) {
+        return getAdminNameByAdminLevel(ent->client->sess.adminLevel);
+    }
+
+    char newPrefix[MAX_SAY_TEXT];
+    Com_Memset(newPrefix, 0, sizeof(newPrefix));
+
+    if (mode == SAY_ADMCHAT) {
+        Q_strncpyz(newPrefix, va("%ss Only", g_adminPrefix.string), sizeof(newPrefix));
+    }
+    else if (mode == SAY_SADMCHAT) {
+        Q_strncpyz(newPrefix, va("%ss Only", g_sadminPrefix.string), sizeof(newPrefix));
+    }
+    else if (mode == SAY_HADMCHAT) {
+        Q_strncpyz(newPrefix, va("%ss Only", g_hadminPrefix.string), sizeof(newPrefix));
+    }
+    else if (mode == SAY_CALLADMCHAT) {
+        Q_strncpyz(newPrefix, va("^7Hey %s!", g_adminPrefix.string), sizeof(newPrefix));
+    }
+
+    return newPrefix;
+}
+
+qboolean shouldChatModeBeep(chatMode_t mode) {
+    return
+        (
+            mode == SAY_ADMTALK ||
+            mode == SAY_REFTALK ||
+            mode == SAY_CLANTALK ||
+            mode == SAY_CALLADMCHAT
+        ) ? qtrue : qfalse;
+}
+

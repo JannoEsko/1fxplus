@@ -1901,6 +1901,9 @@ void notifyPlayersOfTeamScores(void);
 void showMotd(gentity_t* ent);
 qboolean weaponMod(weaponMod_t weaponMod, char* wpnModName);
 void printMapActionDenialReason(gentity_t* adm);
+int getChatModeFromCommand(gentity_t* ent, const char* cmd, chatMode_t mode, int adminCommand);
+char* getChatAdminPrefixByMode(gentity_t* ent, chatMode_t mode);
+qboolean shouldChatModeBeep(chatMode_t mode);
 
 typedef struct queueNode_s queueNode;
 

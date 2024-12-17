@@ -1334,7 +1334,8 @@ static void G_SayTo( gentity_t *ent, gentity_t *other, int mode, const char *nam
 {
     qboolean     ghost = qfalse;
     qboolean     spec  = qfalse;
-    const char* teamPrefix, *adminPrefix;
+    const char* teamPrefix;
+    char adminPrefix[MAX_SAY_TEXT];
 
     if (!other)
     {
@@ -1394,19 +1395,92 @@ static void G_SayTo( gentity_t *ent, gentity_t *other, int mode, const char *nam
     teamPrefix = "";
     if ( ghost )
     {
-        teamPrefix = "*ghost* ";
+        teamPrefix = "^7[^Cg^7] ";
     }
     else if ( spec )
     {
-        teamPrefix = "*spec* ";
+        teamPrefix = "^7[^Cs^7] ";
+    }
+    else if (isCurrentGametypeInList((gameTypes_t[]) { GT_HNS, GT_HNZ }) && ent->client->sess.team == TEAM_RED) {
+        teamPrefix = "^7[^1h^7] ";
+    }
+    else if (ent->client->sess.team == TEAM_BLUE && isCurrentGametype(GT_HNS)) {
+        teamPrefix = "^7[^ys^7] ";
+    }
+    else if (ent->client->sess.team == TEAM_BLUE && isCurrentGametype(GT_HNZ)) {
+        teamPrefix = "^7[^yz^7] ";
+    }
+    else if (ent->client->sess.team == TEAM_BLUE) {
+        teamPrefix = "^7[^yb^7] ";
+    }
+    else if (ent->client->sess.team == TEAM_RED) {
+        teamPrefix = "^7[^1r^7] ";
+    }
+    Q_strncpyz(adminPrefix, getChatAdminPrefixByMode(ent, mode), sizeof(adminPrefix));
+    char* starPrefixSuffix = "";
+
+    char newMessage[MAX_SAY_TEXT];
+    Com_Memset(newMessage, 0, sizeof(newMessage));
+
+    if (mode > SAY_TELL) {
+        starPrefixSuffix = "^j*^7 ";
+        teamPrefix = "";
+
+        // There is a chat prefix preceeding the message, so we remove the part with the prefix.
+        
+        // Find the command starting point.
+        char* cmdStart = strchr(message, '!');
+
+        // We should check for cmdStart to have a valid pointer, but we wouldn't have the chat mode pointing to it if it would be invalid, therefore ignored.
+        char* cmdEnd = cmdStart;
+
+        while (*cmdEnd && *cmdEnd != ' ') {
+            if (Q_IsColorString(cmdEnd)) {
+                cmdEnd += 2; // Skip the color code.
+            }
+            else {
+                cmdEnd++;
+            }
+        }
+
+        if (*cmdEnd == ' ') {
+            cmdEnd++;
+        }
+
+        // Should have a clean string now.
+        int msgBeforeCommand = cmdStart - message;
+
+        // Ensure we don't copy more than the buffer size
+        if (msgBeforeCommand < sizeof(newMessage)) {
+            // Copy before the command using strncpy
+            strncpy(newMessage, message, msgBeforeCommand);
+            newMessage[msgBeforeCommand] = '\0'; // Ensure null termination
+        }
+        else {
+            logSystem(LOGLEVEL_WARN, "msgBeforeCommand > sizeof(newMessage)?");
+        }
+
+        // Calculate the space remaining in the buffer after copying the first part
+        int remainingSpace = sizeof(newMessage) - msgBeforeCommand;
+
+        // Ensure we don't copy more than the remaining space in the buffer
+        if (remainingSpace > 0) {
+            Q_strncpyz(newMessage + msgBeforeCommand, cmdEnd, remainingSpace);
+        }
+    }
+    else {
+        Q_strncpyz(newMessage, message, sizeof(newMessage));
     }
 
-    adminPrefix = getAdminNameByAdminLevel(ent->client->sess.adminLevel);
+    if (shouldChatModeBeep(mode)) {
+        G_ClientSound(other, G_SoundIndex("sound/misc/c4/beep.mp3"));
+    }
 
-    trap_SendServerCommand( other-g_entities, va("%s %d \"%s%s%s%s%s\"",
+    // In a special mode we will always append stars.
+    trap_SendServerCommand( other-g_entities, va("%s %d \"%s%s%s%s%s%s %s\"",
                             mode == SAY_TEAM ? "tchat" : "chat",
                             ent->s.number,
-                            teamPrefix, adminPrefix, strlen(adminPrefix) ? " " : "", name, message));
+                            starPrefixSuffix, teamPrefix, adminPrefix, strlen(adminPrefix) ? " " : "", name, newMessage, starPrefixSuffix));
 }
 
 /*
@@ -1554,7 +1628,25 @@ void G_Say ( gentity_t *ent, gentity_t *target, int mode, const char *chatText )
     for (j = 0; j < level.numConnectedClients; j++)
     {
         other = &g_entities[level.sortedClients[j]];
-        G_SayTo( ent, other, mode, name, text );
+
+        // We need to figure out whether this indeed should go to everyone.
+
+        if (mode > SAY_ADMTALK) {
+            if (ent == other) {
+                // Always allow the same client to see the message they wrote.
+                G_SayTo(ent, other, mode, name, text);
+            } else if ((mode == SAY_ADMCHAT || mode == SAY_CALLADMCHAT) && other->client->sess.adminLevel > ADMLVL_NONE) {
+                G_SayTo(ent, other, mode, name, text);
+            } else if (mode == SAY_SADMCHAT && other->client->sess.adminLevel >= ADMLVL_SADMIN) {
+                G_SayTo(ent, other, mode, name, text);
+            } else if (mode == SAY_HADMCHAT && other->client->sess.adminLevel == ADMLVL_HADMIN) {
+                G_SayTo(ent, other, mode, name, text);
+            } 
+            // Otherwise, do not send.
+        }
+        else {
+            G_SayTo(ent, other, mode, name, text);
+        }
     }
 }
 
@@ -1598,9 +1690,9 @@ static void Cmd_Say_f( gentity_t *ent, int mode, qboolean arg0 ) { // JANFIXME -
         }
 
         char* admCmd = G_GetArg(0, qtrue, qfalse);
-
+        int adminCommand = -1;
         if (ent->client->sess.adminLevel > ADMLVL_NONE) {
-            int adminCommand = cmdIsAdminCmd(admCmd, qtrue);
+            adminCommand = cmdIsAdminCmd(admCmd, qtrue);
 
             if (canClientRunAdminCommand(ent, adminCommand)) {
                 runAdminCommand(adminCommand, argc == 2 ? 1 : 2, ent, (qboolean)argc == 2);
@@ -1609,6 +1701,8 @@ static void Cmd_Say_f( gentity_t *ent, int mode, qboolean arg0 ) { // JANFIXME -
                 G_printInfoMessage(ent, "You're not privileged enough to run this command.");
             }
         }
+
+        mode = getChatModeFromCommand(ent, admCmd, mode, adminCommand);
 
         // Run all of the tokens.
         char tokenizedBuffer[MAX_SAY_TEXT];
