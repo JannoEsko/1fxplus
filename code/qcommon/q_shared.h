@@ -1328,7 +1328,17 @@ typedef struct qtime_s {
 typedef enum chatMode_s {
     SAY_ALL,
     SAY_TEAM,
-    SAY_TELL
+    SAY_TELL,
+    SAY_ADMTALK,
+    SAY_ADMCHAT,
+    SAY_REFTALK,
+    SAY_REFCHAT,
+    SAY_SADMCHAT,
+    SAY_HADMCHAT,
+    SAY_CLANTALK,
+    SAY_CLANCHAT,
+    SAY_TELL_SELF,
+    SAY_CALLADMCHAT
 } chatMode_t;
 
 typedef struct {

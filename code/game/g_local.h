@@ -1087,6 +1087,7 @@ gentity_t*  G_FindNearbyClient              ( vec3_t origin, team_t team, float 
 void        G_AddClientSpawn                ( gentity_t* ent, team_t team );
 qboolean    G_IsClientChatIgnored           ( int ignorer, int ingnoree );
 void        G_IgnoreClientChat              ( int ignorer, int ignoree, qboolean ignore );
+void        G_UpdateOutfitting              ( int clientNum );
 
 //
 // g_svcmds.c

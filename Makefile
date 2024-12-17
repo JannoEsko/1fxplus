@@ -553,11 +553,11 @@ ifneq ($(BUILD_GT_CSINF),0)
 endif
 
 ifneq ($(BUILD_GT_HNS),0)
-  TARGETS += $(B)/gt_h&s$(SHLIBNAME)
+  TARGETS += $(B)/gt_hns$(SHLIBNAME)
 endif
 
 ifneq ($(BUILD_GT_HNZ),0)
-  TARGETS += $(B)/gt_h&z$(SHLIBNAME)
+  TARGETS += $(B)/gt_hnz$(SHLIBNAME)
 endif
 
 ifneq ($(BUILD_GT_PROP),0)
@@ -799,6 +799,7 @@ SOF2GOBJ_ = \
   $(B)/game/1fx/functions.o \
   $(B)/game/1fx/logging.o \
   $(B)/game/1fx/threads.o \
+  $(B)/game/1fx/mvchat.o \
   \
   $(B)/qcommon/q_math.o \
   $(B)/qcommon/q_shared.o

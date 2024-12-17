@@ -678,7 +678,7 @@ int mvchat_chatGetNextSound(TIdentity* identity)
     }
 
     // Return the sound index to this sound file.
-    return G_SoundIndex((char*)sound, qfalse);
+    return G_SoundIndex((char*)sound);
 }
 
 void mvchat_findSounds(gentity_t* ent) {
