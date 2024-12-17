@@ -185,3 +185,8 @@ void trap_Cmd_GetTriggerTarget ( int triggerid, const char* buffer, int buffersi
 void trap_Cmd_Teamnames(const char* redTeam, const char* blueTeam) {
     syscall(GT_REPORT_TEAMNAMES, redTeam, blueTeam);
 }
+
+void trap_Cmd_Broadcast(int client, const char* message, qboolean playSound)
+{
+    syscall(GT_BROADCAST, client, message, playSound);
+}

@@ -1047,11 +1047,15 @@ void ClientUserinfoChanged( int clientNum )
         client->ps.pm_flags &= ~PMF_AUTORELOAD;
     }
 
-    // set name
-    Q_strncpyz ( oldname, client->pers.netname, sizeof( oldname ) );
-    s = Info_ValueForKey (userinfo, "name");
-    G_ClientCleanName( s, client->pers.cleanName, sizeof(client->pers.cleanName), qfalse );
-    G_ClientCleanName(s, client->pers.netname, sizeof(client->pers.netname), qtrue);
+    // JANFIXME Profanity
+
+    if (client->sess.nameChangeBlock == NAMECHANGEBLOCK_NONE) {
+        // set name
+        Q_strncpyz(oldname, client->pers.netname, sizeof(oldname));
+        s = Info_ValueForKey(userinfo, "name");
+        G_ClientCleanName(s, client->pers.cleanName, sizeof(client->pers.cleanName), qfalse);
+        G_ClientCleanName(s, client->pers.netname, sizeof(client->pers.netname), qtrue);
+    }    
 
     if ( client->sess.team == TEAM_SPECTATOR )
     {
@@ -1147,7 +1151,7 @@ void ClientUserinfoChanged( int clientNum )
         }
 
         // If the client is changing their name then handle some delayed name changes
-        if ( strcmp( oldname, client->pers.netname ) )
+        if ( strcmp( oldname, client->pers.netname ) && client->sess.nameChangeBlock == NAMECHANGEBLOCK_NONE )
         {
             // Dont let them change their name too much
             if ( level.time - client->pers.netnameTime < 5000 )
@@ -1366,6 +1370,8 @@ char *ClientConnect( int clientNum, qboolean firstTime, qboolean isBot )
         {
             BroadcastTeamChange( client, -1 );
         }
+
+        client->sess.firstTime = qtrue;
     }
 
 
@@ -1783,6 +1789,10 @@ void ClientSpawn(gentity_t *ent)
     if ( level.intermissiontime )
     {
         MoveClientToIntermission( ent );
+    }
+
+    if (level.paused) {
+        ent->client->ps.pm_type = PM_INTERMISSION;
     }
 
     // Frozen?

@@ -170,6 +170,7 @@
     <ClCompile Include="1fx\databases.c" />
     <ClCompile Include="1fx\functions.c" />
     <ClCompile Include="1fx\logging.c" />
+    <ClCompile Include="1fx\mvchat.c" />
     <ClCompile Include="1fx\threads.c" />
     <ClCompile Include="ai_main.c" />
     <ClCompile Include="ai_util.c" />

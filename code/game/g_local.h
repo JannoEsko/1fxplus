@@ -14,6 +14,11 @@
 // the "gameversion" client command will print this plus compile date
 #define GAMEVERSION "sof2mp"
 
+#define MODNAME "1fxplus"
+#define MODNAME_COLORED "^71fx^1plus.^7"
+#define MODVERSION "0.01alpha"
+#define MOD_MOTD_INFO "Inspired by 1fx. Mod by ^GBoe!Man ^7& ^6Henkie\n^7Running on SoF2Plus, which is a fork of ioquake3\nMade compatible with SoF2 by ^GBoe!Man\n^71fx^1plus^7 Multiprotocol by 1fx^1.^K # ^7Janno\nhttps://github.com/sof2plus\nhttps://github.com/JannoEsko/1fxplus\n\n"
+
 #define BODY_QUEUE_SIZE_MAX         MAX_CLIENTS
 #define BODY_QUEUE_SIZE             8
 
@@ -69,7 +74,9 @@ typedef enum {
 typedef enum {
     COMPMODE_NONE,
     COMPMODE_INITIALIZED,
-    COMPMODE_INMATCH,
+    COMPMODE_ROUND1,
+    COMPMODE_PRE_ROUND2,
+    COMPMODE_ROUND2,
     COMPMODE_END
 } compModeState;
 
@@ -86,6 +93,31 @@ typedef enum {
     POPACTION_ADMIN,
     POPACTION_CAMP
 } popAction_t;
+
+typedef enum {
+    GT_NONE,
+    GT_HNS,
+    GT_DEM,
+    GT_INF,
+    GT_CTF,
+    GT_DM,
+    GT_TDM,
+    GT_ELIM,
+    GT_HNZ,
+    GT_CSINF,
+    GT_MM,
+    GT_VIP,
+    GT_PROP,
+    GT_GUNGAME,
+    GT_MAX
+} gameTypes_t;
+
+typedef enum {
+    WEAPONMOD_DEFAULT,
+    WEAPONMOD_ND,
+    WEAPONMOD_RD,
+    WEAPONMOD_CUSTOM
+} weaponMod_t;
 
 /*
 Mutes from 1fxmod.
@@ -116,6 +148,17 @@ typedef enum
     MAPSECTIONSTATE_CLOSING,
     MAPSECTIONSTATE_CLOSED
 } mapSectionState_t;
+
+typedef enum {
+    MAPACTION_NONE,
+    MAPACTION_ENDING,
+    MAPACTION_PENDING_RESTART,
+    MAPACTION_PENDING_GT,
+    MAPACTION_PENDING_MAPCHANGE,
+    MAPACTION_PENDING_MAPGTCHANGE,
+    MAPACTION_PENDING_MAPCYCLE,
+    MAPACTION_UNPAUSE
+} mapAction_t;
 
 // Flags to determine which extra features the client is willing to accept in ROCmod.
 #define ROC_TEAMINFO    0x00000001
@@ -402,6 +445,12 @@ typedef enum {
     SPINVIEW_FAST
 } spinView_t;
 
+typedef enum {
+    NAMECHANGEBLOCK_NONE,
+    NAMECHANGEBLOCK_PROFANITY,
+    NAMECHANGEBLOCK_RENAME
+} nameChangeBlock_t ;
+
 // client data that stays across multiple levels or map restarts
 // this is achieved by writing all the data to cvar strings at game shutdown
 // time and reading them back at connection time.  Anything added here
@@ -469,6 +518,11 @@ typedef struct
     int                 lastTele;
     int                 acceleratorCooldown;
     int                 lastjump;
+    int                 noroofCheckTime;
+
+    int                 isOnRoofTime;
+    qboolean            isOnRoof;
+    nameChangeBlock_t   nameChangeBlock;
 
 } clientSession_t;
 
@@ -498,6 +552,8 @@ typedef struct
     char                cleanName[MAX_NETNAME];
     char                ip[MAX_IP];
     char                subnet[MAX_IP];
+    int                 burnSeconds;
+    int                 oneSecondChecks;
 
 } clientPersistant_t;
 
@@ -782,6 +838,19 @@ typedef struct
     int             customETHiderAmount[MAX_CUSTOM_ET_AMOUNT];
     qboolean        cagefightextras;
 
+    int             nextCmInfoDisplay;
+    qboolean        proceedToNextCompState;
+    int             nextCompState;
+    int             autoSwapTime;
+    int             awardTime;
+    int             lastAwardSent;
+    qboolean        timelimitHit;
+    qboolean        timelimitMsg;
+    mapAction_t     mapAction;
+    int             runMapAction;
+    char            mapActionNewGametype[12];
+    char            mapActionNewMap[MAX_QPATH];
+    int             unpauseNextNotification;
 } level_locals_t;
 
 //
@@ -1049,6 +1118,7 @@ void        G_RunThink                          ( gentity_t *ent );
 void QDECL  G_LogPrintf                         ( const char *fmt, ... );
 void        SendScoreboardMessageToAllClients   ( void );
 void        CheckGametype                       ( void );
+qboolean G_IsGametypeAValidGametype(char* gametype);
 
 //
 // g_client.c
@@ -1084,6 +1154,8 @@ void G_InitSessionData( gclient_t *client, char *userinfo, qboolean firstTime );
 
 void G_InitWorldSession( void );
 void G_WriteSessionData( void );
+void writeMutesIntoSession(void);
+void readMutesFromSession(void);
 
 //
 // g_bot.c
@@ -1170,7 +1242,7 @@ extern  vmCvar_t    g_debugDamage;
 extern  vmCvar_t    g_weaponRespawn;
 extern  vmCvar_t    g_backpackRespawn;
 extern  vmCvar_t    g_synchronousClients;
-extern  vmCvar_t    g_motd;
+//extern  vmCvar_t    g_motd;
 extern  vmCvar_t    g_warmup;
 extern  vmCvar_t    g_doWarmup;
 extern  vmCvar_t    g_allowVote;
@@ -1296,6 +1368,36 @@ extern  vmCvar_t    g_useNoLower;
 extern  vmCvar_t    g_useNoRoof;
 extern  vmCvar_t    g_useNoMiddle;
 extern  vmCvar_t    g_useNoWhole;
+
+extern  vmCvar_t    g_useAutoSections;
+
+extern  vmCvar_t    match_bestOf; // ensures early exit from winning state if one team's score is too far ahead to reach.
+extern  vmCvar_t    match_scorelimit;
+extern  vmCvar_t    match_timelimit;
+extern  vmCvar_t    match_lockspecs;
+extern  vmCvar_t    match_doublerounds;
+
+extern  vmCvar_t    cm_prevRedTeamScore;
+extern  vmCvar_t    cm_prevBlueTeamScore;
+extern  vmCvar_t    cm_state; // init, first round, second round.
+
+extern  vmCvar_t    cm_bestOf;
+extern  vmCvar_t    cm_scorelimit;
+extern  vmCvar_t    cm_timelimit;
+extern  vmCvar_t    cm_lockspecs;
+extern  vmCvar_t    cm_doublerounds;
+
+extern  vmCvar_t    cm_originalsl;
+extern  vmCvar_t    cm_originaltl;
+extern  vmCvar_t    g_mvchatCheckSoundFiles;
+extern  vmCvar_t    currentGametype;
+
+extern  vmCvar_t    g_motd1;
+extern  vmCvar_t    g_motd2;
+extern  vmCvar_t    g_motd3;
+extern  vmCvar_t    g_motd4;
+extern  vmCvar_t    g_motd5;
+extern  vmCvar_t    g_autoEvenTeams;
 
 //extern vmCvar_t     g_leanType;
 
@@ -1525,12 +1627,33 @@ void        trap_GT_Shutdown    ( void );
 qboolean trap_IsClientLegacy(int clientNum);
 int trap_TranslateSilverWeaponToGoldWeapon(int weapon);
 int trap_TranslateGoldWeaponToSilverWeapon(int weapon);
+int trap_ValidateMapName(const char* mapName, char* output, int outputSize);
 
 void G_UpdateClientAntiLag  ( gentity_t* ent );
 void G_UndoAntiLag          ( void );
 void G_ApplyAntiLag         ( gentity_t* ref, qboolean enlargeHitBox );
 
-#define SQL_GAME_MIGRATION_LEVEL 3
+// MVChats inclusion.
+typedef struct {
+    qboolean    shouldSoundPlay;            // If the sound is able to/should play.
+    qboolean    displayNoText;              // qtrue if the sound text should not be displayed in chat.
+
+    const char* text;                      // The text belonging to the sound.
+    int         soundIndex;                 // The sound index to the actual sound.
+    int         stripChars;                 // How many characters should be stripped from the chat text.
+    qboolean    isCustomSound;
+} mvchat_ChatParse_t;
+
+
+void        mvchat_parseFiles(void);
+void        mvchat_chatDetermineSound(mvchat_ChatParse_t* chatParse, char* chatText, TIdentity* identity);
+int         mvchat_chatGetNextSound(TIdentity* identity);
+void        mvchat_listSounds(gentity_t* ent, int soundPage);
+void        mvchat_printHelp(gentity_t* ent);
+void mvchat_findSounds(gentity_t* ent);
+
+
+#define SQL_GAME_MIGRATION_LEVEL 4
 #define SQL_LOG_MIGRATION_LEVEL 1
 #define SQL_COUNTRY_MIGRATION_LEVEL 1
 #define MAX_SQL_TEMP_NAME 16
@@ -1588,6 +1711,9 @@ void dbPrintBanlist(gentity_t* ent, qboolean subnet, int page);
 void dbReadSessionDataForClient(gclient_t* client, qboolean gametypeChanged);
 void dbWriteSessionDataForClient(gclient_t* client);
 void dbRemoveSessionDataById(int clientNum);
+void dbReadSessionMutesBackIntoMuteInfo(void);
+void dbWriteMuteIntoSession(mute_t* muteInfo);
+void dbClearSessionMutes(void);
 
 void logSystem(loggingLevel_t logLevel, const char* msg, ...) __attribute__((format(printf, 2, 3)));
 void logRcon(char* ip, char* action);
@@ -1762,7 +1888,18 @@ void realSectionAutoCheck(gentity_t* ent, qboolean override);
 void sectionAutoCheck(gentity_t* ent);
 void sectionAddOrDelInstances(gentity_t* ent, qboolean add);
 void checkEnts(gentity_t* ent);
-
+void checkRoof(gentity_t* ent);
+void resetCompetitionModeVariables(void);
+int QDECL SortAlpha(const void* a, const void* b);
+void parseChatTokens(gentity_t* ent, chatMode_t chatMode, const char* input, char* output, int sizeOfOutput);
+void showHnsScores(void);
+qboolean isCurrentGametypeInList(gameTypes_t* gametypes);
+qboolean isCurrentGametype(gameTypes_t gametype);
+void sendClientmodAwards(void);
+void notifyPlayersOfTeamScores(void);
+void showMotd(gentity_t* ent);
+qboolean weaponMod(weaponMod_t weaponMod, char* wpnModName);
+void printMapActionDenialReason(gentity_t* adm);
 
 typedef struct queueNode_s queueNode;
 

@@ -26,8 +26,8 @@ admCmd_t adminCommands[] = {
 	{"!c",      "rollercoaster",    &a_rollercoaster.integer,   &adm_Rollercoaster,             "Uppercut and push a player",       "<i/n>",            "ed"},
 	{"!r",      "respawn",          &a_respawn.integer,         &adm_Respawn,                   "Respawn a player",                 "<i/n>",            "ed"},
 	{"!rs",     "respawn",          &a_respawn.integer,         &adm_Respawn,                   "Respawn a player",                 "<i/n>",            "ed"},
-	{"!mr",     "maprestart",       &a_mapswitch.integer,       &adm_mapRestart,                "Restart the current map",          "",                 NULL},
-	{"!mr",     "map_restart",      &a_mapswitch.integer,       &adm_mapRestart,                "Restart the current map",          "",                 NULL},
+	{"!mr",     "maprestart",       &minimumAdminLevel,       &adm_mapRestart,                "Restart the current map",          "",                 NULL},
+	{"!mr",     "map_restart",      &minimumAdminLevel,       &adm_mapRestart,                "Restart the current map",          "",                 NULL},
 	{"!st",     "strip",            &a_strip.integer,           &adm_Strip,                     "Remove weapons from a player",     "<i/n>",            "ped"},
 	{"!ra",     "removeadmin",      &minimumAdminLevel,           &adm_removeAdmin,               "Remove an Admin",                  "<i/n>",            NULL},
 	{"!ft",     "forceteam",        &a_forceteam.integer,       &adm_forceTeam,                 "Force a player to join a team",    "<i/n> <team>",     "ed"},
@@ -474,44 +474,69 @@ static void adm_toggleCVAR(int argNum, gentity_t* adm, qboolean shortCmd, qboole
 	char* arg = G_GetArg(argNum, shortCmd, qfalse);
 	int newValue = arg && strlen(arg) > 0 ? atoi(arg) : (isToggle && cvar ? !cvar->integer : -1);
 
-	if (newValue < 0) {
-		G_printInfoMessage(adm, "%s is %d.", cvarName, cvar->integer);
+	if (cm_state.integer == COMPMODE_INITIALIZED) {
+		if (newValue < 0) {
+			G_printInfoMessage(adm, "%s is %d.", cmCvarName, cmCvar->integer);
+		}
+		else {
+			// means change
+			if (cmCvar) {
+				G_setTrackedCvarWithoutTrackMessage(cmCvar, newValue);
+			}
+			else {
+				trap_Cvar_Set(cmCvarName, va("%d", newValue));
+				trap_Cvar_Update(cmCvar);
+			}
+
+			if (isToggle) {
+				G_printInfoMessageToAll("%s %s by %s.", cvarName, newValue ? "enabled" : "disabled", getNameOrArg(adm, "RCON", qtrue));
+			}
+			else {
+				G_printInfoMessageToAll("%s was changed to %d by %s.", cvarName, newValue, getNameOrArg(adm, "RCON", qtrue));
+			}
+			G_GlobalSound(level.actionSoundIndex);
+		}
 	}
 	else {
-		// means change
-		if (cvar) {
-			G_setTrackedCvarWithoutTrackMessage(cvar, newValue);
+		if (newValue < 0) {
+			G_printInfoMessage(adm, "%s is %d.", cvarName, cvar->integer);
 		}
 		else {
-			trap_Cvar_Set(cvarName, va("%d", newValue));
-			trap_Cvar_Update(cvar);
-		}
+			// means change
+			if (cvar) {
+				G_setTrackedCvarWithoutTrackMessage(cvar, newValue);
+			}
+			else {
+				trap_Cvar_Set(cvarName, va("%d", newValue));
+				trap_Cvar_Update(cvar);
+			}
 
-		if (isToggle) {
-			G_printInfoMessageToAll("%s %s by %s.", cvarName, newValue ? "enabled" : "disabled", getNameOrArg(adm, "RCON", qtrue));
-			G_Broadcast(BROADCAST_CMD, NULL, qtrue, "\\%s %s\nby %s", cvarName, newValue ? "enabled" : "disabled", getNameOrArg(adm, "RCON", qfalse));
-			logAdmin(adm, NULL, va("%s %s", cvarName, newValue ? "enabled" : "disabled"), NULL);
-		}
-		else {
-			G_printInfoMessageToAll("%s was changed to %d by %s.", cvarName, newValue, getNameOrArg(adm, "RCON", qtrue));
-			G_Broadcast(BROADCAST_CMD, NULL, qtrue, "\\%s was changed to %d\nby %s", cvarName, newValue, getNameOrArg(adm, "RCON", qfalse));
-			logAdmin(adm, NULL, va("%s %d", cvarName, newValue), NULL);
-		}
+			if (isToggle) {
+				G_printInfoMessageToAll("%s %s by %s.", cvarName, newValue ? "enabled" : "disabled", getNameOrArg(adm, "RCON", qtrue));
+				G_Broadcast(BROADCAST_CMD, NULL, qtrue, "\\%s %s\nby %s", cvarName, newValue ? "enabled" : "disabled", getNameOrArg(adm, "RCON", qfalse));
+				logAdmin(adm, NULL, va("%s %s", cvarName, newValue ? "enabled" : "disabled"), NULL);
+			}
+			else {
+				G_printInfoMessageToAll("%s was changed to %d by %s.", cvarName, newValue, getNameOrArg(adm, "RCON", qtrue));
+				G_Broadcast(BROADCAST_CMD, NULL, qtrue, "\\%s was changed to %d\nby %s", cvarName, newValue, getNameOrArg(adm, "RCON", qfalse));
+				logAdmin(adm, NULL, va("%s %d", cvarName, newValue), NULL);
+			}
 
-		// was only sent for rocmod and gold specific, but this shouldn't impact non-ROCMod clients if we send it again over here as well.
-		for (int i = 0; i < level.numConnectedClients; i++) {
-			DeathmatchScoreboardMessage(&g_entities[level.sortedClients[i]]);
+			// was only sent for rocmod and gold specific, but this shouldn't impact non-ROCMod clients if we send it again over here as well.
+			for (int i = 0; i < level.numConnectedClients; i++) {
+				DeathmatchScoreboardMessage(&g_entities[level.sortedClients[i]]);
+			}
 		}
 	}
 }
 
 int adm_scoreLimit(int argNum, gentity_t* adm, qboolean shortCmd) {
-	adm_toggleCVAR(argNum, adm, shortCmd, qfalse, "Scorelimit", &g_scorelimit, qtrue, NULL, NULL);
+	adm_toggleCVAR(argNum, adm, shortCmd, qfalse, "Scorelimit", &g_scorelimit, qtrue, "match_scorelimit", &match_scorelimit);
 	return -1;
 }
 
 int adm_timeLimit(int argNum, gentity_t* adm, qboolean shortCmd) {
-	adm_toggleCVAR(argNum, adm, shortCmd, qfalse, "Timelimit", &g_timelimit, qtrue, NULL, NULL);
+	adm_toggleCVAR(argNum, adm, shortCmd, qfalse, "Timelimit", &g_timelimit, qtrue, "match_timelimit", &match_timelimit);
 	return -1;
 }
 
@@ -521,8 +546,26 @@ int adm_swapTeams(int argNum, gentity_t* adm, qboolean shortCmd) {
 	return -1;
 }
 
-// JANFIXME compmode
 int adm_Rounds(int argNum, gentity_t* adm, qboolean shortCmd) {
+
+	if (cm_state.integer != COMPMODE_INITIALIZED) {
+		G_printInfoMessage(adm, "This command only works during the initialization phase of competition.");
+		return -1;
+	}
+
+	if (match_doublerounds.integer) {
+		trap_Cvar_Set("match_doublerounds", "0");
+		trap_Cvar_Update(&match_doublerounds);
+		G_printCustomMessageToAll("Competitition Mode", "Double rounds disabled!");
+	}
+	else {
+		trap_Cvar_Set("match_doublerounds", "1");
+		trap_Cvar_Update(&match_doublerounds);
+		G_printCustomMessageToAll("Competitition Mode", "Double rounds enabled!");
+	}
+
+	G_GlobalSound(level.actionSoundIndex);
+
 	return -1;
 }
 
@@ -648,8 +691,105 @@ int adm_Respawn(int argNum, gentity_t* adm, qboolean shortCmd) {
 	return idNum;
 }
 
-// JANFIXME check this with compmode.
 int adm_mapRestart(int argNum, gentity_t* adm, qboolean shortCmd) {
+
+	if (adm && adm->client && adm->client->sess.adminLevel < a_compmode.integer && cm_state.integer > COMPMODE_NONE) {
+		G_printInfoMessage(adm, "You're not privileged enough to run map restart in compmode.");
+		return -1;
+	}
+
+	if (adm && adm->client && adm->client->sess.adminLevel < a_mapswitch.integer && cm_state.integer == COMPMODE_NONE) {
+		G_printInfoMessage(adm, "You're not privileged enough to run map restart.");
+		return -1;
+	}
+
+	if (cm_state.integer == COMPMODE_INITIALIZED || cm_state.integer == COMPMODE_PRE_ROUND2) {
+
+		level.proceedToNextCompState = qtrue;
+		level.nextCompState = level.time + 3000;
+
+		// If we don't play a dual-round game, we push the state further.
+		if (!match_doublerounds.integer) {
+			trap_Cvar_Set("cm_state", va("%d", COMPMODE_PRE_ROUND2));
+			trap_Cvar_Update(&cm_state);
+			G_Broadcast(BROADCAST_GAME_IMPORTANT, NULL, qtrue, "Starting the \\game...");
+		} else if (cm_state.integer == COMPMODE_INITIALIZED) {
+			G_Broadcast(BROADCAST_GAME_IMPORTANT, NULL, qtrue, "Starting the \\game...");
+			logAdmin(adm, NULL, "map_restart", "compmode round 1");
+		}
+		else {
+			G_Broadcast(BROADCAST_GAME_IMPORTANT, NULL, qtrue, "Starting \\round 2...");
+			logAdmin(adm, NULL, "map_restart", "compmode round 2");
+		}
+	}
+	else if (cm_state.integer == COMPMODE_ROUND1 || cm_state.integer == COMPMODE_ROUND2) {
+
+		// When in a round, there are 2 chances to call out a map restart.
+		// 1. call it out so you can get to the next compmode state faster.
+		// 2. call it out to actually "re-restart" the match.
+
+		if (level.intermissionQueued || level.intermissiontime) {
+			level.proceedToNextCompState = qtrue;
+			level.nextCompState = level.time + 3000;
+			G_printInfoMessageToAll("Competition mode will %s in 3 seconds", cm_state.integer == COMPMODE_ROUND1 ? "proceed to the next stage" : "end");
+			// We don't log this action as this is done quite commonly to speed up the transitions (skip awards etc).
+			// We also do not broadcast as most likely, another broadcast message is being displayed at this time.
+		}
+		else if (level.mapAction == MAPACTION_NONE) {
+			logAdmin(adm, NULL, "map_restart", "within compmode");
+			G_Broadcast(BROADCAST_GAME, NULL, qtrue, "%s\nhas triggered a map \\restart", getNameOrArg(adm, "\\RCON", qfalse));
+			level.mapAction = MAPACTION_PENDING_RESTART;
+			level.runMapAction = level.time + 3000;
+		}
+		else {
+			printMapActionDenialReason(adm);
+		}
+
+	}
+	else if (level.mapAction == MAPACTION_NONE) {
+
+		int when = 0;
+		char arg[MAX_SAY_TEXT];
+
+		if (shortCmd && G_GetChatArgumentCount()) {
+			Q_strncpyz(arg, G_GetChatArgument(argNum + 1, qfalse), sizeof(arg));
+		}
+		else {
+			trap_Argv(argNum + 1, arg, sizeof(arg));
+		}
+
+		if (Q_stricmp(arg, "now") && strlen(arg)) {
+
+			when = atoi(arg);
+
+			if (when > 15) {
+				G_printInfoMessage(adm, "Maximum delay time is 15 seconds, setting to 15.");
+			}
+			else if (when < 0) {
+				G_printInfoMessage(adm, "Minimum delay time is 0 seconds, setting it to 5.");
+				when = 5;
+			}
+
+			when = Com_Clamp(0, 15, when);
+
+		}
+		else if (!strlen(arg)) {
+			when = 5;
+		}
+		else {
+			when = 0;
+		}
+
+		G_Broadcast(BROADCAST_CMD, NULL, qtrue, "%s\nhas ordered a map restart in %d \\seconds...", getNameOrArg(adm, "\\RCON", qfalse), when);
+		G_printCustomMessageToAll("Admin Action", "%s has ordered a map restart in %d seconds.", getNameOrArg(adm, "RCON", qtrue), when);
+		logAdmin(adm, NULL, "map_restart", NULL);
+		level.mapAction = MAPACTION_PENDING_RESTART;
+		level.runMapAction = level.time + (when * 1000);
+	}
+	else {
+		printMapActionDenialReason(adm);
+	}
+
 	return -1;
 }
 
@@ -750,7 +890,7 @@ int adm_forceTeam(int argNum, gentity_t* adm, qboolean shortCmd) {
 
 int adm_blockSeek(int argNum, gentity_t* adm, qboolean shortCmd) {
 
-	if (Q_stricmp(g_gametype.string, "h&s")) {
+	if (isCurrentGametype(GT_HNS)) {
 		G_printInfoMessage(adm, "This command only works in H&S gametype.");
 	}
 
@@ -781,8 +921,49 @@ int adm_blockSeek(int argNum, gentity_t* adm, qboolean shortCmd) {
 	return -1;
 }
 
-/* JANFIXME build it when it becomes useful (e.g. with H&S) */
 int adm_blockSeekList(int argNum, gentity_t* adm, qboolean shortCmd) {
+
+	if (isCurrentGametype(GT_HNS)) {
+
+		qboolean isRcon = adm && adm->client ? qfalse : qtrue;
+
+		if (isRcon) {
+			Com_Printf("\n[^3Blockseek^7]\n");
+			Com_Printf("%-5.5s%-25.25s\n-----------------------------------------------------------------------------\n", "ID", "Name");
+		}
+		else {
+			trap_SendServerCommand(adm - g_entities, "print \"\n[^3Blockseek^7]\n\"");
+			trap_SendServerCommand(adm - g_entities, va("print \"%-5.5s%-25.25s\n-----------------------------------------------------------------------------\n\"", "ID", "Name"));
+
+		}
+
+		for (int i = 0; i < level.numConnectedClients; i++) {
+			gentity_t* ent = &g_entities[level.sortedClients[i]];
+
+			if (ent->client->sess.blockseek) {
+
+				if (isRcon) {
+					Com_Printf("%-5.5s%-25.25s\n", ent->s.number, ent->client->pers.cleanName);
+				}
+				else {
+					trap_SendServerCommand(adm - g_entities, va("print \"%-5.5s%-25.25s\n\"", ent->s.number, ent->client->pers.cleanName));
+				}
+
+			}
+		}
+
+		if (isRcon) {
+			Com_Printf("\nUse [^3Page Up^7] and [^3Page Down^7] to scroll\n");
+		}
+		else {
+			trap_SendServerCommand(adm - g_entities, "print \"\nUse [^3Page Up^7] and [^3Page Down^7] to scroll\n\"");
+		}
+
+	}
+	else {
+		G_printInfoMessage(adm, "This command only works in H&S.");
+	}
+
 	return -1;
 }
 
@@ -836,13 +1017,24 @@ static void adm_toggleSection(gentity_t* adm, mapSection_t mapSection) {
 	G_printCustomMessageToAll("Admin Action", "%s has been %s by %s.", sectionName, enabled ? "enabled" : "disabled", getNameOrArg(adm, "RCON", qtrue));
 
 	// Boe!Man 11/24/13: Also open the section.
-	//if (!level.autoSectionActive[mapSection]) {
-	gentity_t* ent = NULL;
-	while (NULL != (ent = G_Find(ent, FOFS(classname), sectionLowercase))) {
-		sectionAddOrDelInstances(ent, level.autoSectionActive[mapSection]);
-		ent->sectionState = enabled ? MAPSECTIONSTATE_CLOSED : MAPSECTIONSTATE_OPENED; // Reset state to Opened.
+	if (g_useAutoSections.integer) {
+		if (!level.autoSectionActive[mapSection]) {
+			gentity_t* ent = NULL;
+			while (NULL != (ent = G_Find(ent, FOFS(classname), sectionLowercase))) {
+				sectionAddOrDelInstances(ent, level.autoSectionActive[mapSection]);
+				ent->sectionState = MAPSECTIONSTATE_OPENED; // Reset state to Opened.
+			}
+
+		}
 	}
-	//}
+	else {
+		gentity_t* ent = NULL;
+		while (NULL != (ent = G_Find(ent, FOFS(classname), sectionLowercase))) {
+			sectionAddOrDelInstances(ent, enabled);
+			ent->sectionState = enabled ? MAPSECTIONSTATE_CLOSED : MAPSECTIONSTATE_OPENED; // Reset state to Opened.
+		}
+	}
+	
 }
 
 
@@ -898,15 +1090,98 @@ int adm_respawnInterval(int argNum, gentity_t* adm, qboolean shortCmd) {
 }
 
 int adm_realDamage(int argNum, gentity_t* adm, qboolean shortCmd) {
+
+	if (isCurrentGametypeInList((gameTypes_t[]) { GT_HNS, GT_HNZ, GT_PROP, GT_MM, GT_MAX })) {
+		G_printInfoMessage(adm, "You can't use realdamage in this gametype.");
+		return -1;
+	}
+
+	qboolean result = weaponMod(WEAPONMOD_RD, NULL);
+
+	if (!result) {
+		G_printInfoMessage(adm, "Realdamage weapon file not found, please contact the server owner.");
+	}
+	else {
+		G_Broadcast(BROADCAST_GAME, NULL, qtrue, "\\Realdamage\nby %s", getNameOrArg(adm, "\\RCON", qfalse));
+		G_printCustomMessageToAll("Admin Action", "Realdamage by %s", getNameOrArg(adm, "RCON", qtrue));
+		logAdmin(adm, NULL, "damagemod", "realdamage");
+
+		// We need to reset outfitting.
+		for (int i = 0; i < level.numConnectedClients; i++) {
+			level.clients[level.sortedClients[i]].noOutfittingChange = qfalse;
+			G_UpdateOutfitting(g_entities[level.sortedClients[i]].s.number);
+		}
+	}
+
 	return -1;
 }
 
 int adm_normalDamage(int argNum, gentity_t* adm, qboolean shortCmd) {
+
+	if (isCurrentGametypeInList((gameTypes_t[]) { GT_HNS, GT_HNZ, GT_PROP, GT_MM, GT_MAX })) {
+		G_printInfoMessage(adm, "You can't use normaldamage in this gametype.");
+		return -1;
+	}
+
+	qboolean result = weaponMod(WEAPONMOD_ND, NULL);
+
+	if (!result) {
+		G_printInfoMessage(adm, "Normaldamage weapon file not found, please contact the server owner.");
+	}
+	else {
+		G_Broadcast(BROADCAST_GAME, NULL, qtrue, "\\Normal damage\nby %s", getNameOrArg(adm, "\\RCON", qfalse));
+		G_printCustomMessageToAll("Admin Action", "Normal damage by %s", getNameOrArg(adm, "RCON", qtrue));
+		logAdmin(adm, NULL, "damagemod", "normaldamage");
+
+		// We need to reset outfitting.
+		for (int i = 0; i < level.numConnectedClients; i++) {
+			level.clients[level.sortedClients[i]].noOutfittingChange = qfalse;
+			G_UpdateOutfitting(g_entities[level.sortedClients[i]].s.number);
+		}
+	}
+
 	return -1;
 }
 
 int adm_customDamage(int argNum, gentity_t* adm, qboolean shortCmd) {
+
+	char customDamageMod[64];
+
+	int argc = shortCmd ? G_GetChatArgumentCount() : 0;
+	if (shortCmd && argc > 0) {
+		Q_strncpyz(customDamageMod, G_GetChatArgument(argNum, qfalse), sizeof(customDamageMod));
+	}
+	else {
+		trap_Argv(argNum, customDamageMod, sizeof(customDamageMod));
+	}
+
+	if (strlen(customDamageMod) > 0) {
+		qboolean result = weaponMod(WEAPONMOD_CUSTOM, customDamageMod);
+
+		if (!result) {
+			G_printInfoMessage(adm, "Custom weapon file not found, please contact the server owner.");
+		}
+		else {
+			G_Broadcast(BROADCAST_GAME, NULL, qtrue, "\\Custom damage\nby %s", getNameOrArg(adm, "\\RCON", qfalse));
+			G_printCustomMessageToAll("Admin Action", "Custom damage by %s", getNameOrArg(adm, "RCON", qtrue));
+			logAdmin(adm, NULL, "damagemod", va("customdamage %s", customDamageMod));
+
+			// We need to reset outfitting.
+			for (int i = 0; i < level.numConnectedClients; i++) {
+				level.clients[level.sortedClients[i]].noOutfittingChange = qfalse;
+				G_UpdateOutfitting(g_entities[level.sortedClients[i]].s.number);
+			}
+
+		}
+
+	}
+	else {
+		G_printInfoMessage(adm, "Please specify the custom weapon mod file to use.");
+	}
+
+	
 	return -1;
+
 }
 
 int adm_gametypeRestart(int argNum, gentity_t* adm, qboolean shortCmd) {
@@ -1162,6 +1437,36 @@ int adm_clanList(int argNum, gentity_t* adm, qboolean shortCmd) {
 
 /* Build together with rest of the compmode logic */
 int adm_compMode(int argNum, gentity_t* adm, qboolean shortCmd) {
+
+	if (cm_state.integer == COMPMODE_NONE) {
+
+		trap_Cvar_Set("cm_state", va("%d", COMPMODE_INITIALIZED));
+		trap_Cvar_Update(&cm_state);
+
+		trap_Cvar_Set("cm_originalsl", va("%d", g_scorelimit.integer));
+		trap_Cvar_Set("cm_originaltl", va("%d", g_timelimit.integer));
+
+		trap_Cvar_Update(&cm_originalsl);
+		trap_Cvar_Update(&cm_originaltl);
+
+		logAdmin(adm, NULL, "compmode on", NULL);
+		G_Broadcast(BROADCAST_CMD, NULL, qtrue, "\\Competition mode enabled!");
+		G_printCustomMessageToAll("Admin Action", "Competition mode enabled by %s.", getNameOrArg(adm, "RCON", qtrue));
+
+		level.nextCmInfoDisplay = level.time + 3000;
+	}
+	else {
+		trap_Cvar_Set("cm_state", va("%d", COMPMODE_NONE));
+		trap_Cvar_Update(&cm_state);
+		logAdmin(adm, NULL, "compmode off", NULL);
+		G_Broadcast(BROADCAST_CMD, NULL, qtrue, "\\Competition mode disabled");
+		G_printCustomMessageToAll("Admin Action", "Competition mode disabled by %s.", getNameOrArg(adm, "RCON", qtrue));
+
+		// Reset compmode variables.
+		resetCompetitionModeVariables();
+
+	}
+
 	return -1;
 }
 
@@ -1289,7 +1594,7 @@ static void adm_banPlayer(int argNum, gentity_t* adm, qboolean shortCmd, qboolea
 		// and then drop the client as well.
 
 		char kickAction[MAX_SAY_TEXT];
-		Q_strncpyz(kickAction, va("%sbanned %s", isEom ? "until the end of map" : va("for %d days, %d hours, %d minutes", subnet ? "subnet" : "", duration[1], duration[2], duration[3])), sizeof(kickAction));
+		Q_strncpyz(kickAction, va("%sbanned %s", subnet ? "subnet" : "", isEom ? "until the end of map" : va("for %d days, %d hours, %d minutes", duration[1], duration[2], duration[3])), sizeof(kickAction));
 
 		kickPlayer(ent, adm, kickAction, reason);
 	}
@@ -1401,10 +1706,113 @@ int adm_subnetUnban(int argNum, gentity_t* adm, qboolean shortCmd) {
 }
 
 int adm_evenTeams(int argNum, gentity_t* adm, qboolean shortCmd) {
+
+	int output = evenTeams(qfalse);
+
+	if (output == TEAMACTION_EVEN) {
+		G_printInfoMessage(adm, "Teams are already even.");
+	}
+	else if (output == TEAMACTION_INCOMPATIBLE_GAMETYPE) {
+		G_printInfoMessage(adm, "You cannot even teams in this gametype.");
+	}
+	else if (output == TEAMACTION_NOT_ENOUGH_PLAYERS) {
+		G_printInfoMessage(adm, "There are not enough players to run eventeams.");
+	}
+	else {
+		logAdmin(adm, NULL, "eventeams", NULL);
+		G_printCustomMessageToAll("Admin Action", "Eventeams by %s", getNameOrArg(adm, "RCON", qtrue));
+		G_Broadcast(BROADCAST_GAME, NULL, qfalse, "Eventeams\nby %s", getNameOrArg(adm, "\\RCON", qfalse));
+	}
+
 	return -1;
 }
 
 int adm_clanVsAll(int argNum, gentity_t* adm, qboolean shortCmd) {
+
+	if (!level.gametypeData->teams) {
+		G_printInfoMessage(adm, "You need to be in a team-based game to run clan vs all.");
+	} else if (isCurrentGametypeInList((gameTypes_t[]) { GT_HNS, GT_HNZ, GT_PROP, GT_MAX })) {
+		G_printInfoMessage(adm, "Gametype is not supported.");
+	} else {
+		level.redLocked = qfalse;
+		level.blueLocked = qfalse;
+		// First find out which team has the most players => move the clan members there.
+		team_t moveToTeam = TEAM_BLUE;
+		int blueTeamClanPlayers = 0;
+		int redTeamClanPlayers = 0;
+
+		for (int i = 0; i < level.numConnectedClients; i++) {
+			gentity_t* ent = &g_entities[level.sortedClients[i]];
+
+			if (ent->client->sess.team == TEAM_BLUE && ent->client->sess.clanMember) {
+				blueTeamClanPlayers++;
+			}
+			else if (ent->client->sess.team == TEAM_RED && ent->client->sess.clanMember) {
+				redTeamClanPlayers++;
+			}
+		}
+
+		if (blueTeamClanPlayers < redTeamClanPlayers) {
+			moveToTeam = TEAM_RED;
+			level.redLocked = qtrue;
+		}
+		else {
+			level.blueLocked = qtrue;
+		}
+
+		for (int i = 0; i < level.numConnectedClients; i++) {
+
+			gentity_t* ent = &g_entities[level.sortedClients[i]];
+
+			if (ent->client->sess.team == TEAM_SPECTATOR) {
+				continue;
+			}
+
+			if (ent->client->sess.team == moveToTeam && ent->client->sess.clanMember) {
+				continue;
+			}
+
+			// This is a client we need to move.
+			team_t newTeam = TEAM_RED;
+
+			if (!ent->client->sess.clanMember) {
+				if (moveToTeam == TEAM_RED) {
+					newTeam = TEAM_BLUE;
+				}
+			}
+			else {
+				newTeam = moveToTeam;
+			}
+
+			if (ent->s.gametypeitems > 0) {
+				G_DropGametypeItems(ent, 0);
+			}
+
+
+			ent->client->ps.stats[STAT_WEAPONS] = 0;
+			TossClientItems(ent);
+			G_StartGhosting(ent);
+
+			ent->client->sess.team = newTeam;
+
+			ent->client->pers.identity = NULL;
+			ClientUserinfoChanged(ent->s.number);
+			CalculateRanks();
+
+			G_StopFollowing(ent);
+			G_StopGhosting(ent);
+			trap_UnlinkEntity(ent);
+			ClientSpawn(ent);
+
+		}
+
+		G_Broadcast(BROADCAST_CMD, NULL, qfalse, "\\Clan vs all");
+		G_printCustomMessageToAll("Admin Action", "Clan vs All by %s", getNameOrArg(adm, "RCON", qtrue));
+		logAdmin(adm, NULL, "clanvsall", NULL);
+		G_GlobalSound(G_SoundIndex("sound/misc/events/tut_lift02.mp3"));
+
+	}
+
 	return -1;
 }
 
@@ -1455,12 +1863,31 @@ int adm_lockTeam(int argNum, gentity_t* adm, qboolean shortCmd) {
 				teamName = "Red";
 			}
 			else if (teamArgChar == 'S') {
-				if (level.specLocked) {
-					isLock = qfalse;
+
+				if (cm_state.integer == COMPMODE_INITIALIZED) {
+					if (match_lockspecs.integer) {
+						G_printCustomMessageToAll("Competition Mode", "Spectating will be allowed.");
+						trap_Cvar_Set("match_lockspecs", "0");
+						trap_Cvar_Update(&match_lockspecs);
+					}
+					else {
+						G_printCustomMessageToAll("Competition Mode", "Spectating will be blocked.");
+						trap_Cvar_Set("match_lockspecs", "1");
+						trap_Cvar_Update(&match_lockspecs);
+					}
+					G_GlobalSound(level.actionSoundIndex);
+					return -1;
+				}
+				else {
+					if (level.specLocked) {
+						isLock = qfalse;
+					}
+
+					level.specLocked = isLock;
+					teamName = "Spectators";
 				}
 
-				level.specLocked = isLock;
-				teamName = "Spectators";
+				
 			}
 			else {
 				G_printInfoMessage(adm, "Wrong team specified. Valid values: blue, red, spec");
@@ -1528,14 +1955,148 @@ int adm_Flash(int argNum, gentity_t* adm, qboolean shortCmd) {
 }
 
 int adm_Gametype(int argNum, gentity_t* adm, qboolean shortCmd) {
+
+	char        gametype[8];
+	char        arg[16] = "\0";
+	int         argc = 0;
+
+	if (shortCmd) {
+		argc = G_GetChatArgumentCount();
+	}
+
+	if (!shortCmd || shortCmd && !argc) {
+		trap_Argv(argNum, arg, sizeof(arg));
+	}
+	else {
+		Q_strncpyz(arg, G_GetChatArgument(argNum, qfalse), sizeof(arg));
+	}
+
+	// Boe!Man 2/4/11: Adding support for uppercase arguments.
+	Q_strlwr(arg);
+
+	if (strlen(arg) > 0) {
+		if (level.mapAction == MAPACTION_NONE) {
+
+			if (G_IsGametypeAValidGametype(arg)) {
+				level.mapAction = MAPACTION_PENDING_GT;
+				level.runMapAction = level.time + 3000;
+				Q_strncpyz(level.mapActionNewGametype, arg, sizeof(level.mapActionNewGametype));
+
+				G_Broadcast(BROADCAST_CMD, NULL, qtrue, "\\Gametype %s!", arg);
+				G_printCustomMessageToAll("Admin Action", "Gametype %s by %s", arg, getNameOrArg(adm, "RCON", qtrue));
+				logAdmin(adm, NULL, va("gametype %s", arg), NULL);
+			}
+			else {
+				G_printInfoMessage(adm, "Gametype '%s' is not a valid gametype.", arg);
+			}
+
+		}
+		else {
+			printMapActionDenialReason(adm);
+		}
+	}
+	else {
+		G_printInfoMessage(adm, "Current gametype: %s", g_gametype.string);
+	}
+
+	
+
 	return -1;
 }
 
 int adm_Map(int argNum, gentity_t* adm, qboolean shortCmd) {
+
+	if (level.mapAction != MAPACTION_NONE) {
+		printMapActionDenialReason(adm);
+		return -1;
+	}
+
+	char        gametype[12];
+	char        mapArg[MAX_QPATH];
+	int         argc = 0;
+
+	if (shortCmd) {
+		argc = G_GetChatArgumentCount();
+	}
+
+	if (!shortCmd || shortCmd && !argc) {
+		trap_Argv(argNum, mapArg, sizeof(mapArg));
+		trap_Argv(argNum + 1, gametype, sizeof(gametype));
+
+	}
+	else {
+		Q_strncpyz(mapArg, G_GetChatArgument(argNum, qfalse), sizeof(mapArg));
+		Q_strncpyz(gametype, G_GetChatArgument(argNum + 1, qfalse), sizeof(gametype));
+	}
+
+	// Boe!Man 2/4/11: Adding support for uppercase arguments.
+	Q_strlwr(mapArg);
+	Q_strlwr(gametype);
+
+	// Before anything else, validate the map.
+	char foundMaps[MAX_STRING_CHARS];
+	int mapTrapResponse = trap_ValidateMapName(mapArg, foundMaps, sizeof(foundMaps));
+
+	if (mapTrapResponse != 1) {
+
+		if (mapTrapResponse == 0) {
+			G_printInfoMessage(adm, "Map '%s' was not found on the server.", mapArg);
+		}
+		else {
+			G_printInfoMessage(adm, "Didn't find an exact match for map '%s', possible values listed below:", mapArg);
+
+			if (adm && adm->client) {
+				trap_SendServerCommand(adm - g_entities, va("print \"%s\"", foundMaps));
+			}
+			else {
+				Com_Printf(foundMaps);
+			}
+			
+
+		}
+
+		return -1;
+	}
+
+	qboolean newGametype = qfalse;
+
+	if (strlen(gametype) && G_IsGametypeAValidGametype(gametype)) {
+		Q_strncpyz(level.mapActionNewGametype, gametype, sizeof(level.mapActionNewGametype));
+		newGametype = qtrue;
+	}
+
+	level.mapAction = newGametype ? MAPACTION_PENDING_MAPGTCHANGE : MAPACTION_PENDING_MAPCHANGE;
+	Q_strncpyz(level.mapActionNewMap, mapArg, sizeof(level.mapActionNewMap));
+	level.runMapAction = level.time + 3000;
+
+	logAdmin(adm, NULL, va("map %s %s", mapArg, newGametype ? level.mapActionNewGametype : g_gametype.string), NULL);
+	G_Broadcast(BROADCAST_GAME, NULL, qtrue, "Map %s [^3%s^7]\nby %s", mapArg, newGametype ? level.mapActionNewGametype : g_gametype.string, getNameOrArg(adm, "\\RCON", qfalse));
+	G_printCustomMessageToAll("Admin Action", "Map %s [^3%s^7] by %s", mapArg, newGametype ? level.mapActionNewGametype : g_gametype.string, getNameOrArg(adm, "RCON", qtrue));
+
+
+
 	return -1;
 }
 
 int adm_mapCycle(int argNum, gentity_t* adm, qboolean shortCmd) {
+
+	if (strlen(g_mapcycle.string) == 0 || !Q_stricmp(g_mapcycle.string, "none")) {
+		G_printInfoMessage(adm, "Server does not have a mapcycle.");
+		return -1;
+	}
+
+	if (level.mapAction == MAPACTION_NONE) {
+		G_Broadcast(BROADCAST_CMD, NULL, qtrue, "\\Mapcycle\nby %s", getNameOrArg(adm, "\\RCON", qfalse));
+		G_printCustomMessageToAll("Admin Action", "Mapcycle by %s", getNameOrArg(adm, "RCON", qtrue));
+		logAdmin(adm, NULL, "mapcycle", NULL);
+
+		level.mapAction = MAPACTION_PENDING_MAPCYCLE;
+		level.runMapAction = level.time + 3000;
+	}
+	else {
+		printMapActionDenialReason(adm);
+	}
+
 	return -1;
 }
 
@@ -1548,11 +2109,61 @@ int adm_cancelVote(int argNum, gentity_t* adm, qboolean shortCmd) {
 }
 
 int adm_Pause(int argNum, gentity_t* adm, qboolean shortCmd) {
+
+	if (level.intermissiontime || level.intermissionQueued) {
+		return -1;
+	}
+	else if (level.paused) {
+		level.mapAction = MAPACTION_UNPAUSE;
+		level.runMapAction = level.time + 5000;
+		level.unpauseNextNotification = level.time;
+		return -1;
+	}
+
+	level.paused = qtrue;
+
+	trap_GT_SendEvent(GTEV_PAUSE, level.time, 1, 0, 0, 0, 0);
+
+
+	for (int i = 0; i < level.numConnectedClients; i++)
+	{
+		gentity_t* ent = &g_entities[level.sortedClients[i]];
+		ent->client->ps.pm_type = PM_INTERMISSION;
+	}
+
+	// Send the current scoring to all clients.
+	SendScoreboardMessageToAllClients();
+
+	// Tell everyone what just happened.
+	G_GlobalSound(G_SoundIndex("sound/misc/events/buzz02.wav"));
+	G_Broadcast(BROADCAST_CMD, NULL, qfalse, "\\Paused!");
+	logAdmin(adm, NULL, "pause", NULL);
+	G_printCustomMessageToAll("Admin Action", "Game paused by %s", getNameOrArg(adm, "RCON", qtrue));
+
 	return -1;
 }
 
 int adm_Burn(int argNum, gentity_t* adm, qboolean shortCmd) {
-	return -1;
+
+	int idNum = G_ClientNumFromArg(adm, argNum, "kick", qtrue, qtrue, qfalse, shortCmd);
+
+	if (idNum >= 0) {
+		gentity_t* ent = &g_entities[idNum];
+		// Create temporary entity for the burn effect.
+
+		gentity_t* tent = G_TempEntity(g_entities[ent->s.number].r.currentOrigin, EV_EXPLOSION_HIT_FLESH);
+		tent->s.eventParm = 0;
+		tent->s.otherEntityNum2 = idNum;
+		tent->s.time = WP_ANM14_GRENADE + ((((int)ent->s.apos.trBase[YAW] & 0x7FFF) % 360) << 16);
+		VectorCopy(g_entities[ent->s.number].r.currentOrigin, tent->s.angles);
+		SnapVector(tent->s.angles);
+
+		// Set burn seconds and notify the player of what happened with a sound effect.
+		ent->client->pers.burnSeconds = 4;
+		G_ClientSound(ent, G_SoundIndex("/sound/weapons/incendiary_grenade/incen01.mp3"));
+	}
+
+	return idNum;
 }
 
 int adm_Kick(int argNum, gentity_t* adm, qboolean shortCmd) {
@@ -1625,6 +2236,51 @@ int adm_friendlyFire(int argNum, gentity_t* adm, qboolean shortCmd) {
 }
 
 int adm_Rename(int argNum, gentity_t* adm, qboolean shortCmd) {
+
+	int idNum = G_ClientNumFromArg(adm, argNum, "mute", qfalse, qtrue, qfalse, shortCmd);
+
+	if (idNum >= 0) {
+		gentity_t* ent = &g_entities[idNum];
+
+		if (ent->client->sess.nameChangeBlock == NAMECHANGEBLOCK_RENAME) {
+			ent->client->sess.nameChangeBlock = NAMECHANGEBLOCK_NONE;
+			G_Broadcast(BROADCAST_CMD, NULL, qtrue, "%s\ncan \\rename again.", ent->client->pers.netname);
+			G_printCustomMessageToAll("Admin Action", "%s can rename again.", ent->client->pers.cleanName);
+			ClientUserinfoChanged(idNum);
+			return -1;
+		}
+		else if (ent->client->sess.nameChangeBlock == NAMECHANGEBLOCK_PROFANITY) {
+			G_printInfoMessage(adm, "Player needs to change their name themselves to get rid of the profanity.");
+			return -1;
+		}
+
+		// JANFIXME Profanity filters - don't allow renaming into a profanity.
+		char newName[MAX_NETNAME];
+		char newCleanname[MAX_NETNAME];
+
+		Q_strncpyz(newName, concatArgs(argNum + 1, shortCmd, qtrue), sizeof(newName));
+
+		if (strlen(newName) < 3) {
+			G_printInfoMessage(adm, "New name should be at least the length of 3.");
+			return -1;
+		}
+
+		G_ClientCleanName(concatArgs(argNum + 1, shortCmd, qtrue), newName, sizeof(newName), qtrue);
+		G_ClientCleanName(newName, newCleanname, sizeof(newCleanname), qfalse);
+
+		ent->client->sess.nameChangeBlock = NAMECHANGEBLOCK_RENAME;
+		
+		// Broadcast before actual change.
+		G_Broadcast(BROADCAST_CMD, NULL, qtrue, "%s\nhas been renamed to %s\nby %s", ent->client->pers.netname, newName, getNameOrArg(adm, "\\RCON", qfalse));
+		G_printCustomMessageToAll("Admin Action", "%s has been renamed to %s by %s.", ent->client->pers.cleanName, newCleanname, getNameOrArg(adm, "RCON", qtrue));
+		logAdmin(adm, ent, va("rename to %s", newCleanname), NULL);
+
+		Q_strncpyz(ent->client->pers.netname, newName, sizeof(ent->client->pers.netname));
+		Q_strncpyz(ent->client->pers.cleanName, newCleanname, sizeof(ent->client->pers.cleanName));
+
+		ClientUserinfoChanged(idNum);
+	}
+
 	return -1;
 }
 
@@ -1681,6 +2337,22 @@ int adm_mapList(int argNum, gentity_t* adm, qboolean shortCmd) {
 }
 
 int adm_matchIsBestOf(int argNum, gentity_t* adm, qboolean shortCmd) {
+
+	if (match_bestOf.integer) {
+		trap_Cvar_Set("match_bestof", "0");
+		trap_Cvar_Update(&match_bestOf);
+
+		G_GlobalSound(level.actionSoundIndex);
+		G_printCustomMessageToAll("Competition Mode", "Best-of logic turned off.");
+	}
+	else {
+		trap_Cvar_Set("match_bestof", "1");
+		trap_Cvar_Update(&match_bestOf);
+
+		G_GlobalSound(level.actionSoundIndex);
+		G_printCustomMessageToAll("Competition Mode", "Best-of logic turned on.");
+	}
+
 	return -1;
 }
 

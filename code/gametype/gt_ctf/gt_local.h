@@ -68,6 +68,9 @@ typedef struct {
 
     qboolean    blueFlagAtBase;
     qboolean    redFlagAtBase;
+
+    qboolean    paused;
+    int         pauseTime;
 } gametypeLocals_t;
 
 //=============================================

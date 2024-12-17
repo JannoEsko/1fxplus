@@ -149,3 +149,30 @@ void G_WriteSessionData( void )
         }
     }
 }
+
+// Mute information
+void writeMutesIntoSession() {
+
+    // First we ensure that we're writing into a clean table.
+    dbClearSessionMutes();
+    int pushedMutes = 0;
+    for (int i = 0; i < MAX_CLIENTS && pushedMutes < level.numMutedClients; i++) {
+
+        mute_t* muteInfo = &level.mutedClients[i];
+
+        if (muteInfo->used) {
+            pushedMutes++;
+            dbWriteMuteIntoSession(muteInfo);
+        }
+
+    }
+
+}
+
+void readMutesFromSession() {
+
+    // The reading will actually be done in db functions, pointless to stream it back here.
+
+    dbReadSessionMutesBackIntoMuteInfo();
+
+}

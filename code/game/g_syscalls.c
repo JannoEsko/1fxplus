@@ -1029,7 +1029,7 @@ void trap_GT_Shutdown ( void )
 
 // custom syscalls.
 qboolean trap_IsClientLegacy(int clientNum) {
-    return (qboolean)syscall(G_CLIENT_ISLEGACYPROTOCOL, clientNum);;
+    return (qboolean)syscall(G_CLIENT_ISLEGACYPROTOCOL, clientNum);
 }
 
 int trap_TranslateSilverWeaponToGoldWeapon(int weapon) {
@@ -1038,4 +1038,8 @@ int trap_TranslateSilverWeaponToGoldWeapon(int weapon) {
 
 int trap_TranslateGoldWeaponToSilverWeapon(int weapon) {
     return (int)syscall(G_TRANSLATE_GOLD_WPN_TO_SILVER, weapon);
+}
+
+int trap_ValidateMapName(const char* mapName, char* output, int outputSize) {
+    return (int)syscall(G_VALIDATE_MAP_NAME, mapName, output, outputSize);
 }

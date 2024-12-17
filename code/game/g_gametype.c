@@ -471,6 +471,7 @@ void G_ResetGametype ( qboolean fullRestart )
             }
 
             trap_SetConfigstring ( CS_GAMETYPE_TIMER, va("%i", level.gametypeRoundTime) );
+            evenTeams(qtrue);
             break;
     }
 
@@ -695,7 +696,7 @@ CheckGametype
 void CheckGametype ( void )
 {
     // If the level is over then forget checking gametype stuff.
-    if ( level.intermissiontime )
+    if ( level.intermissiontime || level.paused )
     {
         return;
     }
@@ -750,10 +751,15 @@ void CheckGametype ( void )
     if ( level.gametypeData->respawnType == RT_INTERVAL )
     {
         team_t team;
+        qboolean autoETDone = qfalse;
         for ( team = TEAM_RED; team < TEAM_SPECTATOR; team ++ )
         {
             if ( level.gametypeRespawnTime[team] && level.time > level.gametypeRespawnTime[team] )
             {
+                if (!autoETDone && g_autoEvenTeams.integer) {
+                    evenTeams(qtrue);
+                }
+                autoETDone = qtrue;
                 // Respawn all dead clients
                 G_RespawnClients ( qfalse, team, qfalse );
 
@@ -837,6 +843,10 @@ intptr_t G_GametypeCommand(int command, intptr_t arg0, intptr_t arg1, intptr_t a
 
         case GT_TEXTMESSAGE:
             trap_SetConfigstring ( CS_GAMETYPE_MESSAGE, va("%i,%s", level.time + 5000, (const char*)G_ColorizeMessage(arg1) ) );
+            break;
+
+        case GT_BROADCAST:
+            G_Broadcast(BROADCAST_GAME, NULL, (qboolean)arg2, (const char*) arg1);
             break;
 
         case GT_RADIOMESSAGE:
@@ -1099,7 +1109,7 @@ void SP_monkey_player(gentity_t* ent)
         return;
     }
 
-    G_AddClientSpawn(ent, (team_t)TEAM_RED, qtrue);
+    //G_AddClientSpawn(ent, (team_t)TEAM_RED, qtrue);
     G_FreeEntity(ent);
 }
 

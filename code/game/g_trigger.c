@@ -995,7 +995,7 @@ void trigger_NewTeleporter_touch(gentity_t* self, gentity_t* other, trace_t* tra
         G_CloseSound(self->origin_to, G_SoundIndex("sound/misc/menus/apply_changes.wav"));
         G_CloseSound(self->origin_from, G_SoundIndex("sound/misc/menus/apply_changes.wav"));
     }
-    TeleportPlayer(other, self->origin_to, self->angles_to, qfalse);
+    TeleportPlayer(other, self->origin_to, self->angles_to);
 }
 
 /*
@@ -1125,7 +1125,7 @@ void ReachableObject_events(gentity_t* self) {
             // Boe!Man 6/13/11: End the round if specified.
             if (self->endround2) {
                 // Boe!Man 6/13/11: Gametype restart.
-                G_ResetGametype(qfalse, qfalse);
+                G_ResetGametype(qfalse);
             }
             else {
                 // Wait, is the client dead already? Or has he moved to the spectator team?

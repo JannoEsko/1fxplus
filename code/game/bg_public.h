@@ -597,6 +597,7 @@ typedef enum
 {
     GAME_OVER_TIMELIMIT,
     GAME_OVER_SCORELIMIT,
+    LEEG,
 
 } game_over_t;
 
@@ -676,6 +677,8 @@ gitem_t*    BG_FindClassnameItem    ( const char *classname );
 gitem_t*    BG_FindWeaponItem       ( weapon_t weapon );
 gitem_t*    BG_FindGametypeItem     ( int index );
 gitem_t*    BG_FindGametypeItemByID ( int itemid );
+
+qboolean BG_InitWeaponStats(qboolean pickupsDisabled, qboolean fallback, qboolean useCustom, char* customName);
 
 
 #define ITEM_INDEX(x) ((x)-bg_itemlist)

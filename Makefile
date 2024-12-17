@@ -553,11 +553,11 @@ ifneq ($(BUILD_GT_CSINF),0)
 endif
 
 ifneq ($(BUILD_GT_HNS),0)
-  TARGETS += $(B)/gt_hns$(SHLIBNAME)
+  TARGETS += $(B)/gt_h&s$(SHLIBNAME)
 endif
 
 ifneq ($(BUILD_GT_HNZ),0)
-  TARGETS += $(B)/gt_hnz$(SHLIBNAME)
+  TARGETS += $(B)/gt_h&z$(SHLIBNAME)
 endif
 
 ifneq ($(BUILD_GT_PROP),0)

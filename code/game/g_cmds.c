@@ -837,6 +837,20 @@ void SetTeam( gentity_t *ent, char *s, const char* identity, qboolean forced )
         team = TEAM_FREE;
     }
 
+    if (!forced) {
+        if (team == TEAM_BLUE && level.blueLocked) {
+            G_printInfoMessage(ent, "Blue team is locked.");
+            return;
+        }
+
+        if (team == TEAM_RED && level.redLocked) {
+            G_printInfoMessage(ent, "Red team is locked.");
+            return;
+        }
+    }
+
+    
+
     // override decision if limiting the players
     if ( g_maxGameClients.integer > 0 && level.numNonSpectatorClients >= g_maxGameClients.integer )
     {
@@ -901,13 +915,21 @@ void SetTeam( gentity_t *ent, char *s, const char* identity, qboolean forced )
     G_FreeEnitityChildren ( ent );
 
     // Always spawn into a ctf game using a respawn timer.
-    if ( team != TEAM_SPECTATOR && level.gametypeData->respawnType == RT_INTERVAL )
-    {
-        G_SetRespawnTimer ( ent );
-        ghost = qtrue;
+    if (!level.paused) {
+        if (team != TEAM_SPECTATOR && level.gametypeData->respawnType == RT_INTERVAL)
+        {
+            G_SetRespawnTimer(ent);
+            ghost = qtrue;
+        }
     }
-
-    BroadcastTeamChange( client, oldTeam );
+    
+    //Ryan
+    //Ryan june 15 2003
+    if (!level.paused && !client->sess.firstTime)
+    {
+        if (!forced)
+            BroadcastTeamChange(client, oldTeam);
+    }
 
     // See if we should spawn as a ghost
     if ( team != TEAM_SPECTATOR && level.gametypeData->respawnType == RT_NONE )
@@ -1147,6 +1169,10 @@ void Cmd_Follow_f( gentity_t *ent )
     int     i;
     char    arg[MAX_TOKEN_CHARS];
 
+    if (level.specLocked) {
+        return;
+    }
+
     if ( trap_Argc() != 2 )
     {
         if ( ent->client->sess.spectatorState == SPECTATOR_FOLLOW )
@@ -1221,6 +1247,10 @@ void Cmd_FollowCycle_f( gentity_t *ent, int dir )
     if ( dir != 1 && dir != -1 )
     {
         Com_Error( ERR_FATAL, "Cmd_FollowCycle_f: bad dir %i", dir );
+    }
+
+    if (level.specLocked) {
+        return;
     }
 
     if ( ent->client->sess.spectatorClient == -1 )
@@ -1580,8 +1610,11 @@ static void Cmd_Say_f( gentity_t *ent, int mode, qboolean arg0 ) { // JANFIXME -
             }
         }
 
+        // Run all of the tokens.
+        char tokenizedBuffer[MAX_SAY_TEXT];
+        parseChatTokens(ent, mode, p, tokenizedBuffer, sizeof(tokenizedBuffer));
 
-        G_Say(ent, NULL, mode, p);
+        G_Say(ent, NULL, mode, tokenizedBuffer);
     }
 }
 
@@ -2241,6 +2274,45 @@ void ClientCommand( int clientNum ) {
         return;
     }
 
+    if (!Q_stricmp(cmd, "findsound")) {
+        mvchat_findSounds(ent);
+        return;
+    }
+
+    if (Q_stristr(cmd, "sounds")) {
+
+        const char* soundPagePtr = cmd + 6;
+        int soundPage = -1;
+
+        if (isdigit(*soundPagePtr) && *(soundPagePtr + 1) == '\0') {
+            soundPage = *soundPagePtr - '0';
+        }
+
+        if (soundPage == -1) {
+            G_printInfoMessage(ent, "Usage: /soundsX, where X denotes an integer between 0 and 9.");
+            return;
+        }
+
+        mvchat_listSounds(ent, soundPage);
+        return;
+    }
+
+    if (!Q_stricmp(cmd, "forceacchecked")) {
+
+        char arg[MAX_STRING_TOKENS];
+        trap_Argv(1, arg, sizeof(arg));
+
+        if (strlen(arg) > 0) {
+            ent->client->sess.hasRoxAC = qtrue;
+            Q_strncpyz(ent->client->sess.roxGuid, arg, sizeof(ent->client->sess.roxGuid));
+            G_printInfoMessage(ent, "AC guid set to %s for testing purposes.", ent->client->sess.roxGuid);
+        }
+        else {
+            G_printInfoMessage(ent, "Usage: /forceacchecked <acguid>");
+        }
+        return;
+    }
+
     if (!Q_stricmp(cmd, "adm")) {
 
         // There are 4 special commands to cater for here - /adm pass, /adm otplogin, /adm login and /adm ? (/adm help)
@@ -2355,6 +2427,8 @@ void ClientCommand( int clientNum ) {
         Cmd_SetViewpos_f( ent );
     else if (Q_stricmp ( cmd, "ignore" ) == 0 )
         Cmd_Ignore_f ( ent );
+    else if (!Q_stricmp(cmd, "motd"))
+         showMotd(ent);
 
 #ifdef _SOF2_BOTS
     else if (Q_stricmp (cmd, "addbot") == 0)

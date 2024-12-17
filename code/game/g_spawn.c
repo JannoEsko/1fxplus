@@ -562,7 +562,7 @@ int G_SpawnGEntityFromSpawnVars( qboolean inSubBSP )
         if (value[0] && Q_stricmp(level.mFilter, value))
         {
             // we are not matching up to the filter, so no spawney
-            return;
+            return -1;
         }
     }
 
@@ -581,7 +581,7 @@ int G_SpawnGEntityFromSpawnVars( qboolean inSubBSP )
         if ( i )
         {
             G_FreeEntity( ent );
-            return;
+            return -1;
         }
     }
     else
@@ -590,7 +590,7 @@ int G_SpawnGEntityFromSpawnVars( qboolean inSubBSP )
         if ( i )
         {
             G_FreeEntity( ent );
-            return;
+            return -1;
         }
     }
 
@@ -604,13 +604,13 @@ int G_SpawnGEntityFromSpawnVars( qboolean inSubBSP )
                 if ( !G_IsGametypeInList ( level.gametypeData->basegametype, value ) )
                 {
                     G_FreeEntity ( ent );
-                    return;
+                    return -1;
                 }
             }
             else
             {
                 G_FreeEntity ( ent );
-                return;
+                return -1;
             }
         }
     }
@@ -1096,7 +1096,7 @@ void SP_worldspawn( void )
     G_SpawnString( "message", "", &text );
     trap_SetConfigstring( CS_MESSAGE, text );               // map specific message
 
-    trap_SetConfigstring( CS_MOTD, g_motd.string );     // message of the day
+    //trap_SetConfigstring( CS_MOTD, g_motd.string );     // message of the day
 
     G_SpawnString( "gravity", va("%d", g_gravity.integer), &text );
     trap_Cvar_Set( "g_gravity", text );

@@ -749,10 +749,6 @@ int swapTeams(qboolean autoSwap) {
         return TEAMACTION_INCOMPATIBLE_GAMETYPE;
     }
 
-    if (level.numPlayingClients < 2) {
-        return TEAMACTION_NOT_ENOUGH_PLAYERS;
-    }
-
     for (int i = 0; i < level.numConnectedClients; i++) {
         gentity_t* tent = &g_entities[level.sortedClients[i]];
 
@@ -760,7 +756,30 @@ int swapTeams(qboolean autoSwap) {
             continue;
         }
 
-        SetTeam(tent, tent->client->sess.team == TEAM_RED ? "b" : "r", NULL, qtrue);
+        if (tent->s.gametypeitems > 0) {
+            G_DropGametypeItems(tent, 0);
+        }
+
+
+        tent->client->ps.stats[STAT_WEAPONS] = 0;
+        TossClientItems(tent);
+        G_StartGhosting(tent);
+
+        if (tent->client->sess.team == TEAM_RED) {
+            tent->client->sess.team = TEAM_BLUE;
+        }
+        else if (tent->client->sess.team == TEAM_BLUE) {
+            tent->client->sess.team = TEAM_RED;
+        }
+
+        tent->client->pers.identity = NULL;
+        ClientUserinfoChanged(tent->s.number);
+        CalculateRanks();
+
+        G_StopFollowing(tent);
+        G_StopGhosting(tent);
+        trap_UnlinkEntity(tent);
+        ClientSpawn(tent);
     }
 
     if (autoSwap) {
@@ -806,8 +825,27 @@ int evenTeams(qboolean autoEven) {
         gentity_t* recipient = getLastConnectedClientInTeam(teamToPick == TEAM_RED ? TEAM_BLUE : TEAM_RED, qtrue);
 
         if (recipient) {
-            SetTeam(recipient, teamToPick == TEAM_RED ? "r" : "b", NULL, qtrue);
             havePlayersBeenMoved = qtrue;
+
+
+            if (recipient->s.gametypeitems > 0) {
+                G_DropGametypeItems(recipient, 0);
+            }
+
+
+            recipient->client->ps.stats[STAT_WEAPONS] = 0;
+            TossClientItems(recipient);
+            G_StartGhosting(recipient);
+            recipient->client->sess.team = teamToPick;
+
+            recipient->client->pers.identity = NULL;
+            ClientUserinfoChanged(recipient->s.number);
+            CalculateRanks();
+
+            G_StopFollowing(recipient);
+            G_StopGhosting(recipient);
+            trap_UnlinkEntity(recipient);
+            ClientSpawn(recipient);
         }
         else if (!havePlayersBeenMoved) {
             return TEAMACTION_NOT_ENOUGH_PLAYERS;
@@ -1315,7 +1353,7 @@ void checkMutes() {
 }
 
 /*
-Run only during initgame.
+Run only during clientconnect.
 This will re-read mutes into the mutes struct array
 */
 void reapplyMuteAfterConnect(gentity_t* ent) {
@@ -1471,7 +1509,14 @@ void sectionAddOrDelInstances(gentity_t* ent, qboolean add) {
 This is an alias function run by think functions.
 */
 void sectionAutoCheck(gentity_t* ent) {
-    realSectionAutoCheck(ent, qfalse);
+
+    if (g_useAutoSections.integer) {
+        realSectionAutoCheck(ent, qfalse);
+    }
+    else {
+        ent->nextthink = level.time + 1000; // Think again afterwards, maybe the state will change...?
+    }
+
 }
 
 void realSectionAutoCheck(gentity_t* ent, qboolean override) {
@@ -1549,7 +1594,7 @@ void realSectionAutoCheck(gentity_t* ent, qboolean override) {
 
 
 void checkEnts(gentity_t* ent) {
-    if (ent->model && ent->model != NULL && !strcmp(ent->model, "BLOCKED_TRIGGER"))
+    if (ent->model && ent->model != NULL && !Q_stricmp(ent->model, "BLOCKED_TRIGGER"))
     {
         if (ent->count) {
             ///Team Games
@@ -1611,4 +1656,542 @@ void checkEnts(gentity_t* ent) {
             g_entities[ent->effect_index].disabled = qtrue;
         }
     }
+}
+
+/*
+================
+Boe_checkRoof
+6/3/12 - 3:53 PM
+================
+*/
+
+void checkRoof(gentity_t* ent)
+{
+    // Boe!Man 11/22/13: Only proceed if this is true.
+    if (!level.autoSectionActive[MAPSECTION_NOROOF] || !level.noSectionEntFound[MAPSECTION_NOROOF]) {
+        return;
+    }
+
+    // Boe!Man 6/3/12: Do this with an interval. It's a shame to be cocky about something this small, so save resources.
+    if (ent->client->sess.noroofCheckTime > level.time) {
+        return;
+    }
+
+    // Boe!Man 6/3/12: He must be alive.
+    if (G_IsClientDead(ent->client)) {
+        if (ent->client->sess.isOnRoof) { // Well, since he's dead now, reset this..
+            ent->client->sess.isOnRoof = qfalse;
+            ent->client->sess.isOnRoofTime = 0;
+        }
+        ent->client->sess.noroofCheckTime = level.time + 1000;
+        return;
+    }
+
+    // Boe!Man 6/3/12: Check for the player.
+    if (!ent->client->sess.isOnRoof) { // Player ISN'T on roof, last time we checked.
+        if (ent->r.currentOrigin[2] >= level.noLR[1][2]) { // Well he is now. Check for the timeout.
+            if (!level.noLR[1][1]) { // 0 or less.. Meaning, instant pop. No need for further checks.
+                G_Damage(ent, NULL, NULL, NULL, NULL, 10000, 0, MOD_TRIGGER_HURT, 0);
+                G_printInfoMessageToAll("%s was killed for being on the roof.", ent->client->pers.cleanName);
+            }
+            else {
+                ent->client->sess.isOnRoof = qtrue; // The server owner specified a timer. So, first, the player initialised this process by being on roof.
+                G_Broadcast(BROADCAST_GAME, ent, qfalse, "\\Leave the roof within ^1%.0f^7 seconds!", level.noLR[1][1]);
+                ent->client->sess.isOnRoofTime = 1;
+            }
+        }
+    }
+    else { // Player IS on roof.
+        if (ent->r.currentOrigin[2] < level.noLR[1][2]) { // He left the roof.
+            ent->client->sess.isOnRoof = qfalse;
+            ent->client->sess.isOnRoofTime = 0;
+            G_Broadcast(BROADCAST_GAME, ent, qfalse, "\\You're no longer on the roof!");
+        }
+        else { // He's still on the roof.
+            if (level.noLR[1][1] == ent->client->sess.isOnRoofTime) { // Well, he waited it out. Pop him.
+                G_Damage(ent, NULL, NULL, NULL, NULL, 10000, 0, MOD_TRIGGER_HURT, 0);
+                G_printInfoMessageToAll("%s was killed for not leaving the roof.", ent->client->pers.cleanName);
+                ent->client->sess.isOnRoof = qfalse;
+                ent->client->sess.isOnRoofTime = 0;
+            }
+            else { // Give him another warning.
+                G_Broadcast(BROADCAST_GAME, ent, qfalse, "\\Leave the roof within ^1%.0f ^7seconds!", level.noLR[1][1] - ent->client->sess.isOnRoofTime);
+                ent->client->sess.isOnRoofTime += 1;
+            }
+        }
+    }
+
+    ent->client->sess.noroofCheckTime = level.time + 1000;
+
+    return;
+}
+
+void resetCompetitionModeVariables() {
+
+    trap_Cvar_Set("scorelimit", va("%d", cm_originalsl.integer));
+    trap_Cvar_Set("timelimit", va("%d", cm_originaltl.integer));
+
+    trap_Cvar_Set("cm_prevRedTeamScore", NULL);
+    trap_Cvar_Set("cm_prevBlueTeamScore", NULL);
+    trap_Cvar_Set("cm_bestOf", NULL);
+    trap_Cvar_Set("cm_scorelimit", NULL);
+    trap_Cvar_Set("cm_timelimit", NULL);
+    trap_Cvar_Set("cm_lockspecs", NULL);
+    trap_Cvar_Set("cm_doublerounds", NULL);
+    trap_Cvar_Set("cm_state", NULL);
+    trap_Cvar_Set("cm_originalsl", NULL);
+    trap_Cvar_Set("cm_originaltl", NULL);
+
+    trap_Cvar_Update(&cm_prevRedTeamScore);
+    trap_Cvar_Update(&cm_prevBlueTeamScore);
+    trap_Cvar_Update(&cm_bestOf);
+    trap_Cvar_Update(&cm_scorelimit);
+    trap_Cvar_Update(&cm_timelimit);
+    trap_Cvar_Update(&cm_lockspecs);
+    trap_Cvar_Update(&cm_doublerounds);
+    trap_Cvar_Update(&cm_state);
+    trap_Cvar_Update(&cm_originalsl);
+    trap_Cvar_Update(&cm_originaltl);
+
+    trap_Cvar_Update(&g_scorelimit);
+    trap_Cvar_Update(&g_timelimit);
+
+}
+
+/*
+parseChatTokens - takes in the FULL chat buffer, outputs the tokenized string.
+This also takes care of sound spawning (@/!).
+*/
+void parseChatTokens(gentity_t* ent, chatMode_t chatMode, const char* input, char* output, int sizeOfOutput) {
+    char temp[MAX_SAY_TEXT];
+    int outIndex = 0;
+    qboolean soundParsed = qfalse;
+
+    Q_strncpyz(temp, input, sizeof(temp));
+
+    const char* ptr = temp;
+    while (*ptr && outIndex < sizeOfOutput - 1) {
+        if (!soundParsed && (*ptr == '@' || *ptr == '!' || *ptr == '&')) {
+            // Sound handling
+            mvchat_ChatParse_t chatParse = { 0 };
+            mvchat_chatDetermineSound(&chatParse, (char*)ptr, ent && ent->client ? ent->client->pers.identity : NULL);
+
+            if (chatParse.shouldSoundPlay) {
+                // JANFIXME - add playability based on sound modes + being alive/dead!
+                if (chatParse.isCustomSound) {
+
+                    for (int i = 0; i < level.numConnectedClients; i++) {
+                        gentity_t* tent = &g_entities[level.sortedClients[i]];
+
+                        if (tent->client->sess.legacyProtocol && !tent->client->sess.hasRoxAC) {
+                            G_printInfoMessage(tent, "Custom sound omitted. Please download Rox Anticheat from https://ac.roxmod.net to get easy access to custom sounds.");
+                        }
+                        else {
+                            G_ClientSound(tent, chatParse.soundIndex);
+                        }
+                    }
+
+                    
+                }
+                else {
+                    G_GlobalSound(chatParse.soundIndex);
+                }
+
+                
+                
+            }
+
+            if (!chatParse.displayNoText && chatParse.text) {
+                int len = strlen(chatParse.text);
+                if (outIndex + len < sizeOfOutput - 1) {
+                    Q_strncpyz(&output[outIndex], chatParse.text, len + 1);
+                    outIndex += len;
+                }
+            }
+
+            ptr += chatParse.stripChars; // Skip processed characters
+            soundParsed = qtrue; // Stop processing further sounds
+            continue;
+        }
+
+        if (*ptr == '#') {
+            // Token handling
+            const char* start = ptr + 1;
+            if (*start >= '0' && *start <= '9') {
+                // Client ID handling
+                int clientID = 0;
+                while (*start >= '0' && *start <= '9') {
+                    clientID = clientID * 10 + (*start - '0');
+                    start++;
+                }
+                if (clientID >= 0 && clientID < MAX_CLIENTS) {
+                    gentity_t* clent = &g_entities[clientID];
+
+                    if (clent && clent->client) {
+                        int len = strlen(clent->client->pers.netname);
+                        if (outIndex + len < sizeOfOutput - 1) {
+                            Q_strncpyz(&output[outIndex], clent->client->pers.netname, len + 1);
+                            outIndex += len;
+                        }
+                    }
+
+                }
+                ptr = start;
+                continue;
+            }
+            else {
+                // Special tokens
+                char token = *start;
+                switch (token) {
+                case 'd': case 'D': { // Last player who damaged you
+                    const char* name = "JANFIXME LASTDMG";
+                    if (name) {
+                        int len = strlen(name);
+                        if (outIndex + len < sizeOfOutput - 1) {
+                            Q_strncpyz(&output[outIndex], name, len + 1);
+                            outIndex += len;
+                        }
+                    }
+                    break;
+                }
+                case 't': case 'T': { // Last player you damaged
+                    const char* name = "JANFIXME LASTATK";
+                    if (name) {
+                        int len = strlen(name);
+                        if (outIndex + len < sizeOfOutput - 1) {
+                            Q_strncpyz(&output[outIndex], name, len + 1);
+                            outIndex += len;
+                        }
+                    }
+                    break;
+                }
+                case 'h': case 'H': { // Current health
+                    int health = ent->client->ps.stats[STAT_HEALTH];
+                    char healthStr[16];
+                    Com_sprintf(healthStr, sizeof(healthStr), "%d", health);
+                    int len = strlen(healthStr);
+                    if (outIndex + len < sizeOfOutput - 1) {
+                        Q_strncpyz(&output[outIndex], healthStr, len + 1);
+                        outIndex += len;
+                    }
+                    break;
+                }
+                case 'a': case 'A': { // Current armor
+                    int armor = ent->client->ps.stats[STAT_ARMOR];
+                    char armorStr[16];
+                    Com_sprintf(armorStr, sizeof(armorStr), "%d", armor);
+                    int len = strlen(armorStr);
+                    if (outIndex + len < sizeOfOutput - 1) {
+                        Q_strncpyz(&output[outIndex], armorStr, len + 1);
+                        outIndex += len;
+                    }
+                    break;
+                }
+                case 'l': case 'L': { // Current location
+                    char location[MAX_SAY_TEXT];
+                    Com_Memset(location, 0, sizeof(location));
+                    if (Team_GetLocationMsg(ent, location, sizeof(location))) {
+                        int len = strlen(location);
+                        if (outIndex + len < sizeOfOutput - 1) {
+                            Q_strncpyz(&output[outIndex], location, len + 1);
+                            outIndex += len;
+                        }
+                    }
+                    break;
+                }
+                case 'x': case 'X': { // Taser
+                    const char* taserInfo = "JANFIXME TASER";
+                    if (taserInfo) {
+                        int len = strlen(taserInfo);
+                        if (outIndex + len < sizeOfOutput - 1) {
+                            Q_strncpyz(&output[outIndex], taserInfo, len + 1);
+                            outIndex += len;
+                        }
+                    }
+                    break;
+                }
+                case 'g': case 'G': { // Stun Gun
+                    const char* stunGunInfo = "JANFIXME STUNGUN";
+                    if (stunGunInfo) {
+                        int len = strlen(stunGunInfo);
+                        if (outIndex + len < sizeOfOutput - 1) {
+                            Q_strncpyz(&output[outIndex], stunGunInfo, len + 1);
+                            outIndex += len;
+                        }
+                    }
+                    break;
+                }
+                }
+                ptr = start + 1;
+                continue;
+            }
+        }
+
+        // Regular character, just copy
+        output[outIndex++] = *ptr++;
+    }
+
+    output[outIndex] = '\0';
+}
+
+
+/*
+==============
+SortAlpha
+
+Sorts char * array
+alphabetically.
+==============
+*/
+
+int QDECL SortAlpha(const void* a, const void* b)
+{
+    return strcmp(*(const char**)a, *(const char**)b);
+}
+
+
+void showHnsScores(void)
+{
+    /*
+    char    winner[64];
+
+    Com_sprintf(winner, sizeof(winner), "%s ^7won the round!", level.cagewinner);
+
+    // Boe!Man 9/2/12: Advanced H&S statistics.
+    if (hideSeek_ExtendedRoundStats.integer && level.time > level.awardTime + 8000 && level.awardTime) {
+        G_Broadcast(va("^3%s\n\n^3Statistics for this map:\n"
+            "^_Rounds survived: ^3%i ^_by ^3%s\n"
+            "^_MM1 hits taken: ^3%i ^_by ^3%s\n"
+            "^_RPG boosts: ^3%i ^_by ^3%s\n"
+            "^_Taken RPG: ^3%i ^_by ^3%s\n"
+            "^_Taken M4: ^3%i ^_by ^3%s\n"
+            "^_Stun attacks: ^3%i ^_by ^3%s\n"
+            "^_Seekers caged: ^3%i ^_by ^3%s\n"
+            "^_Weapons stolen: ^3%i ^_by ^3%s\n\n"
+            "^yPoints: ^3%i ^yby ^3%s\n"
+            "^yTaken MM1: ^3%i ^yby ^3%s\n"
+            "^yStunned: ^3%i ^yby ^3%s\n"
+            "^yTrapped in cage: ^3%i ^yby ^3%s",
+            g_motd.string,
+            level.advancedHsScores[0].score, level.advancedHsScores[0].name, level.advancedHsScores[1].score, level.advancedHsScores[1].name, level.advancedHsScores[2].score, level.advancedHsScores[2].name, level.advancedHsScores[3].score, level.advancedHsScores[3].name,
+            level.advancedHsScores[4].score, level.advancedHsScores[4].name, level.advancedHsScores[5].score, level.advancedHsScores[5].name, level.advancedHsScores[6].score, level.advancedHsScores[6].name, level.advancedHsScores[7].score, level.advancedHsScores[7].name,
+            level.advancedHsScores[8].score, level.advancedHsScores[8].name, level.advancedHsScores[9].score, level.advancedHsScores[9].name, level.advancedHsScores[10].score, level.advancedHsScores[10].name, level.advancedHsScores[11].score, level.advancedHsScores[11].name
+        ), BROADCAST_AWARDS, NULL);
+    }
+    else {
+        G_Broadcast(va("^3%s\n\n%s\n\n^_ THE 3 BEST HIDERS IN THIS MAP ARE:\n^31st ^7%s with ^3%i ^7wins.\n^+2nd ^7%s with ^+%i ^7wins.\n^@3rd ^7%s with ^@%i ^7wins.\n\n"
+            "^y THE 3 BEST SEEKERS IN THIS MAP ARE:\n^31st ^7%s with ^3%i ^7kills.\n^+2nd ^7%s with ^+%i ^7kills.\n^@3rd ^7%s with ^@%i ^7kills.",
+            g_motd.string, winner,
+            level.top3Hiders[0].name, level.top3Hiders[0].score, level.top3Hiders[1].name, level.top3Hiders[1].score, level.top3Hiders[2].name, level.top3Hiders[2].score,
+            level.top3Seekers[0].name, level.top3Seekers[0].score, level.top3Seekers[1].name, level.top3Seekers[1].score, level.top3Seekers[2].name, level.top3Seekers[2].score
+        ), BROADCAST_AWARDS, NULL);
+    }
+    */
+}
+
+qboolean isCurrentGametype(gameTypes_t gametype) {
+    return currentGametype.integer == gametype;
+}
+
+/*
+* Function checks whether the current gametype is in the provided list.
+* Always add GT_MAX in as the last element - that will be the "stopper".
+* Without it, the cycle never ends (and you'll get some funny results).
+*/
+qboolean isCurrentGametypeInList(gameTypes_t* gametypes) {
+
+    while (gametypes && *gametypes != GT_MAX) {
+        if (*gametypes == currentGametype.integer) {
+            return qtrue;
+        }
+        gametypes++;
+    }
+
+    return qfalse;
+}
+
+void sendClientmodAwards() {
+    RPM_Awards();
+    ROCmod_sendBestPlayerStats();
+}
+
+void notifyPlayersOfTeamScores() {
+
+    if ((cm_state.integer == COMPMODE_ROUND1 || cm_state.integer == COMPMODE_ROUND2)) {
+
+        if (cm_state.integer == COMPMODE_ROUND2) {
+            // Find out the winning team.
+            int winningTeam = TEAM_NUM_TEAMS;
+            int teamRedScores = level.teamScores[TEAM_RED];
+            int teamBlueScores = level.teamScores[TEAM_BLUE];
+            if (cm_doublerounds.integer) {
+                teamRedScores += cm_prevRedTeamScore.integer;
+                teamBlueScores += cm_prevBlueTeamScore.integer;
+                if (teamRedScores == teamBlueScores) {
+                    winningTeam = TEAM_FREE;
+                }
+                else if (teamRedScores > teamBlueScores) {
+                    winningTeam = TEAM_RED;
+                }
+                else {
+                    winningTeam = TEAM_BLUE;
+                }
+            }
+            else {
+                if (teamRedScores == teamBlueScores) {
+                    winningTeam = TEAM_FREE;
+                }
+                else if (teamRedScores > teamBlueScores) {
+                    winningTeam = TEAM_RED;
+                }
+                else {
+                    winningTeam = TEAM_BLUE;
+                }
+            }
+
+            if (winningTeam == TEAM_FREE) {
+
+                G_Broadcast(BROADCAST_AWARDS, NULL, qfalse, "%s ^7and %s^7 \nhave \\finished with a tie: %d - %d", g_customRedName.string, g_customBlueName.string, teamRedScores, teamBlueScores);
+                G_printInfoMessageToAll("Blue and red team have finished with a tie: %d - %d", teamRedScores, teamBlueScores);
+            }
+            else {
+                G_Broadcast(BROADCAST_AWARDS, NULL, qfalse, "%s^7 \nwon the \\match \nwith a scoreline of %d - %d", winningTeam == TEAM_RED ? g_customRedName.string : g_customBlueName.string, winningTeam == TEAM_RED ? teamRedScores : teamBlueScores, winningTeam == TEAM_RED ? teamBlueScores : teamRedScores);
+                G_printInfoMessageToAll("%s won the match with a scoreline of %d - %d", winningTeam == TEAM_RED ? "Red team" : "Blue team", winningTeam == TEAM_RED ? teamRedScores : teamBlueScores, winningTeam == TEAM_RED ? teamBlueScores : teamRedScores);
+            }
+
+        }
+        else {
+            int winningTeam = TEAM_NUM_TEAMS;
+            int teamRedScores = level.teamScores[TEAM_RED];
+            int teamBlueScores = level.teamScores[TEAM_BLUE];
+
+            if (teamRedScores == teamBlueScores) {
+                winningTeam = TEAM_FREE;
+            }
+            else if (teamRedScores > teamBlueScores) {
+                winningTeam = TEAM_RED;
+            }
+            else {
+                winningTeam = TEAM_BLUE;
+            }
+
+            if (winningTeam == TEAM_FREE) {
+                G_Broadcast(BROADCAST_AWARDS, NULL, qfalse, "%s^7 and %s^7 \nare currently tied: %d - %d", g_customRedName.string, g_customBlueName.string, teamRedScores, teamBlueScores);
+                G_printInfoMessageToAll("Blue and red team are currently tied: %d - %d", teamRedScores, teamBlueScores);
+            }
+            else {
+                G_Broadcast(BROADCAST_AWARDS, NULL, qfalse, "%s^7 \nwon the \\first round \nwith a scoreline of %d - %d", winningTeam == TEAM_RED ? g_customRedName.string : g_customBlueName.string, winningTeam == TEAM_RED ? teamRedScores : teamBlueScores, winningTeam == TEAM_RED ? teamBlueScores : teamRedScores);
+                G_printInfoMessageToAll("%s won the first round with a scoreline of %d - %d", winningTeam == TEAM_RED ? "Red team" : "Blue team", winningTeam == TEAM_RED ? teamRedScores : teamBlueScores, winningTeam == TEAM_RED ? teamBlueScores : teamRedScores);
+            }
+
+            trap_Cvar_Set("cm_prevRedTeamScore", va("%d", level.teamScores[TEAM_BLUE]));
+            trap_Cvar_Set("cm_prevBlueTeamScore", va("%d", level.teamScores[TEAM_RED]));
+
+            trap_Cvar_Update(&cm_prevRedTeamScore);
+            trap_Cvar_Update(&cm_prevBlueTeamScore);
+
+
+        }
+    }
+
+}
+
+
+/*
+==================
+Boe_Motd in 1fxmod.
+==================
+*/
+void showMotd(gentity_t* ent) {
+    char    gmotd[1024] = "\0";
+    char    motd[1024] = "\0";
+    char* s = motd;
+    char* gs = gmotd;
+    char    name[36];
+    char* header1 = va("%s - %s\n", MODNAME_COLORED, MODVERSION);
+
+    strcpy(name, ent->client->pers.netname);
+
+    Com_sprintf(gmotd, 1024, "%s%s%s\n%s\n%s\n%s\n%s\n",
+        header1,
+        MOD_MOTD_INFO,
+        g_motd1.string,
+        g_motd2.string,
+        g_motd3.string,
+        g_motd4.string,
+        g_motd5.string);
+
+    gmotd[strlen(gmotd) + 1] = '\0';
+
+    while (*gs)
+    {
+        if (*gs == '#')
+        {
+            if (*++gs == 'u')
+            {
+                strcat(motd, name);
+                strcat(motd, "^7");
+                s += strlen(name) + 2;
+                gs++;
+            }
+            else
+            {
+                gs--;
+            }
+        }
+
+        *s++ = *gs++;
+    }
+
+    *s = '\0';
+    G_Broadcast(BROADCAST_MOTD, ent, qfalse, motd);
+}
+
+qboolean weaponMod(weaponMod_t weaponMod, char* wpnModName) {
+
+    char fileToCheck[MAX_QPATH];
+
+    if (weaponMod == WEAPONMOD_DEFAULT) {
+        return BG_InitWeaponStats(level.pickupsDisabled, qfalse, qfalse, NULL);
+    }
+    else if (weaponMod == WEAPONMOD_ND) {
+        Q_strncpyz(fileToCheck, "wpndata/nd.wpn", sizeof(fileToCheck));
+    }
+    else if (weaponMod == WEAPONMOD_RD) {
+        Q_strncpyz(fileToCheck, "wpndata/rd.wpn", sizeof(fileToCheck));
+    }
+    else {
+        if (!wpnModName || !strlen(wpnModName)) {
+            return qfalse;
+        }
+
+        Q_strncpyz(fileToCheck, va("wpndata/%s.wpn", wpnModName), sizeof(fileToCheck));
+
+    }
+
+    return BG_InitWeaponStats(level.pickupsDisabled, qfalse, qtrue, fileToCheck);
+
+}
+
+void printMapActionDenialReason(gentity_t* adm) {
+
+    if (level.mapAction == MAPACTION_ENDING) {
+        G_printInfoMessage(adm, "The map is already ending.");
+    }
+    else if (level.mapAction == MAPACTION_PENDING_GT) {
+        G_printInfoMessage(adm, "Server is already pending a gametype change.");
+    }
+    else if (level.mapAction == MAPACTION_PENDING_MAPCHANGE) {
+        G_printInfoMessage(adm, "Server is already pending a map change.");
+    }
+    else if (level.mapAction == MAPACTION_PENDING_MAPCYCLE) {
+        G_printInfoMessage(adm, "Server is already pending moving to next map.");
+    }
+    else if (level.mapAction == MAPACTION_PENDING_MAPGTCHANGE) {
+        G_printInfoMessage(adm, "Server is already pending a new map and a gametype.");
+    }
+    else if (level.mapAction == MAPACTION_PENDING_RESTART) {
+        G_printInfoMessage(adm, "Server is already pending a map restart.");
+    }
+
 }

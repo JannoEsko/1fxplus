@@ -53,3 +53,4 @@ void        trap_Cmd_TakeClientItem         ( int clientid, int itemid );
 int         trap_Cmd_GetClientList          ( team_t team, int* clients, int clientcount );
 
 void		trap_Cmd_Teamnames				( const char* redTeam, const char* blueTeam );
+void		trap_Cmd_Broadcast				( int client, const char* message, qboolean playSound );

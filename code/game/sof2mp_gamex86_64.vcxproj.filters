@@ -159,6 +159,9 @@
     <ClCompile Include="1fx\threads.c">
       <Filter>Source Files\1fx</Filter>
     </ClCompile>
+    <ClCompile Include="1fx\mvchat.c">
+      <Filter>Source Files\1fx</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ai_main.h">

@@ -131,6 +131,19 @@ static void migrateGameDatabase(sqlite3* db, int gameMigrationLevel) {
             return;
         }
     }
+
+    if (gameMigrationLevel < 4) {
+        // Mute sessions to SQL
+        char* migration = "CREATE TABLE IF NOT EXISTS sessionmutes (ip VARCHAR(25), remainingtime INTEGER, totalduration INTEGER);"
+            "DELETE FROM migrationlevel;"
+            "INSERT INTO migrationlevel (migrationlevel) VALUES (4);";
+
+        if (sqlite3_exec(db, migration, 0, 0, 0) != SQLITE_OK) {
+            sqlite3_close(db);
+            logSystem(LOGLEVEL_FATAL_DB, "Game dropped due to failing to migrate the game database to level 4 (starting level: %d).\nSQLite error: %s\nCode: %d", gameMigrationLevel, sqlite3_errmsg(db), sqlite3_errcode(db));
+            return;
+        }
+    }
 }
 
 static void migrateLogsDatabase(sqlite3* db, int logsMigrationLevel) {
@@ -1952,4 +1965,89 @@ void dbReadSessionDataForClient(gclient_t* client, qboolean gametypeChanged) {
     }
     sqlite3_finalize(stmt);
 
+}
+
+void dbReadSessionMutesBackIntoMuteInfo(void) {
+
+    sqlite3* db = gameDb;
+    sqlite3_stmt* stmt;
+
+    char* query = "SELECT ip, remainingtime, totalduration FROM sessionmutes";
+
+    int rc = sqlite3_prepare(db, query, -1, &stmt, 0);
+    if (rc != SQLITE_OK) {
+        logSystem(LOGLEVEL_WARN, "sqlite3_prepare failed on gameDb session mutes reading. Error: %s", sqlite3_errmsg(db));
+        return;
+    }
+
+    while ((rc = sqlite3_step(stmt)) == SQLITE_ROW) {
+
+        mute_t* muteInfo = &level.mutedClients[level.numMutedClients];
+
+        muteInfo->used = qtrue;
+        Q_strncpyz(muteInfo->ip, sqlite3_column_text(stmt, 0), sizeof(muteInfo->ip));
+        muteInfo->startTime = level.time;
+        muteInfo->time = sqlite3_column_int(stmt, 1);
+        muteInfo->totalDuration = sqlite3_column_int(stmt, 2);
+
+        level.numMutedClients++;
+
+    }
+
+    if (rc != SQLITE_DONE) {
+        logSystem(LOGLEVEL_WARN, "reading sessionmutes error: %s", sqlite3_errmsg(db));
+    }
+    
+
+    sqlite3_finalize(stmt);
+
+}
+
+void dbWriteMuteIntoSession(mute_t* muteInfo) {
+
+    sqlite3* db = gameDb;
+    sqlite3_stmt* stmt;
+
+    char* query = "INSERT INTO sessionmutes (ip, remainingtime, totalduration) VALUES (?, ?, ?)";
+
+    int rc = sqlite3_prepare(db, query, -1, &stmt, 0);
+    if (rc != SQLITE_OK) {
+        logSystem(LOGLEVEL_WARN, "sqlite3_prepare failed on gameDb session mutes writing. Error: %s", sqlite3_errmsg(db));
+        return;
+    }
+
+    sqlBindTextOrNull(stmt, 1, muteInfo->ip);
+    sqlite3_bind_int(stmt, 2, muteInfo->startTime + muteInfo->time - level.time);
+    sqlite3_bind_int(stmt, 3, muteInfo->totalDuration);
+
+    rc = sqlite3_step(stmt);
+
+    if (rc != SQLITE_DONE) {
+        logSystem(LOGLEVEL_WARN, "writing sessionmutes error: %s", sqlite3_errmsg(db));
+    }
+
+    sqlite3_finalize(stmt);
+
+}
+
+void dbClearSessionMutes(void) {
+
+    sqlite3* db = gameDb;
+    sqlite3_stmt* stmt;
+
+    char* query = "DELETE FROM sessionmutes";
+
+    int rc = sqlite3_prepare(db, query, -1, &stmt, 0);
+    if (rc != SQLITE_OK) {
+        logSystem(LOGLEVEL_WARN, "sqlite3_prepare failed on gameDb session mutes clearing. Error: %s", sqlite3_errmsg(db));
+        return;
+    }
+
+    rc = sqlite3_step(stmt);
+
+    if (rc != SQLITE_DONE) {
+        logSystem(LOGLEVEL_WARN, "deleting sessionmutes error: %s", sqlite3_errmsg(db));
+    }
+
+    sqlite3_finalize(stmt);
 }

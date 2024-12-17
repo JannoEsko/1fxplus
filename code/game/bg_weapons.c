@@ -417,23 +417,42 @@ static qboolean BG_ParseWeaponStats(weapon_t weaponNum, void *group, qboolean pi
     return qtrue;
 }
 
-qboolean BG_InitWeaponStats( qboolean pickupsDisabled )
+qboolean BG_InitWeaponStats( qboolean pickupsDisabled, qboolean fallback, qboolean useCustom, char* customName )
 {
-    void        *GP2, *topGroup, *topSubs;
+    void        *GP2 = NULL, *topGroup, *topSubs;
     char        name[256];
     int         i;
 
-    GP2 = trap_GP_ParseFile(g_weaponFile.string);
 
-    if (!GP2) {
-        logSystem(LOGLEVEL_WARN, "Weapon stats file \"%s\" not found, trying default...\n", g_weaponFile.string);
-        GP2 = trap_GP_ParseFile("ext_data/sof2.wpn");
-        if (!GP2)
-        {
+    if (useCustom) {
+        GP2 = trap_GP_ParseFile(customName);
+
+        if (!GP2 && !fallback) {
+            logSystem(LOGLEVEL_WARN, "Weapon stats file \"%s\" not found, not falling back.", customName);
             return qfalse;
         }
     }
-    
+
+    if (!GP2) {
+        GP2 = trap_GP_ParseFile(g_weaponFile.string);
+
+        if (!GP2) {
+
+            if (fallback) {
+                logSystem(LOGLEVEL_WARN, "Weapon stats file \"%s\" not found, trying default...\n", g_weaponFile.string);
+                GP2 = trap_GP_ParseFile("ext_data/sof2.wpn");
+                if (!GP2)
+                {
+                    return qfalse;
+                }
+            }
+            else {
+                return qfalse;
+            }
+
+
+        }
+    }
 
     topGroup = trap_GP_GetBaseParseGroup(GP2);
     topSubs = trap_GPG_GetSubGroups(topGroup);
@@ -1080,7 +1099,7 @@ qboolean BG_ParseInviewFile( qboolean pickupsDisabled )
 
     BG_InitAmmoStats();
 
-    return BG_InitWeaponStats( pickupsDisabled );
+    return BG_InitWeaponStats( pickupsDisabled, qtrue, qfalse, NULL );
 }
 
 TAnimWeapon *BG_GetInviewAnim(int weaponIdx,const char *animKey,int *animIndex)

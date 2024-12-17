@@ -42,7 +42,7 @@ vmCvar_t    g_debugDamage;
 vmCvar_t    g_debugAlloc;
 vmCvar_t    g_weaponRespawn;
 vmCvar_t    g_backpackRespawn;
-vmCvar_t    g_motd;
+//vmCvar_t    g_motd;
 vmCvar_t    g_synchronousClients;
 vmCvar_t    g_warmup;
 vmCvar_t    g_doWarmup;
@@ -186,6 +186,49 @@ vmCvar_t    g_useNoRoof;
 vmCvar_t    g_useNoMiddle;
 vmCvar_t    g_useNoWhole;
 
+vmCvar_t    g_useAutoSections;
+
+
+// Compmode cvars
+// Split into 2, one part is the match_ parts, which can be defaulted by config
+// Another part is the internal cm parts, which are used to control the states of the game.
+
+// Archiveable vars.
+vmCvar_t    match_bestOf; // ensures early exit from winning state if one team's score is too far ahead to reach.
+vmCvar_t    match_scorelimit;
+vmCvar_t    match_timelimit;
+vmCvar_t    match_lockspecs;
+vmCvar_t    match_doublerounds; 
+
+
+// Internal vars
+
+// prevXTeamScores - so when first round is over, we save the variable values to the opposite team - so when we're checking CM states, we will compare blue value to blue value.
+vmCvar_t    cm_prevRedTeamScore;
+vmCvar_t    cm_prevBlueTeamScore; 
+vmCvar_t    cm_bestOf;
+vmCvar_t    cm_scorelimit;
+vmCvar_t    cm_timelimit;
+vmCvar_t    cm_lockspecs;
+vmCvar_t    cm_doublerounds;
+vmCvar_t    cm_state; // init, first round, second round.
+
+vmCvar_t    cm_originalsl;
+vmCvar_t    cm_originaltl;
+
+vmCvar_t    g_mvchatCheckSoundFiles;
+
+vmCvar_t    currentGametype;
+
+// MOTD cvars.
+vmCvar_t    g_motd1;
+vmCvar_t    g_motd2;
+vmCvar_t    g_motd3;
+vmCvar_t    g_motd4;
+vmCvar_t    g_motd5;
+
+vmCvar_t    g_autoEvenTeams;
+
 static cvarTable_t gameCvarTable[] =
 {
     // don't override the cheat state set by the system
@@ -196,6 +239,8 @@ static cvarTable_t gameCvarTable[] =
     { NULL, "gamedate", __DATE__ , CVAR_ROM, 0.0, 0.0, 0, qfalse  },
     { &g_restarted, "g_restarted", "0", CVAR_ROM, 0.0, 0.0, 0, qfalse  },
     { NULL, "sv_mapname", "", CVAR_SERVERINFO | CVAR_ROM, 0.0, 0.0, 0, qfalse  },
+    { NULL, "^3Mod Name", MODNAME, CVAR_SERVERINFO | CVAR_ROM, 0.0, 0.0, 0, qfalse  },
+    { NULL, "^3Mod Version", MODVERSION, CVAR_SERVERINFO | CVAR_ROM, 0.0, 0.0, 0, qfalse  },
 
     { &g_fps, "sv_fps", "", CVAR_ROM, 0.0, 0.0, 0, qfalse },
 
@@ -238,7 +283,7 @@ static cvarTable_t gameCvarTable[] =
     { &g_debugMove, "g_debugMove", "0", 0, 0.0, 0.0, 0, qfalse },
     { &g_debugDamage, "g_debugDamage", "0", 0, 0.0, 0.0, 0, qfalse },
     { &g_debugAlloc, "g_debugAlloc", "0", 0, 0.0, 0.0, 0, qfalse },
-    { &g_motd, "g_motd", "", 0, 0.0, 0.0, 0, qfalse },
+    //{ &g_motd, "g_motd", "", 0, 0.0, 0.0, 0, qfalse },
 
     { &g_allowVote, "g_allowVote", "1", CVAR_ARCHIVE, 0.0, 0.0, 0, qfalse },
     { &g_voteDuration, "g_voteDuration", "60", CVAR_ARCHIVE, 0.0, 0.0, 0, qfalse },
@@ -402,8 +447,35 @@ static cvarTable_t gameCvarTable[] =
     { &g_useNoRoof, "g_useNoRoof", "1",       CVAR_ARCHIVE, 0.0f, 0.0f, 0, qfalse },
     { &g_useNoMiddle, "g_useNoMiddle", "1",       CVAR_ARCHIVE, 0.0f, 0.0f, 0, qfalse },
     { &g_useNoWhole, "g_useNoWhole", "1",       CVAR_ARCHIVE, 0.0f, 0.0f, 0, qfalse },
-        
-        
+    { &g_useAutoSections, "g_useAutoSections", "1", CVAR_ARCHIVE, 0.0f, 0.0f, 0, qfalse },
+    { &match_bestOf, "match_bestOf", "1", CVAR_ARCHIVE | CVAR_LOCK_RANGE, 0.0f, 1.0f, 0, qfalse },
+    { &match_scorelimit, "match_scorelimit", "3", CVAR_ARCHIVE, 0.0f, 0.0f, 0, qfalse },
+    { &match_timelimit, "match_timelimit", "30", CVAR_ARCHIVE, 0.0f, 0.0f, 0, qfalse },
+    { &match_lockspecs, "match_lockspecs", "1", CVAR_ARCHIVE, 0.0f, 0.0f, 0, qfalse },
+    { &match_doublerounds, "match_doublerounds", "1", CVAR_ARCHIVE | CVAR_LOCK_RANGE, 0.0f, 1.0f, 0, qfalse },
+
+    { &cm_prevRedTeamScore, "cm_prevRedTeamScore", "0", CVAR_ROM, 0.0f, 0.0f, 0, qfalse },
+    { &cm_prevBlueTeamScore, "cm_prevBlueTeamScore", "0", CVAR_ROM, 0.0f, 0.0f, 0, qfalse },
+    { &cm_state, "cm_state", "0", CVAR_ROM, 0.0f, 0.0f, 0, qfalse },
+    { &cm_bestOf, "cm_bestOf", "0", CVAR_ROM, 0.0f, 0.0f, 0, qfalse },
+    { &cm_scorelimit, "cm_scorelimit", "0", CVAR_ROM, 0.0f, 0.0f, 0, qfalse },
+    { &cm_timelimit, "cm_timelimit", "0", CVAR_ROM, 0.0f, 0.0f, 0, qfalse },
+    { &cm_lockspecs, "cm_lockspecs", "0", CVAR_ROM, 0.0f, 0.0f, 0, qfalse },
+    { &cm_doublerounds, "cm_doublerounds", "0", CVAR_ROM, 0.0f, 0.0f, 0, qfalse },
+    { &cm_originalsl, "cm_originalsl", "0", CVAR_ROM, 0.0f, 0.0f, 0, qfalse },
+    { &cm_originaltl, "cm_originaltl", "0", CVAR_ROM, 0.0f, 0.0f, 0, qfalse },
+    { &g_mvchatCheckSoundFiles, "g_mvchatCheckSoundFiles", "0", CVAR_ARCHIVE, 0.0f, 0.0f, 0, qfalse },
+    { &currentGametype, "current_gametype", "3", CVAR_SERVERINFO | CVAR_ROM | CVAR_INTERNAL, 0.0f, 0.0f, 0, qfalse },
+    { &g_motd1, "g_motd1", "", CVAR_ARCHIVE, 0.0f, 0.0f, 0, qfalse },
+    { &g_motd2, "g_motd2", "", CVAR_ARCHIVE, 0.0f, 0.0f, 0, qfalse },
+    { &g_motd3, "g_motd3", "", CVAR_ARCHIVE, 0.0f, 0.0f, 0, qfalse },
+    { &g_motd4, "g_motd4", "", CVAR_ARCHIVE, 0.0f, 0.0f, 0, qfalse },
+    { &g_motd5, "g_motd5", "", CVAR_ARCHIVE, 0.0f, 0.0f, 0, qfalse },
+
+    { &g_autoEvenTeams, "g_autoEvenTeams", "1", CVAR_ARCHIVE, 0.0f, 0.0f, 0, qfalse},
+    
+    
+
 };
 
 // bk001129 - made static to avoid aliasing
@@ -722,6 +794,53 @@ void G_UpdateAvailableWeapons ( void )
 
     trap_Cvar_Update ( &g_availableWeapons );
 }
+
+qboolean G_IsGametypeAValidGametype(char* gametype) {
+
+    if (!Q_stricmp(gametype, "h&s")) {
+        return qtrue;
+    }
+    else if (!Q_stricmp(gametype, "h&z")) {
+        return qtrue;
+    }
+    else if (!Q_stricmp(gametype, "gg")) {
+        return qtrue;
+    }
+    else if (!Q_stricmp(gametype, "vip")) {
+        return qtrue;
+    }
+    else if (!Q_stricmp(gametype, "prop")) {
+        return qtrue;
+    }
+    else if (!Q_stricmp(gametype, "mm")) {
+        return qtrue;
+    }
+    else if (!Q_stricmp(gametype, "csinf")) {
+        return qtrue;
+    }
+    else if (!Q_stricmp(gametype, "dem")) {
+        return qtrue;
+    }
+    else if (!Q_stricmp(gametype, "inf")) {
+        return qtrue;
+    }
+    else if (!Q_stricmp(gametype, "ctf")) {
+        return qtrue;
+    }
+    else if (!Q_stricmp(gametype, "dm")) {
+        return qtrue;
+    }
+    else if (!Q_stricmp(gametype, "tdm")) {
+        return qtrue;
+    }
+    else if (!Q_stricmp(gametype, "elim")) {
+        return qtrue;
+    }
+    else {
+        return qfalse;
+    }
+}
+
 /*
 ===============
 G_TranslateGametypeToPublicGametype
@@ -730,38 +849,82 @@ Takes the actual gametype (e.g. h&s) and translates it to a public value.
 Public value will be used for example in info query and in configstring.
 ===============
 */
- char* G_TranslateGametypeToPublicGametype(char* gametype) {
+char* G_TranslateGametypeToPublicGametype(char* gametype) {
+
+if (!Q_stricmp(gametype, "h&s")) {
+    return "inf";
+}
+
+if (!Q_stricmp(gametype, "h&z")) {
+    return "inf";
+}
+
+if (!Q_stricmp(gametype, "gg")) {
+    return "dm";
+}
+
+if (!Q_stricmp(gametype, "vip")) {
+    return "elim";
+}
+
+if (!Q_stricmp(gametype, "prop")) {
+    return "inf";
+}
+
+if (!Q_stricmp(gametype, "mm")) {
+    return "??"; // Devil once started with this gametype, but I've no idea what were his plans. 
+                    // Perhaps one day I'll get an idea for it, so far adding it just as a placeholder value.
+}
+
+if (!Q_stricmp(gametype, "csinf")) {
+    return "inf";
+}
+
+return gametype;
+}
+
+ /*
+===============
+G_TranslateGametypeToPublicGametype
+
+Takes the actual gametype (e.g. h&s) and translates it to a public value.
+Public value will be used for example in info query and in configstring.
+===============
+*/
+void G_SetCurrentGametypeValue(char* gametype) {
 
     if (!Q_stricmp(gametype, "h&s")) {
-        return "inf";
+        trap_Cvar_Set("current_gametype", va("%d", GT_HNS));
+    } else if (!Q_stricmp(gametype, "h&z")) {
+        trap_Cvar_Set("current_gametype", va("%d", GT_HNZ));
+    } else if (!Q_stricmp(gametype, "gg")) {
+        trap_Cvar_Set("current_gametype", va("%d", GT_DM));
+    } else if (!Q_stricmp(gametype, "vip")) {
+        trap_Cvar_Set("current_gametype", va("%d", GT_VIP));
+    } else if (!Q_stricmp(gametype, "prop")) {
+        trap_Cvar_Set("current_gametype", va("%d", GT_PROP));
+    } else if (!Q_stricmp(gametype, "mm")) {
+        trap_Cvar_Set("current_gametype", va("%d", GT_MM));
+    } else if (!Q_stricmp(gametype, "csinf")) {
+        trap_Cvar_Set("current_gametype", va("%d", GT_CSINF));
+    } else if (!Q_stricmp(gametype, "dem")) {
+        trap_Cvar_Set("current_gametype", va("%d", GT_DEM));
+    } else if (!Q_stricmp(gametype, "inf")) {
+        trap_Cvar_Set("current_gametype", va("%d", GT_INF));
+    } else if (!Q_stricmp(gametype, "ctf")) {
+        trap_Cvar_Set("current_gametype", va("%d", GT_CTF));
+    } else if (!Q_stricmp(gametype, "dm")) {
+        trap_Cvar_Set("current_gametype", va("%d", GT_DM));
+    } else if (!Q_stricmp(gametype, "tdm")) {
+        trap_Cvar_Set("current_gametype", va("%d", GT_TDM));
+    } else if (!Q_stricmp(gametype, "elim")) {
+        trap_Cvar_Set("current_gametype", va("%d", GT_ELIM));
+    } else {
+        logSystem(LOGLEVEL_WARN, "Couldn't map gametype %s to a meaningful GT_ enum value...", gametype);
+        trap_Cvar_Set("current_gametype", va("%d", GT_NONE));
     }
 
-    if (!Q_stricmp(gametype, "h&z")) {
-        return "inf";
-    }
-
-    if (!Q_stricmp(gametype, "gg")) {
-        return "dm";
-    }
-
-    if (!Q_stricmp(gametype, "vip")) {
-        return "elim";
-    }
-
-    if (!Q_stricmp(gametype, "prop")) {
-        return "inf";
-    }
-
-    if (!Q_stricmp(gametype, "mm")) {
-        return "??"; // Devil once started with this gametype, but I've no idea what were his plans. 
-                     // Perhaps one day I'll get an idea for it, so far adding it just as a placeholder value.
-    }
-
-    if (!Q_stricmp(gametype, "csinf")) {
-        return "inf";
-    }
-
-    return gametype;
+    trap_Cvar_Update(&currentGametype);
 }
 
 /*
@@ -831,6 +994,8 @@ void G_SetGametype ( const char* gametype )
     // Update public gametype variable
     trap_Cvar_Set("g_publicGametype", G_TranslateGametypeToPublicGametype(g_gametype.string));
 
+    // And set the currentGametype integer value as well. This is used by e.g. Rox AC to display the actual gametype value.
+    G_SetCurrentGametypeValue(g_gametype.string);
 }
 
 static void G_InitClientMod(void) {
@@ -916,6 +1081,8 @@ void G_InitGame( int levelTime, int randomSeed, int restart )
     // Set the current gametype
     G_SetGametype(g_gametype.string);
 
+    G_SetDisabledWeapons();
+
     // Sets the available weapons cvar from the disable_ cvars.
     // ... but first disable the weapons which are not in 1.00 if we're in multiprotocol game.
     if (level.multiprotocol) {
@@ -923,7 +1090,7 @@ void G_InitGame( int levelTime, int randomSeed, int restart )
         trap_Cvar_Set("disable_pickup_weapon_MP5", "1");
         trap_Cvar_Set("disable_pickup_weapon_SIG551", "1");
     }
-    G_SetDisabledWeapons();
+
     G_UpdateAvailableWeapons ( );
 
     // Set the available outfitting
@@ -963,6 +1130,7 @@ void G_InitGame( int levelTime, int randomSeed, int restart )
     }
 
     G_InitWorldSession();
+    readMutesFromSession();
 
     // initialize all entities for this game
     memset( g_entities, 0, MAX_GENTITIES * sizeof(g_entities[0]) );
@@ -1039,6 +1207,9 @@ void G_InitGame( int levelTime, int randomSeed, int restart )
     // Load clientmod specifics
     G_InitClientMod();
 
+    // Boe's magnificent mvchat system.
+    mvchat_parseFiles();
+
     // Initialize the gametype
     trap_GT_Init ( g_gametype.string, restart );
 
@@ -1052,10 +1223,71 @@ void G_InitGame( int levelTime, int randomSeed, int restart )
         trap_SetConfigstring( CS_MUSIC, temp );
     }
 
+    if (g_useAutoSections.integer) {
+        if (level.noSectionEntFound[MAPSECTION_NOLOWER]) {
+            level.autoSectionActive[MAPSECTION_NOLOWER] = qtrue;
+        }
+
+        if (level.noSectionEntFound[MAPSECTION_NOROOF]) {
+            level.autoSectionActive[MAPSECTION_NOROOF] = qtrue;
+        }
+
+        if (level.noSectionEntFound[MAPSECTION_NOMIDDLE]) {
+            level.autoSectionActive[MAPSECTION_NOMIDDLE] = qtrue;
+        }
+
+        if (level.noSectionEntFound[MAPSECTION_NOWHOLE]) {
+            level.autoSectionActive[MAPSECTION_NOWHOLE] = qtrue;
+        }
+
+
+    }
+
     trap_SetConfigstring( CS_VOTE_TIME, "" );
 
     Com_Printf("Starting threads...\n");
     startThread();
+
+
+    if (cm_state.integer) {
+
+        if (restart) {
+            if (cm_state.integer == COMPMODE_ROUND1 || cm_state.integer == COMPMODE_ROUND2) {
+
+
+                if (cm_lockspecs.integer) {
+                    G_printCustomMessageToAll("Competition Mode", "Spectators have been locked.");
+                    level.specLocked = qtrue;
+                }
+
+                level.blueLocked = qtrue;
+                level.redLocked = qtrue;
+
+                trap_Cvar_Set("scorelimit", va("%d", cm_scorelimit.integer));
+                trap_Cvar_Set("timelimit", va("%d", cm_timelimit.integer));
+                trap_Cvar_Update(&g_scorelimit);
+                trap_Cvar_Update(&g_timelimit);
+            }
+            else if (cm_state.integer == COMPMODE_END) {
+                // Reset the variables back.
+                level.specLocked = qfalse;
+                level.blueLocked = qfalse;
+                level.redLocked = qfalse;
+
+                resetCompetitionModeVariables();
+
+            }
+            else if (cm_state.integer == COMPMODE_PRE_ROUND2) {
+                level.nextCmInfoDisplay = level.time;
+                level.autoSwapTime = level.time + 1000;
+            }
+        }
+        else {
+            // There can be scenarios where cm_ is still set, e.g. changing map during compmode etc.
+            // We reset the variables in case it wasn't a map restart.
+            resetCompetitionModeVariables();
+        }
+    }
 }
 
 /*
@@ -1076,6 +1308,7 @@ void G_ShutdownGame( int restart )
 
     // write all the client session data so we can get it back
     G_WriteSessionData();
+    writeMutesIntoSession();
 
 #ifdef _SOF2_BOTS
     if ( trap_Cvar_VariableIntegerValue( "bot_enable" ) )
@@ -1578,6 +1811,19 @@ void ExitLevel (void)
     int         i;
     gclient_t   *cl;
 
+
+    if (cm_state.integer) {
+
+        trap_Cvar_Set("cm_state", va("%d", cm_state.integer + 1));
+        trap_Cvar_Update(&cm_state);
+
+        trap_SendConsoleCommand(EXEC_APPEND, "map_restart 0");
+        level.intermissiontime = 0;
+        level.teamScores[TEAM_RED] = 0;
+        level.teamScores[TEAM_BLUE] = 0;
+        return;
+    }
+
     // Next map
     trap_SendConsoleCommand( EXEC_APPEND, "mapcycle\n" );
     level.changemap = NULL;
@@ -1721,72 +1967,62 @@ wait 10 seconds before going on.
 */
 void CheckIntermissionExit( void )
 {
-    int         ready, notReady;
-    int         i;
-    gclient_t   *cl;
-    int         readyMask;
-
-    // see which players are ready
-    ready = 0;
-    notReady = 0;
-    readyMask = 0;
-    for (i=0 ; i< g_maxclients.integer ; i++) {
-        cl = level.clients + i;
-        if ( cl->pers.connected != CON_CONNECTED ) {
-            continue;
-        }
-        if ( g_entities[cl->ps.clientNum].r.svFlags & SVF_BOT ) {
-            continue;
-        }
-
-        if ( cl->readyToExit ) {
-            ready++;
-            if ( i < 16 ) {
-                readyMask |= 1 << i;
-            }
-        } else {
-            notReady++;
-        }
-    }
-
-    // copy the readyMask to each player's stats so
-    // it can be displayed on the scoreboard
-    for (i=0 ; i< g_maxclients.integer ; i++) {
-        cl = level.clients + i;
-        if ( cl->pers.connected != CON_CONNECTED ) {
-            continue;
-        }
-        cl->ps.stats[STAT_CLIENTS_READY] = readyMask;
-    }
-
-    // never exit in less than five seconds
-    if ( level.time < level.intermissiontime + 5000 ) {
-        return;
-    }
-
-    // if nobody wants to go, clear timer
-    if ( !ready ) {
-        level.readyToExit = qfalse;
-        return;
-    }
-
-    // if everyone wants to go, go now
-    if ( !notReady ) {
-        ExitLevel();
-        return;
-    }
-
-    // the first person to ready starts the ten second timeout
-    if ( !level.readyToExit ) {
-        level.readyToExit = qtrue;
+    //Ryan
+    if (!level.exitTime)
+    {
         level.exitTime = level.time;
     }
 
-    // if we have waited ten seconds since at least one player
-    // wanted to exit, go ahead
-    if ( level.time < level.exitTime + 10000 ) {
+    
+
+    if (level.time < level.exitTime + 5000)
+    {
         return;
     }
+
+    if (!level.awardTime)
+    {
+        if (isCurrentGametype(GT_HNS))
+            showHnsScores();
+        else
+            sendClientmodAwards();
+        level.awardTime = level.time;
+        level.lastAwardSent = level.time;
+
+        // Boe!Man 10/27/14: Make sure that in H&Z players are all forceteamed to spec.
+        if (isCurrentGametype(GT_HNZ)) {
+            int i;
+            gentity_t* ent;
+
+            for (i = 0; i < level.maxclients; i++) {
+                ent = g_entities + i;
+                if (ent->client->pers.connected != CON_CONNECTED)
+                    continue;
+
+                if (ent->client->sess.team == TEAM_SPECTATOR)
+                    continue;
+
+                SetTeam(ent, "spectator", NULL, qtrue);
+            }
+        }
+        return;
+    }
+
+    if (level.awardTime && (level.time > level.lastAwardSent + 3000))
+    {
+        if (isCurrentGametype(GT_HNS))
+            showHnsScores();
+        else
+            sendClientmodAwards();
+        level.lastAwardSent = level.time;
+    }
+
+    if (level.time < level.awardTime + 15000)
+    {
+        return;
+    }
+    //RPM_LogAwards();
+
 
     ExitLevel();
 }
@@ -1796,17 +2032,17 @@ void CheckIntermissionExit( void )
 ScoreIsTied
 =============
 */
-qboolean ScoreIsTied( void )
+qboolean ScoreIsTied(void)
 {
     int a;
     int b;
 
-    if ( level.numPlayingClients < 2 )
+    if (level.numPlayingClients < 2)
     {
         return qfalse;
     }
 
-    if ( level.gametypeData->teams )
+    if (level.gametypeData->teams)
     {
         return level.teamScores[TEAM_RED] == level.teamScores[TEAM_BLUE];
     }
@@ -1826,23 +2062,23 @@ and the time everyone is moved to the intermission spot, so you
 can see the last frag.
 =================
 */
-void CheckExitRules( void )
+void CheckExitRules(void)
 {
     int         i;
-    gclient_t   *cl;
+    gclient_t* cl;
 
     // if at the intermission, wait for all non-bots to
     // signal ready, then go to next level
-    if ( level.intermissiontime )
+    if (level.intermissiontime)
     {
-        CheckIntermissionExit ();
+        CheckIntermissionExit();
         return;
     }
 
-    if ( level.intermissionQueued )
+    if (level.intermissionQueued)
     {
         int time = INTERMISSION_DELAY_TIME;
-        if ( level.time - level.intermissionQueued >= time )
+        if (level.time - level.intermissionQueued >= time)
         {
             level.intermissionQueued = 0;
             BeginIntermission();
@@ -1852,25 +2088,50 @@ void CheckExitRules( void )
     }
 
     // check for sudden death
-    if ( g_suddenDeath.integer && ScoreIsTied() )
+    if (g_suddenDeath.integer && ScoreIsTied())
     {
         // always wait for sudden death
         return;
     }
 
     // Check to see if the timelimit was hit
-    if ( g_timelimit.integer && !level.warmupTime )
+    if (g_timelimit.integer && !level.warmupTime && !level.timelimitHit)
     {
-        if ( level.gametypeData->respawnType != RT_NONE || level.gametypeResetTime )
+        if (level.gametypeData->respawnType != RT_NONE || level.gametypeResetTime)
         {
-            if ( level.time - level.startTime >= (g_timelimit.integer + level.timeExtension)*60000 )
+            if (level.time - level.startTime >= (g_timelimit.integer + level.timeExtension) * 60000)
             {
-                gentity_t* tent;
-                tent = G_TempEntity( vec3_origin, EV_GAME_OVER );
-                tent->s.eventParm = GAME_OVER_TIMELIMIT;
-                tent->r.svFlags = SVF_BROADCAST;
 
-                LogExit( "Timelimit hit." );
+                if (isCurrentGametypeInList((gameTypes_t[]){ GT_INF, GT_CSINF, GT_VIP, GT_PROP, GT_ELIM, GT_DEM, GT_HNS, GT_HNZ, GT_MAX })) {
+                    G_printInfoMessageToAll("Timelimit hit, waiting for round to finish.");
+                    level.timelimitHit = qtrue;
+                }
+                else {
+
+                    if ((cm_state.integer == COMPMODE_ROUND1 || cm_state.integer == COMPMODE_ROUND2) && isCurrentGametype(GT_CTF)) {
+                        if (level.teamScores[TEAM_RED] + cm_prevRedTeamScore.integer == level.teamScores[TEAM_BLUE] + cm_prevBlueTeamScore.integer) {
+                            if (!level.timelimitMsg) {
+                                G_printInfoMessageToAll("Timelimit hit, waiting for the final flag to be captured.");
+                                level.timelimitMsg = qtrue;
+                            }
+                            return;
+                        }
+                    }
+
+                    gentity_t* tent;
+                    tent = G_TempEntity(vec3_origin, EV_GAME_OVER);
+                    if (cm_state.integer == COMPMODE_ROUND1 || cm_state.integer == COMPMODE_ROUND2) {
+                        tent->s.eventParm = LEEG;
+                    }
+                    else {
+                        tent->s.eventParm = GAME_OVER_TIMELIMIT;
+                    }
+                    tent->r.svFlags = SVF_BROADCAST;
+                    notifyPlayersOfTeamScores();
+
+                    LogExit("Timelimit hit.");
+                }
+
                 return;
             }
         }
@@ -1881,27 +2142,49 @@ void CheckExitRules( void )
     {
         if ( level.gametypeData->teams )
         {
+            qboolean exitGame = qfalse;
             if ( level.teamScores[TEAM_RED] >= g_scorelimit.integer )
             {
+                exitGame = qtrue;
                 gentity_t* tent;
                 tent = G_TempEntity( vec3_origin, EV_GAME_OVER );
-                tent->s.eventParm = GAME_OVER_SCORELIMIT;
+
+                if (cm_state.integer == COMPMODE_ROUND1 || cm_state.integer == COMPMODE_ROUND2) {
+                    tent->s.eventParm = LEEG;
+                }
+                else {
+                    tent->s.eventParm = GAME_OVER_SCORELIMIT;
+                }
+
                 tent->r.svFlags = SVF_BROADCAST;
                 tent->s.otherEntityNum = TEAM_RED;
 
+
+
                 LogExit( "Red team hit the score limit." );
-                return;
+                //return;
             }
 
             if ( level.teamScores[TEAM_BLUE] >= g_scorelimit.integer )
             {
+                exitGame = qtrue;
                 gentity_t* tent;
                 tent = G_TempEntity( vec3_origin, EV_GAME_OVER );
-                tent->s.eventParm = GAME_OVER_SCORELIMIT;
+                if (cm_state.integer == COMPMODE_ROUND1 || cm_state.integer == COMPMODE_ROUND2) {
+                    tent->s.eventParm = LEEG;
+                }
+                else {
+                    tent->s.eventParm = GAME_OVER_SCORELIMIT;
+                }
                 tent->r.svFlags = SVF_BROADCAST;
                 tent->s.otherEntityNum = TEAM_BLUE;
 
                 LogExit( "Blue team hit the score limit." );
+                //return;
+            }
+
+            if (exitGame) {
+                notifyPlayersOfTeamScores();
                 return;
             }
         }
@@ -2171,8 +2454,96 @@ void G_RunFrame( int levelTime )
     level.time = levelTime;
     msec = level.time - level.previousTime;
 
+    if (level.paused)
+    {
+        ///RxCxW - 08.30.06 - 03:33pm #paused - add to level.startTime so pausing wont take away from timelimit
+        level.startTime += msec;
+        if (level.gametypeRoundTime)
+            level.gametypeRoundTime += msec;
+        ///End  - 08.30.06 - 03:34pm
+    }
+
     // get any cvar changes
     G_UpdateCvars();
+
+    if (level.proceedToNextCompState && level.nextCompState < level.time) {
+        level.proceedToNextCompState = qfalse;
+
+        // Apply all of the "pre-cached" values.
+        if (cm_state.integer == COMPMODE_INITIALIZED || (cm_state.integer == COMPMODE_PRE_ROUND2 && !match_doublerounds.integer)) {
+            // Write the match_ vars into the CVAR_ROM vars so they cannot be altered.
+            trap_Cvar_Set("cm_bestOf", va("%d", match_bestOf.integer));
+            trap_Cvar_Set("cm_scorelimit", va("%d", match_scorelimit.integer));
+            trap_Cvar_Set("cm_timelimit", va("%d", match_timelimit.integer));
+            trap_Cvar_Set("cm_lockspecs", va("%d", match_lockspecs.integer));
+            trap_Cvar_Set("cm_doublerounds", va("%d", match_doublerounds.integer));
+
+            trap_Cvar_Update(&cm_bestOf);
+            trap_Cvar_Update(&cm_scorelimit);
+            trap_Cvar_Update(&cm_timelimit);
+            trap_Cvar_Update(&cm_lockspecs);
+            trap_Cvar_Update(&cm_doublerounds);
+
+        }
+
+        trap_Cvar_Set("cm_state", va("%d", cm_state.integer + 1));
+        trap_Cvar_Update(&cm_state);
+
+        trap_SendConsoleCommand(EXEC_APPEND, "map_restart 0");
+        return;
+    }
+
+    if (level.mapAction == MAPACTION_UNPAUSE && level.runMapAction > level.time && level.unpauseNextNotification) {
+
+        if (level.time > level.unpauseNextNotification) {
+            
+            int timeRemaining = (((level.runMapAction - level.time) + 999) / 1000);
+            
+            if (timeRemaining > 0) {
+                G_Broadcast(BROADCAST_CMD, NULL, qfalse, "\\Unpausing in %d...", timeRemaining);
+                G_GlobalSound(G_SoundIndex("sound/misc/events/buzz02.wav"));
+                level.unpauseNextNotification = level.time + 1000;
+
+                if (timeRemaining == 1) {
+                    // Correct the time ever so slightly to not have "out of synch" sound queue.
+                    // There is a small drift every time because we run "rounding" above. So, during the final buzz, we correct the state
+                    // so that the final buzz with the GO message doesn't sound like out of place.
+                    // As it seemed, the time drift was actually quite horrible, but this solves it from the player's perspective so all's good.
+                    level.runMapAction = level.time + 1000;
+                    level.unpauseNextNotification = 0;
+                }
+            }
+            
+        }
+
+    }
+
+    if (level.mapAction > MAPACTION_NONE && level.runMapAction < level.time && level.runMapAction) {
+
+        level.runMapAction = 0;
+
+        if (level.mapAction == MAPACTION_PENDING_GT || level.mapAction == MAPACTION_PENDING_MAPGTCHANGE) {
+            trap_Cvar_Set("g_gametype", level.mapActionNewGametype);
+        }
+
+        if (level.mapAction == MAPACTION_PENDING_MAPCHANGE || level.mapAction == MAPACTION_PENDING_MAPGTCHANGE) {
+            trap_SendConsoleCommand(EXEC_APPEND, va("map %s", level.mapActionNewMap));
+        }
+        else if (level.mapAction == MAPACTION_PENDING_MAPCYCLE) {
+            trap_SendConsoleCommand(EXEC_APPEND, "mapcycle");
+        }
+        else if (level.mapAction == MAPACTION_UNPAUSE) {
+            G_Broadcast(BROADCAST_CMD, NULL, qfalse, "GO GO GO!");
+            G_GlobalSound(G_SoundIndex("sound/misc/events/buzz02.wav"));
+            level.paused = qfalse;
+            trap_GT_SendEvent(GTEV_PAUSE, level.time, 0, 0, 0, 0, 0);
+        } else {
+            trap_SendConsoleCommand(EXEC_APPEND, "map_restart 0");
+        }
+
+        level.mapAction = MAPACTION_NONE;
+        return;
+    }
 
     // go through all allocated objects
     ent = &g_entities[0];
@@ -2376,6 +2747,52 @@ void G_RunFrame( int levelTime )
         }
     }
 
+    if (level.autoSwapTime && level.autoSwapTime < level.time) {
+        // Swap the teams.
+        swapTeams(qtrue);
+        level.autoSwapTime = 0;
+    }
+
+    if (level.nextCmInfoDisplay < level.time) {
+
+        if (cm_state.integer == COMPMODE_INITIALIZED) {
+            G_Broadcast(BROADCAST_GAME, NULL, qfalse, "^7[^3Competition mode^7]\n"
+            "\n"
+            "[^3Scorelimit^7]: %d\n"
+            "[^3Timelimit^7]: %d\n"
+            "[^3Lock specs^7]: %s\n"
+            "[^3Rounds^7]: %s\n"
+            //"[^3Best-of logic^7]: %s\n"
+            "\n"
+            "To start the match, do !mr"
+            ,
+                match_scorelimit.integer,
+                match_timelimit.integer,
+                match_lockspecs.integer ? "Yes" : "No",
+                match_doublerounds.integer ? "Two rounds" : "One round"
+                //match_bestOf.integer ? "Yes" : "No"
+            );
+
+            level.nextCmInfoDisplay = level.time + 3000;
+        }
+        else if (cm_state.integer == COMPMODE_PRE_ROUND2) {
+
+            G_Broadcast(BROADCAST_GAME, NULL, qfalse, "^7[^3Competition mode^7]\n"
+                "\n"
+                "Previous round was won by %s\n"
+                "^7Scores: %d - %d\n\n"
+                "To start the second round, do !mr"
+                ,
+                cm_prevRedTeamScore.integer > cm_prevBlueTeamScore.integer ? g_customRedName.string : g_customBlueName.string,
+                cm_prevRedTeamScore.integer > cm_prevBlueTeamScore.integer ? cm_prevRedTeamScore.integer : cm_prevBlueTeamScore.integer,
+                cm_prevRedTeamScore.integer > cm_prevBlueTeamScore.integer ? cm_prevBlueTeamScore.integer : cm_prevRedTeamScore.integer
+            );
+
+            level.nextCmInfoDisplay = level.time + 3000;
+        }
+
+    }
+
     if (g_listEntity.integer)
     {
         for (i = 0; i < MAX_GENTITIES; i++)
@@ -2384,6 +2801,38 @@ void G_RunFrame( int levelTime )
         }
         trap_Cvar_Set("g_listEntity", "0");
     }
+
+
+    if (level.intermissiontime && level.intermissiontime + 5000 < level.time && 0) {
+
+        if (cm_state.integer) {
+
+            if (cm_state.integer == COMPMODE_ROUND1) {
+                // Blue score is intentionally set as red team score - after swap, they'll be in red team.
+                trap_Cvar_Set("cm_prevRedTeamScore", va("%d", level.teamScores[TEAM_BLUE]));
+                trap_Cvar_Set("cm_prevBlueTeamScore", va("%d", level.teamScores[TEAM_RED]));
+                trap_Cvar_Update(&cm_prevRedTeamScore);
+                trap_Cvar_Update(&cm_prevBlueTeamScore);
+            }
+
+            trap_Cvar_Set("cm_state", va("%d", cm_state.integer + 1));
+            trap_Cvar_Update(&cm_state);
+            trap_SendConsoleCommand(EXEC_APPEND, "map_restart 0");
+        }
+        else {
+            // Try to figure out if we're in a mapcycle game. If not, restart the map.
+
+            if (!Q_stricmp(g_mapcycle.string, "none")) {
+                trap_SendConsoleCommand(EXEC_APPEND, "mapcycle");
+            }
+            else {
+                trap_SendConsoleCommand(EXEC_APPEND, "map_restart 0");
+            }
+
+        }
+
+    }
+
 }
 
 void G_InitGhoul ( void )

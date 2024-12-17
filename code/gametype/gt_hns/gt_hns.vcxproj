@@ -84,7 +84,7 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <TargetName>gt_hnsx86_64</TargetName>
+    <TargetName>gt_h&amp;sx86_64</TargetName>
     <OutDir>..\..\..\..\..\..\..\..\Games\sof2plus\1fx</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">

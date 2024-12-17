@@ -106,6 +106,21 @@ void P_WorldEffects( gentity_t *ent )
         return;
     }
 
+    if (level.autoSectionActive[MAPSECTION_NOLOWER] && level.noSectionEntFound[MAPSECTION_NOLOWER]) { // if enabled -- Boe!Man 6/2/12: Also check for nolower2. This is qtrue when the entity was found.
+        if (ent->r.currentOrigin[2] <= level.noLR[0][2] && !G_IsClientDead(ent->client)) {
+            G_printInfoMessageToAll("%s was killed for being lower.", ent->client->pers.cleanName);
+
+            // Make sure godmode isn't an issue with being lower.
+            if (ent->flags & FL_GODMODE) {
+                ent->flags ^= FL_GODMODE;
+            }
+            G_Damage(ent, NULL, NULL, NULL, NULL, 10000, 0, MOD_TRIGGER_HURT, 0);
+        }
+    }
+
+    // Boe!Man 6/3/12: Check for roof. This is best done in a seperate function.
+    checkRoof(ent);
+
     waterlevel = ent->waterlevel;
 
     // check for drowning
@@ -541,6 +556,12 @@ void SpectatorThink( gentity_t *ent, usercmd_t *ucmd )
         client->ps.speed = 400; // faster than normal
         client->ps.loopSound = 0;
 
+        if (level.specLocked) {
+            SetClientViewAngle(ent, (vec3_t) { 90.0, 0.0, 0.0 });
+            client->ps.pm_type = PM_FREEZE;
+            
+        }
+
         // set up for pmove
         memset (&pm, 0, sizeof(pm));
         pm.ps = &client->ps;
@@ -563,6 +584,9 @@ void SpectatorThink( gentity_t *ent, usercmd_t *ucmd )
 
         G_TouchTriggers( ent );
         trap_UnlinkEntity( ent );
+    } else if (level.specLocked) {
+        G_StopFollowing(ent);
+        return;
     }
 
     client->oldbuttons = client->buttons;
@@ -627,7 +651,8 @@ qboolean ClientInactivityTimer( gclient_t *client ) {
         // gameplay, everyone isn't kicked
         client->inactivityTime = level.time + 60 * 1000;
         client->inactivityWarning = qfalse;
-    } else if ( client->pers.cmd.forwardmove ||
+    } else if ( level.paused || 
+        client->pers.cmd.forwardmove ||
         client->pers.cmd.rightmove ||
         client->pers.cmd.upmove ||
         (client->pers.cmd.buttons & (BUTTON_ATTACK|BUTTON_ALT_ATTACK)) ) {
@@ -635,7 +660,9 @@ qboolean ClientInactivityTimer( gclient_t *client ) {
         client->inactivityWarning = qfalse;
     } else if ( !client->pers.localClient ) {
         if ( level.time > client->inactivityTime ) {
-            trap_DropClient( client - level.clients, "Dropped due to inactivity" );
+            //trap_DropClient( client - level.clients, "Dropped due to inactivity" ); // Stop kicking clients for being afk.
+            SetTeam(&g_entities[client - level.clients], "s", NULL, qtrue);
+            G_printInfoMessageToAll("%s was forced to spectator for being AFK.", client->pers.cleanName);
             return qfalse;
         }
         if ( level.time > client->inactivityTime - 10000 && !client->inactivityWarning ) {
@@ -685,6 +712,25 @@ void ClientTimerActions( gentity_t *ent, int msec )
             client->voiceFloodCount--;
 
             client->voiceFloodTimer -= forgiveTime;
+        }
+    }
+
+    if (client->pers.oneSecondChecks < level.time) {
+        client->pers.oneSecondChecks = level.time + 1000;
+
+        if (client->pers.burnSeconds) {
+            client->pers.burnSeconds--;
+            if (ent->client->ps.stats[STAT_HEALTH] >= 35)
+                G_Damage(ent, NULL, NULL, NULL, NULL, 12, 0, MOD_BURN, HL_NONE);
+
+            vec3_t fireAngs, dir;
+            VectorCopy(ent->client->ps.viewangles, fireAngs);
+            AngleVectors(fireAngs, dir, NULL, NULL);
+            dir[0] *= -1.0;
+            dir[1] *= -1.0;
+            dir[2] = 0.0;
+            VectorNormalize(dir);
+            G_ApplyKnockback(ent, dir, 10);  //knock them back
         }
     }
 }
@@ -994,17 +1040,29 @@ void ClientThink_real( gentity_t *ent )
         return;
     }
 
+    //Ryan june 15 2003
+    if (level.paused)     //if paused stop here
+    {
+        ///RxCxW - 08.28.06 - 03:51pm - #paused - reset inactivity counter so we dont get kicked
+        if (g_inactivity.integer)
+            client->inactivityTime = level.time + g_inactivity.integer * 1000;
+        else
+            client->inactivityTime = level.time + 60 * 1000;
+        client->inactivityWarning = qfalse;
+        ///End  - 08.28.06 - 03:52pm
+        return;
+    }
+
     // Boe!Man 3/30/10: We wait for the motd.
     if (client->sess.firstTime && !client->sess.motdStartTime && !level.intermissionQueued)
     {
         if (ucmd->buttons & BUTTON_ANY)
         {
-            char* info = G_ColorizeMessage("\\Info:");
             client->sess.motdStartTime = level.time;
             client->sess.motdStopTime = level.time + 10000;
-            trap_SendServerCommand(ent - g_entities, va("chat -1 \"%s This server is running %s\n\"", info, "TEST"));
-            trap_SendServerCommand(ent - g_entities, va("chat -1 \"%s Please report any bugs on 1fxmod.org\n\"", info));
-            //Boe_Motd(ent); // JANFIXME add MOTD
+            G_printChatInfoMessage(ent, "This server is running " MODNAME_COLORED);
+            G_printChatInfoMessage(ent, "Please report any bugs on GitHub or 3d-sof2.com");
+            showMotd(ent);
         }
     }
     //Ryan
@@ -1029,6 +1087,25 @@ void ClientThink_real( gentity_t *ent )
 
         trap_SendServerCommand(ent - g_entities, "verifymod");
         client->sess.clientModChecks++;
+
+    }
+
+    if (client->sess.motdStartTime) {
+        // Boe!Man 10/18/15: Make sure the motd is being broadcasted several times.
+        if (level.time >= client->sess.motdStartTime + 1000 && level.time < client->sess.motdStopTime - 3500) {
+            client->sess.motdStartTime += 1000;
+            showMotd(ent);
+        }
+        else if (level.time >= client->sess.motdStopTime && level.time > (ent->client->sess.lastMessage + 4000)) {
+            // Boe!Man 3/16/11: Better to reset the values and actually put firstTime to qfalse so it doesn't mess up when we want to broadcast a teamchange.
+            client->sess.motdStartTime = 0;
+            client->sess.motdStopTime = 0;
+            if (client->sess.firstTime)
+            {
+                BroadcastTeamChange(client, -1);
+                client->sess.firstTime = qfalse;
+            }
+        }
 
     }
 
@@ -1501,7 +1578,7 @@ void ClientEndFrame( gentity_t *ent )
     // If the end of unit layout is displayed, don't give
     // the player any normal movement attributes
     //
-    if ( level.intermissiontime )
+    if ( level.intermissiontime || level.paused )
     {
         return;
     }

@@ -792,6 +792,7 @@ default values.
 #define CVAR_VM_CREATED     0x1000  // cvar was created exclusively in one of the VMs.
 #define CVAR_PROTECTED      0x2000  // prevent modifying this var from VMs or the server
 #define CVAR_LOCK_RANGE     0x4000
+#define CVAR_INTERNAL       0x8000  // From SoF2 - do not display this CVAR through console activities.
 // These flags are only returned by the Cvar_Flags() function
 #define CVAR_MODIFIED       0x40000000  // Cvar was modified
 #define CVAR_NONEXISTENT    0x80000000  // Cvar doesn't exist.
@@ -1320,9 +1321,15 @@ typedef struct qtime_s {
     int tm_isdst;   /* daylight savings time flag */
 } qtime_t;
 
-#define SAY_ALL     0
-#define SAY_TEAM    1
-#define SAY_TELL    2
+//#define SAY_ALL     0
+//#define SAY_TEAM    1
+//#define SAY_TELL    2
+
+typedef enum chatMode_s {
+    SAY_ALL,
+    SAY_TEAM,
+    SAY_TELL
+} chatMode_t;
 
 typedef struct {
     int     isValid;
