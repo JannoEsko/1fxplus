@@ -176,7 +176,7 @@ void ROCmod_sendBestPlayerStats(void)
     [8] - bestNadeKills
     [9] - bestMeleeKills
     [10] - bestItemDefends
-    
+    */
 
     char            bestScoreNames[11][MAX_NETNAME];
     int             bestScores[11];
@@ -187,7 +187,7 @@ void ROCmod_sendBestPlayerStats(void)
 
     int             i, v;
     gentity_t* ent;
-    statinfo_t* stat;
+    statInfo_t* stat;
 
     // Initialize the array properly.
     for (i = 0; i < 11; i++) {
@@ -208,7 +208,7 @@ void ROCmod_sendBestPlayerStats(void)
             continue;
         }
 
-        stat = &ent->client->pers.statinfo;
+        stat = &ent->client->pers.statInfo;
 
         if (stat->kills > bestKills) {
             bestKills = stat->kills;
@@ -285,10 +285,14 @@ void ROCmod_sendBestPlayerStats(void)
         if (ent->r.svFlags & SVF_BOT)
             continue;
 
-        if (ent->client->sess.rocModClient) {
+        if (ent->client->sess.legacyProtocol) {
+            continue;
+        }
+
+        if (ent->client->sess.clientMod == CL_ROCMOD) {
             DeathmatchScoreboardMessage(ent);
             trap_SendServerCommand(ent - g_entities, va("playerstats %d %d %d %d %d %d %d %d %d %d %d", bestScores[0], bestScores[1], bestScores[2], bestScores[3], bestScores[4], bestScores[5], bestScores[6], bestScores[7], bestScores[8], bestScores[9], bestScores[10]));
         }
     }
-    */
+    
 }

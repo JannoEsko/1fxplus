@@ -1794,6 +1794,11 @@ void BeginIntermission( void )
 
     // send the current scoring to all clients
     SendScoreboardMessageToAllClients();
+
+    if (level.goldMod == CL_ROCMOD) {
+        ROCmod_sendBestPlayerStats();
+    }
+
 }
 
 

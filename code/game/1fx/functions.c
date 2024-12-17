@@ -2282,3 +2282,121 @@ qboolean shouldChatModeBeep(chatMode_t mode) {
         ) ? qtrue : qfalse;
 }
 
+void printPlayersInfo(gentity_t* ent) {
+
+    // 1fxmod structure - [id] [name] [ping] [coun], [adm], [cln], [mut], [ver] (ver being clientmod)
+
+    char packetBuf[1000];
+    Com_Memset(packetBuf, 0, sizeof(packetBuf));
+
+    Q_strncpyz(packetBuf, va("^7[^3Players^7]\n\n%-5.5s%-33.33s %-9.9s%-6.6s%-5.5s%-4.4s%-4.4s%-4.4s%-6.6s\n-----------------------------------------------------------------------------\n", "ID", "Name", "Protocol", "Ping", "Ctry", "Adm", "Cln", "Mut", "Clmod"), sizeof(packetBuf));
+
+    for (int i = 0; i < MAX_CLIENTS; i++) {
+        gentity_t* tent = &g_entities[i];
+
+        if (!tent || !tent->inuse || !tent->client) {
+            continue;
+        }
+
+        char* adminInitial = "";
+
+        switch (tent->client->sess.adminLevel) {
+        case ADMLVL_HADMIN:
+            adminInitial = "H";
+            break;
+        case ADMLVL_SADMIN:
+            adminInitial = "S";
+            break;
+        case ADMLVL_ADMIN:
+            adminInitial = "A";
+            break;
+        case ADMLVL_BADMIN:
+            adminInitial = "B";
+            break;
+        }
+
+        if (strlen(packetBuf) + strlen(va("[^3%2d^7] %-33.33s %-9.9s%-6d%-5.5s%-4.4s%-4.4s%-4.4s%-6.6s\n", i, tent->client->pers.cleanName, tent->client->sess.legacyProtocol ? "Silver" : "Gold", tent->client->ps.ping, tent->client->sess.countryCode, adminInitial, tent->client->sess.clanMember ? "Y" : "", tent->client->sess.muted ? "Y" : "", tent->client->sess.clientMod == CL_ROCMOD ? "ROCmod" : (tent->client->sess.clientMod == CL_RPM && !tent->client->sess.hasRoxAC ? "RPM" : (tent->client->sess.hasRoxAC ? "Rox AC" : "")))) > sizeof(packetBuf)) {
+            trap_SendServerCommand(ent - g_entities, va("print \"%s\"", packetBuf));
+            Com_Memset(packetBuf, 0, sizeof(packetBuf));
+        }
+
+        Q_strcat(packetBuf, sizeof(packetBuf), 
+            va("[^3%2d^7] %-33.33s %-9.9s%-6d%-5.5s%-4.4s%-4.4s%-4.4s%-6.6s\n", 
+                i, 
+                tent->client->pers.cleanName, 
+                tent->client->sess.legacyProtocol ? "Silver" : "Gold", 
+                tent->client->ps.ping, 
+                tent->client->sess.countryCode, 
+                adminInitial, 
+                tent->client->sess.clanMember ? "Y" : "", 
+                tent->client->sess.muted ? "Y" : "", 
+                tent->client->sess.clientMod == CL_ROCMOD ? "ROCmod" : 
+                    (tent->client->sess.clientMod == CL_RPM && !tent->client->sess.hasRoxAC ? "RPM" : 
+                        (tent->client->sess.hasRoxAC ? "Rox AC" : "")
+                    )
+                ));
+
+    }
+
+    trap_SendServerCommand(ent - g_entities, va("print \"%s\"", packetBuf));
+    trap_SendServerCommand(ent - g_entities, "print \"\nUse [^3Page Up^7] and [^3Page Down^7] to scroll.\n\"");
+}
+
+void printStatsInfo(gentity_t* ent) {
+
+    int idNum = G_ClientNumFromArg(ent, 1, "view stats", qfalse, qtrue, qtrue, qfalse);
+
+    if (idNum >= 0) {
+
+        gentity_t* tent = &g_entities[idNum];
+
+        char packetBuf[1000];
+        Com_Memset(packetBuf, 0, sizeof(packetBuf));
+
+        /*
+        1fxmod:
+        aliases, admin, country, client, rate, snaps, protocol
+        ping, 
+
+        kills, deaths, damage done, damage taken,
+
+        hand foot arms legs head neck torso waist
+
+        pageup pagedown
+        */
+
+        Q_strncpyz(packetBuf, va("\n^3Player statistics for %s\n-----------------------------------------------------------------------------\n", tent->client->pers.netname), sizeof(packetBuf));
+        
+
+    }
+
+}
+
+/*
+================
+altAttack
+4/30/14 - 9:25 PM
+Convenience function to quickly get the alt attack mod value.
+================
+*/
+
+int altAttack(int weapon) {
+    return weapon + 256;
+}
+
+/*
+================
+normalAttackMod
+10/23/15 - 10:13 PM
+Convenience function to quickly get normalized WP_* value of a mod.
+================
+*/
+
+int normalAttackMod(int mod) {
+    if (mod > 256) {
+        return mod - 256;
+    }
+
+    return mod;
+}
+

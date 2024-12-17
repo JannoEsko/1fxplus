@@ -111,10 +111,8 @@ void DeathmatchScoreboardMessage( gentity_t *ent )
                         (ghost || cl->ps.pm_type == PM_DEAD) ? qtrue : qfalse,
                         g_entities[level.sortedClients[i]].s.gametypeitems,
                         g_teamkillDamageMax.integer ? 100 * cl->sess.teamkillDamage / g_teamkillDamageMax.integer : 0,
-                        //cl->pers.statinfo.accuracy, // JANFIXME 
-                        //cl->pers.statinfo.headShotKills // JANFIXME 
-                        0.0f,
-                        0
+                        cl->pers.statInfo.accuracy,
+                        cl->pers.statInfo.headShotKills
                         //cl->pers.statinfo.damageDone
                     );
                 }
@@ -175,15 +173,15 @@ void DeathmatchScoreboardMessage( gentity_t *ent )
                 Com_sprintf(entry2, sizeof(entry2),
                     " %i %i %i %i %i %i %i %i %i %i",
                     admin,
-                    0,//cl->pers.statinfo.hitcount,
-                    0,//cl->pers.statinfo.shotcount,
-                    0,//cl->pers.statinfo.headShotKills,
-                    0,//cl->pers.statinfo.itemCaptures,
-                    0,//cl->pers.statinfo.bestKillsInARow,
-                    0,//cl->pers.statinfo.knifeKills,
-                    0,//cl->pers.statinfo.explosiveKills,
+                    cl->pers.statInfo.hitcount,
+                    (cl->pers.statInfo.shotcount - cl->pers.statInfo.hitcount), // As it seems, ROCmod does not want to see a shotcount for a hit (1 bullet kill = 50% accuracy).
+                    cl->pers.statInfo.headShotKills,
+                    cl->pers.statInfo.itemCaptures,
+                    cl->pers.statInfo.bestKillsInARow,
+                    cl->pers.statInfo.knifeKills,
+                    cl->pers.statInfo.explosiveKills,
                     cl->sess.clanMember,
-                    0//cl->pers.statinfo.itemDefends
+                    cl->pers.statInfo.itemDefends
                 );
 
                 j = strlen(entry2);
@@ -2403,6 +2401,16 @@ void ClientCommand( int clientNum ) {
         else {
             G_printInfoMessage(ent, "Usage: /forceacchecked <acguid>");
         }
+        return;
+    }
+
+    if (!Q_stricmp(cmd, "players")) {
+        printPlayersInfo(ent);
+        return;
+    }
+
+    if (!Q_stricmp(cmd, "stats")) {
+        printStatsInfo(ent);
         return;
     }
 

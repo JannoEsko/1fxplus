@@ -160,6 +160,42 @@ typedef enum {
     MAPACTION_UNPAUSE
 } mapAction_t;
 
+typedef struct statInfo_s {
+    int         weapon_shots[ATTACK_MAX * WP_NUM_WEAPONS];
+    int         weapon_hits[ATTACK_MAX * WP_NUM_WEAPONS];
+    int         weapon_headshots[ATTACK_MAX * WP_NUM_WEAPONS];
+    int         weapon;
+    int         attack;
+    int         shotcount;
+    int         hitcount;
+    float       accuracy;
+    float       ratio;
+    int         handhits;
+    int         foothits;
+    int         armhits;
+    int         leghits;
+    int         headhits;
+    int         neckhits;
+    int         torsohits;
+    int         waisthits;
+    int         headShotKills;
+    int         kills;
+    int         killsinarow;
+    int         deaths;
+    int         damageDone;
+    int         damageTaken;
+    int         lastclient_hurt;
+    int         lasthurtby;
+    int         lastKillerHealth;
+    int         lastKillerArmor;
+    int         overallScore;
+    int         explosiveKills;
+    int         knifeKills;
+    int         bestKillsInARow;
+    int         itemCaptures;
+    int         itemDefends;
+} statInfo_t;
+
 // Flags to determine which extra features the client is willing to accept in ROCmod.
 #define ROC_TEAMINFO    0x00000001
 #define ROC_SPECLIST    0x00000002
@@ -554,6 +590,7 @@ typedef struct
     char                subnet[MAX_IP];
     int                 burnSeconds;
     int                 oneSecondChecks;
+    statInfo_t          statInfo;
 
 } clientPersistant_t;
 
@@ -1904,6 +1941,11 @@ void printMapActionDenialReason(gentity_t* adm);
 int getChatModeFromCommand(gentity_t* ent, const char* cmd, chatMode_t mode, int adminCommand);
 char* getChatAdminPrefixByMode(gentity_t* ent, chatMode_t mode);
 qboolean shouldChatModeBeep(chatMode_t mode);
+void printStatsInfo(gentity_t* ent);
+void printPlayersInfo(gentity_t* ent);
+int altAttack(int weapon);
+int normalAttackMod(int mod);
+
 
 typedef struct queueNode_s queueNode;
 

@@ -111,6 +111,7 @@ void gametype_trigger_touch ( gentity_t *self, gentity_t *other, trace_t *trace 
 
     if ( trap_GT_SendEvent ( GTEV_TRIGGER_TOUCHED, level.time, self->health, other->s.number, other->client->sess.team, 0, 0 ) )
     {
+        other->client->pers.statInfo.itemCaptures++;
         G_UseTargets ( self, other );
     }
 }
@@ -682,6 +683,8 @@ void G_DropGametypeItems ( gentity_t* self, int delayPickup )
         if ( self->enemy && self->enemy->client && !OnSameTeam ( self->enemy, self ) )
         {
             trap_GT_SendEvent ( GTEV_ITEM_DEFEND, level.time, level.gametypeItems[item->giTag].id, self->enemy->s.clientNum, self->enemy->client->sess.team, 0, 0  );
+            self->enemy->client->pers.statInfo.itemDefends++;
+
         }
     }
 

@@ -226,6 +226,10 @@ void G_FireBullet ( gentity_t* ent, int weapon, int attack )
 
     gbullethit_t    hit[MAX_HITS];
 
+    //Ryan
+    statInfo_t* stat = &ent->client->pers.statInfo;
+    //Ryan
+
     // Grab the firing info
     weaponDat = &weaponData[ent->s.weapon];
     attackDat = &weaponDat->attack[attack];
@@ -277,6 +281,12 @@ void G_FireBullet ( gentity_t* ent, int weapon, int attack )
     for (i = 0; i < attackDat->pellets; i++)
     {
         int location = HL_NONE;
+
+        //Ryan april 7 2003
+        //add to the number of shots this client has made
+        stat->weapon_shots[attack * WP_NUM_WEAPONS + weapon]++;
+        stat->shotcount++;
+        //Ryan
 
         // Determine the endpoint for the bullet
         BG_CalculateBulletEndpoint ( muzzlePoint, fireAngs, inaccuracy, attackDat->rV.range + 15, end, &seed );
@@ -467,6 +477,66 @@ void G_FireBullet ( gentity_t* ent, int weapon, int attack )
                 VectorCopy ( tr.endpos, hit[hitcount].origin );
 
                 hitcount++;
+
+                // Boe!Man 6/2/10: Used for the obiturary and the stats.
+                stat->weapon = weapon;
+                //set the weapons attack used (for G_Obituary)
+                stat->attack = attack;
+
+                if (!level.gametypeData->teams || !OnSameTeam(ent, traceEnt))
+                {
+                    //add the total for the weapon
+                    stat->weapon_hits[attack * WP_NUM_WEAPONS + weapon]++;
+                    //add to the hit total
+                    stat->hitcount++;
+
+                    switch (location)
+                    {
+                    case HL_FOOT_RT:
+                    case HL_FOOT_LT:
+                        stat->foothits++;
+                        break;
+
+                    case HL_HAND_RT:
+                    case HL_HAND_LT:
+                        stat->handhits++;
+                        break;
+
+                    case HL_ARM_RT:
+                    case HL_ARM_LT:
+                        stat->armhits++;
+                        break;
+
+                    case HL_LEG_UPPER_RT:
+                    case HL_LEG_UPPER_LT:
+                    case HL_LEG_LOWER_RT:
+                    case HL_LEG_LOWER_LT:
+                        stat->leghits++;
+                        break;
+
+                    case HL_HEAD:
+                        stat->headhits++;
+                        break;
+
+                    case HL_NECK:
+                        stat->neckhits++;
+                        break;
+
+                    case HL_BACK_RT:
+                    case HL_BACK_LT:
+                    case HL_BACK:
+                    case HL_CHEST_RT:
+                    case HL_CHEST_LT:
+                    case HL_CHEST:
+                        stat->torsohits++;
+                        break;
+
+                    case HL_WAIST:
+                        stat->waisthits++;
+                        break;
+                    }
+                }
+                // Boe!Man End.
             }
         }
 
@@ -536,6 +606,12 @@ void G_FireBullet ( gentity_t* ent, int weapon, int attack )
     // before damaging the client so the real bounding box and location are stored in
     // the body
     G_UndoAntiLag ( );
+
+    //Ryan
+    //We'll calculate the accuracy here, no need to do it after
+    //each pellet with the rest of the stats
+    stat->accuracy = (float)stat->hitcount / (float)stat->shotcount * 100;
+    //Ryan
 
     if ( hitcount )
     {
@@ -609,6 +685,23 @@ gentity_t* G_FireProjectile ( gentity_t *ent, weapon_t weapon, attackType_t atta
     for (i = 0; i < attackDat->pellets; i++)
     {
         vec3_t      dir;
+
+        statInfo_t* stat = &ent->client->pers.statInfo;
+        stat->shotcount++;
+
+        // Boe!Man 6/2/10: The Weapon stats get updated/added here.
+        if (weapon == WP_M4_ASSAULT_RIFLE)
+        {
+            stat->weapon_shots[ATTACK_ALTERNATE * WP_NUM_WEAPONS + weapon]++;
+        }
+        else
+        {
+            stat->weapon_shots[ATTACK_NORMAL * WP_NUM_WEAPONS + weapon]++;
+        }
+        // Boe!Man End.
+        stat->accuracy = (float)stat->hitcount / (float)stat->shotcount * 100;
+
+
         VectorCopy( fwd, dir );
         if ( inaccuracy != 0)
         {   // add in some spread / scatter

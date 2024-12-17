@@ -1,5 +1,24 @@
 #include "../../g_local.h"
 
+static int FormatDamage(int damage) {
+    char test[10];
+    char* test1;
+    strcpy(test, va("%i", damage));
+    if (damage >= 100 && damage < 1000) {
+        test1 = va("%c00", test[0]);
+        damage = atoi(test1);
+    }
+    else if (damage >= 1000 && damage < 10000) {
+        test1 = va("%c%c00", test[0], test[1]);
+        damage = atoi(test1);
+    }
+    else if (damage >= 10000 && damage < 100000) {
+        test1 = va("%c%c%c00", test[0], test[1], test[2]);
+        damage = atoi(test1);
+    }
+    return damage / 10;
+}
+
 // Henk 07/04/10 -> Copied from RPM to make scoreboard from RPM client working
 /*
 =================
@@ -91,20 +110,18 @@ void RPM_UpdateTMI(void)
             thirdPerson = 2;
         }
         adm = cl->sess.adminLevel;
-        //damage = cl->pers.statinfo.damageDone; // JANFIXME review stats and take them over?
-        /*if (damage < 100) {
-            string = va("%i", cl->ps.weapon);
+        damage = cl->pers.statInfo.damageDone;
+        if (damage < 100) {
+            string = va("%i", trap_TranslateGoldWeaponToSilverWeapon(cl->ps.weapon));
         }
         else {
             damage = FormatDamage(damage);
             if (cl->ps.weapon >= 10) { // fix for large weapon string = damage *10 on scoreboard
                 damage = damage / 10;
             }
-            string = va("%i%i", damage, cl->ps.weapon);
+            string = va("%i%i", damage, trap_TranslateGoldWeaponToSilverWeapon(cl->ps.weapon));
         }
-        */
-        damage = 0;
-        string = va("%i", trap_TranslateGoldWeaponToSilverWeapon(cl->ps.weapon));
+
         Com_sprintf(entry, sizeof(entry),
             " %i %i %i %i %i %i %s %i %i",
             level.sortedClients[i],
@@ -153,10 +170,10 @@ RPM_Awards
 */
 void RPM_Awards(void)
 {
-    /*
+
     unsigned int    i, numPlayers = 0;
     int             avgtime = 0, playerTime = 0;
-    statinfo_t* stat;
+    statInfo_t* stat;
     gentity_t* ent;
 
     /*
@@ -170,7 +187,7 @@ void RPM_Awards(void)
     [5] - explosive
     [6] - knifer
     */
-    /*
+    
     typedef struct {
         char    name[MAX_NETNAME];
         int     number;
@@ -198,7 +215,7 @@ void RPM_Awards(void)
                 continue;
             }
             numPlayers++;
-            avgtime += ((level.time - ent->client->pers.enterTime) - ent->client->sess.totalSpectatorTime) / 60000;
+            avgtime += ((level.time - ent->client->pers.enterTime)) / 60000; // JANFIXME  - ent->client->sess.totalSpectatorTime
         }
         //incase timelimit runs out with nobody in the server
         //I'll use an "if" here
@@ -216,18 +233,18 @@ void RPM_Awards(void)
                 continue;
             }
 
-            stat = &ent->client->pers.statinfo;
+            stat = &ent->client->pers.statInfo;
 
-            playerTime = ((level.time - ent->client->pers.enterTime) - ent->client->sess.totalSpectatorTime) / 60000;
+            playerTime = ((level.time - ent->client->pers.enterTime)) / 60000; //  - ent->client->sess.totalSpectatorTime
             //Com_Printf("%s playtime %d, Level time: %d, Enter Time: %d SPECTIME: %d\n", ent->client->pers.netname, playerTime, level.time, ent->client->pers.enterTime, ent->client->sess.totalSpectatorTime);
 
             //RxCxW - 1.20.2005 - #Version 0.5 compatible. Right?
-            if (ent->client->sess.rpmClient >= 0.5)
+            if (ent->client->sess.legacyProtocol && ent->client->sess.clientMod == CL_RPM && atof(ent->client->sess.clientVersion) >= 0.5)
                 //          if(ent->client->sess.rpmClient >= RPM_VERSION)
             {
                 trap_SendServerCommand(i, va("stats %i %i %i %i %.2f %i %i %i %i",
                     playerTime,
-                    (((level.time - ent->client->pers.enterTime) - ent->client->sess.totalSpectatorTime) % 60000) / 1000,
+                    (((level.time - ent->client->pers.enterTime)) % 60000) / 1000, // JANFIXME  - ent->client->sess.totalSpectatorTime
                     stat->damageDone,
                     stat->damageTaken,
                     stat->ratio,
@@ -237,17 +254,19 @@ void RPM_Awards(void)
                     stat->knifeKills));
             }
 
-            //this will remove the SPECTATOR Press ESC etc.. from the specs screen
-            if (ent->client->ps.persistant[PERS_TEAM] == TEAM_SPECTATOR)
-            {
-                ent->client->ps.persistant[PERS_TEAM] = TEAM_FREE;
+            if (ent->client->sess.legacyProtocol) {
+                //this will remove the SPECTATOR Press ESC etc.. from the specs screen
+                if (ent->client->ps.persistant[PERS_TEAM] == TEAM_SPECTATOR)
+                {
+                    ent->client->ps.persistant[PERS_TEAM] = TEAM_FREE;
+                }
+
+                //Make sure they can't move
+                ent->client->ps.pm_type = PM_FREEZE;
+
+                //This will remove the HUD icons etc.. from the players screen
+                ent->client->ps.stats[STAT_HEALTH] = -1;
             }
-
-            //Make sure they can't move
-            ent->client->ps.pm_type = PM_FREEZE;
-
-            //This will remove the HUD icons etc.. from the players screen
-            ent->client->ps.stats[STAT_HEALTH] = -1;
 
             stat->overallScore = ent->client->sess.score + (int)(100 * (stat->accuracy + stat->ratio)) + (stat->damageDone - stat->damageTaken);
 
@@ -442,14 +461,18 @@ void RPM_Awards(void)
             continue;
         }
 
+        if (!ent->client->sess.legacyProtocol) {
+            continue;
+        }
+
         ///RxCxW - 01.12.06 - 03:03pm - dont send to bots
         if (ent->r.svFlags & SVF_BOT)
             continue;
         ///End  - 01.12.06 - 03:03pm
 
-        if (ent->client->sess.rpmClient < 0.5)
+        if (ent->client->sess.clientMod == CL_RPM && atof(ent->client->sess.clientVersion) < 0.5)
         {
-            G_Broadcast(va("^1Best Overall: ^7%s - %i\n^1Headshots: ^7%s - %i\n^1Killer: ^7%s - %i\n^1Accurate: ^7%s - %.2f percent\n^1Best Ratio: ^7%s - %.2f\n^1Nades: ^7%s - %i detonated\n^1Knifer: ^7%s - %i shanked",
+            G_Broadcast(BROADCAST_AWARDS, ent, qfalse, "^1Best Overall: ^7%s - %i\n^1Headshots: ^7%s - %i\n^1Killer: ^7%s - %i\n^1Accurate: ^7%s - %.2f percent\n^1Best Ratio: ^7%s - %.2f\n^1Nades: ^7%s - %i detonated\n^1Knifer: ^7%s - %i shanked", 
                 bestScores[0].name,
                 bestScores[0].score,
                 bestScores[1].name,
@@ -463,10 +486,10 @@ void RPM_Awards(void)
                 bestScores[5].name,
                 bestScores[5].score,
                 bestScores[6].name,
-                bestScores[6].score), BROADCAST_AWARDS, ent);
+                bestScores[6].score);
             continue;
         }
-        if (!level.awardTime)
+        if (!level.awardTime && ent->client->sess.clientMod == CL_RPM)
         {
             trap_SendServerCommand(i, va("awards %i %i %i %i %i %i %i %.2f %i %.2f %i %i %i %i",
                 bestScores[0].number,
@@ -485,5 +508,5 @@ void RPM_Awards(void)
                 bestScores[6].score
             ));
         }
-    }*/
+    }
 }

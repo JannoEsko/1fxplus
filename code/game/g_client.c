@@ -1408,6 +1408,13 @@ char *ClientConnect( int clientNum, qboolean firstTime, qboolean isBot )
 
     reapplyMuteAfterConnect(ent);
 
+    // Zero out statinfo.
+    Com_Memset(&ent->client->pers.statInfo, 0, sizeof(ent->client->pers.statInfo));
+    ent->client->pers.statInfo.lastclient_hurt = -1;
+    ent->client->pers.statInfo.lasthurtby = -1;
+    ent->client->pers.statInfo.lastKillerHealth = -1;
+    ent->client->pers.statInfo.lastKillerArmor = -1;
+
     return NULL;
 }
 
