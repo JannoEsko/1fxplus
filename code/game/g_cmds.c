@@ -1385,7 +1385,7 @@ static void G_SayTo( gentity_t *ent, gentity_t *other, int mode, const char *nam
 
             // If the client we are talking to is alive then a check
             // must be made to see if this talker is alowed to speak to this person
-            if ( ent->s.number != other->s.number && !G_IsClientDead ( other->client ) && !G_IsClientSpectating( other->client) && (ghost || spec))
+            if (mode < SAY_ADMTALK && ent->s.number != other->s.number && !G_IsClientDead ( other->client ) && !G_IsClientSpectating( other->client) && (ghost || spec))
             {
                 return;
             }
@@ -1630,7 +1630,6 @@ void G_Say ( gentity_t *ent, gentity_t *target, int mode, const char *chatText )
         other = &g_entities[level.sortedClients[j]];
 
         // We need to figure out whether this indeed should go to everyone.
-
         if (mode > SAY_ADMTALK) {
             if (ent == other) {
                 // Always allow the same client to see the message they wrote.
