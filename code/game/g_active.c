@@ -550,7 +550,7 @@ void SpectatorThink( gentity_t *ent, usercmd_t *ucmd )
 
     client = ent->client;
 
-    if ( client->sess.spectatorState != SPECTATOR_FOLLOW )
+    if ( client->sess.spectatorState != SPECTATOR_FOLLOW && (cm_state.integer == COMPMODE_NONE || (cm_state.integer > COMPMODE_NONE && match_followEnemy.integer)) )
     {
         client->ps.pm_type = PM_SPECTATOR;
         client->ps.speed = 400; // faster than normal
@@ -587,6 +587,11 @@ void SpectatorThink( gentity_t *ent, usercmd_t *ucmd )
     } else if (level.specLocked) {
         G_StopFollowing(ent);
         return;
+    }
+
+    if (cm_state.integer > COMPMODE_NONE && !match_followEnemy.integer && client->sess.spectatorState != SPECTATOR_FOLLOW) {
+        // We force the client to follow a player.
+        Cmd_FollowCycle_f(ent, 1);
     }
 
     client->oldbuttons = client->buttons;

@@ -94,6 +94,7 @@ admCmd_t adminCommands[] = {
 	{"!psl",    "punishlist",       &a_pop.integer,             &adm_punishList,                "Show punished players",            "",                 NULL},
 	{"!mcl",    "mapcyclelist",     &a_mapswitch.integer,       &adm_mapCycleList,              "Shows the current mapcycle",       "",                 NULL},
 	{"!stm",    "skiptomap",        &a_mapswitch.integer,       &adm_skipToMap,                 "Skips to the specified map index", "<map num>",        NULL },
+	{"!fe",    "followenemy",        &minimumAdminLevel,       &adm_followEnemy,                 "Toggles followenemy", "",        NULL },
 };
 
 int adminCommandsSize = sizeof(adminCommands) / sizeof(adminCommands[0]);
@@ -472,9 +473,10 @@ int adm_addHadmin(int argNum, gentity_t* adm, qboolean shortCmd) {
 static void adm_toggleCVAR(int argNum, gentity_t* adm, qboolean shortCmd, qboolean isToggle, char* cvarName, vmCvar_t* cvar, qboolean availableInCM, char* cmCvarName, vmCvar_t* cmCvar) {
 
 	char* arg = G_GetArg(argNum, shortCmd, qfalse);
-	int newValue = arg && strlen(arg) > 0 ? atoi(arg) : (isToggle && cvar ? !cvar->integer : -1);
+	int newValue = 0;
 
 	if (cm_state.integer == COMPMODE_INITIALIZED) {
+		newValue = arg&& strlen(arg) > 0 ? atoi(arg) : (isToggle && cmCvar ? !cmCvar->integer : -1);
 		if (newValue < 0) {
 			G_printInfoMessage(adm, "%s is %d.", cmCvarName, cmCvar->integer);
 		}
@@ -498,6 +500,7 @@ static void adm_toggleCVAR(int argNum, gentity_t* adm, qboolean shortCmd, qboole
 		}
 	}
 	else {
+		newValue = arg && strlen(arg) > 0 ? atoi(arg) : (isToggle && cvar ? !cvar->integer : -1);
 		if (newValue < 0) {
 			G_printInfoMessage(adm, "%s is %d.", cvarName, cvar->integer);
 		}
@@ -528,6 +531,12 @@ static void adm_toggleCVAR(int argNum, gentity_t* adm, qboolean shortCmd, qboole
 			}
 		}
 	}
+}
+
+
+int adm_followEnemy(int argNum, gentity_t* adm, qboolean shortCmd) {
+	adm_toggleCVAR(argNum, adm, shortCmd, qtrue, "Follow Enemy", &g_followEnemy, qtrue, "Follow Enemy in Match", &match_followEnemy);
+	return -1;
 }
 
 int adm_scoreLimit(int argNum, gentity_t* adm, qboolean shortCmd) {

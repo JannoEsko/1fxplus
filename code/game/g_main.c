@@ -199,6 +199,7 @@ vmCvar_t    match_scorelimit;
 vmCvar_t    match_timelimit;
 vmCvar_t    match_lockspecs;
 vmCvar_t    match_doublerounds; 
+vmCvar_t    match_followEnemy;
 
 
 // Internal vars
@@ -473,6 +474,8 @@ static cvarTable_t gameCvarTable[] =
     { &g_motd5, "g_motd5", "", CVAR_ARCHIVE, 0.0f, 0.0f, 0, qfalse },
 
     { &g_autoEvenTeams, "g_autoEvenTeams", "1", CVAR_ARCHIVE, 0.0f, 0.0f, 0, qfalse},
+    { &match_followEnemy, "match_followEnemy", "0", CVAR_ARCHIVE, 0.0f, 0.0f, 0, qfalse },
+        
     
     
 
@@ -2767,15 +2770,17 @@ void G_RunFrame( int levelTime )
             "[^3Timelimit^7]: %d\n"
             "[^3Lock specs^7]: %s\n"
             "[^3Rounds^7]: %s\n"
-            //"[^3Best-of logic^7]: %s\n"
+            "[^3Best-of logic^7]: %s\n"
+            "[^3Follow enemy^7]: %s\n"
             "\n"
             "To start the match, do !mr"
             ,
                 match_scorelimit.integer,
                 match_timelimit.integer,
                 match_lockspecs.integer ? "Yes" : "No",
-                match_doublerounds.integer ? "Two rounds" : "One round"
-                //match_bestOf.integer ? "Yes" : "No"
+                match_doublerounds.integer ? "Two rounds" : "One round",
+                match_bestOf.integer ? "Yes" : "No",
+                match_followEnemy.integer ? "Yes" : "No"
             );
 
             level.nextCmInfoDisplay = level.time + 3000;

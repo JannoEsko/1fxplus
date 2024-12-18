@@ -1436,6 +1436,7 @@ extern  vmCvar_t    g_motd3;
 extern  vmCvar_t    g_motd4;
 extern  vmCvar_t    g_motd5;
 extern  vmCvar_t    g_autoEvenTeams;
+extern  vmCvar_t    match_followEnemy;
 
 //extern vmCvar_t     g_leanType;
 
@@ -1859,6 +1860,7 @@ void postExecuteAdminCommand(int funcNum, int idNum, gentity_t* adm);
 void adm_setPassword(gentity_t* ent, char* password);
 void adm_Login(gentity_t* ent, char* password);
 void adm_printAdminCommands(gentity_t* adm);
+int adm_followEnemy(int argNum, gentity_t* adm, qboolean shortCmd);
 
 // RPM.c
 void RPM_UpdateTMI(void);
