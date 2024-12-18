@@ -2361,10 +2361,10 @@ void printStatsInfo(gentity_t* ent) {
 
                 if (isFirst) {
                     isFirst = qfalse;
-                    trap_SendServerCommand(ent - g_entities, va("print \"%-16.16s%20.*s\n\"", "^7[^3Aliases^7]", aliasLength, aliasStart));
+                    trap_SendServerCommand(ent - g_entities, va("print \"%-28.28s%-40.*s\n\"", "^7[^3Aliases^7]", aliasLength, aliasStart));
                 }
                 else {
-                    trap_SendServerCommand(ent - g_entities, va("print \"%-12.12s%20.*s\n\"", " ", aliasLength, aliasStart));
+                    trap_SendServerCommand(ent - g_entities, va("print \"%-22.22s%-40.*s\n\"", " ", aliasLength, aliasStart));
                 }
 
                 aliasStart = aliasEnd + 1;
@@ -2380,6 +2380,12 @@ void printStatsInfo(gentity_t* ent) {
         trap_SendServerCommand(ent - g_entities, va("print \"%-28.28s%-25.25s\n\"", "^7[^3Country^7]", tent->client->sess.country));
         trap_SendServerCommand(ent - g_entities, va("print \"%-28.28s%-25.25s\n\"", "^7[^3Protocol^7]", tent->client->sess.legacyProtocol ? "2002 / SoF2 1.00 Silver" : "2004 / SoF2 1.03 Gold"));
         trap_SendServerCommand(ent - g_entities, va("print \"%-28.28s%-25.25s\n\"", "^7[^3Clientmod^7]", tent->client->sess.hasRoxAC ? "Rox Anticheat" : (tent->client->sess.clientMod == CL_ROCMOD ? "ROCmod" : (tent->client->sess.clientMod == CL_RPM ? "RPM" : "None"))));
+
+        if (tent->client->sess.hasRoxAC) {
+            // Print AC guid and AC version.
+            trap_SendServerCommand(ent - g_entities, va("print \"%-28.28s%-25.25s\n\"", "^7[^3AC Guid^7]", tent->client->sess.roxGuid));
+            trap_SendServerCommand(ent - g_entities, va("print \"%-28.28s%-25.25s\n\"", "^7[^3AC Version^7]", tent->client->sess.roxAcVersion));
+        }
 
         char userinfo[MAX_INFO_STRING];
         trap_GetUserinfo(idNum, userinfo, sizeof(userinfo));
@@ -2520,3 +2526,34 @@ int normalAttackMod(int mod) {
     return mod;
 }
 
+/*
+================
+parseACCheckGuidMessage
+This is the simplified version of AC GUID parsing.
+NB - this is NOT the safe version where you can ensure that the GUID is indeed
+correct and not faked through a clientcommand.
+
+Without the safer version, do not enable g_useSecureRoxVerification
+Unfortunately thanks to the implementation method of secure Rox verification, I cannot make that code public.
+Otherwise it could be faked as well.
+Please contact 1fx. # Shoke to get details how the secure version works.
+================
+*/
+void parseACCheckGuidMessage(gentity_t* ent) {
+
+    char roxGuid[MAX_AC_GUID], roxVersion[MAX_AC_GUID];
+
+    Com_Memset(roxGuid, 0, sizeof(roxGuid));
+    Com_Memset(roxVersion, 0, sizeof(roxVersion));
+
+    trap_Argv(1, roxGuid, sizeof(roxGuid));
+    trap_Argv(2, roxVersion, sizeof(roxVersion));
+
+    ent->client->sess.hasRoxAC = qtrue;
+    Q_strncpyz(ent->client->sess.roxGuid, roxGuid, sizeof(ent->client->sess.roxGuid));
+    Q_strncpyz(ent->client->sess.roxAcVersion, roxVersion, sizeof(ent->client->sess.roxAcVersion));
+
+    G_printCustomMessage(ent, "Anticheat Verification", "Anticheat verification succeeded.");
+
+
+}

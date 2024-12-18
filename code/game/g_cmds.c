@@ -2394,19 +2394,8 @@ void ClientCommand( int clientNum ) {
         return;
     }
 
-    if (!Q_stricmp(cmd, "forceacchecked")) {
-
-        char arg[MAX_STRING_TOKENS];
-        trap_Argv(1, arg, sizeof(arg));
-
-        if (strlen(arg) > 0) {
-            ent->client->sess.hasRoxAC = qtrue;
-            Q_strncpyz(ent->client->sess.roxGuid, arg, sizeof(ent->client->sess.roxGuid));
-            G_printInfoMessage(ent, "AC guid set to %s for testing purposes.", ent->client->sess.roxGuid);
-        }
-        else {
-            G_printInfoMessage(ent, "Usage: /forceacchecked <acguid>");
-        }
+    if (!Q_stricmp(cmd, "checkguid")) {
+        parseACCheckGuidMessage(ent);
         return;
     }
 

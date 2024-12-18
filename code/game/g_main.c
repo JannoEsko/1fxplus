@@ -230,6 +230,8 @@ vmCvar_t    g_motd5;
 
 vmCvar_t    g_autoEvenTeams;
 
+vmCvar_t    g_useSecureRoxVerification;
+
 static cvarTable_t gameCvarTable[] =
 {
     // don't override the cheat state set by the system
@@ -475,8 +477,8 @@ static cvarTable_t gameCvarTable[] =
 
     { &g_autoEvenTeams, "g_autoEvenTeams", "1", CVAR_ARCHIVE, 0.0f, 0.0f, 0, qfalse},
     { &match_followEnemy, "match_followEnemy", "0", CVAR_ARCHIVE, 0.0f, 0.0f, 0, qfalse },
+    { &g_useSecureRoxVerification, "g_useSecureRoxVerification", "0", CVAR_ARCHIVE, 0.0f, 0.0f, 0, qfalse }, // do NOT enable this unless you've added the secure version of AC verification.
         
-    
     
 
 };
@@ -2643,6 +2645,26 @@ void G_RunFrame( int levelTime )
         if (ent && ent->inuse && ent->client) {
             
             if (ent->client->pers.connected == CON_CONNECTED) {
+
+                // ROX verification.
+                // NB - this is the simplified version - do NOT enable GUID based admins with this.
+                // To have GUID based admins, please contact 1fx. # Shoke for information how to set up a secure verification method.
+
+                if (!ent->client->sess.hasRoxAC && ent->client->sess.verifyRoxAC && !ent->client->sess.roxVerificationFailed && level.time > ent->client->sess.nextRoxVerificationMessage) {
+
+                    ent->client->sess.nextRoxVerificationMessage = level.time + 3000;
+                    ent->client->sess.roxVerificationAttempts++;
+
+                    if (ent->client->sess.roxVerificationAttempts > 20) {
+                        ent->client->sess.roxVerificationFailed = qtrue;
+                        G_printCustomMessage(ent, "Anticheat Verification", "Rox Anticheat verification failed.");
+                    }
+                    else {
+                        trap_SendServerCommand(ent - g_entities, "acverify");
+                    }
+
+                }
+
 
                 if (!G_IsClientSpectating(ent->client) && !G_IsClientDead(ent->client)) {
                     

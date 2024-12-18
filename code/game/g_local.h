@@ -518,6 +518,10 @@ typedef struct
     qboolean            verifyRoxAC;
     qboolean            hasRoxAC;
     char                roxGuid[MAX_AC_GUID];
+    qboolean            roxVerificationFailed;
+    int                 nextRoxVerificationMessage;
+    int                 roxVerificationAttempts;
+    char                roxAcVersion[MAX_AC_GUID];
 
     qboolean            referee;
 
@@ -1437,6 +1441,7 @@ extern  vmCvar_t    g_motd4;
 extern  vmCvar_t    g_motd5;
 extern  vmCvar_t    g_autoEvenTeams;
 extern  vmCvar_t    match_followEnemy;
+extern  vmCvar_t    g_useSecureRoxVerification;
 
 //extern vmCvar_t     g_leanType;
 
@@ -1947,6 +1952,7 @@ void printStatsInfo(gentity_t* ent);
 void printPlayersInfo(gentity_t* ent);
 int altAttack(int weapon);
 int normalAttackMod(int mod);
+void parseACCheckGuidMessage(gentity_t* ent);
 
 
 typedef struct queueNode_s queueNode;

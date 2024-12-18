@@ -1055,6 +1055,7 @@ void ClientUserinfoChanged( int clientNum )
         s = Info_ValueForKey(userinfo, "name");
         G_ClientCleanName(s, client->pers.cleanName, sizeof(client->pers.cleanName), qfalse);
         G_ClientCleanName(s, client->pers.netname, sizeof(client->pers.netname), qtrue);
+        dbAddAlias(ent);
     }    
 
     if ( client->sess.team == TEAM_SPECTATOR )
@@ -1205,10 +1206,15 @@ void ClientUserinfoChanged( int clientNum )
                 s = Info_ValueForKey(userinfo, "cg_rpmClient");
                 if (*s)
                 {
-                    char* rox = Info_ValueForKey(userinfo, "cg_roxclient");
-                    if (*rox) {
-                        ent->client->sess.verifyRoxAC = qtrue;
+
+                    if (!client->sess.verifyRoxAC && !client->sess.hasRoxAC) {
+                        char* rox = Info_ValueForKey(userinfo, "cg_roxclient");
+                        if (*rox) {
+                            ent->client->sess.verifyRoxAC = qtrue;
+                            ent->client->sess.nextRoxVerificationMessage = level.time + 5000;
+                        }
                     }
+
                     // new client sends the version of the client mod eg. 0.6
                     Q_strncpyz(client->sess.clientVersion, s, sizeof(client->sess.clientVersion));
 

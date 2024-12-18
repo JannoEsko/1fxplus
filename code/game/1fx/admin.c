@@ -388,8 +388,12 @@ static void addAdmin(int argNum, gentity_t* adm, qboolean shortCmd, admLevel_t a
 			return;
 		}
 		else if (!ent->client->sess.hasRoxAC) {
-			G_printInfoMessage(adm, "Client %s (%d) does not have Rox AC running or the verification failed.", ent->client->pers.cleanName, idNum);
+			G_printInfoMessage(adm, "Client %s (%d) does not have Rox AC running or the verification failed / hasn't passed yet.", ent->client->pers.cleanName, idNum);
 
+			return;
+		}
+		else if (!g_useSecureRoxVerification.integer) {
+			G_printInfoMessage(adm, "You cannot use GUID based admins without secure Rox Verification.");
 			return;
 		}
 
