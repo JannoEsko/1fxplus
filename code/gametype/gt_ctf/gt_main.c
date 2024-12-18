@@ -260,7 +260,7 @@ int GT_Event ( int cmd, int time, int arg0, int arg1, int arg2, int arg3, int ar
         {
             char clientname[MAX_QPATH];
 
-            trap_Cmd_GetClientName ( arg1, clientname, MAX_QPATH );
+            trap_Cmd_GetClientName ( arg1, clientname, MAX_QPATH, qfalse );
 
             switch ( arg0 )
             {
@@ -287,7 +287,7 @@ int GT_Event ( int cmd, int time, int arg0, int arg1, int arg2, int arg3, int ar
                     if ( arg2 == TEAM_RED )
                     {
                         char clientname[MAX_QPATH];
-                        trap_Cmd_GetClientName ( arg1, clientname, MAX_QPATH );
+                        trap_Cmd_GetClientName ( arg1, clientname, MAX_QPATH, qfalse );
                         trap_Cmd_Broadcast( -1, va("%s^7 \nhas \\taken the %s^7 Flag!", clientname, gt_blueTeamColored.string ), qfalse );
                         trap_Cmd_StartGlobalSound ( gametype.flagTakenSound );
                         trap_Cmd_RadioMessage ( arg1, "got_it" );
@@ -300,7 +300,7 @@ int GT_Event ( int cmd, int time, int arg0, int arg1, int arg2, int arg3, int ar
                     else if (!gametype.blueFlagAtBase && gt_allowFlagReturns.integer && arg2 == TEAM_BLUE) {
 
                         char clientname[MAX_QPATH];
-                        trap_Cmd_GetClientName(arg1, clientname, MAX_QPATH);
+                        trap_Cmd_GetClientName(arg1, clientname, MAX_QPATH, qfalse);
 
                         trap_Cmd_Broadcast(-1, va("%s^7 \nhas \\returned the %s^7 Flag!", clientname, gt_blueTeamColored.string), qfalse);
                         trap_Cmd_SetHUDIcon(0, gametype.iconBlueFlagCarried);
@@ -317,7 +317,7 @@ int GT_Event ( int cmd, int time, int arg0, int arg1, int arg2, int arg3, int ar
                     if ( arg2 == TEAM_BLUE )
                     {
                         char clientname[MAX_QPATH];
-                        trap_Cmd_GetClientName ( arg1, clientname, MAX_QPATH );
+                        trap_Cmd_GetClientName ( arg1, clientname, MAX_QPATH, qfalse);
                         trap_Cmd_Broadcast( -1, va("%s^7 \nhas \\taken the %s^7 Flag!", clientname, gt_redTeamColored.string ), qfalse );
                         trap_Cmd_StartGlobalSound ( gametype.flagTakenSound );
                         trap_Cmd_RadioMessage ( arg1, "got_it" );
@@ -330,7 +330,7 @@ int GT_Event ( int cmd, int time, int arg0, int arg1, int arg2, int arg3, int ar
                     else if (!gametype.redFlagAtBase && gt_allowFlagReturns.integer && arg2 == TEAM_RED) {
 
                         char clientname[MAX_QPATH];
-                        trap_Cmd_GetClientName(arg1, clientname, MAX_QPATH);
+                        trap_Cmd_GetClientName(arg1, clientname, MAX_QPATH, qfalse);
 
                         trap_Cmd_Broadcast(-1, va("%s^7 \nhas \\returned the %s^7 Flag!", clientname, gt_redTeamColored.string), qfalse);
                         trap_Cmd_SetHUDIcon(0, gametype.iconRedFlagCarried);
@@ -353,7 +353,7 @@ int GT_Event ( int cmd, int time, int arg0, int arg1, int arg2, int arg3, int ar
                     if ( trap_Cmd_DoesClientHaveItem ( arg1, ITEM_REDFLAG ) && ((!gt_flagCaptureType.integer && gametype.blueFlagAtBase) || gt_flagCaptureType.integer))
                     {
                         char clientname[MAX_QPATH];
-                        trap_Cmd_GetClientName ( arg1, clientname, MAX_QPATH );
+                        trap_Cmd_GetClientName ( arg1, clientname, MAX_QPATH, qfalse);
                         trap_Cmd_Broadcast( -1, va("%s^7 \nhas \\captured \nthe %s^7 Flag!", clientname, gt_redTeamColored.string ), qfalse );
                         trap_Cmd_ResetItem ( ITEM_REDFLAG );
                         trap_Cmd_StartGlobalSound ( gametype.flagCaptureSound );
@@ -374,7 +374,7 @@ int GT_Event ( int cmd, int time, int arg0, int arg1, int arg2, int arg3, int ar
                     if ( trap_Cmd_DoesClientHaveItem ( arg1, ITEM_BLUEFLAG ) && ((!gt_flagCaptureType.integer && gametype.redFlagAtBase) || gt_flagCaptureType.integer))
                     {
                         char clientname[MAX_QPATH];
-                        trap_Cmd_GetClientName ( arg1, clientname, MAX_QPATH );
+                        trap_Cmd_GetClientName ( arg1, clientname, MAX_QPATH, qfalse);
                         trap_Cmd_Broadcast( -1, va("%s^7 \nhas \\captured \nthe %s^7 Flag!", clientname, gt_blueTeamColored.string ), qfalse );
                         trap_Cmd_ResetItem ( ITEM_BLUEFLAG );
                         trap_Cmd_StartGlobalSound ( gametype.flagCaptureSound );

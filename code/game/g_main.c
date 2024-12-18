@@ -232,6 +232,37 @@ vmCvar_t    g_autoEvenTeams;
 
 vmCvar_t    g_useSecureRoxVerification;
 
+// H&S cvars.
+// We take over all of the H&S cvars from 1fxmod as-is, otherwise we got a lot to change.
+vmCvar_t    hideSeek_roundstartdelay;
+vmCvar_t    hideSeek_availableWeapons;
+vmCvar_t    hideSeek_Extra;
+vmCvar_t    hideSeek_Nades;
+vmCvar_t    hideSeek_randomFireNade;
+vmCvar_t    hideSeek_Weapons;
+vmCvar_t    hideSeek_ExtendedRoundStats;
+vmCvar_t    g_rpgBoost;
+vmCvar_t    g_mm1Style;
+vmCvar_t	g_rpgRemove;
+vmCvar_t	g_CnRsmokenade;
+vmCvar_t	g_smokealert;
+vmCvar_t	g_CnRsmokeTime;
+vmCvar_t	g_hsgiveknife;
+vmCvar_t    g_rpgSpeedDrain;
+vmCvar_t    g_rpgSpeedDrainSec;
+vmCvar_t    g_waterSpeedDecrement;
+vmCvar_t    g_stunSpeedDecrement;
+vmCvar_t    g_stunSpeedIncrement;
+vmCvar_t    g_fireSpeedDecrement;
+vmCvar_t    g_rpgSpeedIncrement;
+vmCvar_t    g_waterSpeedTime;
+vmCvar_t    g_stunSpeedTime;
+vmCvar_t    g_fireSpeedTime;
+vmCvar_t    g_hnsWeaponsMinPlayers;
+vmCvar_t    g_boxAttempts;
+vmCvar_t    g_cageAttempts;
+vmCvar_t    g_noHighFps;
+
 static cvarTable_t gameCvarTable[] =
 {
     // don't override the cheat state set by the system
@@ -366,7 +397,7 @@ static cvarTable_t gameCvarTable[] =
     { &ac_norecoil,    "ac_norecoil",     "0",        CVAR_ARCHIVE | CVAR_LATCH | CVAR_SERVERINFO,   0.0f,   0.0f,   0,  qfalse },
     { &rox_support,    "rox_support",     "1",        CVAR_ARCHIVE | CVAR_LATCH | CVAR_SERVERINFO,   0.0f,   0.0f,   0,  qfalse },
     { &sv_legacyClientMod,    "sv_legacyClientMod",     "",        CVAR_ARCHIVE | CVAR_LATCH,   0.0f,   0.0f,   0,  qfalse },
-    { &sv_clientMod,    "sv_clientMod",     "",        CVAR_ARCHIVE | CVAR_LATCH,   0.0f,   0.0f,   0,  qfalse },
+    { &sv_clientMod,    "sv_clientMod",     "",        CVAR_ARCHIVE | CVAR_LATCH,   0.0f,   0.0f,   0,  qfalse },    
 
     { &g_badminPrefix,    "g_badminPrefix",     "^CB^b-^kA^+d^7min",        CVAR_ARCHIVE,   0.0f,   0.0f,   0,  qfalse },
     { &g_adminPrefix,    "g_adminPrefix",     "^CA^bd^km^+i^7n",        CVAR_ARCHIVE,   0.0f,   0.0f,   0,  qfalse },
@@ -478,6 +509,34 @@ static cvarTable_t gameCvarTable[] =
     { &g_autoEvenTeams, "g_autoEvenTeams", "1", CVAR_ARCHIVE, 0.0f, 0.0f, 0, qfalse},
     { &match_followEnemy, "match_followEnemy", "0", CVAR_ARCHIVE, 0.0f, 0.0f, 0, qfalse },
     { &g_useSecureRoxVerification, "g_useSecureRoxVerification", "0", CVAR_ARCHIVE, 0.0f, 0.0f, 0, qfalse }, // do NOT enable this unless you've added the secure version of AC verification.
+
+    // H&S
+    { &hideSeek_availableWeapons,       "hideSeek_availableWeapons",    "200000000000000022220000", CVAR_INTERNAL | CVAR_ROM, 0.0, 0.0, 0, qfalse },
+    { &hideSeek_Extra,          "hideSeek_Extra",           "110110",   CVAR_ARCHIVE | CVAR_LATCH,    0.0,    0.0,  0, qfalse }, // Boe!Man 3/6/11: So users can change if desired.
+    { &hideSeek_Nades,          "hideSeek_Nades",           "1111", CVAR_ARCHIVE | CVAR_LATCH,    0.0,    0.0,  0, qfalse }, // Boe!Man 3/6/11: So users can change if desired.
+    { &hideSeek_Weapons,        "hideSeek_Weapons",         "11111",  CVAR_ARCHIVE | CVAR_LATCH,    0.0,    0.0,  0, qfalse }, // Boe!Man 3/6/11: So users can change if desired.
+    { &hideSeek_ExtendedRoundStats,     "hideSeek_ExtendedRoundStats",      "1",    CVAR_ARCHIVE,   0.0,    0.0,  0, qfalse }, // Boe!Man 9/2/12: CVAR for extended round stats.
+    { &g_boxAttempts, "g_boxAttempts", "3", CVAR_ARCHIVE,   0.0,    0.0,  0, qtrue },
+    { &g_cageAttempts, "g_cageAttempts", "3",   CVAR_ARCHIVE,   0.0,    0.0,  0, qtrue },
+    { &g_noHighFps, "g_noHighFps", "1", CVAR_ARCHIVE | CVAR_INIT,   0.0,    0.0,  0, qtrue },
+    { &g_rpgBoost,              "g_rpgBoost",               "450",  CVAR_ARCHIVE | CVAR_LATCH | CVAR_LOCK_RANGE,                    0.0, 1500.0, 0, qfalse },
+    { &g_mm1Style,              "g_mm1Style",               "0",    CVAR_ARCHIVE | CVAR_LATCH,                                      0.0, 0.0, 0, qfalse },
+    { &g_rpgRemove,              "g_rpgRemove",               "0",    CVAR_ARCHIVE | CVAR_LATCH,                                      0.0, 0.0, 0, qfalse },
+    { &g_smokealert,              "g_smokealert",               "0",    CVAR_ARCHIVE,                                      0.0, 0.0, 0, qfalse },
+    { &g_CnRsmokenade,           "g_CnRsmokenade",       "0",       CVAR_ARCHIVE,                                      0.0, 0.0, 0, qfalse },
+    { &g_CnRsmokeTime,              "g_CnRsmokeTime",       "1.5",  CVAR_ARCHIVE | CVAR_LOCK_RANGE,                                 0.1, 3.0, 0, qfalse },
+    { &g_hsgiveknife,              "g_hsgiveknife",       "0",  CVAR_ARCHIVE | CVAR_LOCK_RANGE,                                 0.0, 2.0, 0, qfalse },
+    { &g_rpgSpeedDrain,         "g_rpgSpeedDrain",          "0",    CVAR_ARCHIVE | CVAR_LATCH,                                      0.0, 0.0, 0, qfalse },
+    { &g_rpgSpeedDrainSec,      "g_rpgSpeedDrainSec",       "0.25", CVAR_ARCHIVE | CVAR_LATCH | CVAR_LOCK_RANGE,                    0.1, 2.0, 0, qfalse },
+    { &hideSeek_randomFireNade, "hideSeek_randomFireNade",  "1",    CVAR_ARCHIVE | CVAR_LATCH,                                      0.0,    0.0,  0, qfalse },
+    { &g_waterSpeedDecrement,   "g_waterSpeedDecrement",    "110",  CVAR_ARCHIVE | CVAR_LATCH | CVAR_LOCK_RANGE,                    0.0,    400.0,  0, qfalse },
+    { &g_stunSpeedDecrement,    "g_stunSpeedDecrement",     "110",  CVAR_ARCHIVE | CVAR_LATCH | CVAR_LOCK_RANGE,                    0.0,    200.0,  0, qfalse },
+    { &g_stunSpeedIncrement,    "g_stunSpeedIncrement",     "70",   CVAR_ARCHIVE | CVAR_LATCH | CVAR_LOCK_RANGE,                    0.0,    200.0,  0, qfalse },
+    { &g_fireSpeedDecrement,    "g_fireSpeedDecrement",     "110",  CVAR_ARCHIVE | CVAR_LATCH | CVAR_LOCK_RANGE,                    0.0,    200.0,  0, qfalse },
+    { &g_rpgSpeedIncrement,     "g_rpgSpeedIncrement",      "70",   CVAR_ARCHIVE | CVAR_LATCH | CVAR_LOCK_RANGE,                    0.0,    200.0,  0, qfalse },
+    { &g_waterSpeedTime,        "g_waterSpeedTime",         "200",  CVAR_ARCHIVE | CVAR_LATCH | CVAR_LOCK_RANGE,                    0.0,    500.0,  0, qfalse },
+    { &g_stunSpeedTime,         "g_stunSpeedTime",          "4000", CVAR_ARCHIVE | CVAR_LATCH | CVAR_LOCK_RANGE,                    0.0,    8000.0,  0, qfalse },
+    { &g_fireSpeedTime,         "g_fireSpeedTime",          "1500", CVAR_ARCHIVE | CVAR_LATCH | CVAR_LOCK_RANGE,                    0.0,    8000.0,  0, qfalse },
         
     
 
@@ -552,7 +611,6 @@ Q_EXPORT intptr_t vmMain( int command, intptr_t arg0, intptr_t arg1, intptr_t ar
             }
             return 0;
         case GAME_RCON_LOG:
-            // JANFIXME TODO Add rconlogging.
             logRcon(arg0, arg1);
             return 0;
     }
@@ -800,12 +858,29 @@ void G_UpdateAvailableWeapons ( void )
     trap_Cvar_Update ( &g_availableWeapons );
 }
 
-qboolean G_IsGametypeAValidGametype(char* gametype) {
+static char* G_TranslateGametype(char* gametype) {
+
+    // We assume a valid gametype has been passed.
+    // Therefore, we only replace h&s with hns, h&z with hnz.
 
     if (!Q_stricmp(gametype, "h&s")) {
+        return "hns";
+    }
+
+    if (!Q_stricmp(gametype, "h&z")) {
+        return "hnz";
+    }
+
+    return gametype;
+
+}
+
+qboolean G_IsGametypeAValidGametype(char* gametype) {
+
+    if (!Q_stricmp(gametype, "h&s") || !Q_stricmp(gametype, "hns")) {
         return qtrue;
     }
-    else if (!Q_stricmp(gametype, "h&z")) {
+    else if (!Q_stricmp(gametype, "h&z") || !Q_stricmp(gametype, "hnz")) {
         return qtrue;
     }
     else if (!Q_stricmp(gametype, "gg")) {
@@ -856,11 +931,11 @@ Public value will be used for example in info query and in configstring.
 */
 char* G_TranslateGametypeToPublicGametype(char* gametype) {
 
-if (!Q_stricmp(gametype, "h&s")) {
+if (!Q_stricmp(gametype, "h&s") || !Q_stricmp(gametype, "hns")) {
     return "inf";
 }
 
-if (!Q_stricmp(gametype, "h&z")) {
+if (!Q_stricmp(gametype, "h&z") || !Q_stricmp(gametype, "hnz")) {
     return "inf";
 }
 
@@ -898,9 +973,9 @@ Public value will be used for example in info query and in configstring.
 */
 void G_SetCurrentGametypeValue(char* gametype) {
 
-    if (!Q_stricmp(gametype, "h&s")) {
+    if (!Q_stricmp(gametype, "h&s") || !Q_stricmp(gametype, "hns")) {
         trap_Cvar_Set("current_gametype", va("%d", GT_HNS));
-    } else if (!Q_stricmp(gametype, "h&z")) {
+    } else if (!Q_stricmp(gametype, "h&z") || !Q_stricmp(gametype, "hnz")) {
         trap_Cvar_Set("current_gametype", va("%d", GT_HNZ));
     } else if (!Q_stricmp(gametype, "gg")) {
         trap_Cvar_Set("current_gametype", va("%d", GT_DM));
@@ -1084,7 +1159,25 @@ void G_InitGame( int levelTime, int randomSeed, int restart )
     BG_BuildGametypeList ( );
 
     // Set the current gametype
+
+    trap_Cvar_Set("g_gametype", G_TranslateGametype(g_gametype.string));
+    trap_Cvar_Update(&g_gametype);
+
     G_SetGametype(g_gametype.string);
+
+    if (isCurrentGametypeInList((gameTypes_t[]) { GT_HNS, GT_HNZ, GT_MAX })) {
+        trap_Cvar_Set("g_enforce1fxAdditions", "1");
+        trap_Cvar_Update(&g_enforce1fxAdditions);
+
+        trap_Cvar_Set("sv_clientMod", "1fx.rocmod");
+        trap_Cvar_Update(&sv_clientMod);
+    }
+    else {
+        // We do not enforce when it's not needed. Up to the server owner to set the clientmod to 1fx.rocmod.
+        // We also do not reset the variable. To be honest, if the server runs h&s / h&z, it should be 1fx.rocmod all the time.
+        trap_Cvar_Set("g_enforce1fxAdditions", "0");
+        trap_Cvar_Update(&g_enforce1fxAdditions);
+    }
 
     G_SetDisabledWeapons();
 
@@ -2533,7 +2626,7 @@ void G_RunFrame( int levelTime )
         level.runMapAction = 0;
 
         if (level.mapAction == MAPACTION_PENDING_GT || level.mapAction == MAPACTION_PENDING_MAPGTCHANGE) {
-            trap_Cvar_Set("g_gametype", level.mapActionNewGametype);
+            trap_Cvar_Set("g_gametype", G_TranslateGametype(level.mapActionNewGametype));
         }
 
         if (level.mapAction == MAPACTION_PENDING_MAPCHANGE || level.mapAction == MAPACTION_PENDING_MAPGTCHANGE) {

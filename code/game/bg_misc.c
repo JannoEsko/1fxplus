@@ -3217,13 +3217,56 @@ void BG_PlayerStateToEntityStateExtraPolate( playerState_t *ps, entityState_t *s
         s->eFlags &= ~EF_DEAD;
     }
 
-    if ( ps->pm_flags & PMF_GOGGLES_ON )
+    if (ps->pm_flags & PMF_GOGGLES_ON)
     {
-        s->eFlags |= EF_GOGGLES;
+        if (ps->stats[STAT_GOGGLES] == GOGGLES_NIGHTVISION && ps->persistant[PERS_TEAM] == TEAM_BLUE && isCurrentGametype(GT_HNS) && hideSeek_Extra.string[HSEXTRA_GOGGLES] == '1' && !g_entities[s->clientNum].client->sess.invisibleGoggles) {
+            if (level.time >= g_entities[s->clientNum].client->sess.invisibilityCooldown + 3000) {
+                g_entities[s->clientNum].client->sess.invisibleGoggles = qtrue;
+                s->eFlags |= EF_GOGGLES;
+            }
+            else {
+                int seconds = 3 - (level.time - g_entities[s->clientNum].client->sess.invisibilityCooldown) / 1000;
+                G_printGametypeMessage(&g_entities[s->clientNum], "You can use the invisibility goggles again in %d second%s", seconds, seconds == 1 ? "" : "s");
+                ps->pm_flags &= ~(PMF_GOGGLES_ON);
+            }
+        }
+        else {
+            s->eFlags |= EF_GOGGLES;
+        }
+
+        if (g_entities[s->clientNum].client->sess.invisibleGoggles) {
+            if (level.time >= g_entities[s->clientNum].client->sess.invisibletime) {
+                if (g_entities[s->clientNum].client->ps.stats[STAT_ARMOR] <= 0) {
+                    G_printGametypeMessage(&g_entities[s->clientNum], "Invisibility goggles wore off.");
+                    ps->pm_flags &= ~(PMF_GOGGLES_ON);
+                    ps->stats[STAT_GOGGLES] = GOGGLES_NONE;
+                    g_entities[s->clientNum].client->sess.invisibleGoggles = qfalse;
+                }
+                else {
+                    // Boe!Man 9/16/12: Show effect.
+                    if (level.time >= g_entities[s->clientNum].client->sess.invisibleFxTime) {
+                        AddSpawnField("classname", "1fx_play_effect");
+                        AddSpawnField("effect", "levels/air4_toxic_smoke");
+                        AddSpawnField("origin", va("%.0f %.0f %.0f", g_entities[s->clientNum].r.currentOrigin[0], g_entities[s->clientNum].r.currentOrigin[1], g_entities[s->clientNum].r.currentOrigin[2] + 25));
+                        AddSpawnField("count", "1");
+                        G_SpawnGEntityFromSpawnVars(qtrue);
+                        g_entities[s->clientNum].client->sess.invisibleFxTime = level.time + 500; // Next update.
+                    }
+                    // Boe!Man 9/16/12: Decrease armor.
+                    ps->stats[STAT_ARMOR] -= 1;
+                    g_entities[s->clientNum].client->sess.invisibletime = level.time + 100; // Next update.
+                }
+            }
+        }
     }
     else
     {
         s->eFlags &= (~EF_GOGGLES);
+        if (g_entities[s->clientNum].client->sess.invisibleGoggles && ps->stats[STAT_GOGGLES] == GOGGLES_NIGHTVISION && ps->persistant[PERS_TEAM] == TEAM_BLUE && isCurrentGametype(GT_HNS) && hideSeek_Extra.string[HSEXTRA_GOGGLES] == '1') {
+            // Boe!Man 9/16/12: His last status was invisible, so set the invisibleCoolDown now..
+            g_entities[s->clientNum].client->sess.invisibleGoggles = qfalse;
+            g_entities[s->clientNum].client->sess.invisibilityCooldown = level.time;
+        }
     }
 
     if ( ps->pm_flags & PMF_DUCKED)

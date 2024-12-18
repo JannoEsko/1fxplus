@@ -1265,7 +1265,7 @@ int adm_addClanMember(int argNum, gentity_t* adm, qboolean shortCmd) {
 		if (isMember) {
 
 			if (clanType == CLANTYPE_PASS) {
-
+				Q_strncpyz(ent->client->sess.clanName, ent->client->pers.cleanName, sizeof(ent->client->sess.clanName));
 				ent->client->sess.setClanPassword = qtrue;
 				G_printInfoMessage(adm, "%s (%d) is already in the clan-member passlist. They can now change their password.", ent->client->pers.cleanName, idNum);
 				G_printChatInfoMessage(ent, "%s has toggled clan-password reset for you.", getNameOrArg(adm, "RCON", qtrue));
@@ -1500,8 +1500,6 @@ static void adm_printBanlist(int argNum, gentity_t* adm, qboolean shortCmd, qboo
 	}
 
 	dbPrintBanlist(adm, subnet, page);
-
-	return -1;
 
 }
 
@@ -1969,7 +1967,6 @@ int adm_Flash(int argNum, gentity_t* adm, qboolean shortCmd) {
 
 int adm_Gametype(int argNum, gentity_t* adm, qboolean shortCmd) {
 
-	char        gametype[8];
 	char        arg[16] = "\0";
 	int         argc = 0;
 

@@ -137,9 +137,9 @@ void trap_Cmd_ResetItem ( int itemid )
     syscall ( GT_RESETITEM, itemid );
 }
 
-void trap_Cmd_GetClientName ( int clientid, const char* buffer, int buffersize )
+void trap_Cmd_GetClientName ( int clientid, const char* buffer, int buffersize, qboolean cleanName )
 {
-    syscall ( GT_GETCLIENTNAME, clientid, buffer, buffersize );
+    syscall ( GT_GETCLIENTNAME, clientid, buffer, buffersize, cleanName );
 }
 
 qboolean trap_Cmd_DoesClientHaveItem ( int clientid, int itemid )
@@ -189,4 +189,8 @@ void trap_Cmd_Teamnames(const char* redTeam, const char* blueTeam) {
 void trap_Cmd_Broadcast(int client, const char* message, qboolean playSound)
 {
     syscall(GT_BROADCAST, client, message, playSound);
+}
+
+void trap_Cmd_ConsoleTextMessage(int client, const char* gametype, const char* message) {
+    syscall(GT_CONSOLETEXTMESSAGE, client, gametype, message);
 }

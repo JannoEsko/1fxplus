@@ -571,7 +571,39 @@ int G_SpawnGEntityFromSpawnVars( qboolean inSubBSP )
 
     for ( i = 0 ; i < level.numSpawnVars ; i++ )
     {
-        G_ParseField( level.spawnVars[i][0], level.spawnVars[i][1], ent );
+        if (isCurrentGametype(GT_HNS)) {
+            if (strstr(level.spawnVars[i][1], "gametype_item")) {
+                ent->think = G_FreeEntity;
+                ent->nextthink = level.time + 100;
+            }
+            else if (strstr(level.spawnVars[i][0], "effect")) {
+                if (strstr(level.spawnVars[i][1], "flare_blue")) {
+                    level.MM1Flare = ent->s.number;
+                }
+            }
+            if (strstr(level.spawnVars[i][0], "rpg")) {
+                if (strstr(level.spawnVars[i][1], "true")) {
+                    level.RPGFlare = ent->s.number;
+                }
+                else {
+                    level.M4Flare = ent->s.number;
+                }
+            }
+        }
+        if (strstr(level.spawnVars[i][0], "tempent")) {
+            ent->think = G_FreeEntity;
+            ent->nextthink = level.time + 100;
+            level.tempent = ent->s.number;
+        }
+
+        if (strstr(level.spawnVars[i][1], "flare") && isCurrentGametype(GT_HNS)) {
+            Com_Printf("Ignoring flares in .ent\n");
+            G_FreeEntity(ent);
+        }
+        else {
+            G_ParseField(level.spawnVars[i][0], level.spawnVars[i][1], ent);
+        }
+        
     }
 
     // check for "notteam" flag (GT_DM)
@@ -1034,6 +1066,110 @@ qboolean SP_bsp_worldspawn ( void )
     return qtrue;
 }
 
+// Boe!Man 9/11/12: Function to preload effects in H&S/H&Z.
+static void Preload_Effects(void)
+{
+    // Boe!Man 9/11/12: Handle H&S/H&Z stuff.
+    if (isCurrentGametypeInList((gameTypes_t[]) { GT_HNS, GT_HNZ, GT_MAX })) {
+        // We'll have to preload the non-map effects in order to use them.
+        AddSpawnField("classname", "fx_play_effect");
+        AddSpawnField("effect", "flare_blue");
+        AddSpawnField("tempent", "1");
+        G_SpawnGEntityFromSpawnVars(qtrue);
+        G_FreeEntity(&g_entities[level.tempent]);
+
+        AddSpawnField("classname", "fx_play_effect");
+        AddSpawnField("effect", "flare_red");
+        AddSpawnField("tempent", "1");
+        G_SpawnGEntityFromSpawnVars(qtrue);
+        G_FreeEntity(&g_entities[level.tempent]);
+
+        AddSpawnField("classname", "fx_play_effect");
+        AddSpawnField("effect", "arm2smallsmoke");
+        AddSpawnField("tempent", "1");
+        G_SpawnGEntityFromSpawnVars(qtrue);
+        G_FreeEntity(&g_entities[level.tempent]);
+
+        AddSpawnField("classname", "fx_play_effect");
+        AddSpawnField("effect", "levels/air4_toxic_smoke");
+        AddSpawnField("tempent", "1");
+        G_SpawnGEntityFromSpawnVars(qtrue);
+        G_FreeEntity(&g_entities[level.tempent]);
+
+        AddSpawnField("classname", "fx_play_effect");
+        AddSpawnField("effect", "misc/exclaimation");
+        AddSpawnField("tempent", "1");
+        G_SpawnGEntityFromSpawnVars(qtrue);
+        G_FreeEntity(&g_entities[level.tempent]);
+
+        AddSpawnField("classname", "fx_play_effect");
+        AddSpawnField("effect", "red_dot");
+        AddSpawnField("tempent", "1");
+        G_SpawnGEntityFromSpawnVars(qtrue);
+        G_FreeEntity(&g_entities[level.tempent]);
+    }
+
+    AddSpawnField("classname", "fx_play_effect");
+    AddSpawnField("effect", "misc/electrical");
+    AddSpawnField("tempent", "1");
+    G_SpawnGEntityFromSpawnVars(qtrue);
+    G_FreeEntity(&g_entities[level.tempent]);
+
+    AddSpawnField("classname", "fx_play_effect");
+    AddSpawnField("effect", "misc/electrical");
+    AddSpawnField("tempent", "1");
+    G_SpawnGEntityFromSpawnVars(qtrue);
+    G_FreeEntity(&g_entities[level.tempent]);
+
+    AddSpawnField("classname", "fx_play_effect");
+    AddSpawnField("effect", "gen_tendril1");
+    AddSpawnField("tempent", "1");
+    G_SpawnGEntityFromSpawnVars(qtrue);
+    G_FreeEntity(&g_entities[level.tempent]);
+
+    AddSpawnField("classname", "fx_play_effect");
+    AddSpawnField("effect", "levels/shop7_toxiic_explosion");
+    AddSpawnField("tempent", "1");
+    G_SpawnGEntityFromSpawnVars(qtrue);
+    G_FreeEntity(&g_entities[level.tempent]);
+
+    AddSpawnField("classname", "fx_play_effect");
+    AddSpawnField("effect", "effects/explosions/col9_boat_explosion");
+    AddSpawnField("tempent", "1");
+    G_SpawnGEntityFromSpawnVars(qtrue);
+    G_FreeEntity(&g_entities[level.tempent]);
+
+    AddSpawnField("classname", "fx_play_effect");
+    AddSpawnField("effect", "jon_sam_trail");
+    AddSpawnField("tempent", "1");
+    G_SpawnGEntityFromSpawnVars(qtrue);
+    G_FreeEntity(&g_entities[level.tempent]);
+
+    AddSpawnField("classname", "fx_play_effect");
+    AddSpawnField("effect", "effects/levels/hk6_spark_shower");
+    AddSpawnField("tempent", "1");
+    G_SpawnGEntityFromSpawnVars(qtrue);
+    G_FreeEntity(&g_entities[level.tempent]);
+
+    AddSpawnField("classname", "fx_play_effect");
+    AddSpawnField("effect", "fire/blue_target_flame");
+    AddSpawnField("tempent", "1");
+    G_SpawnGEntityFromSpawnVars(qtrue);
+    G_FreeEntity(&g_entities[level.tempent]);
+
+    // Boe!Man 4/15/13: Effect for the accelerator.
+    AddSpawnField("classname", "fx_play_effect");
+    AddSpawnField("effect", "explosions/phosphorus_trail");
+    AddSpawnField("tempent", "1");
+    G_SpawnGEntityFromSpawnVars(qtrue);
+    G_FreeEntity(&g_entities[level.tempent]);
+
+    level.MM1Flare = -1;
+    level.M4Flare = -1;
+    level.RPGFlare = -1;
+}
+// End
+
 /*QUAKED worldspawn (0 0 0) ?
 
 Every map should have exactly one worldspawn.
@@ -1149,6 +1285,8 @@ void SP_worldspawn( void )
                 i, lengthRed, lengthGreen, lengthBlue);
         }
     }
+
+    Preload_Effects();
 }
 
 

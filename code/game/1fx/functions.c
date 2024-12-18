@@ -719,6 +719,43 @@ void QDECL G_printCustomMessageToAll(const char* prefix, const char* msg, ...)
     va_end(argptr);
 }
 
+void QDECL G_printGametypeMessage(gentity_t* ent, const char* msg, ...)
+{
+
+    // Get current gametype and turn it into uppercase.
+    char gametypeInUppercase[12];
+    Com_Memset(gametypeInUppercase, 0, sizeof(gametypeInUppercase));
+    Q_strncpyz(gametypeInUppercase, g_gametype.string, sizeof(gametypeInUppercase));
+
+    for (int i = 0; gametypeInUppercase[i] != '\0'; i++) {
+        gametypeInUppercase[i] = toupper(gametypeInUppercase[i]);
+    }
+
+    va_list     argptr;
+
+    va_start(argptr, msg);
+    G_printMessage(qfalse, qfalse, ent, gametypeInUppercase, msg, argptr);
+    va_end(argptr);
+}
+
+void QDECL G_printGametypeMessageToAll(const char* msg, ...)
+{
+    // Get current gametype and turn it into uppercase.
+    char gametypeInUppercase[12];
+    Com_Memset(gametypeInUppercase, 0, sizeof(gametypeInUppercase));
+    Q_strncpyz(gametypeInUppercase, g_gametype.string, sizeof(gametypeInUppercase));
+
+    for (int i = 0; gametypeInUppercase[i] != '\0'; i++) {
+        gametypeInUppercase[i] = toupper(gametypeInUppercase[i]);
+    }
+
+    va_list     argptr;
+
+    va_start(argptr, msg);
+    G_printMessage(qfalse, qtrue, NULL, gametypeInUppercase, msg, argptr);
+    va_end(argptr);
+}
+
 void getSubnet(char* ip, char* output, int outputSize) {
 
     char origIp[MAX_IP], subnetIp[MAX_IP];
@@ -746,6 +783,14 @@ void getSubnet(char* ip, char* output, int outputSize) {
 int swapTeams(qboolean autoSwap) {
 
     if (!level.gametypeData->teams) {
+        return TEAMACTION_INCOMPATIBLE_GAMETYPE;
+    }
+
+    // 1fxmod allowed swapping teams in H&S, but imo it doesn't make sense.
+    // No use cases for it and also, given the fact that quite often we can have >20 players in hiders, if we
+    // suddenly push them into blue team, they can crash due to telefragging.
+
+    if (isCurrentGametypeInList((gameTypes_t[]) { GT_HNZ, GT_HNZ, GT_PROP, GT_MAX })) {
         return TEAMACTION_INCOMPATIBLE_GAMETYPE;
     }
 
@@ -798,69 +843,181 @@ int evenTeams(qboolean autoEven) {
         return TEAMACTION_INCOMPATIBLE_GAMETYPE;
     }
 
-    if (level.numPlayingClients < 2) {
+    if (level.numPlayingClients < 3) {
         return TEAMACTION_NOT_ENOUGH_PLAYERS;
+    }
+
+    if (level.cagefight || level.intermissiontime || level.changemap) {
+        return TEAMACTION_FAILED;
+    }
+
+    if (level.blueLocked || level.redLocked) {
+        return TEAMACTION_TEAM_LOCKED;
     }
 
     int redPlayers = TeamCount(-1, TEAM_RED, NULL);
     int bluePlayers = TeamCount(-1, TEAM_BLUE, NULL);
 
-    // JANFIXME H&S / H&Z SPECIFICS
-    int redBlueDiff = abs(redPlayers - bluePlayers);
-    if (redBlueDiff <= 1) {
-        return TEAMACTION_EVEN;
-    }
+    if (isCurrentGametype(GT_HNS)) {
+        int totalplayers = redPlayers + bluePlayers;
+        int seekers = 0;
+        // Henk 29/01/10 -> New player balance code
 
-    redBlueDiff /= 2;
-    team_t teamToPick = TEAM_RED;
+        if (level.customETHiderAmount[0]) {
+            // The user put custom values here. Check them.
+            for (int i = 0; i < sizeof(level.customETHiderAmount) - 1; i++) {
+                if (level.customETHiderAmount[i + 1] == -1) {
+                    // It seems the maximum of hiders specified is reached. Use that amount of seekers.
+                    seekers = i + 1;
+                    break;
+                }
 
-    if (bluePlayers < redPlayers) {
-        teamToPick = TEAM_BLUE;
-    }
+                if (totalplayers >= level.customETHiderAmount[i] && totalplayers <= level.customETHiderAmount[i + 1]) {
+                    seekers = i + 1;
+                    break;
+                }
+            }
+        }
+        else {
+            if (redPlayers < 4) {
+                seekers = 1;
+            }
+            else {
+                seekers = (totalplayers + 1) / 5;
+            }
+        }
 
-    qboolean havePlayersBeenMoved = qfalse;
+        int maxhiders = totalplayers - seekers;
+        int highTeam = TEAM_FREE;
+        int diff = 0;
 
-    for (int i = 0; i < redBlueDiff; i++) {
+        if (bluePlayers < seekers) { // too few seekers
+            highTeam = TEAM_RED;
+            diff = (seekers - bluePlayers); // move diff to seekers team
+        }
+        else if (bluePlayers > seekers) { // too many seekers
+            highTeam = TEAM_BLUE;
+            diff = (bluePlayers - seekers); // move diff to hiders team
+        }
+        else {
+            return TEAMACTION_EVEN;
+        }
+        // if less than 2 players difference, you cant make it any more even
+        if (diff < 0) {
+            return TEAMACTION_EVEN;
+        }
 
-        gentity_t* recipient = getLastConnectedClientInTeam(teamToPick == TEAM_RED ? TEAM_BLUE : TEAM_RED, qtrue);
+        for (int i = 0; i < diff; i++) {
+            gentity_t* lastConnected = findLastEnteredPlayer(highTeam, qfalse);
 
-        if (recipient) {
-            havePlayersBeenMoved = qtrue;
+            // Boe!Man 7/13/12: Fix crash issue with auto eventeams too soon before entering the map.
+            if (lastConnected == NULL) {
+                lastConnected = findLastEnteredPlayer(highTeam, qtrue); // Try to search for it again but also try to even the teams regardless of players with scores.
 
-
-            if (recipient->s.gametypeitems > 0) {
-                G_DropGametypeItems(recipient, 0);
+                if (lastConnected == NULL) {
+                    return TEAMACTION_FAILED;
+                }
             }
 
+            if (!G_IsClientDead(lastConnected->client)) {
+                TossClientItems(lastConnected); // Henk 19/01/11 -> Fixed items not dropping with !et
+            }
 
-            recipient->client->ps.stats[STAT_WEAPONS] = 0;
-            TossClientItems(recipient);
-            G_StartGhosting(recipient);
-            recipient->client->sess.team = teamToPick;
+            lastConnected->client->ps.stats[STAT_WEAPONS] = 0;
+            G_StartGhosting(lastConnected);
 
-            recipient->client->pers.identity = NULL;
-            ClientUserinfoChanged(recipient->s.number);
+            if (highTeam == TEAM_RED) {
+                lastConnected->client->sess.team = TEAM_BLUE;
+            }
+            else {
+                lastConnected->client->sess.team = TEAM_RED;
+            }
+
+            // Boe!Man 8/3/16: Ensure the last team is also set when forcefully switched.
+            lastConnected->client->sess.lastTeam = lastConnected->client->sess.team; 
+
+            if (lastConnected->r.svFlags & SVF_BOT) {
+                char userinfo[MAX_INFO_STRING];
+                trap_GetUserinfo(lastConnected->s.number, userinfo, sizeof(userinfo));
+                Info_SetValueForKey(userinfo, "team", lastConnected->client->sess.team == TEAM_RED ? "red" : "blue");
+                trap_SetUserinfo(lastConnected->s.number, userinfo);
+            }
+
+            // Boe!Man 9/20/12: Also fix the scores (reset when switching teams using !et).
+            lastConnected->client->sess.score = 0;
+            lastConnected->client->sess.kills = 0;
+            //lastConnected->client->sess.killsAsZombie = 0;
+            lastConnected->client->sess.deaths = 0;
+            //lastConnected->client->sess.timeOfDeath = 0; // Boe!Man 8/29/11: Also reset this when switching team (so seekers that won won't get RPG for example).
+
+            lastConnected->client->pers.identity = NULL;
+            ClientUserinfoChanged(lastConnected->s.number);
             CalculateRanks();
 
-            G_StopFollowing(recipient);
-            G_StopGhosting(recipient);
-            trap_UnlinkEntity(recipient);
-            ClientSpawn(recipient);
+            G_StopFollowing(lastConnected);
+            G_StopGhosting(lastConnected);
+            trap_UnlinkEntity(lastConnected);
+            ClientSpawn(lastConnected);
         }
-        else if (!havePlayersBeenMoved) {
-            return TEAMACTION_NOT_ENOUGH_PLAYERS;
+    }
+    else {
+
+        int redBlueDiff = abs(redPlayers - bluePlayers);
+        if (redBlueDiff <= 1) {
+            return TEAMACTION_EVEN;
         }
+
+        redBlueDiff /= 2;
+        team_t teamToPick = TEAM_RED;
+
+        if (bluePlayers < redPlayers) {
+            teamToPick = TEAM_BLUE;
+        }
+
+        qboolean havePlayersBeenMoved = qfalse;
+
+        for (int i = 0; i < redBlueDiff; i++) {
+
+            gentity_t* recipient = getLastConnectedClientInTeam(teamToPick == TEAM_RED ? TEAM_BLUE : TEAM_RED, qtrue);
+
+            if (recipient) {
+                havePlayersBeenMoved = qtrue;
+
+
+                if (recipient->s.gametypeitems > 0) {
+                    G_DropGametypeItems(recipient, 0);
+                }
+
+
+                recipient->client->ps.stats[STAT_WEAPONS] = 0;
+                TossClientItems(recipient);
+                G_StartGhosting(recipient);
+                recipient->client->sess.team = teamToPick;
+
+                recipient->client->pers.identity = NULL;
+                ClientUserinfoChanged(recipient->s.number);
+                CalculateRanks();
+
+                G_StopFollowing(recipient);
+                G_StopGhosting(recipient);
+                trap_UnlinkEntity(recipient);
+                ClientSpawn(recipient);
+            }
+            else if (!havePlayersBeenMoved) {
+                return TEAMACTION_NOT_ENOUGH_PLAYERS;
+            }
+
+        }
+
+        if (autoEven) {
+            G_printCustomMessageToAll("Auto Action", "Eventeams!");
+        }
+
+        G_GlobalSound(G_SoundIndex("sound/misc/events/tut_lift02.mp3"));
 
     }
-
-    if (autoEven) {
-        G_printCustomMessageToAll("Auto Action", "Eventeams!");
-    }
-
-    G_GlobalSound(G_SoundIndex("sound/misc/events/tut_lift02.mp3"));
 
     return TEAMACTION_DONE;
-
 }
 
 /*
@@ -2264,6 +2421,8 @@ char* getChatAdminPrefixByMode(gentity_t* ent, chatMode_t mode, char* output, in
             Q_strncpyz(output, va("^7Hey %s!", g_adminPrefix.string), outputSize);
         }
     }
+
+    return "";
 }
 
 qboolean shouldChatModeBeep(chatMode_t mode) {
@@ -2556,4 +2715,167 @@ void parseACCheckGuidMessage(gentity_t* ent) {
     G_printCustomMessage(ent, "Anticheat Verification", "Anticheat verification succeeded.");
 
 
+}
+
+void giveWeaponToClient(gentity_t* ent, weapon_t wpn, qboolean autoswitch) {
+    giveWeaponWithCustomAmmoToClient(ent, wpn, autoswitch, -1, -1, -1, -1);
+}
+
+void giveWeaponWithCustomAmmoToClient(gentity_t* ent, weapon_t wpn, qboolean autoswitch, int normAmmo, int normClip, int altAmmo, int altClip) {
+    int normAmmoIdx, altAmmoIdx;
+
+    if (wpn < WP_KNIFE || wpn > WP_NUM_WEAPONS) {
+        return;
+    }
+
+    normAmmoIdx = weaponData[wpn].attack[ATTACK_NORMAL].ammoIndex;
+    altAmmoIdx = weaponData[wpn].attack[ATTACK_ALTERNATE].ammoIndex;
+
+    ent->client->ps.stats[STAT_WEAPONS] |= (1 << wpn);
+
+
+    if (normAmmo == -1 || normClip == -1) {
+        ent->client->ps.ammo[normAmmoIdx] += weaponData[wpn].attack[ATTACK_NORMAL].extraClips * weaponData[wpn].attack[ATTACK_NORMAL].clipSize;
+        ent->client->ps.clip[ATTACK_NORMAL][wpn] = weaponData[wpn].attack[ATTACK_NORMAL].clipSize;
+    }
+    else {
+        ent->client->ps.ammo[normAmmoIdx] = normAmmo * normClip;
+        ent->client->ps.clip[ATTACK_NORMAL][wpn] = normAmmo;
+    }
+
+    if (altAmmo == -1 || altClip == -1) {
+        ent->client->ps.ammo[altAmmoIdx] += weaponData[wpn].attack[ATTACK_ALTERNATE].extraClips * weaponData[wpn].attack[ATTACK_ALTERNATE].clipSize;
+        ent->client->ps.clip[ATTACK_ALTERNATE][wpn] = weaponData[wpn].attack[ATTACK_ALTERNATE].clipSize;
+    }
+    else {
+        ent->client->ps.ammo[altAmmoIdx] = altAmmo * altClip;
+        ent->client->ps.clip[ATTACK_ALTERNATE][wpn] = altAmmo;
+    }
+
+    ent->client->ps.firemode[wpn] = BG_FindFireMode(wpn, ATTACK_NORMAL, WP_FIREMODE_AUTO);
+
+    if (autoswitch) {
+        ent->client->ps.weapon = wpn;
+        ent->client->ps.weaponstate = WEAPON_RAISING;
+        ent->client->ps.weaponTime = 150;
+        ent->client->ps.weaponAnimTime = 150;
+    }
+}
+
+
+void removeWeaponFromClient(gentity_t* ent, weapon_t wpn, qboolean drop, weapon_t switchTo) {
+    int normAmmoIdx, altAmmoIdx;
+
+    if (wpn < WP_KNIFE || wpn > WP_NUM_WEAPONS) {
+        return;
+    }
+
+    normAmmoIdx = weaponData[wpn].attack[ATTACK_NORMAL].ammoIndex;
+    altAmmoIdx = weaponData[wpn].attack[ATTACK_ALTERNATE].ammoIndex;
+    ent->client->ps.zoomFov = 0;  ///if they are looking through a scope go to normal view
+    ent->client->ps.pm_flags &= ~(PMF_GOGGLES_ON | PMF_ZOOM_FLAGS);
+    if (drop) {
+        G_DropWeapon(ent, wpn, 1000);
+    }
+    else {
+        ent->client->ps.stats[STAT_WEAPONS] &= ~(1 << wpn);
+        ent->client->ps.ammo[altAmmoIdx] = 0;
+        ent->client->ps.clip[ATTACK_ALTERNATE][wpn] = 0;
+        ent->client->ps.ammo[normAmmoIdx] = 0;
+        ent->client->ps.clip[ATTACK_NORMAL][wpn] = 0;
+        ent->client->ps.weapon = switchTo;
+        ent->client->ps.weaponstate = WEAPON_READY;
+    }
+
+}
+
+void removeAllWeaponsFromClient(gentity_t* ent) {
+    ent->client->ps.zoomFov = 0;  ///if they are looking through a scope go to normal view
+    ent->client->ps.pm_flags &= ~(PMF_GOGGLES_ON | PMF_ZOOM_FLAGS);
+    ent->client->ps.stats[STAT_WEAPONS] = 0;
+    ent->client->ps.stats[STAT_GOGGLES] = GOGGLES_NONE;
+    memset(ent->client->ps.ammo, 0, sizeof(ent->client->ps.ammo));
+    memset(ent->client->ps.clip, 0, sizeof(ent->client->ps.clip));
+    ent->client->ps.weapon = WP_NONE;
+    ent->client->ps.weaponstate = WEAPON_READY;
+}
+
+char* chooseTeam() {
+    int counts[3], seekers = 0, maxhiders = 0;
+
+    counts[TEAM_BLUE] = TeamCount(-1, TEAM_BLUE, NULL);
+    counts[TEAM_RED] = TeamCount(-1, TEAM_RED, NULL);
+
+    if (level.customETHiderAmount[0]) {
+        int i;
+
+        // The user put custom values here. Check them.
+        for (i = 0; i < sizeof(level.customETHiderAmount) - 1; i++) {
+            if (level.customETHiderAmount[i + 1] == -1) {
+                // It seems the maximum of hiders specified is reached. Use that amount of seekers.
+                seekers = i + 1;
+                maxhiders = level.customETHiderAmount[i] + 1;
+                break;
+            }
+
+            if (counts[TEAM_RED] >= level.customETHiderAmount[i] && counts[TEAM_RED] <= level.customETHiderAmount[i + 1]) {
+                seekers = i + 1;
+                maxhiders = level.customETHiderAmount[i + 1];
+                break;
+            }
+        }
+    }
+    else {
+        seekers = (counts[TEAM_RED] + 1) / 5 + 1;
+
+        if (counts[TEAM_BLUE] < 2) {
+            maxhiders = 6; // Henkie 24/02/10 -> Was 4
+        }
+        else {
+            maxhiders = seekers * 5 - 2;
+        }
+    }
+
+    if (counts[TEAM_BLUE] >= seekers) {
+        return "r";
+    }
+    else if (counts[TEAM_RED] >= maxhiders) {
+        return "b";
+    }
+    else {
+        return "r";
+    }
+}
+
+
+gentity_t* findLastEnteredPlayer(int highTeam, qboolean scoresAllowed)
+{
+    gentity_t* ent;
+    gentity_t* lastConnected = NULL;
+    clientSession_t* sess;
+    int lastConnectedTime, i;
+
+    lastConnectedTime = 0;
+    for (i = 0; i < level.numConnectedClients; i++) {
+        ent = &g_entities[level.sortedClients[i]];
+        sess = &ent->client->sess;
+
+        if (ent->client->pers.connected != CON_CONNECTED)
+            continue;
+        if (sess->team != TEAM_RED && sess->team != TEAM_BLUE)
+            continue;
+        if (sess->team != highTeam)
+            continue;
+        if (!scoresAllowed && sess->score)
+            continue;
+        if (isCurrentGametype(GT_HNS) && sess->blockseek)
+            continue;
+
+        if (ent->client->pers.enterTime > lastConnectedTime) {
+            lastConnectedTime = ent->client->pers.enterTime;
+            lastConnected = ent;
+        }
+    }
+
+    return lastConnected;
 }

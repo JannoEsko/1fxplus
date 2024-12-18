@@ -998,6 +998,11 @@ int G_Damage (
         damage = 1;
     }
 
+    // Start H&S specifics.
+    if (isCurrentGametype(GT_HNS) && attacker && attacker->client && client) {
+
+    }
+
     take = damage;
     save = 0;
 

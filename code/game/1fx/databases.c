@@ -1479,7 +1479,7 @@ int dbRemoveClanByGentity(gentity_t* ent) {
 
     if (rc != SQLITE_OK) {
         logSystem(LOGLEVEL_WARN, "removeClanByGentity prepare failed on gameDb. Error: %s", sqlite3_errmsg(db));
-        return;
+        return 0;
     }
 
     sqlBindTextOrNull(stmt, 1, ent->client->sess.clanName);

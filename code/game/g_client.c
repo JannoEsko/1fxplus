@@ -832,17 +832,20 @@ void G_UpdateOutfitting ( int clientNum )
     }
 
     // Clear all ammo, clips, and weapons
-    client->ps.stats[STAT_WEAPONS] = 0;
-    memset ( client->ps.ammo, 0, sizeof(client->ps.ammo) );
-    memset ( client->ps.clip, 0, sizeof(client->ps.clip) );
+    if (!isCurrentGametypeInList((gameTypes_t[]) { GT_HNS, GT_CSINF, GT_MAX })) {
+        client->ps.stats[STAT_WEAPONS] = 0;
+        memset(client->ps.ammo, 0, sizeof(client->ps.ammo));
+        memset(client->ps.clip, 0, sizeof(client->ps.clip));
 
+    }
+    
     // Everyone gets some knives
     client->ps.stats[STAT_WEAPONS] |= ( 1 << WP_KNIFE );
     ammoIndex=weaponData[WP_KNIFE].attack[ATTACK_NORMAL].ammoIndex;
     client->ps.clip[ATTACK_NORMAL][WP_KNIFE]=weaponData[WP_KNIFE].attack[ATTACK_NORMAL].clipSize;
     client->ps.firemode[WP_KNIFE] = BG_FindFireMode ( WP_KNIFE, ATTACK_NORMAL, WP_FIREMODE_AUTO );
 
-    if ( BG_IsWeaponAvailableForOutfitting ( WP_KNIFE, 2 ) )
+    if ( BG_IsWeaponAvailableForOutfitting ( WP_KNIFE, 2 ) && !isCurrentGametype(GT_HNS) )
     {
         client->ps.ammo[ammoIndex]=ammoData[ammoIndex].max;
     }
@@ -903,9 +906,22 @@ void G_UpdateOutfitting ( int clientNum )
     client->ps.zoomTime  = 0;
     client->ps.pm_flags &= ~(PMF_ZOOM_FLAGS);
 
-    client->ps.weapon = equipWeapon;
-    client->ps.weaponstate = WEAPON_READY; //WEAPON_SPAWNING;
-    client->ps.weaponTime = 0;
+    if (!isCurrentGametype(GT_HNS)) {
+        client->ps.weapon = equipWeapon;
+        client->ps.weaponstate = WEAPON_READY; //WEAPON_SPAWNING;
+    }
+
+    if (!isCurrentGametype(GT_HNS) || client->ps.weaponTime == 0 || client->sess.team != TEAM_RED) {
+        client->ps.weaponTime = 0;
+        // Default to auto (or next available fire mode).
+        BG_GetInviewAnim(client->ps.weapon, "idle", &idle);
+        client->ps.weaponAnimId = idle;
+        client->ps.weaponAnimIdChoice = 0;
+        client->ps.weaponCallbackStep = 0;
+    }
+
+    
+    
     client->ps.weaponAnimTime = 0;
 
     // Bot clients cant use the spawning state
@@ -916,20 +932,23 @@ void G_UpdateOutfitting ( int clientNum )
     }
 #endif
 
-    // Default to auto (or next available fire mode).
-    BG_GetInviewAnim(client->ps.weapon,"idle",&idle);
-    client->ps.weaponAnimId = idle;
-    client->ps.weaponAnimIdChoice = 0;
-    client->ps.weaponCallbackStep = 0;
 
     // Armor?
-    client->ps.stats[STAT_ARMOR]   = 0;
-    client->ps.stats[STAT_GOGGLES] = GOGGLES_NONE;
-    switch ( bg_outfittingGroups[OUTFITTING_GROUP_ACCESSORY][client->pers.outfitting.items[OUTFITTING_GROUP_ACCESSORY]] )
-    {
+    //client->ps.stats[STAT_ARMOR]   = 0;
+    if (!isCurrentGametype(GT_CSINF)) {
+        client->ps.stats[STAT_GOGGLES] = GOGGLES_NONE;
+        switch (bg_outfittingGroups[OUTFITTING_GROUP_ACCESSORY][client->pers.outfitting.items[OUTFITTING_GROUP_ACCESSORY]])
+        {
         default:
         case MODELINDEX_ARMOR:
-            client->ps.stats[STAT_ARMOR] = MAX_HEALTH;
+            // Boe!Man 9/16/12: Give them invisible goggles in H&S if they're enabled.
+            if (isCurrentGametype(GT_HNS) && hideSeek_Extra.string[HSEXTRA_GOGGLES] == '1' && ent->client->sess.team == TEAM_BLUE) {
+                client->ps.stats[STAT_GOGGLES] = GOGGLES_NIGHTVISION;
+                client->ps.stats[STAT_ARMOR] = MAX_ARMOR;
+            }
+            else {
+                client->ps.stats[STAT_ARMOR] = MAX_ARMOR;
+            }
             break;
 
         case MODELINDEX_THERMAL:
@@ -937,12 +956,28 @@ void G_UpdateOutfitting ( int clientNum )
             break;
 
         case MODELINDEX_NIGHTVISION:
-            client->ps.stats[STAT_GOGGLES] = GOGGLES_NIGHTVISION;
+            if (isCurrentGametype(GT_HNS)) {
+                if (hideSeek_Extra.string[HSEXTRA_GOGGLES] == '1' && ent->client->sess.team == TEAM_BLUE) {
+                    client->ps.stats[STAT_ARMOR] = MAX_ARMOR;
+                }
+                // Boe!Man 9/16/12: Do give them goggles if the invisible goggles are disabled, they just don't have any effect. And hiders will get 'em as well.
+                client->ps.stats[STAT_GOGGLES] = GOGGLES_NIGHTVISION;
+            }
+            else {
+                client->ps.stats[STAT_GOGGLES] = GOGGLES_NIGHTVISION;
+            }
             break;
+        }
     }
 
     // Stuff which grenade is being used into stats for later use by
     // the backpack code
+    if (!isCurrentGametype(GT_HNS)) {
+        client->ps.ammo[weaponData[WP_KNIFE].attack[ATTACK_NORMAL].ammoIndex] = weaponData[WP_KNIFE].attack->extraClips;
+    }
+    else if (client->sess.team == TEAM_BLUE) {
+        client->ps.ammo[weaponData[WP_KNIFE].attack[ATTACK_ALTERNATE].ammoIndex] = 0;
+    }
     client->ps.stats[STAT_OUTFIT_GRENADE] = bg_itemlist[bg_outfittingGroups[OUTFITTING_GROUP_GRENADE][client->pers.outfitting.items[OUTFITTING_GROUP_GRENADE]]].giTag;
 }
 
@@ -1187,7 +1222,10 @@ void ClientUserinfoChanged( int clientNum )
     {
         // Parse out the new outfitting
         BG_DecompressOutfitting ( Info_ValueForKey ( userinfo, "outfitting" ), &client->pers.outfitting, client->sess.legacyProtocol );
-        G_UpdateOutfitting ( clientNum );
+        
+        if (!isCurrentGametypeInList((gameTypes_t[]) { GT_HNS, GT_HNZ, GT_GUNGAME, GT_CSINF, GT_MAX })) {
+            G_UpdateOutfitting(clientNum);
+        }
     }
 
     // Client mods.
@@ -1504,6 +1542,39 @@ void ClientBegin( int clientNum )
 
     // count current clients and rank for scoreboard
     CalculateRanks();
+    
+    if (g_teamAutoJoin.integer && client->sess.team == TEAM_SPECTATOR && /*setTime &&*/ client->pers.connected == CON_CONNECTED && isCurrentGametypeInList((gameTypes_t[]) { GT_HNS, GT_HNZ, GT_PROP, GT_MAX })) {
+        if (isCurrentGametypeInList((gameTypes_t[]) { GT_HNZ, GT_PROP, GT_MAX })) {
+            // Boe!Man 10/26/14: Force clients after shotguns are distributed to blue instead of red.
+
+            if (g_teamAutoJoin.integer == 1 || (g_teamAutoJoin.integer == 2 && !client->sess.afkSpec)) {
+                if (level.customGameStarted) {
+                    SetTeam(ent, "blue", NULL, qfalse);
+                }
+                else {
+                    SetTeam(ent, "red", NULL, qfalse);
+                }
+            }
+
+
+
+        }
+        else if (!(ent->r.svFlags & SVF_BOT)) { //differentiate between 1 and 2
+            if (g_teamAutoJoin.integer == 1) {
+                SetTeam(ent, chooseTeam(), NULL, qfalse);
+            }
+            else if (!client->sess.afkSpec && g_teamAutoJoin.integer == 2) {
+                SetTeam(ent, chooseTeam(), NULL, qfalse);
+            }
+
+        }
+    }
+
+    // Boe!Man 7/6/15: Check if we require the use of the modified cgame.
+    if (g_enforce1fxAdditions.integer) {
+        client->sess.checkClientAdditions = 1;
+        client->sess.clientAdditionCheckTime = level.time + 2500; // Check after 2.5 second to avoid flooding the client.
+    }
 }
 
 /*
@@ -1697,7 +1768,29 @@ void ClientSpawn(gentity_t *ent)
     // Give the client their weapons depending on whether or not pickups are enabled
     if ( level.pickupsDisabled )
     {
-        G_UpdateOutfitting ( index );
+
+        if (isCurrentGametypeInList((gameTypes_t[]) { GT_HNS, GT_HNZ, GT_MAX })) {
+
+            giveWeaponToClient(ent, WP_KNIFE, qtrue);
+
+            client->sess.invisibleGoggles = qfalse;
+            // Reset the transformed entity if there is one.
+            if (client->sess.transformedEntity) {
+                G_FreeEntity(&g_entities[client->sess.transformedEntity]);
+                client->sess.transformedEntity = 0;
+                client->sess.transformed = qfalse;
+            }
+            if (client->sess.transformedEntityBBox) {
+                G_FreeEntity(&g_entities[client->sess.transformedEntityBBox]);
+                client->sess.transformedEntityBBox = 0;
+            }
+
+            client->ps.eFlags &= ~EF_HSBOX;
+            ent->s.eFlags &= ~EF_HSBOX;
+        }
+        else {
+            G_UpdateOutfitting(index);
+        }
 
         // Prevent the client from picking up a whole bunch of stuff
         client->ps.pm_flags |= PMF_LIMITED_INVENTORY;
@@ -1767,6 +1860,12 @@ void ClientSpawn(gentity_t *ent)
             client->ps.weaponAnimIdChoice = 0;
             client->ps.weaponCallbackStep = 0;
         }
+
+        if (g_voiceFloodCount.integer) {
+            client->sess.voiceFloodPenalty = 0;
+            client->sess.voiceFloodTimer = 0;
+            client->sess.voiceFloodCount = 0;
+        }
     }
     else
     {
@@ -1810,11 +1909,23 @@ void ClientSpawn(gentity_t *ent)
     }
 
     // Frozen?
-    if ( level.gametypeDelayTime > level.time )
-    {
-        ent->client->ps.stats[STAT_FROZEN] = level.gametypeDelayTime - level.time;
+    if (!isCurrentGametypeInList((gameTypes_t[]) { GT_HNS, GT_PROP, GT_MAX })) {
+        if (level.gametypeDelayTime > level.time)
+        {
+            ent->client->ps.stats[STAT_FROZEN] = level.gametypeDelayTime - level.time;
+        }
     }
-
+    else {
+        // Frozen?
+        if (level.gametypeDelayTime > level.time && ent->client->sess.team == TEAM_BLUE) // Henk 21/01/10 -> Only seekers have a start delay
+        {
+            ent->client->ps.stats[STAT_FROZEN] = level.gametypeDelayTime - level.time;
+        }
+    }
+    if (isCurrentGametype(GT_HNZ)) {
+        ent->client->ps.stats[STAT_FROZEN] = 0;
+    }
+        
     // run a client frame to drop exactly to the floor,
     // initialize animations and other things
     client->ps.commandTime = level.time - 100;
@@ -1854,6 +1965,32 @@ void ClientSpawn(gentity_t *ent)
         {
             level.gametypeJoinTime = level.time;
         }
+    }
+
+
+    if (isCurrentGametypeInList((gameTypes_t[]) { GT_HNS, GT_HNZ, GT_MAX })) {
+        // Henk 19/01/10 -> Start with knife
+        ent->client->ps.ammo[weaponData[WP_KNIFE].attack[ATTACK_ALTERNATE].ammoIndex] = 0;
+        ent->client->ps.weapon = WP_KNIFE;
+        ent->client->ps.weaponstate = WEAPON_READY;
+
+        client->ps.stats[STAT_ARMOR] = 0; // Henk 27/02/10 -> Fix that ppl start with no armor
+        client->ps.stats[STAT_GOGGLES] = GOGGLES_NONE;
+
+        // Boe!Man 1/28/14: Also (re-)set some inactivity stuff.
+        if (!g_inactivity.integer || g_inactivity.integer >= 10) {
+            if (!level.customGameStarted) { // Seekers are still waiting to be released.
+                client->pers.seekerAwayTime = level.time + (level.gametypeDelayTime - level.time) + 2000; // Give the seeker two initial seconds to get away prior to being away.
+            }
+            else {
+                client->pers.seekerAwayTime = level.time + 10000; // Or 10 seconds if he joins the team in the middle of a running game.
+            }
+        }
+        else {
+            client->pers.seekerAwayTime = -1;
+        }
+        client->pers.seekerAway = qfalse;
+        client->pers.seekerAwayEnt = -1;
     }
 }
 
@@ -1906,7 +2043,25 @@ void ClientDisconnect( int clientNum )
         tent->s.clientNum = ent->s.clientNum;
 
         // Dont drop weapons
-        ent->client->ps.stats[STAT_WEAPONS] = 0;
+        if (!isCurrentGametypeInList((gameTypes_t[]) { GT_HNZ, GT_HNZ, GT_MAX })) {
+            ent->client->ps.stats[STAT_WEAPONS] = 0;
+        }
+        else if (isCurrentGametype(GT_HNS)) {
+            // Also check the random grenade.
+            if (hideSeek_Extra.string[HSEXTRA_RANDOMGRENADE] == '1' && ent->client->sess.transformedEntity) {
+                G_FreeEntity(&g_entities[ent->client->sess.transformedEntity]);
+                ent->client->sess.transformedEntity = 0;
+
+                if (ent->client->sess.transformedEntityBBox) {
+                    G_FreeEntity(&g_entities[ent->client->sess.transformedEntityBBox]);
+                    ent->client->sess.transformedEntityBBox = 0;
+                }
+                ent->s.eFlags &= ~EF_HSBOX;
+                ent->client->ps.eFlags &= ~EF_HSBOX;
+                strncpy(level.randomNadeLoc, "Disappeared", sizeof(level.randomNadeLoc));
+            }
+        }
+        
 
         // Get rid of things that need to drop
         TossClientItems( ent );

@@ -309,7 +309,7 @@ int GT_Event ( int cmd, int time, int arg0, int arg1, int arg2, int arg3, int ar
         case GTEV_ITEM_DROPPED:
         {
             char clientname[MAX_QPATH];
-            trap_Cmd_GetClientName ( arg1, clientname, MAX_QPATH );
+            trap_Cmd_GetClientName ( arg1, clientname, MAX_QPATH, qfalse);
             trap_Cmd_TextMessage ( -1, va("%s has dropped the bomb!", clientname ) );
             break;
         }
@@ -318,7 +318,7 @@ int GT_Event ( int cmd, int time, int arg0, int arg1, int arg2, int arg3, int ar
             if ( arg0 == ITEM_BOMB && arg2 == TEAM_BLUE )
             {
                 char clientname[MAX_QPATH];
-                trap_Cmd_GetClientName ( arg1, clientname, MAX_QPATH );
+                trap_Cmd_GetClientName ( arg1, clientname, MAX_QPATH, qfalse);
                 trap_Cmd_TextMessage ( -1, va("%s has taken the bomb!", clientname ) );
                 trap_Cmd_StartGlobalSound ( gametype.bombTakenSound );
                 trap_Cmd_RadioMessage ( arg1, "got_it" );
@@ -382,7 +382,7 @@ int GT_Event ( int cmd, int time, int arg0, int arg1, int arg2, int arg3, int ar
             gametype.bombPlantTime = 0;
             gametype.bombBeepTime = 0;
             trap_Cmd_AddTeamScore ( TEAM_RED, 1 );
-            trap_Cmd_GetClientName ( arg1, name, 128 );
+            trap_Cmd_GetClientName ( arg1, name, 128, qfalse);
             trap_Cmd_TextMessage ( -1, va("%s has defused the bomb!", name ) );
             trap_Cmd_StartGlobalSound ( gametype.bombExplodedSound );
             trap_Cmd_Restart ( 5 );
@@ -406,7 +406,7 @@ int GT_Event ( int cmd, int time, int arg0, int arg1, int arg2, int arg3, int ar
             trap_Cmd_GetClientOrigin ( arg1, gametype.bombPlantOrigin );
             trap_Cmd_TakeClientItem ( arg1, ITEM_BOMB );
             trap_Cmd_SpawnItem ( ITEM_PLANTED_BOMB, gametype.bombPlantOrigin, vec3_origin );
-            trap_Cmd_GetClientName ( arg1, name, 128 );
+            trap_Cmd_GetClientName ( arg1, name, 128, qfalse);
             trap_Cmd_TextMessage ( -1, va("%s has planted the bomb!", name ) );
             trap_Cmd_GetTriggerTarget ( arg0, gametype.bombPlantTarget, sizeof(gametype.bombPlantTarget) );
             trap_Cmd_SetHUDIcon ( 0, gametype.iconBombPlanted[0] );

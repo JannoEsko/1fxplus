@@ -6,6 +6,7 @@
 #include "../qcommon/q_shared.h"
 #include "bg_public.h"
 #include "bg_local.h"
+#include "g_local.h"
 
 pmove_t     *pm;
 pml_t       pml;
@@ -1873,7 +1874,14 @@ static void PM_SetWeaponTime ( TAnimWeapon *aW )
         return;
     }
 
-    pm->ps->weaponTime = 1000.0f / aIW->mFPS[0] * aIW->mNumFrames[0] / aIW->mSpeed;
+    float wpnTime = 1000.0f;
+
+    if (isCurrentGametype(GT_HNS) && pm->ps->weapon == WP_KNIFE && pm->cmd.buttons & BUTTON_ATTACK && pm->ps->stats[STAT_GAMETYPE_ITEMS]) {
+        wpnTime = 500.0f;
+    }
+
+    pm->ps->weaponTime = wpnTime / aIW->mFPS[0] * aIW->mNumFrames[0] / aIW->mSpeed;
+
     pm->ps->weaponAnimTime = pm->ps->weaponTime;
 }
 
@@ -2516,6 +2524,26 @@ int PM_GetAttackButtons(void)
     if ( pm->ps->stats[STAT_FROZEN] )
     {
         buttons &= ~BUTTON_ATTACK;
+    }
+
+    if (isCurrentGametype(GT_HNS)) {
+        // As soon as the button is released you are ok to press attack again
+        if (pm->ps->pm_debounce & PMD_ATTACK)
+        {
+            if (!(buttons & BUTTON_ATTACK))
+            {
+                pm->ps->pm_debounce &= ~(PMD_ATTACK);
+            }
+            else if (pm->ps->firemode[pm->ps->weapon] != WP_FIREMODE_AUTO)
+            {
+                buttons &= ~BUTTON_ATTACK;
+            }
+        }
+
+        if (pm->ps->stats[STAT_FROZEN])
+        {
+            buttons &= ~BUTTON_ATTACK;
+        }
     }
 
     // Handle firebutton in varous firemodes.

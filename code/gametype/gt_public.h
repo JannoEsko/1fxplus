@@ -57,6 +57,7 @@ typedef enum
     GT_SETHUDICON,                  // void ( int index, int icon );
     GT_REPORT_TEAMNAMES,
     GT_BROADCAST,
+    GT_CONSOLETEXTMESSAGE
 
 } gametypeImport_t;
 

@@ -58,33 +58,31 @@ void DeathmatchScoreboardMessage( gentity_t *ent )
         }
 #endif // _3DServer
 
-        /*if (ent->client->sess.hasRoxAC && current_gametype.value == GT_HS) {
-            Com_sprintf(entry, sizeof(entry),
-                " %i %i %i %i %i %i %i %i %i %i %i",
-                level.sortedClients[i],
-                cl->sess.score,
-                cl->sess.kills,
-                cl->sess.deaths,
-                ping,
-                (level.time - cl->pers.enterTime) / 60000,
-                (ghost || cl->ps.pm_type == PM_DEAD) ? qtrue : qfalse,
-                g_entities[level.sortedClients[i]].s.gametypeitems,
-                //	g_teamkillDamageMax.integer ? 100 * cl->sess.teamkillDamage / g_teamkillDamageMax.integer : 0,
-                //	cl->pers.statinfo.accuracy,
-                //	cl->pers.statinfo.headShotKills,
-                cl->sess.weaponsStolen,
-                cl->sess.stunAttacks,
-                cl->sess.seekersCaged
-            );
-        }
+        
         
         //Ryan may 12 2004
         //Add some info for client-side users
         //RxCxW - 1.20.2005 - NOT compatible with 0.5. #Version
-        else */
         if (ent->client->sess.legacyProtocol) {
-
-            if (level.legacyMod == CL_RPM && ent->client->sess.clientMod == CL_RPM && atof(ent->client->sess.clientVersion) > 0.5) {
+            if (ent->client->sess.hasRoxAC && isCurrentGametype(GT_HNS)) {
+                Com_sprintf(entry, sizeof(entry),
+                    " %i %i %i %i %i %i %i %i %i %i %i",
+                    level.sortedClients[i],
+                    cl->sess.score,
+                    cl->sess.kills,
+                    cl->sess.deaths,
+                    ping,
+                    (level.time - cl->pers.enterTime) / 60000,
+                    (ghost || cl->ps.pm_type == PM_DEAD) ? qtrue : qfalse,
+                    g_entities[level.sortedClients[i]].s.gametypeitems,
+                    //	g_teamkillDamageMax.integer ? 100 * cl->sess.teamkillDamage / g_teamkillDamageMax.integer : 0,
+                    //	cl->pers.statinfo.accuracy,
+                    //	cl->pers.statinfo.headShotKills,
+                    cl->pers.weaponsStolen,
+                    cl->pers.stunAttacks,
+                    cl->pers.seekersCaged
+                );
+            } else if (level.legacyMod == CL_RPM && ent->client->sess.clientMod == CL_RPM && atof(ent->client->sess.clientVersion) > 0.5) {
                 if (atof(ent->client->sess.clientVersion) == 1.1) {
                     Com_sprintf(entry, sizeof(entry),
                         " %i %i %i %i %i %i %i %i %i",
@@ -396,10 +394,33 @@ void Cmd_Drop_f ( gentity_t* ent )
         weapon = trap_TranslateSilverWeaponToGoldWeapon(weapon);
     }
 
-    dropped = G_DropWeapon ( ent, weapon, 3000 ); // FIXMEJAN - this needs to account for the weapon differences - client will send drop cmd with the gun they think they got.
-    if ( !dropped )
-    {
+    if (isCurrentGametype(GT_HNS)) {
+        if (level.time > level.gametypeRoundTime) // Henk  07/03/11 -> Don't let ppl drop stuff when the round has ended.
+        {
+            return;
+        }
+        if (!ent->client->ps.stats[STAT_WEAPONS] & (1 << weapon))
+        {
+            // The client doesn't have any item to drop.
+            ent->client->ps.stats[STAT_WEAPONS] |= (1 << WP_KNIFE);
+            ent->client->ps.ammo[weaponData[WP_KNIFE].attack[ATTACK_NORMAL].ammoIndex] = 0;
+            ent->client->ps.clip[ATTACK_NORMAL][WP_KNIFE] = weaponData[WP_KNIFE].attack[ATTACK_NORMAL].clipSize;
+            ent->client->ps.firemode[WP_KNIFE] = BG_FindFireMode(WP_KNIFE, ATTACK_NORMAL, WP_FIREMODE_AUTO);
+            ent->client->ps.weapon = WP_KNIFE;
+            ent->client->ps.weaponstate = WEAPON_READY;
+            return;
+        }
+    }
+    if (level.time < ent->client->pers.lastpickup && isCurrentGametype(GT_HNS)) {
         return;
+    }
+    else {
+
+        dropped = G_DropWeapon(ent, weapon, 3000); // FIXMEJAN - this needs to account for the weapon differences - client will send drop cmd with the gun they think they got.
+        if (!dropped)
+        {
+            return;
+        }
     }
 }
 
@@ -453,6 +474,12 @@ void Cmd_Give_f (gentity_t *ent)
     int start;
     int end;
     int l;
+
+    // Early exit if we're running multiprotocol.
+    if (level.multiprotocol) {
+        G_printInfoMessage(ent, "You cannot use 'give' command while the game runs in multiprotocol mode.");
+        return;
+    }
 
     trap_Argv( 1, arg, sizeof( arg ) );
 
@@ -703,22 +730,22 @@ void BroadcastTeamChange( gclient_t *client, int oldTeam )
     switch ( client->sess.team )
     {
         case TEAM_RED:
-            trap_SendServerCommand( -1, va("cp \"%s" S_COLOR_WHITE " joined the red team.\n\"", client->pers.netname) );
+            G_Broadcast(BROADCAST_CMD, NULL, qfalse, "%s\njoined the %s", client->pers.netname, g_customRedName.string);
             break;
 
         case TEAM_BLUE:
-            trap_SendServerCommand( -1, va("cp \"%s" S_COLOR_WHITE " joined the blue team.\n\"", client->pers.netname));
+            G_Broadcast(BROADCAST_CMD, NULL, qfalse, "%s\njoined the %s", client->pers.netname, g_customBlueName.string);
             break;
 
         case TEAM_SPECTATOR:
             if ( oldTeam != TEAM_SPECTATOR )
             {
-                trap_SendServerCommand( -1, va("cp \"%s" S_COLOR_WHITE " joined the spectators.\n\"", client->pers.netname));
+                G_Broadcast(BROADCAST_CMD, NULL, qfalse, "%s\njoined the \\spectators", client->pers.netname);
             }
             break;
 
         case TEAM_FREE:
-            trap_SendServerCommand( -1, va("cp \"%s" S_COLOR_WHITE " joined the battle.\n\"", client->pers.netname));
+            G_Broadcast(BROADCAST_CMD, NULL, qfalse, "%s\njoined the \\battle", client->pers.netname);
             break;
     }
 }
@@ -799,6 +826,9 @@ void SetTeam( gentity_t *ent, char *s, const char* identity, qboolean forced )
         {
             // pick the team with the least number of players
             team = PickTeam( clientNum );
+            if (isCurrentGametype(GT_HNS)) {
+                team = TEAM_RED;
+            }
         }
 
         if ( g_teamForceBalance.integer && !forced )
@@ -808,22 +838,112 @@ void SetTeam( gentity_t *ent, char *s, const char* identity, qboolean forced )
             counts[TEAM_BLUE] = TeamCount( ent->client->ps.clientNum, TEAM_BLUE, NULL );
             counts[TEAM_RED] = TeamCount( ent->client->ps.clientNum, TEAM_RED, NULL );
 
-            // We allow a spread of two
-            if ( team == TEAM_RED && counts[TEAM_RED] - counts[TEAM_BLUE] > 1 )
-            {
-                trap_SendServerCommand( ent->client->ps.clientNum,
-                                        "cp \"Red team has too many players.\n\"" );
+            if (isCurrentGametype(GT_HNS)) {
 
-                // ignore the request
-                return;
+                int seekers = 0, maxhiders = 0;
+
+                // Henk 19/01/10 -> Team balance hiders/seekers
+                // Boe!Man 8/12/11: Modified the code (lowered) so there's ALWAYS room for one extra seeker (else it will result in both teams being locked in specific team layouts).
+                if (level.customETHiderAmount[0]) {
+                    int i;
+
+                    // The user put custom values here. Check them.
+                    for (i = 0; i < sizeof(level.customETHiderAmount) - 1; i++) {
+                        if (level.customETHiderAmount[i + 1] == -1) {
+                            // It seems the maximum of hiders specified is reached. Use that amount of seekers.
+                            seekers = i + 1;
+                            maxhiders = g_maxclients.integer - seekers;
+                            break;
+                        }
+
+                        if (counts[TEAM_RED] >= level.customETHiderAmount[i] && counts[TEAM_RED] <= level.customETHiderAmount[i + 1]) {
+                            seekers = i + 1;
+                            maxhiders = level.customETHiderAmount[i + 1] + 1;
+                            break;
+                        }
+                    }
+                }
+                else {
+                    if (counts[TEAM_RED] < 4) {
+                        seekers = 1;
+                    }
+                    else {
+                        seekers = (counts[TEAM_RED] + 2) / 5 + 1;
+                    }
+
+                    if (counts[TEAM_BLUE] < 2) {
+                        maxhiders = 6; // Henkie 24/02/10 -> Was 4
+                    }
+                    else {
+                        maxhiders = seekers * 5 - 2;
+                    }
+                }
+
+                //Janno 160221 - if client is blocked from entering seekers, don't allow him to enter seekers...
+                if (team == TEAM_BLUE && client->sess.blockseek == qtrue) {
+                    trap_SendServerCommand(client - &level.clients[0], "print\"^3[H&S] ^7You're blocked from entering seekers.\n\"");
+                    return;
+                }
+
+                if (team == TEAM_BLUE && counts[TEAM_BLUE] >= seekers) {
+                    trap_SendServerCommand(client - &level.clients[0], "print\"^3[H&S] ^7Seekers have too many players.\n\"");
+
+                    // ignore the request
+                    return;
+                }
+                else if (team == TEAM_RED && counts[TEAM_RED] >= maxhiders && client->sess.blockseek != qtrue && counts[TEAM_BLUE] < seekers && level.gametypeDelayTime < level.time) { //if I am able to join blue, then I should join blue instead. if they're blocked from seeking, then allow them to go to the team.
+                    trap_SendServerCommand(client - &level.clients[0], "print\"^3[H&S] ^7Hiders have too many players.\n\"");
+
+                    // ignore the request
+                    return;
+                }
             }
-            if ( team == TEAM_BLUE && counts[TEAM_BLUE] - counts[TEAM_RED] > 1 )
-            {
-                trap_SendServerCommand( ent->client->ps.clientNum,
-                                        "cp \"Blue team has too many players.\n\"" );
+            else if (isCurrentGametype(GT_HNZ)) {
+                if (client->sess.team != TEAM_BLUE) {
+                    trap_SendServerCommand(client - &level.clients[0], "print\"^3[H&Z] ^7Round already started, forcing you to the zombie team.\n\"");
+                }
+                else {
+                    trap_SendServerCommand(client - &level.clients[0], "print\"^3[H&Z] ^7Humans are locked, stay put in the zombie team.\n\"");
+                }
 
-                // ignore the request
-                return;
+                team = TEAM_BLUE;
+            }
+            else if (isCurrentGametype(GT_PROP)) {
+                if (client->sess.team == TEAM_BLUE && team == TEAM_RED) {
+                    G_printInfoMessage(ent, "You cannot change to red team as you're the designated seeker.");
+                    return;
+                }
+                else if (team == TEAM_RED && client->sess.team != TEAM_RED) {
+                    G_printInfoMessage(ent, "Round has started, forcing you to the seekers team instead.");
+                    team = TEAM_BLUE;
+                }
+                else if (team == TEAM_RED && client->sess.team == TEAM_RED) {
+                    G_printInfoMessage(ent, "You're already in the props team.");
+                    return;
+                }
+                else {
+                    //freeProphuntProps(ent);
+                }
+            }
+            else {
+
+                // We allow a spread of two
+                if (team == TEAM_RED && counts[TEAM_RED] - counts[TEAM_BLUE] > 1)
+                {
+                    trap_SendServerCommand(ent->client->ps.clientNum,
+                        "cp \"Red team has too many players.\n\"");
+
+                    // ignore the request
+                    return;
+                }
+                if (team == TEAM_BLUE && counts[TEAM_BLUE] - counts[TEAM_RED] > 1)
+                {
+                    trap_SendServerCommand(ent->client->ps.clientNum,
+                        "cp \"Blue team has too many players.\n\"");
+
+                    // ignore the request
+                    return;
+                }
             }
 
             // It's ok, the team we are switching to has less or same number of players
@@ -837,12 +957,12 @@ void SetTeam( gentity_t *ent, char *s, const char* identity, qboolean forced )
 
     if (!forced) {
         if (team == TEAM_BLUE && level.blueLocked) {
-            G_printInfoMessage(ent, "Blue team is locked.");
+            G_printInfoMessage(ent, "%s is locked.", g_customBlueName.string);
             return;
         }
 
         if (team == TEAM_RED && level.redLocked) {
-            G_printInfoMessage(ent, "Red team is locked.");
+            G_printInfoMessage(ent, "%s is locked.", g_customRedName.string);
             return;
         }
     }
@@ -884,6 +1004,11 @@ void SetTeam( gentity_t *ent, char *s, const char* identity, qboolean forced )
         }
         else if ( !G_IsClientDead ( client ) )
         {
+
+            // Boe!Man 7/5/13: Also toss the client items in H&S/H&Z (M4/RPG/MM1)..
+            if (isCurrentGametypeInList((gameTypes_t[]){GT_HNS, GT_HNZ, GT_MAX})) {
+                TossClientItems(ent);
+            }
             // Kill him (makes sure he loses flags, etc)
             ent->flags &= ~FL_GODMODE;
             ent->client->ps.stats[STAT_HEALTH] = ent->health = 0;
@@ -939,6 +1064,45 @@ void SetTeam( gentity_t *ent, char *s, const char* identity, qboolean forced )
             ghost = qtrue;
         }
 
+        // Boe!Man 6/5/13: Check if the client wants to abuse the spec to team bug. Note this doesn't apply to H&S/H&Z.
+        if (!isCurrentGametypeInList((gameTypes_t[]) { GT_HNS, GT_HNZ, GT_MAX }) && client->pers.deathTime > level.gametypeJoinTime)
+        {
+            ghost = qtrue;
+        }
+
+        if (isCurrentGametype(GT_HNZ)) {
+            if (level.gametypeJoinTime && (level.time - level.gametypeJoinTime) > 10000) {
+                ghost = qtrue;
+            }
+        }
+
+        // Boe!Man 9/4/11: Don't allow people to spawn that are reconnecting and are being put in the team.
+        if (isCurrentGametype(GT_HNS) && level.cagefight && !client->pers.cageFighter) {
+            ghost = qtrue;
+        }
+
+        // don't respawn if they join after gametype start (abusing !et)
+
+        if (isCurrentGametype(GT_HNS) && level.gametypeDelayTime < level.time) {
+            ghost = qtrue;
+        }
+
+        if (!isCurrentGametypeInList((gameTypes_t[]) { GT_HNS, GT_HNZ, GT_MAX })) {
+            int i;
+            int teamCount[2];
+            int aliveCount[2];
+
+            teamCount[0] = TeamCount(-1, TEAM_RED, &aliveCount[0]);
+            teamCount[1] = TeamCount(-1, TEAM_BLUE, &aliveCount[1]);
+
+            for (i = 0; i < 2; i++) {
+                if (teamCount[i] != aliveCount[i]) {
+                    ghost = qtrue;
+                    break;
+                }
+            }
+        }
+
         // Spectator to a team doesnt count
         if ( oldTeam != TEAM_SPECTATOR )
         {
@@ -958,6 +1122,24 @@ void SetTeam( gentity_t *ent, char *s, const char* identity, qboolean forced )
             client->pers.identity = NULL;
             ClientUserinfoChanged( clientNum );
 
+            // Henk 02/02/10 -> Set score to 0 when switching team.
+            // Boe!Man 2/8/11: Forcing this to be H&S only.
+            if (isCurrentGametype(GT_HNS)) {
+                if (client->sess.lastTeam != team) {
+                    ent->client->sess.score = 0;
+                    ent->client->sess.kills = 0;
+                    ent->client->sess.deaths = 0;
+                    client->sess.lastTeam = team;
+                }
+
+            }
+
+
+            // Boe!Man 6/3/12: Reset noroof data when setting team.
+            ent->client->sess.isOnRoof = qfalse;
+            ent->client->sess.isOnRoofTime = 0;
+
+
             CalculateRanks();
 
             return;
@@ -967,6 +1149,40 @@ void SetTeam( gentity_t *ent, char *s, const char* identity, qboolean forced )
     // get and distribute relevent paramters
     client->pers.identity = NULL;
     ClientUserinfoChanged( clientNum );
+
+    // Henk 02/02/10 -> Set score to 0 when switching team.
+    if (isCurrentGametype(GT_HNS)) {
+        if (team != TEAM_SPECTATOR && client->sess.lastTeam != team) {
+            ent->client->sess.score = 0;
+            ent->client->sess.kills = 0;
+            ent->client->sess.deaths = 0;
+            client->sess.lastTeam = team;
+        }
+
+        // Also check the random grenade.
+        if (ent->client->sess.transformed) {
+            if (ent->client->sess.transformedEntity) {
+                G_FreeEntity(&g_entities[ent->client->sess.transformedEntity]);
+                ent->client->sess.transformedEntity = 0;
+            }
+
+            if (ent->client->sess.transformedEntityBBox) {
+                G_FreeEntity(&g_entities[ent->client->sess.transformedEntityBBox]);
+                ent->client->sess.transformedEntityBBox = 0;
+            }
+
+            ent->client->sess.transformed = qfalse;
+            ent->client->sess.invisibleGoggles = qfalse;
+            strncpy(level.randomNadeLoc, "Disappeared", sizeof(level.randomNadeLoc));
+            ent->s.eFlags &= ~EF_HSBOX;
+            ent->client->ps.eFlags &= ~EF_HSBOX;
+        }
+    }
+
+    // Boe!Man 6/3/12: Reset noroof data when setting team.
+    ent->client->sess.isOnRoof = qfalse;
+    ent->client->sess.isOnRoofTime = 0;
+
 
     CalculateRanks();
 
@@ -1405,7 +1621,7 @@ static void G_SayTo( gentity_t *ent, gentity_t *other, int mode, const char *nam
     {
         teamPrefix = "^7[^Cs^7] ";
     }
-    else if (isCurrentGametypeInList((gameTypes_t[]) { GT_HNS, GT_HNZ }) && ent->client->sess.team == TEAM_RED) {
+    else if (isCurrentGametypeInList((gameTypes_t[]) { GT_HNS, GT_HNZ, GT_MAX }) && ent->client->sess.team == TEAM_RED) {
         teamPrefix = "^7[^1h^7] ";
     }
     else if (ent->client->sess.team == TEAM_BLUE && isCurrentGametype(GT_HNS)) {

@@ -483,6 +483,7 @@ typedef enum
 
 #define EF_DUCKED               0x00100000      // ducked?
 #define EF_INVULNERABLE         0x00200000      // cant be shot
+#define EF_HSBOX                0x00400000      // hide client when in a model.
 
 // entityState_t->event values
 // entity events are for effects that take place reletive

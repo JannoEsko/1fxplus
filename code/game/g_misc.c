@@ -289,7 +289,7 @@ void SP_misc_bsp(gentity_t* ent)
     }
     else {
         ent->classname = "hideseek_cageextra";
-        level.cagefightextras = qtrue;
+        level.cageFightExtras = qtrue;
     }
 
 

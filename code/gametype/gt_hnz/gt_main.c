@@ -217,7 +217,7 @@ int GT_Event(int cmd, int time, int arg0, int arg1, int arg2, int arg3, int arg4
     case GTEV_ITEM_DROPPED:
     {
         char clientname[MAX_QPATH];
-        trap_Cmd_GetClientName(arg1, clientname, MAX_QPATH);
+        trap_Cmd_GetClientName(arg1, clientname, MAX_QPATH, qfalse);
         trap_Cmd_TextMessage(-1, va("%s has \\dropped the briefcase!", clientname));
         break;
     }
@@ -230,7 +230,7 @@ int GT_Event(int cmd, int time, int arg0, int arg1, int arg2, int arg3, int arg4
             if (arg2 == TEAM_BLUE)
             {
                 char clientname[MAX_QPATH];
-                trap_Cmd_GetClientName(arg1, clientname, MAX_QPATH);
+                trap_Cmd_GetClientName(arg1, clientname, MAX_QPATH, qfalse);
                 trap_Cmd_TextMessage(-1, va("%s has \\taken the briefcase!", clientname));
                 trap_Cmd_StartGlobalSound(gametype.caseTakenSound);
                 trap_Cmd_RadioMessage(arg1, "got_it");

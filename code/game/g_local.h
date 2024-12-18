@@ -85,6 +85,7 @@ typedef enum {
     TEAMACTION_INCOMPATIBLE_GAMETYPE,
     TEAMACTION_EVEN,
     TEAMACTION_NOT_ENOUGH_PLAYERS,
+    TEAMACTION_TEAM_LOCKED,
     TEAMACTION_FAILED
 } teamAction_t;
 
@@ -118,6 +119,47 @@ typedef enum {
     WEAPONMOD_RD,
     WEAPONMOD_CUSTOM
 } weaponMod_t;
+
+typedef enum {
+    HSEXTRA_MDN11,
+    HSEXTRA_F1,
+    HSEXTRA_L2A2,
+    HSEXTRA_GOGGLES,
+    HSEXTRA_BRIEFCASE,
+    HSEXTRA_RANDOMGRENADE,
+} hideseekExtra_t;
+
+typedef enum {
+    HSNADE_FRAG,
+    HSNADE_FLASH,
+    HSNADE_SMOKE,
+    HSNADE_FIRE
+} hideseekNades_t;
+
+typedef enum {
+    HSWPN_RPG,
+    HSWPN_M4,
+    HSWPN_MM1,
+    HSWPN_TELEGUN,
+    HSWPN_TASER
+} hideseekWeapons_t;
+
+typedef enum {
+    SPEEDALTERATION_NONE,
+    SPEEDALTERATION_MM1,
+    SPEEDALTERATION_M4,
+    SPEEDALTERATION_KNIFE,
+    SPEEDALTERATION_FIRENADE,
+    SPEEDALTERATION_WATER,
+    SPEEDALTERATION_STUNGUN
+} speedAlterationReason_t;
+
+typedef struct speedAlteration_s {
+    speedAlterationReason_t     speedAlterationReason;
+    int                         speedAlterationFrom;
+    int                         speedAlterationTo;
+    int                         speedAlterationDuration;
+} speedAlteration_t;
 
 /*
 Mutes from 1fxmod.
@@ -564,6 +606,33 @@ typedef struct
     qboolean            isOnRoof;
     nameChangeBlock_t   nameChangeBlock;
 
+    qboolean            invisibilityNade;
+    int                 invisibleNadeTime;
+    qboolean            invisibleGoggles;
+    int                 invisibilityCooldown;
+    int                 invisibletime;
+    int                 invisibleFxTime; // The effect to play while being invisible.
+
+    speedAlteration_t   speedDecrement;
+    speedAlteration_t   speedIncrement;
+    int                 rpgAnimation;
+    int                 speedAnimation;
+
+    vec3_t              oldvelocity;
+
+    qboolean            transformed;
+
+    int                 transformedEntity;
+    int                 transformedEntityBBox;
+
+    qboolean            checkClientAdditions;
+    int                 clientAdditionCheckTime;
+    qboolean            afkSpec;
+
+    int             voiceFloodTimer;        // Timer used to forgive voice chat flooding
+    int             voiceFloodCount;        // Amount of voice chats that need to be forgivin
+    int             voiceFloodPenalty;      // Time when a client can voice chat again
+    team_t              lastTeam;
 } clientSession_t;
 
 //
@@ -595,6 +664,15 @@ typedef struct
     int                 burnSeconds;
     int                 oneSecondChecks;
     statInfo_t          statInfo;
+    qboolean            seekerAway;
+    int                 seekerAwayTime;
+    int                 seekerAwayEnt;
+    int                 weaponsStolen;
+    int                 stunAttacks;
+    int                 seekersCaged;
+    int                 lastpickup;
+    int                 deathTime;
+    qboolean            cageFighter;
 
 } clientPersistant_t;
 
@@ -877,7 +955,7 @@ typedef struct
 
     int             monkeySpawnCount;
     int             customETHiderAmount[MAX_CUSTOM_ET_AMOUNT];
-    qboolean        cagefightextras;
+    qboolean        cagefight;
 
     int             nextCmInfoDisplay;
     qboolean        proceedToNextCompState;
@@ -892,6 +970,20 @@ typedef struct
     char            mapActionNewGametype[12];
     char            mapActionNewMap[MAX_QPATH];
     int             unpauseNextNotification;
+
+    char            RPGloc[MAX_QPATH];
+    char            M4loc[MAX_QPATH];
+    char            randomNadeLoc[MAX_QPATH];
+    char            MM1loc[MAX_QPATH];
+
+    int             MM1Flare;
+    int             RPGFlare;
+    int             M4Flare;
+
+    qboolean        customGameStarted; // H&S true => seeks released, H&Z true => Shotguns distributed
+    qboolean        customGameWeaponsDistributed;
+
+    int             lastAliveHiders[2];
 } level_locals_t;
 
 //
@@ -1443,6 +1535,35 @@ extern  vmCvar_t    g_autoEvenTeams;
 extern  vmCvar_t    match_followEnemy;
 extern  vmCvar_t    g_useSecureRoxVerification;
 
+extern	vmCvar_t    hideSeek_roundstartdelay;
+extern	vmCvar_t    hideSeek_availableWeapons;
+extern	vmCvar_t    hideSeek_Extra;
+extern	vmCvar_t    hideSeek_Nades;
+extern	vmCvar_t    hideSeek_randomFireNade;
+extern	vmCvar_t    hideSeek_Weapons;
+extern	vmCvar_t    hideSeek_ExtendedRoundStats;
+extern	vmCvar_t    g_rpgBoost;
+extern	vmCvar_t    g_mm1Style;
+extern	vmCvar_t	g_rpgRemove;
+extern	vmCvar_t	g_CnRsmokenade;
+extern	vmCvar_t	g_smokealert;
+extern	vmCvar_t	g_CnRsmokeTime;
+extern	vmCvar_t	g_hsgiveknife;
+extern	vmCvar_t    g_rpgSpeedDrain;
+extern	vmCvar_t    g_rpgSpeedDrainSec;
+extern	vmCvar_t    g_waterSpeedDecrement;
+extern	vmCvar_t    g_stunSpeedDecrement;
+extern	vmCvar_t    g_stunSpeedIncrement;
+extern	vmCvar_t    g_fireSpeedDecrement;
+extern	vmCvar_t    g_rpgSpeedIncrement;
+extern	vmCvar_t    g_waterSpeedTime;
+extern	vmCvar_t    g_stunSpeedTime;
+extern	vmCvar_t    g_fireSpeedTime;
+extern	vmCvar_t    g_hnsWeaponsMinPlayers;
+extern	vmCvar_t    g_boxAttempts;
+extern	vmCvar_t    g_cageAttempts;
+extern	vmCvar_t    g_noHighFps;
+
 //extern vmCvar_t     g_leanType;
 
 void    trap_Print( const char *text );
@@ -1898,6 +2019,8 @@ void QDECL G_printInfoMessage(gentity_t* ent, const char* msg, ...) __attribute_
 void QDECL G_printChatInfoMessage(gentity_t* ent, const char* msg, ...) __attribute__((format(printf, 2, 3)));
 void QDECL G_printInfoMessageToAll(const char* msg, ...) __attribute__((format(printf, 1, 2)));
 void QDECL G_printChatInfoMessageToAll(const char* msg, ...) __attribute__((format(printf, 1, 2)));
+void QDECL G_printGametypeMessage(gentity_t* ent, const char* msg, ...) __attribute__((format(printf, 2, 3)));
+void QDECL G_printGametypeMessageToAll(const char* msg, ...) __attribute__((format(printf, 1, 2)));
 
 void QDECL G_printCustomMessageToAll(const char* prefix, const char* msg, ...) __attribute__((format(printf, 2, 3)));
 void QDECL G_printCustomMessage(gentity_t* ent, const char* prefix, const char* msg, ...) __attribute__((format(printf, 3, 4)));
@@ -1953,6 +2076,12 @@ void printPlayersInfo(gentity_t* ent);
 int altAttack(int weapon);
 int normalAttackMod(int mod);
 void parseACCheckGuidMessage(gentity_t* ent);
+void giveWeaponToClient(gentity_t* ent, weapon_t wpn, qboolean autoswitch);
+void giveWeaponWithCustomAmmoToClient(gentity_t* ent, weapon_t wpn, qboolean autoswitch, int normAmmo, int normClip, int altAmmo, int altClip);
+void removeWeaponFromClient(gentity_t* ent, weapon_t wpn, qboolean drop, weapon_t switchTo);
+void removeAllWeaponsFromClient(gentity_t* ent);
+char* chooseTeam(void);
+gentity_t* findLastEnteredPlayer(int highTeam, qboolean scoresAllowed);
 
 
 typedef struct queueNode_s queueNode;

@@ -7,6 +7,8 @@
 #include "bg_local.h"
 #include "g_local.h"
 
+// JANFIXME - we need to somehow include missing nades into the game if we're playing h&s / h&z.
+
 // names as they appear in the SOF2.wpn and inview files
 char *bg_weaponNames[WP_NUM_WEAPONS] =
 {

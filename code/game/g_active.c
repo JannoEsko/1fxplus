@@ -123,6 +123,13 @@ void P_WorldEffects( gentity_t *ent )
 
     waterlevel = ent->waterlevel;
 
+    if (isCurrentGametype(GT_HNS) && waterlevel >= 1) {
+        ent->client->sess.speedDecrement.speedAlterationFrom = level.time;
+        ent->client->sess.speedDecrement.speedAlterationReason = SPEEDALTERATION_WATER;
+        ent->client->sess.speedDecrement.speedAlterationDuration = g_waterSpeedTime.integer;
+        ent->client->sess.speedDecrement.speedAlterationTo = level.time + g_waterSpeedTime.integer;
+    }
+
     // check for drowning
     if ( waterlevel == 3 && (ent->watertype & CONTENTS_WATER))
     {
@@ -1148,6 +1155,145 @@ void ClientThink_real( gentity_t *ent )
 
     // set speed
     client->ps.speed = g_speed.value;
+
+    if (isCurrentGametype(GT_HNS)) {
+
+        if (client->ps.weapon == WP_MM1_GRENADE_LAUNCHER) {
+            client->ps.gravity /= 1.6;
+        }
+
+        if (client->ps.weapon == WP_RPG7_LAUNCHER &&
+            level.time > client->sess.speedDecrement.speedAlterationTo &&
+            (
+                level.time < level.gametypeDelayTime ||
+                !g_rpgSpeedDrain.integer ||
+                client->ps.stats[STAT_ARMOR] > 0)
+            ) {
+            client->ps.speed += g_rpgSpeedIncrement.integer;
+
+            if (client->ps.stats[STAT_ARMOR] > 0 && level.time >= level.gametypeDelayTime && level.time >= client->sess.rpgAnimation && g_rpgSpeedDrain.integer && (ent->r.currentOrigin[1] != client->sess.oldvelocity[1] || ent->r.currentOrigin[2] != client->sess.oldvelocity[2])) {
+                client->sess.rpgAnimation = level.time + g_rpgSpeedDrainSec.value * 1000;
+                client->ps.stats[STAT_ARMOR]--;
+
+                if (client->ps.stats[STAT_ARMOR] <= 0) {
+                    G_printInfoMessage(ent, "Your RPG speed boost has been drained.");
+                }
+                if (ent->client->ps.clip[ATTACK_NORMAL][WP_RPG7_LAUNCHER] == 0 && ent->client->ps.clip[ATTACK_ALTERNATE][WP_RPG7_LAUNCHER] == 0 && client->ps.stats[STAT_ARMOR] <= 0 && g_rpgRemove.integer) {
+                    removeWeaponFromClient(ent, WP_RPG7_LAUNCHER, qfalse, WP_KNIFE);
+                    G_printInfoMessage(ent, "No more RPG rounds and boost!");
+                    Com_sprintf(level.RPGloc, sizeof(level.RPGloc), "%s", "Disappeared");
+                    G_printGametypeMessageToAll("RPG has disappeared.");
+                }
+            }
+
+            if (level.time >= client->sess.speedAnimation) {
+                if (ent->r.currentOrigin[1] != client->sess.oldvelocity[1] || ent->r.currentOrigin[2] != client->sess.oldvelocity[2]) {
+                    G_PlayEffect(G_EffectIndex("arm2smallsmoke"), client->ps.origin, ent->pos1);
+                    client->sess.speedAnimation = level.time + 10;
+                    VectorCopy(ent->r.currentOrigin, client->sess.oldvelocity);
+                }
+            }
+        }
+        else if (level.time <= client->sess.speedDecrement.speedAlterationTo) {
+            int slowSpeedValue, timeLeft;
+            switch (client->sess.speedDecrement.speedAlterationReason) {
+            case SPEEDALTERATION_FIRENADE:
+            case SPEEDALTERATION_MM1:
+
+                timeLeft = client->sess.speedDecrement.speedAlterationTo - level.time;
+                slowSpeedValue = (int)timeLeft * g_fireSpeedDecrement.integer / client->sess.speedDecrement.speedAlterationDuration;
+                client->ps.speed -= slowSpeedValue;
+                break;
+            case SPEEDALTERATION_KNIFE:
+            case SPEEDALTERATION_M4:
+                client->ps.speed -= g_stunSpeedDecrement.integer;
+                break;
+            case SPEEDALTERATION_WATER:
+                client->ps.speed -= g_waterSpeedDecrement.integer;
+                break;
+            case SPEEDALTERATION_STUNGUN:
+                client->ps.speed = 0; // fully stunned
+                break;
+            default:
+                client->ps.speed -= g_stunSpeedDecrement.integer;
+                break;
+            }
+        }
+
+        if (level.customGameStarted && client->sess.team == TEAM_BLUE) {
+            vec3_t newOrigin;
+
+            // The seeker moved.
+            if (client->pers.cmd.forwardmove || client->pers.cmd.rightmove || client->pers.cmd.upmove || (client->pers.cmd.buttons & (BUTTON_ATTACK | BUTTON_ALT_ATTACK))) {
+                if (client->pers.seekerAway) {
+                    client->pers.seekerAway = qfalse;
+                }
+                client->pers.seekerAwayTime = level.time + 10000;
+            }
+            else if (level.time > client->pers.seekerAwayTime) {
+                if (!client->pers.seekerAway) {
+                    client->pers.seekerAway = qtrue;
+                }
+                client->pers.seekerAwayTime = level.time + 500;
+
+                VectorCopy(client->ps.origin, newOrigin);
+                newOrigin[0] += 5;
+                newOrigin[2] += 75;
+                G_PlayEffect(G_EffectIndex("misc/exclaimation"), newOrigin, ent->pos1);
+            }
+        }
+
+        if (client->pers.cmd.buttons & BUTTON_RELOAD) {
+
+            if (client->sess.transformed) {
+
+                if (client->sess.transformedEntity) {
+                    G_FreeEntity(&g_entities[client->sess.transformedEntity]);
+                    client->sess.transformedEntity = 0;
+                }
+
+                if (client->sess.transformedEntityBBox) {
+                    G_FreeEntity(&g_entities[client->sess.transformedEntityBBox]);
+                    client->sess.transformedEntityBBox = 0;
+                }
+
+                client->sess.invisibleGoggles = qfalse;
+                client->sess.transformed = qfalse;
+                client->ps.pm_type = PM_NORMAL;
+                client->ps.eFlags &= ~EF_HSBOX;
+                ent->s.eFlags &= ~EF_HSBOX;
+
+                client->inactivityTime = level.time + g_inactivity.integer * 1000;
+
+            }
+
+        }
+
+    }
+
+    if (client->sess.acceleratorCooldown) {
+        if (client->sess.acceleratorCooldown > level.time) {
+            client->ps.speed += (g_speed.integer / 5000) * (client->sess.acceleratorCooldown - level.time);
+        }
+        else {
+            client->sess.acceleratorCooldown = 0;
+        }
+    }
+
+    if (g_noHighFps.integer) {
+        if (msec < 4) {
+            client->ps.gravity += (msec <= 2) ? 500 : 111;
+        }
+    }
+
+    if (client->sess.spinView && client->sess.nextSpin <= level.time) {
+        vec3_t spin;
+        VectorCopy(ent->client->ps.viewangles, spin);
+        spin[0] = (float)Q_irand(0, 360);
+        spin[1] = fmod(spin[1] + 20, 360.0);
+        SetClientViewAngle(ent, spin);
+        ent->client->sess.nextSpin = level.time + 50;
+    }
 
     // set up for pmove
     oldEventSequence = client->ps.eventSequence;

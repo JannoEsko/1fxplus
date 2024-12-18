@@ -848,10 +848,24 @@ intptr_t G_GametypeCommand(int command, intptr_t arg0, intptr_t arg1, intptr_t a
             trap_SetConfigstring ( CS_GAMETYPE_MESSAGE, va("%i,%s", level.time + 5000, (const char*)G_ColorizeMessage(arg1) ) );
             break;
 
-        case GT_BROADCAST:
-            G_Broadcast(BROADCAST_GAME, NULL, (qboolean)arg2, (const char*) arg1);
+        case GT_CONSOLETEXTMESSAGE:
+            trap_SendServerCommand(arg0, va("print \"^3[%s]^7 %s\n\"", arg1, arg2));
             break;
 
+        case GT_BROADCAST: {
+
+            gentity_t* ent = NULL;
+            if (arg0 >= 0 && arg0 < MAX_CLIENTS) {
+                ent = &g_entities[arg0];
+
+                if (!ent || !ent->inuse || !ent->client || ent->client->pers.connected != CON_CONNECTED) {
+                    ent = NULL;
+                }
+            }
+
+            G_Broadcast(BROADCAST_GAME, ent, (qboolean)arg2, (const char*) arg1);
+            break;
+        }
         case GT_RADIOMESSAGE:
             G_Voice ( &g_entities[arg0], NULL, SAY_TEAM, (const char*) arg1, qfalse );
             break;
@@ -908,7 +922,7 @@ intptr_t G_GametypeCommand(int command, intptr_t arg0, intptr_t arg1, intptr_t a
         }
 
         case GT_GETCLIENTNAME:
-            Com_sprintf ( (char*) arg1, arg2, "%s", g_entities[arg0].client->pers.netname );
+            Com_sprintf ( (char*) arg1, arg2, "%s", arg3 ? g_entities[arg0].client->pers.cleanName : g_entities[arg0].client->pers.netname );
             break;
 
         case GT_GETTRIGGERTARGET:
