@@ -2344,27 +2344,152 @@ void printStatsInfo(gentity_t* ent) {
 
         gentity_t* tent = &g_entities[idNum];
 
-        /*
-        1fxmod:
-        aliases, admin, country, client, rate, snaps, protocol
-        ping, 
-
-        kills, deaths, damage done, damage taken,
-
-        hand foot arms legs head neck torso waist
-
-        pageup pagedown
-        */
-
-        trap_SendServerCommand(idNum, va("print \"\n^3Player statistics for %s\n^7-----------------------------------------------------------------------------\n\n\"", tent->client->pers.netname));
+        trap_SendServerCommand(ent - g_entities, va("print \"\n^3Player statistics for %s\n^7-----------------------------------------------------------------------------\n\"", tent->client->pers.netname));
         char aliases[MAX_STRING_CHARS];
-        dbGetAliases(ent, aliases, sizeof(aliases), "\n\t\t");
-        trap_SendServerCommand(idNum, va("print \"Aliases: %s\"", aliases));
+        dbGetAliases(tent, aliases, sizeof(aliases), "\n");
 
+        if (strlen(aliases) > 0) {
+
+            qboolean isFirst = qtrue;
+
+            const char* aliasStart = aliases;
+            const char* aliasEnd;
+
+            while ((aliasEnd = strchr(aliasStart, '\n')) != NULL) {
+
+                int aliasLength = aliasEnd - aliasStart;
+
+                if (isFirst) {
+                    isFirst = qfalse;
+                    trap_SendServerCommand(ent - g_entities, va("print \"%-16.16s%20.*s\n\"", "^7[^3Aliases^7]", aliasLength, aliasStart));
+                }
+                else {
+                    trap_SendServerCommand(ent - g_entities, va("print \"%-12.12s%20.*s\n\"", " ", aliasLength, aliasStart));
+                }
+
+                aliasStart = aliasEnd + 1;
+            }
+
+            //trap_SendServerCommand(ent - g_entities, "print \"\n\"");
+        }
+
+        char* adminLevel = getAdminNameByAdminLevel(tent->client->sess.adminLevel);
+
+        trap_SendServerCommand(ent - g_entities, va("print \"%-28.28s%-25.25s\n\"", "^7[^3Admin^7]", adminLevel && *adminLevel ? adminLevel : "No"));
+        trap_SendServerCommand(ent - g_entities, va("print \"%-28.28s%-25.25s\n\"", "^7[^3Clan^7]", tent->client->sess.clanMember ? "Yes" : "No"));
+        trap_SendServerCommand(ent - g_entities, va("print \"%-28.28s%-25.25s\n\"", "^7[^3Country^7]", tent->client->sess.country));
+        trap_SendServerCommand(ent - g_entities, va("print \"%-28.28s%-25.25s\n\"", "^7[^3Protocol^7]", tent->client->sess.legacyProtocol ? "2002 / SoF2 1.00 Silver" : "2004 / SoF2 1.03 Gold"));
+        trap_SendServerCommand(ent - g_entities, va("print \"%-28.28s%-25.25s\n\"", "^7[^3Clientmod^7]", tent->client->sess.hasRoxAC ? "Rox Anticheat" : (tent->client->sess.clientMod == CL_ROCMOD ? "ROCmod" : (tent->client->sess.clientMod == CL_RPM ? "RPM" : "None"))));
+
+        char userinfo[MAX_INFO_STRING];
+        trap_GetUserinfo(idNum, userinfo, sizeof(userinfo));
+        char* rate = Info_ValueForKey(userinfo, "rate");
+        char* snaps = Info_ValueForKey(userinfo, "snaps");
+
+        trap_SendServerCommand(ent - g_entities, va("print \"%-28.28s%-25.25s\n\"", "^7[^3Rate^7]", rate));
+        trap_SendServerCommand(ent - g_entities, va("print \"%-28.28s%-25.25s\n\"", "^7[^3Snaps^7]", snaps));
+        trap_SendServerCommand(ent - g_entities, va("print \"%-28.28s%-25d\n\"", "^7[^3Ping^7]", tent->client->ps.ping));
+
+        if (ent->client->sess.muted) {
+            for (int i = 0; i < MAX_CLIENTS; i++) {
+                if (level.mutedClients[i].used == qtrue) {
+                    if (!Q_stricmp(level.mutedClients[i].ip, tent->client->pers.ip)) {
+                        int remain = ((level.mutedClients[i].startTime + level.mutedClients[i].time - level.time) / 1000) / 60;
+                        int remainS = ((level.mutedClients[i].startTime + level.mutedClients[i].time - level.time) / 1000);
+                        trap_SendServerCommand(ent - g_entities, va("print \"%-26.26s%i:%02i minutes remaining\n\n", "[^3Mute^7]", remain, remainS - (remain * 60)));
+                        break; // Boe!Man 2/15/13: Duplicate line fix and speed optimize.
+                    }
+                }
+            }
+        }
+        else {
+            trap_SendServerCommand(ent - g_entities, va("print \"\n"));
+        }
+
+        // Damage stats as-is from 1fxmod.
+
+        statInfo_t* stat = &tent->client->pers.statInfo;
+
+        // Boe!Man 6/2/10: Tier 1 - Start.
+        trap_SendServerCommand(ent - g_entities, va("print \"[^3Total kills^7] [^3Total death^7] [^3Damage done^7] [^3Damage take^7]\n"));
+        trap_SendServerCommand(ent - g_entities, va("print \"%7d%14d%14d%14d\n\n", stat->kills, stat->deaths, stat->damageDone, stat->damageTaken));
+        // Boe!Man 6/2/10: Tier 1 - End.
+
+        // Boe!Man 6/2/10: Tier 2 - Start.
+        trap_SendServerCommand(ent - g_entities, va("print \"[^3Hand^7] [^3Foot^7] [^3Arms^7] [^3Legs^7] [^3Head^7] [^3Neck^7] [^3Tors^7] [^3Wais^7]\n"));
+        trap_SendServerCommand(ent - g_entities, va("print \"%4d%7d%7d%7d%7d%7d%7d%7d\n", stat->handhits, stat->foothits, stat->armhits, stat->leghits, stat->headhits, stat->neckhits, stat->torsohits, stat->waisthits));
+        // Boe!Man 6/2/10: Tier 2 - End.
+
+        // Boe!Man 6/2/10: Tier 3: Weapon Stats - Start.
+        if (stat->shotcount)
+        {
+            trap_SendServerCommand(ent - g_entities, va("print \"\n%-22s%-13s%-13s%-13s[^3Accu^7]\n\"", "[^3Weapon^7]", "[^3Shot^7]", "[^3Hits^7]", "[^3Head^7]"));
+            for (int n = 0; n < WP_NUM_WEAPONS; n++)
+            {
+                if (stat->weapon_shots[ATTACK_NORMAL * WP_NUM_WEAPONS + n] <= 0 && stat->weapon_shots[ATTACK_ALTERNATE * WP_NUM_WEAPONS + n] <= 0)
+                {
+                    continue;
+                }
+                float accuracy = 0;
+                if (stat->weapon_shots[ATTACK_NORMAL * WP_NUM_WEAPONS + n])
+                {
+                    accuracy = (float)stat->weapon_hits[ATTACK_NORMAL * WP_NUM_WEAPONS + n] / (float)stat->weapon_shots[ATTACK_NORMAL * WP_NUM_WEAPONS + n] * 100;
+                }
+                trap_SendServerCommand(ent - g_entities, va("print \"^3%-14s^7%9d^7%9d^7%9d%7s%3.2f\n\"",
+                    bg_weaponNames[n],
+                    stat->weapon_shots[ATTACK_NORMAL * WP_NUM_WEAPONS + n],
+                    stat->weapon_hits[ATTACK_NORMAL * WP_NUM_WEAPONS + n],
+                    stat->weapon_headshots[ATTACK_NORMAL * WP_NUM_WEAPONS + n],
+                    "^7",
+                    accuracy));
+
+                char* altname = "none";
+
+                if (stat->weapon_shots[ATTACK_ALTERNATE * WP_NUM_WEAPONS + n])
+                {
+                    switch (n)
+                    {
+                    case WP_AK74_ASSAULT_RIFLE:
+                        altname = "Bayonette";
+                        break;
+
+                    case WP_M4_ASSAULT_RIFLE:
+                        altname = "M203";
+                        break;
+
+                    case WP_M590_SHOTGUN:
+                        altname = "Bludgeon";
+                        break;
+
+                    case WP_M1911A1_PISTOL:
+                    case WP_USSOCOM_PISTOL:
+                        altname = "Pistol Whip";
+                        break;
+
+                    default:
+                        altname = "none";
+                        break;
+                    }
+                    if (Q_stricmp(altname, "none") != 0)
+                    {
+                        accuracy = 0;
+                        if (stat->weapon_hits[ATTACK_ALTERNATE * WP_NUM_WEAPONS + n])
+                        {
+                            accuracy = (float)stat->weapon_hits[ATTACK_ALTERNATE * WP_NUM_WEAPONS + n] / (float)stat->weapon_shots[ATTACK_ALTERNATE * WP_NUM_WEAPONS + n] * 100;
+                        }
+                        trap_SendServerCommand(ent - g_entities, va("print \"^3%-14s^7%9d^7%9d^7%9d%7s%3.2f\n\"",
+                            altname,
+                            stat->weapon_shots[ATTACK_ALTERNATE * WP_NUM_WEAPONS + n],
+                            stat->weapon_hits[ATTACK_ALTERNATE * WP_NUM_WEAPONS + n],
+                            stat->weapon_headshots[ATTACK_ALTERNATE * WP_NUM_WEAPONS + n],
+                            "^7",
+                            accuracy));
+                    }
+                }
+            }
+        }
+        trap_SendServerCommand(ent - g_entities, "print \"\n\nUse [^3Page Up^7] and [^3Page Down^7] to scroll.\n\"");
     }
-
-    
-
 }
 
 /*

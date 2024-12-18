@@ -1176,6 +1176,7 @@ void ClientUserinfoChanged( int clientNum )
             {
                 trap_SendServerCommand( -1, va("print \"%s renamed to %s\n\"", oldname, client->pers.netname) );
                 client->pers.netnameTime = level.time;
+                dbAddAlias(ent);
             }
         }
     }
@@ -1833,6 +1834,7 @@ void ClientSpawn(gentity_t *ent)
     {
         trap_SendServerCommand( -1, va("print \"%s" S_COLOR_WHITE " renamed to %s\n\"", client->pers.netname, client->pers.deferredname) );
         strcpy ( client->pers.netname, client->pers.deferredname );
+        dbAddAlias(ent);
         client->pers.deferredname[0] = '\0';
         client->pers.netnameTime = level.time;
         ClientUserinfoChanged ( client->ps.clientNum );

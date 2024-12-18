@@ -792,7 +792,6 @@ void dbGetAliases(gentity_t* ent, char* output, int outputSize, char* separator)
 
     sqlite3* db = gameDb;
     sqlite3_stmt* stmt;
-    qboolean first = qtrue;
     int rc = 0;
 
     if (!g_maxAliases.integer) {
@@ -825,11 +824,8 @@ void dbGetAliases(gentity_t* ent, char* output, int outputSize, char* separator)
                 break;
             }
 
-            if (!first) {
-                Q_strcat(output, outputSize, separator);
-            }
-            first = qfalse;
             Q_strcat(output, outputSize, alias);
+            Q_strcat(output, outputSize, separator);
             
         }
     }
@@ -874,7 +870,7 @@ void dbClearOldAliases(gentity_t* ent) {
     sqlite3* db = gameDb;
     sqlite3_stmt* stmt;
 
-    char* query = va("DELETE FROM aliases WHERE ROWID IN (SELECT ROWID FROM aliases WHERE ip = ? ORDER BY ROWID ASC LIMIT (SELECT COUNT(*) - ? FROM aliases WHERE ip = ?))");
+    char* query = va("DELETE FROM aliases WHERE ROWID IN (SELECT ROWID FROM aliases WHERE ip = ? ORDER BY ROWID ASC LIMIT (SELECT MAX(COUNT(*) - ? - 1, 0) FROM aliases WHERE ip = ?))");
 
     int rc = sqlite3_prepare(db, query, -1, &stmt, 0);
 
