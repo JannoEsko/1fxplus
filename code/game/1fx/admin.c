@@ -2558,7 +2558,7 @@ int cmdIsAdminCmd(char* cmd, qboolean shortCmd) {
 		if (shortCmd && (!Q_stricmp(cmd, adminCommands[i].shortCmd) || !Q_stricmp(cmd, va("!%s", adminCommands[i].adminCmd)))) {
 			return i;
 		}
-		else if (!Q_stricmp(cmd, adminCommands[i].adminCmd)) {
+		else if (!shortCmd && !Q_stricmp(cmd, adminCommands[i].adminCmd)) {
 			return i;
 		}
 	}

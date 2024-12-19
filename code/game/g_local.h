@@ -633,6 +633,16 @@ typedef struct
     int             voiceFloodCount;        // Amount of voice chats that need to be forgivin
     int             voiceFloodPenalty;      // Time when a client can voice chat again
     team_t              lastTeam;
+
+
+    int                 stunAttacks;
+    int                 gotStunned;
+    int                 takenMM1;
+    int                 trappedInCage;
+    int                 MM1HitsTaken;
+    int                 cageAttempts;
+    int                 seekersCaged;
+    qboolean            cageFighter;
 } clientSession_t;
 
 //
@@ -673,6 +683,14 @@ typedef struct
     int                 lastpickup;
     int                 deathTime;
     qboolean            cageFighter;
+
+
+    qboolean            movingModel;
+    qboolean            movingModelStatic;
+    int                 movingModelObject;
+
+    qboolean            isVip;
+    qboolean            knifeBox;
 
 } clientPersistant_t;
 
@@ -975,6 +993,7 @@ typedef struct
     char            M4loc[MAX_QPATH];
     char            randomNadeLoc[MAX_QPATH];
     char            MM1loc[MAX_QPATH];
+    
 
     int             MM1Flare;
     int             RPGFlare;
@@ -984,6 +1003,23 @@ typedef struct
     qboolean        customGameWeaponsDistributed;
 
     int             lastAliveHiders[2];
+
+    char            cagewinner[MAX_NETNAME];
+
+    team_t          vipKilledInTeam;
+    qboolean        MM1Given;
+    int             MM1ent;
+    int             MM1Time;
+    int             RPGTime;
+    int             M4Time;
+    qboolean        teleGunGiven;
+    qboolean        taserGiven;
+    qboolean        smokeactive;
+    qboolean        cagefightdone;
+    qboolean        startCage;
+    int             cagefightTimer;
+    int             lowestScore;
+    int             mapHighScore;
 } level_locals_t;
 
 //
@@ -1315,7 +1351,7 @@ gentity_t*  G_SpawnGametypeItem                 ( const char* pickup_name, qbool
 gentity_t*  G_SelectRandomGametypeSpawnPoint    ( team_t team );
 qboolean    G_ParseGametypeFile                 ( void );
 qboolean    G_ExecuteGametypeScript             ( gentity_t* activator, const char* name );
-void        G_ResetGametype                     ( qboolean fullRestart );
+void        G_ResetGametype                     ( qboolean fullRestart, qboolean cagefight );
 qboolean    G_CanGametypeTriggerBeUsed          ( gentity_t* self, gentity_t* activator );
 void        G_ResetGametypeItem                 ( gitem_t* item );
 void        gametype_item_use                   ( gentity_t* self, gentity_t* other );
@@ -2082,6 +2118,38 @@ void removeWeaponFromClient(gentity_t* ent, weapon_t wpn, qboolean drop, weapon_
 void removeAllWeaponsFromClient(gentity_t* ent);
 char* chooseTeam(void);
 gentity_t* findLastEnteredPlayer(int highTeam, qboolean scoresAllowed);
+int spawnBspModel(const char* bspModel, vec3_t* origin);
+void initBspModelSpawns(void);
+void transformPlayerBack(gentity_t* self, gentity_t* other, trace_t* trace);
+void addSpeedAlteration(gentity_t* ent, qboolean isDecrement, speedAlterationReason_t speedAlterationReason);
+void stealWeaponWithAmmo(gentity_t* from, gentity_t* to, weapon_t wpn);
+void TeleportPlayerToPlayer(gentity_t* player, gentity_t* toPlayer, qboolean killbox, qboolean nojump);
+void spawnCage(vec3_t org, qboolean autoremove, qboolean big);
+void resetCages(void);
+void initCageFight(void);
+void TeleportPlayerNoKillbox(gentity_t* player, vec3_t origin, vec3_t angles, qboolean nojump);
+
+typedef struct
+{
+    char* modelName;
+    vec3_t originOffset;
+    vec3_t angleOffset;
+
+} prophuntObject_t;
+
+#define TOTAL_PROPHUNT_MODELS 116
+
+extern prophuntObject_t propHuntModels[TOTAL_PROPHUNT_MODELS];
+
+void freeProphuntProps(gentity_t* player);
+void transformPlayerToObject(gentity_t* ent);
+void chooseProp(gentity_t* ent, int prop);
+void prop_pickRandomProps(int* result);
+void transformPlayerToProp(gentity_t* ent, int propId, qboolean thinkSingle);
+void    prop_ThinkMovingModelSingle(gentity_t* ent);
+void    prop_ThinkMovingModels(gentity_t* ent);
+
+
 
 
 typedef struct queueNode_s queueNode;

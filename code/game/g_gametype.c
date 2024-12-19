@@ -230,6 +230,10 @@ void G_ResetGametypeItem ( gitem_t* item )
         return;
     }
 
+    if (isCurrentGametypeInList((gameTypes_t[]) { GT_HNZ, GT_HNS, GT_MAX })) {
+        return;
+    }
+
     // Remove all spawned instances of the item on the map
     find = NULL;
     while ( NULL != (find = G_Find ( find, FOFS(classname), item->classname ) ) )
@@ -370,6 +374,13 @@ void G_ResetEntities ( void )
 
         ent = &g_entities[i];
 
+        if (isCurrentGametype(GT_HNS)) {
+            if (ent->classname && strstr(ent->classname, "1fx_play_effect")) {
+                G_FreeEntity(ent);
+                continue;
+            }
+        }
+
         // Skip entities not in use
         if ( !ent->inuse )
         {
@@ -433,7 +444,7 @@ void G_ResetEntities ( void )
 G_ResetGametype
 ===============
 */
-void G_ResetGametype ( qboolean fullRestart )
+void G_ResetGametype ( qboolean fullRestart, qboolean cagefight )
 {
     gentity_t*  tent;
 
@@ -442,6 +453,33 @@ void G_ResetGametype ( qboolean fullRestart )
 
     // Reset all pickups in the world
     G_ResetEntities ( );
+
+    if (isCurrentGametype(GT_HNS)) {
+        resetCages();
+
+        for (int i = 0; i < level.numConnectedClients; i++) {
+            gentity_t* ent = &g_entities[level.sortedClients[i]];
+
+            if (ent->client->pers.connected != CON_CONNECTED || ent->client->sess.team == TEAM_SPECTATOR) {
+                continue;
+            }
+
+            ent->client->sess.transformed = qfalse;
+
+            if (ent->client->sess.transformedEntity) {
+                G_FreeEntity(&g_entities[ent->client->sess.transformedEntity]);
+                ent->client->sess.transformedEntity = 0;
+            }
+
+            if (ent->client->sess.transformedEntityBBox) {
+                G_FreeEntity(&g_entities[ent->client->sess.transformedEntityBBox]);
+                ent->client->sess.transformedEntityBBox = 0;
+            }
+
+            ent->client->ps.eFlags &= ~EF_HSBOX;
+            ent->s.eFlags &= ~EF_HSBOX;
+        }
+    }
 
     // Reset the gametype itself
     G_ResetGametypeEntities ( );
@@ -463,16 +501,32 @@ void G_ResetGametype ( qboolean fullRestart )
             break;
 
         case RT_NONE:
-            level.gametypeDelayTime = level.time + g_roundstartdelay.integer * 1000;
-            level.gametypeRoundTime = level.time + (g_roundtimelimit.integer * 60000) + g_roundstartdelay.integer * 1000;
 
+            if (isCurrentGametype(GT_HNS)) {
+                level.gametypeDelayTime = level.time + hideSeek_roundstartdelay.integer * 1000;
+                if (cagefight) {
+                    level.gametypeRoundTime = level.time + 60000;
+                }
+                else {
+                    level.gametypeRoundTime = level.time + g_roundtimelimit.integer * 60000;
+                }
+            }
+            else {
+                level.gametypeDelayTime = level.time + g_roundstartdelay.integer * 1000;
+                level.gametypeRoundTime = level.time + (g_roundtimelimit.integer * 60000) + g_roundstartdelay.integer * 1000;
+
+            }
+
+            
             if ( level.gametypeDelayTime != level.time )
             {
                 trap_SetConfigstring ( CS_GAMETYPE_MESSAGE, va("%i,@Get Ready", level.gametypeDelayTime ) );
             }
 
             trap_SetConfigstring ( CS_GAMETYPE_TIMER, va("%i", level.gametypeRoundTime) );
-            evenTeams(qtrue);
+            if (!isCurrentGametype(GT_HNS)) {
+                evenTeams(qtrue);
+            }
             break;
     }
 
@@ -490,6 +544,55 @@ void G_ResetGametype ( qboolean fullRestart )
 
     level.gametypeStartTime = level.time;
     level.gametypeResetTime = 0;
+
+    if (isCurrentGametype(GT_HNS)) {
+        // Henk 19/01/10 -> Reset level variables
+        level.cagefightdone = qfalse;
+        //level.lastaliveCheck[0] = qfalse;
+        //level.lastaliveCheck[1] = qfalse;
+        level.customGameStarted = qfalse;
+        level.customGameWeaponsDistributed = qfalse;
+        level.teleGunGiven = qfalse;
+        level.taserGiven = qfalse;
+        level.smokeactive = qfalse;
+        level.MM1Given = qfalse;
+        //level.rememberSeekKills = level.SeekKills;
+        //level.SeekKills = 0;
+        level.MM1Time = 0;
+        level.RPGTime = 0;
+        level.M4Time = 0;
+        level.timelimitHit = qfalse; // allow timelimit hit message
+
+        // Boe!Man 6/29/11: Also set the appropriate message if the weapon's been disabled.
+        if (hideSeek_Weapons.string[HSWPN_M4] == '0') { // M4
+            Com_sprintf(level.M4loc, sizeof(level.M4loc), "%s", "Disabled");
+        }
+        else {
+            Com_sprintf(level.M4loc, sizeof(level.M4loc), "%s", "Not given yet");
+        }
+        if (hideSeek_Weapons.string[HSWPN_RPG] == '0') { // RPG
+            Com_sprintf(level.RPGloc, sizeof(level.RPGloc), "%s", "Disabled");
+        }
+        else {
+            Com_sprintf(level.RPGloc, sizeof(level.RPGloc), "%s", "Not given yet");
+        }
+        if (hideSeek_Weapons.string[HSWPN_MM1] == '0') { // MM1
+            Com_sprintf(level.MM1loc, sizeof(level.MM1loc), "%s", "Disabled");
+        }
+        else {
+            Com_sprintf(level.MM1loc, sizeof(level.MM1loc), "%s", "Not given yet");
+        }
+
+        /*
+        if (TeamCount1(TEAM_RED) == 0) {
+            level.lastalive[0] = -1;
+            level.lastalive[1] = -1;
+        }
+        else if (TeamCount1(TEAM_RED) <= 2) {
+            level.lastalive[1] = -1;
+        }
+        */
+    }
 
     if ( fullRestart )
     {
@@ -698,6 +801,11 @@ CheckGametype
 */
 void CheckGametype ( void )
 {
+
+    if (isCurrentGametype(GT_HNS) && level.startCage) {
+        initCageFight();
+    }
+
     // If the level is over then forget checking gametype stuff.
     if ( level.intermissiontime || level.paused )
     {
@@ -731,7 +839,7 @@ void CheckGametype ( void )
 
         if ( level.teamAliveCount[TEAM_RED] || level.teamAliveCount[TEAM_BLUE] || level.teamAliveCount[TEAM_FREE] )
         {
-            G_ResetGametype ( qfalse );
+            G_ResetGametype ( qfalse, qfalse );
             return;
         }
     }
@@ -744,7 +852,7 @@ void CheckGametype ( void )
             // Dont do this again
             level.gametypeResetTime = 0;
 
-            G_ResetGametype ( qfalse );
+            G_ResetGametype ( qfalse, qfalse );
         }
 
         return;
@@ -836,7 +944,7 @@ intptr_t G_GametypeCommand(int command, intptr_t arg0, intptr_t arg1, intptr_t a
         case GT_RESTART:
             if ( arg0 <= 0 )
             {
-                G_ResetGametype ( qfalse );
+                G_ResetGametype ( qfalse, qfalse );
             }
             else
             {

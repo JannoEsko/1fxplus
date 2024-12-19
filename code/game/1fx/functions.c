@@ -2879,3 +2879,1070 @@ gentity_t* findLastEnteredPlayer(int highTeam, qboolean scoresAllowed)
 
     return lastConnected;
 }
+
+/*
+=================
+initBspModelSpawns
+
+This spawns miscellaneous models onto the map so that when clients connect, they have it preloaded.
+This is done because players cannot side-load a BSP ingame.
+=================
+*/
+void initBspModelSpawns() {
+
+    // Only do it in non-random spawnpoint games.
+
+    if (isCurrentGametypeInList((gameTypes_t[]) { GT_DM, GT_TDM, GT_GUNGAME, GT_MAX })) {
+        return;
+    }
+
+    const char* modelsToSpawn[] = {
+        "instances/Generic/fence01",
+        "instances/Colombia/npc_jump1",
+        "instances/Kamchatka/wall01",
+        "instances/Colombia/tree01",
+        "instances/Colombia/tree02",
+        "instances/Colombia/tree06",
+        NULL
+    };
+
+    for (int i = 0; modelsToSpawn[i] != NULL; i++) {
+        spawnBspModel(modelsToSpawn[i], NULL);
+    }
+
+}
+
+int spawnBspModel(const char* bspModel, vec3_t* origin) {
+
+    float x, y, z;
+
+    if (origin) {
+        x = (*origin)[0];
+        y = (*origin)[1];
+        z = (*origin)[2];
+    }
+    else {
+        // We default it to the "pseudo-origin" in InitSpawn at 1fxmod.
+        x = -4841.0;
+        y = -4396.0;
+        z = 5000.0;
+    }
+
+    AddSpawnField("classname", "misc_bsp");
+    AddSpawnField("bspmodel", bspModel);
+    AddSpawnField("origin", va("%.2f %.2f %.2f", x, y, z));
+    AddSpawnField("model", "trigger_hurt");
+    AddSpawnField("count", "1");
+
+    return G_SpawnGEntityFromSpawnVars(qfalse);
+
+}
+
+void transformPlayerBack(gentity_t* self, gentity_t* other, trace_t* trace)
+{
+    if ((other->client && other->client->sess.team != TEAM_BLUE) || self->hideseek < 256) {
+        return;
+    }
+
+    self->hideseek -= 256;
+
+    if (!g_entities[self->hideseek].client || g_entities[self->hideseek].client->pers.connected != CON_CONNECTED || G_IsClientSpectating(g_entities[self->hideseek].client)) {
+        if (other && other->client) {
+            trap_SendServerCommand(other - g_entities, "print \"^3[H&S] ^7Woops, nothing here!\n\"");
+        }
+        G_FreeEntity(self);
+        return;
+    }
+
+    // First we make sure he can walk again.
+    g_entities[self->hideseek].client->sess.transformed = qfalse;
+    g_entities[self->hideseek].client->ps.pm_type = PM_NORMAL;
+    g_entities[self->hideseek].client->sess.invisibleGoggles = qfalse; // And that others can see him again as well.
+
+    // Good, now we can free the entities spawned.
+    if (g_entities[self->hideseek].client->sess.transformedEntityBBox) {
+        G_FreeEntity(&g_entities[g_entities[self->hideseek].client->sess.transformedEntityBBox]);
+        g_entities[self->hideseek].client->sess.transformedEntityBBox = 0;
+    }
+
+    if (other && other->client) {
+        trap_SendServerCommand(-1, va("print \"^3[H&S] ^7%s scared %s back to %s original form!\n\"",
+            other->client->pers.cleanName,
+            g_entities[self->hideseek].client->pers.cleanName,
+            (g_entities[self->hideseek].client->pers.identity && strstr(g_entities[self->hideseek].client->pers.identity->mCharacter->mModel, "female") ? "her" : "his")));
+    }
+    else {
+        trap_SendServerCommand(-1, va("print \"^3[H&S] ^7%s was scared back to %s original form!\n\"",
+            g_entities[self->hideseek].client->pers.cleanName,
+            (g_entities[self->hideseek].client->pers.identity && strstr(g_entities[self->hideseek].client->pers.identity->mCharacter->mModel, "female") ? "her" : "his")));
+    }
+
+    strncpy(level.randomNadeLoc, "Disappeared", sizeof(level.randomNadeLoc));
+    g_entities[self->hideseek].s.eFlags &= ~EF_HSBOX;
+    g_entities[self->hideseek].client->ps.eFlags &= ~EF_HSBOX;
+    G_FreeEntity(self);
+}
+
+prophuntObject_t propHuntModels[TOTAL_PROPHUNT_MODELS] =
+{
+    { "models/characters/gore/rib_cage/rib_cage.md3", {0.0, 0.0, -20.0}, {0.0, 0.0, 0.0} },
+    { "models/chunks/basket_sq/basket_sq.md3", {0.0, 0.0, -45.0}, {0.0, 0.0, 0.0} },
+    { "models/chunks/body_parts/chunk_torso.md3", {0.0, 0.0, -10.0}, {90.0, 0.0, 310.0} },
+    { "models/chunks/cart_bev/cart_bev.md3", {0.0, 0.0, -25.0}, {0.0, 0.0, 0.0} },
+    { "models/chunks/cart_food/cart.md3", {0.0, 0.0, -25.0}, {0.0, 0.0, 0.0} },
+    { "models/chunks/copier_chunks/copier_chunk.md3", {0.0, 0.0, -40.0}, {0.0, 0.0, -20.0} },
+    { "models/chunks/fern/fern_ledge.md3", {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0} },
+    { "models/chunks/flag/flag.md3", {0.0, 15.0, 0.0}, {10.0, 0.0, 0.0} },
+    { "models/chunks/katana/katana.md3", {0.0, 0.0, -10.0}, {0.0, 0.0, 90.0} },
+    { "models/chunks/lantern_long/lantern_long.md3", {0.0, 0.0, -30.0}, {0.0, 0.0, 0.0} },
+    { "models/chunks/leaf/leaf.md3", {0.0, 0.0, -25.0}, {0.0, 0.0, 0.0} },
+    { "models/chunks/monitor_cart_chunks/monitor_cart_chunk1.md3", {0.0, 0.0, -30.0}, {0.0, 0.0, 0.0} },
+    { "models/chunks/sam_missle/sam_missle.md3", {0.0, 0.0, 50.0}, {0.0, 0.0, 90.0} },
+    { "models/chunks/temp/wheelchair.md3", {0.0, 0.0, -50.0}, {0.0, 0.0, 0.0} },
+    { "models/chunks/truck_chunks/truck_axle_chunk.md3", {0.0, 0.0, 10.0}, {0.0, 0.0, 90.0} },
+    { "models/chunks/truck_chunks/truck_fender_chunk.md3", {0.0, -20.0, 0.0}, {0.0, 90.0, 90.0} },
+    { "models/chunks/truck_chunks/truck_wheel_chunk.md3", {0.0, 0.0, -30.0}, {0.0, 90.0, 90.0} },
+    { "models/chunks/tv/tv.md3", {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0} },
+    { "models/flags/flag_blue.md3", {0.0, 0.0, -60.0}, {0.0, 0.0, 0.0} },
+    { "models/flags/flag_red.md3", {0.0, 0.0, -60.0}, {0.0, 0.0, 0.0} },
+    { "models/objects/Airport/gift_stand.md3", {0.0, 0.0, -50.0}, {0.0, 0.0, 0.0} },
+    { "models/objects/Airport/luggage_cart.md3", {0.0, 0.0, -50.0}, {0.0, -90.0, 0.0} },
+    { "models/objects/Airport/phone.md3", {0.0, 0.0, -60.0}, {0.0, 0.0, 0.0} },
+    { "models/objects/Airport/postcard_stand.md3", {0.0, 0.0, -50.0}, {0.0, 0.0, 0.0} },
+    { "models/objects/Armory/airtank.md3", {0.0, 0.0, -50.0}, {0.0, 90.0, 0.0} },
+    { "models/objects/Armory/ak74_armory.md3", {0.0, 0.0, -20.0}, {-90.0, 0.0, 0.0} },
+    { "models/objects/Armory/dummy.md3", {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0} },
+    { "models/objects/Armory/m4_armory.md3", {0.0, 0.0, -20.0}, {-90.0, 0.0, 0.0} },
+    { "models/objects/Armory/m60_armory.md3", {0.0, 0.0, -20.0}, {-90.0, 0.0, 0.0} },
+    { "models/objects/Colombia/furniture/chair_col.md3", {0.0, 0.0, -50.0}, {0.0, 0.0, 0.0} },
+    { "models/objects/Colombia/furniture/table_col.md3", {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0} },
+    { "models/objects/Colombia/jungle/fern_ledge.md3", {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0} },
+    { "models/objects/Colombia/jungle/fern_lrg01.md3", {0.0, 0.0, -50.0}, {0.0, 0.0, 0.0} },
+    { "models/objects/Colombia/jungle/fern_sm01.md3", {0.0, 0.0, -50.0}, {0.0, 0.0, 0.0} },
+    { "models/objects/Colombia/jungle/grass2.md3", {0.0, 0.0, -55.0}, {0.0, 0.0, 0.0} },
+    { "models/objects/Colombia/jungle/grass_tall.md3", {0.0, 0.0, -55.0}, {0.0, 0.0, 0.0} },
+    { "models/objects/Colombia/jungle/plant_4leafs.md3", {0.0, 0.0, -55.0}, {0.0, 0.0, 0.0} },
+    { "models/objects/Colombia/jungle/plant_lrg01.md3", {0.0, 0.0, -55.0}, {0.0, 0.0, 0.0} },
+    { "models/objects/Colombia/jungle/plant_stalk.md3", {0.0, 0.0, -55.0}, {0.0, 0.0, 0.0} },
+    { "models/objects/Colombia/jungle/rock01.md3", {0.0, 0.0, -55.0}, {50.0, 50.0, 50.0} },
+    { "models/objects/Colombia/jungle/tree02.md3", {0.0, 0.0, 0.0}, {0.0, -120.0, 0.0} },
+    { "models/objects/Colombia/jungle/tree06.md3", {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0} },
+    { "models/objects/Colombia/jungle/tree08.md3", {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0} },
+    { "models/objects/Colombia/jungle/tree09.md3", {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0} },
+    { "models/objects/Colombia/jungle/tree_sidehill.md3", {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0} },
+    { "models/objects/Colombia/market/basket_food.md3", {0.0, 0.0, -50.0}, {0.0, 0.0, 0.0} },
+    { "models/objects/Colombia/market/chair.md3", {0.0, 0.0, -50.0}, {0.0, 0.0, 0.0} },
+    { "models/objects/Colombia/market/pots3.md3", {0.0, 0.0, -50.0}, {0.0, 0.0, 0.0} },
+    { "models/objects/Colombia/market/sawhorse.md3", {0.0, 0.0, -50.0}, {0.0, 0.0, 0.0} },
+    { "models/objects/Colombia/misc/flowerbox3.md3", {0.0, 0.0, 0.0}, {0.0, 0.0, 90.0} },
+    { "models/objects/Colombia/misc/statue.md3", {0.0, 0.0, -50.0}, {0.0, 0.0, 0.0} },
+    { "models/objects/Common/ashtray.md3", {0.0, 0.0, -55.0}, {0.0, 0.0, 0.0} },
+    { "models/objects/Common/beam.md3", {0.0, 0.0, -55.0}, {0.0, 0.0, 0.0} },
+    { "models/objects/Common/body_bag.md3", {0.0, 0.0, 0.0}, {90.0, 0.0, 0.0} },
+    { "models/objects/Common/desklamp1.md3", {0.0, 0.0, -55.0}, {0.0, 90.0, 0.0} },
+    { "models/objects/Common/payphone.md3", {0.0, 0.0, -25.0}, {0.0, 0.0, 0.0} },
+    { "models/objects/Common/toilet.md3", {0.0, 0.0, -50.0}, {0.0, 90.0, 0.0} },
+    { "models/objects/Common/trash_can_empty.md3", {0.0, 0.0, -10.0}, {0.0, 0.0, 0.0} },
+    { "models/objects/Common/trash_can_nolid.md3", {0.0, 0.0, -10.0}, {0.0, 0.0, 0.0} },
+    { "models/objects/Common/tv.md3", {0.0, 0.0, -55.0}, {0.0, 0.0, 0.0} },
+    { "models/objects/Common/urinal.md3", {0.0, 0.0, -25.0}, {0.0, 0.0, 0.0} },
+    { "models/objects/Common/barrels/barrel_hk.md3", {0.0, 0.0, -50.0}, {0.0, 0.0, 0.0} },
+    { "models/objects/Common/handcart/handcart_lrg.md3", {0.0, 0.0, -50.0}, {0.0, 0.0, 0.0} },
+    { "models/objects/Common/rope/rope.md3", {0.0, 0.0, -50.0}, {0.0, 0.0, 0.0} },
+    { "models/objects/Common/SAM/missile/missle.md3", {0.0, 0.0, 120.0}, {-90.0, 0.0, 0.0} },
+    { "models/objects/Finca/furniture/bar_stool.md3", {0.0, 0.0, -50.0}, {0.0, 0.0, 0.0} },
+    { "models/objects/Finca/furniture/chair_finca.md3", {0.0, 0.0, -50.0}, {0.0, 0.0, 0.0} },
+    { "models/objects/Finca/furniture/masterchair_finca.md3", {0.0, 0.0, -50.0}, {0.0, 0.0, 0.0} },
+    { "models/objects/Finca/furniture/poolside_chair.md3", {0.0, 0.0, -50.0}, {0.0, 180.0, 0.0} },
+    { "models/objects/Finca/furniture/poolside_table.md3", {0.0, 0.0, -55.0}, {0.0, 0.0, 0.0} },
+    { "models/objects/Finca/furniture/sundial.md3", {0.0, 0.0, -50.0}, {0.0, 0.0, 0.0} },
+    { "models/objects/Finca/lamps/floorlamp1.md3", {0.0, 0.0, -50.0}, {0.0, 0.0, 0.0} },
+    { "models/objects/Finca/misc/bear_rug.md3", {0.0, 0.0, 10.0}, {-90.0, 0.0, 0.0} },
+    { "models/objects/Finca/misc/moose.md3", {0.0, 0.0, -40.0}, {0.0, 90.0, 0.0} },
+    { "models/objects/Hongkong/electric_chair.md3", {0.0, 0.0, -50.0}, {0.0, 0.0, 0.0} },
+    { "models/objects/Hongkong/baskets_pots/baskets_stack.md3", {0.0, 0.0, -50.0}, {0.0, 0.0, 0.0} },
+    { "models/objects/Hongkong/baskets_pots/baskets_stack_lrg.md3", {0.0, 0.0, -50.0}, {0.0, 0.0, 0.0} },
+    { "models/objects/Hongkong/baskets_pots/baskets_stack_square.md3", {0.0, 0.0, -50.0}, {0.0, 0.0, 0.0} },
+    { "models/objects/Hongkong/baskets_pots/bucket_handles.md3", {0.0, 0.0, -50.0}, {0.0, 0.0, 0.0} },
+    { "models/objects/Hongkong/baskets_pots/pot_lrg.md3", {0.0, 0.0, -50.0}, {0.0, 0.0, 0.0} },
+    { "models/objects/Hongkong/lights/cell.md3", {0.0, 0.0, -50.0}, {0.0, 0.0, 0.0} },
+    { "models/objects/Hongkong/misc/mahi.md3", {0.0, 0.0, -50.0}, {0.0, 0.0, 0.0} },
+    { "models/objects/Hongkong/misc/stoplight.md3", {0.0, 0.0, -60.0}, {0.0, 0.0, 0.0} },
+    { "models/objects/Hongkong/misc/tuna.md3", {0.0, 0.0, -50.0}, {0.0, 0.0, 0.0} },
+    { "models/objects/Hongkong/prison/bed.md3", {0.0, 0.0, 0.0}, {90.0, 0.0, 0.0} },
+    { "models/objects/Hongkong/rice_bags/rice_bags_stack.md3", {0.0, 0.0, -50.0}, {0.0, 0.0, 0.0} },
+    { "models/objects/Hongkong/rice_bags/rice_bags_stacklow.md3", {0.0, 0.0, -50.0}, {0.0, 0.0, 0.0} },
+    { "models/objects/Hongkong/rice_bags/rice_bags_stacklow_lrg.md3", {0.0, 0.0, -50.0}, {0.0, 0.0, 0.0} },
+    { "models/objects/Hospital/carts/cart_2tray.md3", {0.0, 0.0, -50.0}, {0.0, 0.0, 0.0} },
+    { "models/objects/Hospital/carts/cart_food.md3", {0.0, 0.0, -50.0}, {0.0, 0.0, 0.0} },
+    { "models/objects/Hospital/carts/cart_medical.md3", {0.0, 0.0, -50.0}, {0.0, 90.0, 0.0} },
+    { "models/objects/Hospital/carts/monitor_cart.md3", {0.0, 0.0, -50.0}, {0.0, 90.0, 0.0} },
+    { "models/objects/Hospital/misc/drip_stand.md3", {0.0, 0.0, -50.0}, {0.0, 90.0, 0.0} },
+    { "models/objects/Hospital/misc/office_chair.md3", {0.0, 0.0, -50.0}, {0.0, 0.0, 0.0} },
+    { "models/objects/Hospital/misc/wheelchair.md3", {0.0, 0.0, -50.0}, {0.0, 0.0, 0.0} },
+    { "models/objects/Kamchatka/deadtree_med.md3", {0.0, 0.0, -50.0}, {0.0, 0.0, 0.0} },
+    { "models/objects/Kamchatka/tree2.md3", {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0} },
+    { "models/objects/Kamchatka/tree_lrg.md3", {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0} },
+    { "models/objects/Kamchatka/tree_med.md3", {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0} },
+    { "models/objects/Liner/furniture/galley_chair.md3", {0.0, 0.0, -50.0}, {0.0, 0.0, 0.0} },
+    { "models/objects/Liner/misc/mop.md3", {0.0, 0.0, -50.0}, {0.0, 0.0, 0.0} },
+    { "models/objects/Liner/misc/raft.md3", {0.0, 0.0, 110.0}, {0.0, 90.0, 90.0} },
+    { "models/objects/Liner/toilet/toilet.md3", {0.0, 0.0, -50.0}, {0.0, 0.0, 0.0} },
+    { "models/objects/Liner/toilet/toilet_open.md3", {0.0, 0.0, -50.0}, {0.0, 0.0, 0.0} },
+    { "models/objects/Prague/furniture/umbrella.md3", {0.0, 0.0, -50.0}, {0.0, 0.0, 0.0} },
+    { "models/objects/Prague/misc/big_chandelier.md3", {0.0, 0.0, 15.0}, {0.0, 0.0, 0.0} },
+    { "models/objects/Prague/misc/med_chandelier.md3", {0.0, 0.0, -20.0}, {0.0, 0.0, 0.0} },
+    { "models/objects/Prague/misc/pra3_chandelier.md3", {0.0, 0.0, -50.0}, {0.0, 0.0, 0.0} },
+    { "models/objects/Prague/misc/pra3_chandelier_broken.md3", {0.0, 0.0, -50.0}, {35.0, 0.0, -30.0} },
+    { "models/objects/Prague/misc/statue.md3", {0.0, 0.0, -50.0}, {0.0, 0.0, 0.0} },
+    { "models/objects/Shop/misc/copy_machine.md3", {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0} },
+    { "models/objects/Shop/misc/helipad_lights.md3", {0.0, 0.0, -50.0}, {0.0, 0.0, 0.0} },
+    { "models/pick_ups/ammo_belt_lrg.md3", {0.0, 0.0, -50.0}, {0.0, 0.0, 0.0} },
+    { "models/pick_ups/armor_large.md3", {0.0, 0.0, -50.0}, {0.0, 90.0, 0.0} },
+    { "models/pick_ups/briefcase_silver.md3", {0.0, 0.0, -50.0}, {0.0, 0.0, 0.0} },
+    { "models/pick_ups/mp_universal_pickup.md3", {0.0, 0.0, -50.0}, {0.0, 0.0, 0.0} }
+
+};
+
+typedef struct
+{
+    char* modelName;
+    char* angles;
+    int     originOffset;
+    qboolean isModel; // True if it's a model (md3), false if it's a solid object (bsp).
+    char* mins;
+    char* maxs;
+} transformObject_t;
+
+static transformObject_t transformableObjects[] =
+{
+    {"instances/Colombia/tree01",                       "90 0 0",   20,     qfalse,     NULL,           NULL},
+    {"instances/Colombia/tree02",                       "0 0 0",    -35,    qfalse,     NULL,           NULL},
+    {"instances/Colombia/tree06",                       "0 0 0",    -35,    qfalse,     NULL,           NULL},
+    {"instances/Colombia/npc_jump1",                    "0 0 0",    -35,    qfalse,     NULL,           NULL},
+    {"models/objects/common/trash_can_lid_1.md3",       "0 180 0",  -5,     qtrue,      "-17 -17 0",    "17 17 70"},
+    {"models/objects/common/yugo.md3",                  "0 180 0",  -43,    qtrue,      "-50 -90 0",    "50 80 140"},
+    {"models/objects/common/toilet_1.md3",              "0 180 0",  -39,    qtrue,      "-17 -17 0",    "17 17 125"},
+    {"models/objects/Airport/box_cart.md3",             "0 180 0",  -39,    qtrue,      "-40 -70 0",    "40 55 150"},
+    {"models/objects/Prague/misc/pra3_chandelier.md3",  "0 180 0",  -39,    qtrue,      "-75 -75 0",    "75 75 175"}
+};
+
+void freeProphuntProps(gentity_t* player) {
+    int i;
+    gentity_t* entity;
+
+    player->client->pers.movingModel = qfalse;
+    player->client->pers.movingModelStatic = qfalse;
+    player->client->sess.transformed = qfalse;
+    player->client->pers.movingModelObject = -1;
+    player->client->ps.pm_type = PM_NORMAL;
+    player->client->sess.invisibleGoggles = qfalse;
+    player->client->ps.stats[STAT_FROZEN] = 0;
+    player->client->inactivityTime = level.time + g_inactivity.integer * 1000;
+
+    if (player->client->sess.hasRoxAC) {
+        player->s.eFlags &= ~EF_HSBOX;
+        player->client->ps.eFlags &= ~EF_HSBOX;
+    }
+
+    if (player->client->sess.transformedEntity) {
+        entity = &g_entities[player->client->sess.transformedEntity];
+        if (entity) {
+            G_FreeEntity(entity);
+        }
+        player->client->sess.transformedEntity = 0;
+    }
+
+    if (player->client->sess.transformedEntityBBox) {
+        entity = &g_entities[player->client->sess.transformedEntityBBox];
+        if (entity) {
+            G_FreeEntity(entity);
+        }
+        player->client->sess.transformedEntityBBox = 0;
+    }
+}
+
+void transformPlayerToObject(gentity_t* ent)
+{
+    int object;
+
+    // Boe!Man 2/5/14: First pick a random object.
+    object = irand(0, sizeof(transformableObjects) / sizeof(transformableObjects[0]) - 1);
+
+    // Do this so the server knows where the player is.
+    VectorCopy(ent->client->ps.origin, ent->s.origin);
+
+    // Put the object on the client their position.
+    if (!transformableObjects[object].isModel) {
+        AddSpawnField("classname", "misc_bsp");
+        AddSpawnField("bspmodel", transformableObjects[object].modelName);
+    }
+    else {
+        AddSpawnField("classname", "nv_model");
+        AddSpawnField("model", transformableObjects[object].modelName);
+    }
+    AddSpawnField("origin", va("%0.f %0.f %0.f", ent->s.origin[0], ent->s.origin[1], ent->s.origin[2] + transformableObjects[object].originOffset));
+    AddSpawnField("angles", transformableObjects[object].angles);
+
+    // Take care of the player.
+    ent->client->sess.invisibleGoggles = qtrue; // Make sure he's invisible,
+    ent->client->sess.transformed = qtrue; // .. and that he can't move.
+
+    // Reset the transformed entity if there is one.
+    if (ent->client->sess.transformedEntity) {
+        G_FreeEntity(&g_entities[ent->client->sess.transformedEntity]);
+        ent->client->sess.transformedEntity = 0;
+    }
+    if (ent->client->sess.transformedEntityBBox) {
+        G_FreeEntity(&g_entities[ent->client->sess.transformedEntityBBox]);
+        ent->client->sess.transformedEntityBBox = 0;
+    }
+    // And store the entity number for later usage.
+    ent->client->sess.transformedEntity = G_SpawnGEntityFromSpawnVars(qfalse);
+    ent->client->ps.eFlags |= EF_HSBOX;
+    ent->s.eFlags |= EF_HSBOX;
+
+    // Don't forget a blocked trigger for models.
+    if (transformableObjects[object].isModel) {
+        AddSpawnField("classname", "blocked_trigger");
+        AddSpawnField("model", "BLOCKED_TRIGGER");
+        AddSpawnField("origin", va("%0.f %0.f %0.f", ent->s.origin[0], ent->s.origin[1], ent->s.origin[2] + transformableObjects[object].originOffset));
+        AddSpawnField("mins", transformableObjects[object].mins);
+        AddSpawnField("maxs", transformableObjects[object].maxs);
+        ent->client->sess.transformedEntityBBox = G_SpawnGEntityFromSpawnVars(qfalse);
+
+        // Make sure the seeker can pop the hider out.
+        g_entities[ent->client->sess.transformedEntityBBox].touch = transformPlayerBack;
+        g_entities[ent->client->sess.transformedEntityBBox].hideseek = ent->s.number + 256;
+    }
+    else {
+        // Apply the use action on the bsp.
+        g_entities[ent->client->sess.transformedEntity].touch = transformPlayerBack;
+        g_entities[ent->client->sess.transformedEntity].hideseek = ent->s.number + 256;
+    }
+}
+
+void chooseProp(gentity_t* ent, int prop) {
+
+    if (prop < 0 || prop >((sizeof(propHuntModels) / sizeof(propHuntModels[0])) - 1)) {
+        return;
+    }
+
+    ent->client->pers.movingModel = qtrue;
+    ent->client->pers.movingModelStatic = qfalse;
+    ent->client->pers.movingModelObject = prop;
+    transformPlayerToProp(ent, -1, qfalse);
+
+}
+
+void prop_pickRandomProps(int* result) {
+
+    int i, j, tmp;
+    int numbers[TOTAL_PROPHUNT_MODELS];
+
+    for (i = 0; i < TOTAL_PROPHUNT_MODELS; i++) {
+        numbers[i] = i;
+    }
+
+    // Fisher-Yates shuffle.
+
+    for (i = 0; i < MAX_CLIENTS; i++) {
+        j = i + rand() % (TOTAL_PROPHUNT_MODELS - i);
+
+        tmp = numbers[i];
+        numbers[i] = numbers[j];
+        numbers[j] = tmp;
+
+        result[i] = numbers[i];
+    }
+
+}
+
+void transformPlayerToProp(gentity_t* ent, int propId, qboolean thinkSingle)
+{
+    int object, i;
+    vec3_t newOrigin;
+    vec3_t newAngles;
+    gentity_t* movingModel;
+    //vec3_t curpos;
+    // Boe!Man 2/5/14: First pick a random object.
+
+    if (propId >= 0 && propId < TOTAL_PROPHUNT_MODELS) {
+        object = propId;
+    }
+    else {
+        object = irand(0, sizeof(propHuntModels) / sizeof(propHuntModels[0]) - 1);
+    }
+
+    if (ent->client->pers.movingModel) {
+        object = ent->client->pers.movingModelObject;
+    }
+    else {
+        ent->client->pers.movingModelObject = object;
+    }
+
+    if (ent->client->sess.hasRoxAC) {
+        ent->s.eFlags |= EF_HSBOX;
+        ent->client->ps.eFlags |= EF_HSBOX;
+    }
+
+
+    VectorCopy(ent->client->ps.origin, ent->s.origin);
+
+    VectorCopy(ent->client->ps.origin, newOrigin);
+    VectorCopy(ent->client->ps.viewangles, newAngles);
+
+    newAngles[PITCH] = 0.0f;
+    newAngles[ROLL] = 0.0f;
+
+    VectorAdd(newAngles, propHuntModels[object].angleOffset, newAngles);
+    VectorAdd(newOrigin, propHuntModels[object].originOffset, newOrigin);
+
+    AddSpawnField("classname", "nv_model");
+    AddSpawnField("model", propHuntModels[object].modelName);
+    AddSpawnField("origin", va("%0.f %0.f %0.f", newOrigin[0], newOrigin[1], newOrigin[2]));
+    AddSpawnField("angles", va("%0.f %0.f %0.f", newAngles[0], newAngles[1], newAngles[2]));
+
+    // Reset the transformed entity if there is one.
+    if (ent->client->sess.transformedEntity) {
+        G_FreeEntity(&g_entities[ent->client->sess.transformedEntity]);
+        ent->client->sess.transformedEntity = 0;
+    }
+    if (ent->client->sess.transformedEntityBBox) {
+        G_FreeEntity(&g_entities[ent->client->sess.transformedEntityBBox]);
+        ent->client->sess.transformedEntityBBox = 0;
+    }
+
+    ent->client->sess.transformedEntity = G_SpawnGEntityFromSpawnVars(qfalse);
+
+    movingModel = &g_entities[ent->client->sess.transformedEntity];
+
+    movingModel->hideseek = 256 + ent->client->ps.clientNum;
+    movingModel->parent = ent;
+
+    if (thinkSingle) {
+        movingModel->think = prop_ThinkMovingModelSingle;
+    }
+    else {
+        movingModel->think = prop_ThinkMovingModels;
+    }
+
+
+    movingModel->nextthink = level.time + 1;
+
+    ent->client->sess.invisibleGoggles = qtrue;
+    ent->client->pers.movingModel = qtrue;
+    ent->client->pers.movingModelStatic = qfalse;
+}
+
+void    prop_ThinkMovingModelSingle(gentity_t* ent) {
+    gentity_t* clnt;
+    vec3_t newOrigin;
+    vec3_t newAngles;
+
+    clnt = ent->parent;
+
+    if ((!clnt || !clnt->client) && ent->hideseek > 255) {
+        clnt = &g_entities[ent->hideseek - 256];
+    }
+
+    if (!clnt || !clnt->client || G_IsClientDead(clnt->client)) {
+        G_FreeEntity(ent);
+        return;
+    }
+
+    if (!clnt->client->pers.movingModelStatic) {
+
+        VectorCopy(clnt->client->ps.origin, newOrigin);
+        VectorAdd(newOrigin, propHuntModels[clnt->client->pers.movingModelObject].originOffset, newOrigin);
+
+        newOrigin[2] += clnt->client->ps.viewheight;
+
+        VectorCopy(clnt->client->ps.viewangles, newAngles);
+        newAngles[0] = 0.0;
+        newAngles[2] = 0.0;
+
+        VectorAdd(newAngles, propHuntModels[clnt->client->pers.movingModelObject].angleOffset, newAngles);
+
+        G_SetOrigin(ent, newOrigin);
+        G_SetAngles(ent, newAngles);
+
+        trap_LinkEntity(ent);
+    }
+
+    ent->nextthink = level.time;
+}
+
+void    prop_ThinkMovingModels(gentity_t* ent) {
+
+
+
+    // ent is actually discarded here and we "abuse" clientframes here. 
+    // instead of updating the player model for a single ent, we update the model for all ents.
+    // this should make the props a bit *smoother* - but is it worth it?
+    gentity_t* player;
+    int i;
+
+    if (!isCurrentGametype(GT_PROP)) {
+        return;
+    }
+
+    for (i = 0; i < level.numConnectedClients; i++) {
+
+        player = &g_entities[level.sortedClients[i]];
+
+        if (player && player->client) {
+
+            if (player->client->pers.connected != CON_CONNECTED) {
+                SetTeam(player, "s", NULL, qtrue);
+                freeProphuntProps(player);
+                return;
+            }
+
+            if (player->client->sess.team == TEAM_RED && !G_IsClientDead(player->client)) {
+
+                if (level.customGameStarted) {
+
+                    if (!player->client->pers.movingModel || player->client->pers.movingModelObject < 0 || player->client->pers.movingModelObject >= TOTAL_PROPHUNT_MODELS) {
+                        freeProphuntProps(player);
+                        transformPlayerToProp(player, -1, qfalse);
+
+                    }
+
+                    ent = &g_entities[player->client->sess.transformedEntity];
+
+                    prop_ThinkMovingModelSingle(ent);
+
+                }
+
+            }
+
+        }
+
+    }
+
+}
+
+void addSpeedAlteration(gentity_t* ent, qboolean isDecrement, speedAlterationReason_t speedAlterationReason) {
+
+    speedAlteration_t* speedAlteration = isDecrement ? &ent->client->sess.speedDecrement : &ent->client->sess.speedIncrement;
+
+    speedAlteration->speedAlterationFrom = level.time;
+    speedAlteration->speedAlterationReason = speedAlterationReason;
+
+    switch (speedAlterationReason) {
+    case SPEEDALTERATION_MM1:
+    case SPEEDALTERATION_FIRENADE:
+        speedAlteration->speedAlterationTo = level.time + g_fireSpeedTime.integer;
+        speedAlteration->speedAlterationDuration = g_fireSpeedTime.integer;
+        break;
+    case SPEEDALTERATION_M4:
+    case SPEEDALTERATION_KNIFE:
+    case SPEEDALTERATION_STUNGUN:
+        speedAlteration->speedAlterationTo = level.time + g_stunSpeedTime.integer;
+        speedAlteration->speedAlterationDuration = g_stunSpeedTime.integer;
+        break;
+    case SPEEDALTERATION_WATER:
+        speedAlteration->speedAlterationTo = level.time + g_waterSpeedTime.integer;
+        speedAlteration->speedAlterationDuration = g_waterSpeedTime.integer;
+        break;
+    default:
+        speedAlteration->speedAlterationTo = level.time;
+        speedAlteration->speedAlterationDuration = 0;
+    }
+
+}
+
+void stealWeaponWithAmmo(gentity_t* from, gentity_t* to, weapon_t wpn) {
+
+    int wpammo = from->client->ps.ammo[weaponData[wpn].attack[ATTACK_NORMAL].ammoIndex];
+    int wpclip = from->client->ps.clip[ATTACK_NORMAL][wpn];
+    int wpaltammo = from->client->ps.ammo[weaponData[wpn].attack[ATTACK_ALTERNATE].ammoIndex];
+    int wpaltclip = from->client->ps.clip[ATTACK_ALTERNATE][wpn];
+
+    removeWeaponFromClient(from, wpn, qfalse, WP_KNIFE);
+    giveWeaponWithCustomAmmoToClient(to, wpn, qfalse, wpammo, wpclip, wpaltammo, wpaltclip);
+
+}
+
+void TeleportPlayerToPlayer(gentity_t* player, gentity_t* toPlayer, qboolean killbox, qboolean nojump) {
+    gentity_t* tent = G_TempEntity(player->client->ps.origin, EV_PLAYER_TELEPORT_OUT);
+    tent->s.clientNum = player->s.clientNum;
+    tent = G_TempEntity(toPlayer->client->ps.origin, EV_PLAYER_TELEPORT_IN);
+    tent->s.clientNum = player->s.clientNum;
+
+    trap_UnlinkEntity(player);
+    VectorCopy(toPlayer->client->ps.origin, player->client->ps.origin);
+    player->client->ps.origin[2] += 1;
+
+    vec3_t angles = { 0, toPlayer->client->ps.viewangles[YAW], 0 };
+
+    AngleVectors(angles, player->client->ps.velocity, NULL, NULL);
+    if (!nojump) {
+        VectorScale(player->client->ps.velocity, 600, player->client->ps.velocity);
+        player->client->ps.pm_time = 0;
+        SetClientViewAngle(player, angles);
+    }
+
+    if (killbox) {
+        G_KillBox(player);
+    }
+
+    BG_PlayerStateToEntityState(&player->client->ps, &player->s, qtrue);
+    VectorCopy(player->client->ps.origin, player->r.currentOrigin);
+    trap_LinkEntity(player);
+
+    if (!nojump) {
+        G_PlayEffect(G_EffectIndex("misc/electrical"), player->client->ps.origin, player->pos1);
+    }
+
+}
+
+void spawnCage(vec3_t org, qboolean autoremove, qboolean big) // Spawn a cage
+{
+    // Boe!Man 6/22/12: Addition for big cage.
+    char* origin;
+    int part, numb;
+
+    for (part = 1; part <= 4; part++) {
+        AddSpawnField("classname", "misc_bsp"); // blocker
+        AddSpawnField("bspmodel", "instances/Generic/fence01");
+        if (part == 1) {
+            if (!big) {
+                origin = va("%.0f %.0f %.0f",
+                    org[0],
+                    org[1] + 126,
+                    org[2] - 50);
+            }
+            else {
+                origin = va("%.0f %.0f %.0f",
+                    org[0] + 126,
+                    org[1] + 252,
+                    org[2] - 50);
+            }
+            AddSpawnField("origin", origin);
+            AddSpawnField("angles", "0 360 0");
+        }
+        else if (part == 2) {
+            if (!big) {
+                origin = va("%.0f %.0f %.0f",
+                    org[0],
+                    org[1] - 126,
+                    org[2] - 50);
+            }
+            else {
+                origin = va("%.0f %.0f %.0f",
+                    org[0] - 126,
+                    org[1] - 252,
+                    org[2] - 50);
+            }
+            AddSpawnField("origin", origin);
+            AddSpawnField("angles", "0 180 0");
+        }
+        else if (part == 3) {
+            if (!big) {
+                origin = va("%.0f %.0f %.0f",
+                    org[0] - 126,
+                    org[1],
+                    org[2] - 50);
+            }
+            else {
+                origin = va("%.0f %.0f %.0f",
+                    org[0] - 252,
+                    org[1] - 126,
+                    org[2] - 50);
+            }
+            AddSpawnField("origin", origin);
+            AddSpawnField("angles", "0 -270 0");
+        }
+        else if (part == 4) {
+            if (!big) {
+                origin = va("%.0f %.0f %.0f",
+                    org[0] + 126,
+                    org[1],
+                    org[2] - 50);
+            }
+            else {
+                origin = va("%.0f %.0f %.0f",
+                    org[0] + 252,
+                    org[1] + 126,
+                    org[2] - 50);
+            }
+            AddSpawnField("origin", origin);
+            AddSpawnField("angles", "0 -90 0");
+        }
+        AddSpawnField("model", "trigger_hurt"); //blocked_trigger
+        AddSpawnField("count", "1");
+        AddSpawnField("hideseek", "1");
+        numb = G_SpawnGEntityFromSpawnVars(qtrue);
+        if (numb != -1 && !autoremove) {
+            g_entities[numb].think = G_FreeEntity;
+            g_entities[numb].nextthink = level.time + 12000;
+        }
+
+        level.numSpawnVars = 0;
+        level.numSpawnVarChars = 0;
+
+        if (big) { // Boe!Man 6/22/12: Spawn the additional fences.
+            AddSpawnField("classname", "misc_bsp"); // blocker
+            AddSpawnField("bspmodel", "instances/Generic/fence01");
+            if (part == 1) {
+                origin = va("%.0f %.0f %.0f",
+                    org[0] - 126,
+                    org[1] + 252,
+                    org[2] - 50);
+                AddSpawnField("origin", origin);
+                AddSpawnField("angles", "0 360 0");
+            }
+            else if (part == 2) {
+                origin = va("%.0f %.0f %.0f",
+                    org[0] + 126,
+                    org[1] - 252,
+                    org[2] - 50);
+                AddSpawnField("origin", origin);
+                AddSpawnField("angles", "0 180 0");
+            }
+            else if (part == 3) {
+                origin = va("%.0f %.0f %.0f",
+                    org[0] - 252,
+                    org[1] + 126,
+                    org[2] - 50);
+                AddSpawnField("origin", origin);
+                AddSpawnField("angles", "0 -270 0");
+            }
+            else if (part == 4) {
+                origin = va("%.0f %.0f %.0f",
+                    org[0] + 252,
+                    org[1] - 126,
+                    org[2] - 50);
+                AddSpawnField("origin", origin);
+                AddSpawnField("angles", "0 -90 0");
+            }
+            AddSpawnField("model", "trigger_hurt"); //blocked_trigger
+            AddSpawnField("count", "1");
+            AddSpawnField("hideseek", "1");
+            numb = G_SpawnGEntityFromSpawnVars(qtrue);
+            if (numb != -1 && !autoremove) {
+                g_entities[numb].think = G_FreeEntity;
+                g_entities[numb].nextthink = level.time + 12000;
+            }
+
+            level.numSpawnVars = 0;
+            level.numSpawnVarChars = 0;
+        }
+    }
+}
+
+void resetCages() {
+    int i;
+    for (i = 0; i < level.num_entities; i++)
+    {
+        gentity_t* ent;
+
+        ent = &g_entities[i];
+
+        if (ent->hideseek == 1) {
+            G_FreeEntity(ent);
+        }
+
+    }
+}
+
+void initCageFight(void) {
+    int i, count = 0, foundCageSpawns = 0, cageSpawnPointIterator = 0;
+    gentity_t* hscageExtras = NULL;
+    gentity_t* cagePlayers = NULL;
+    vec3_t spawns[MAX_CLIENTS];
+    if (level.time < level.cagefightTimer) {
+        return;
+    }
+    level.startCage = qfalse;
+
+    G_ResetGametype(qfalse, qtrue);
+
+    for (i = 0; i < MAX_CLIENTS; i++) { // Janno - even although the previous limit was 32, we've been hitting higher numbers lately, therefore raising the limit to 64 on the condition that g_allowLargeCage is enabled. Boe!Man 6/30/12: 32, regardless of the amount of players. The recommended max for any gametype is 32, above, unsupported. So just spread them more equally instead of adding even more spawns.
+        VectorCopy(level.hideseek_cage, spawns[i]);
+    }
+
+    while (NULL != (cagePlayers = G_Find(cagePlayers, FOFS(classname), "hideseek_cageplayer"))) {
+        foundCageSpawns = 1;
+        spawns[cageSpawnPointIterator][0] = cagePlayers->s.origin[0];
+        spawns[cageSpawnPointIterator][1] = cagePlayers->s.origin[1];
+        spawns[cageSpawnPointIterator][2] = cagePlayers->s.origin[2];
+        cageSpawnPointIterator++;
+
+    }
+
+    if (!foundCageSpawns && !level.hideseek_cageSize) { // 0 = regular.
+        spawns[0][0] -= 105;
+        spawns[0][1] -= 105;
+        spawns[1][0] += 105;
+        spawns[1][1] += 105;
+        spawns[2][0] -= 105;
+        spawns[2][1] += 105;
+        spawns[3][0] += 105;
+        spawns[3][1] -= 105;
+        spawns[4][0] += 105; // fifth spawn
+        //spawns[4][1] -= 0;
+        spawns[5][0] -= 105;
+        //spawns[5][1] += 0;
+        //spawns[6][0] -= 0;
+        spawns[6][1] += 105;
+        //spawns[7][0] += 0;
+        spawns[7][1] -= 105;
+        spawns[8][0] += 105; // ninth spawn
+        spawns[8][1] -= 50;
+        spawns[9][0] -= 105;
+        spawns[9][1] += 50;
+        spawns[10][0] -= 50;
+        spawns[10][1] += 105;
+        spawns[11][0] += 50;
+        spawns[11][1] -= 105;
+        spawns[12][0] -= 50;
+        spawns[12][1] -= 105;
+        spawns[13][0] += 50;
+        spawns[13][1] += 105;
+        spawns[14][0] -= 105;
+        spawns[14][1] -= 50;
+        spawns[15][0] += 105;
+        spawns[15][1] += 50;
+        spawns[16][0] += 50;
+        spawns[16][1] -= 50;
+        spawns[17][0] += 50;
+        spawns[17][1] += 50;
+        spawns[18][0] -= 50;
+        spawns[18][1] += 50;
+        spawns[19][0] -= 50;
+        spawns[19][1] -= 50;
+
+        //spawns[20][0] += 0;
+        spawns[20][1] -= 50;
+        spawns[21][0] += 50;
+        //spawns[21][1] += 0;
+        //spawns[22][0] -= 0;
+        spawns[22][1] += 50;
+        spawns[23][0] -= 50;
+        //spawns[23][1] -= 0;
+        //spawns[24][0] -= 0;
+        //spawns[24][1] -= 0;
+    
+    }
+    else if (!foundCageSpawns && level.hideseek_cageSize == 2/* && cageSize == 2*/) { // Boe!Man 6/30/12: 2 = Big cage. So, add big cage spawnpoints.
+        // The absolute corners.
+        spawns[0][0] -= 231;
+        spawns[0][1] -= 231;
+        spawns[1][0] += 231;
+        spawns[1][1] += 231;
+        spawns[2][0] -= 231;
+        spawns[2][1] += 231;
+        spawns[3][0] += 231;
+        spawns[3][1] -= 231;
+
+        // The center between the two cages, still on the 'outer' line.
+        //spawns[4][0] -= 0;
+        spawns[4][1] -= 231;
+        //spawns[5][0] += 0;
+        spawns[5][1] += 231;
+        spawns[6][0] -= 231;
+        //spawns[6][1] -= 0;
+        spawns[7][0] += 231;
+        //spawns[7][1] += 0;
+
+        // The quarter between the cage, again, on the outer line.
+        spawns[8][0] -= 115.5;
+        spawns[8][1] -= 231;
+        spawns[9][0] += 115.5;
+        spawns[9][1] += 231;
+        spawns[10][0] -= 231;
+        spawns[10][1] -= 115.5;
+        spawns[11][0] += 231;
+        spawns[11][1] += 115.5;
+
+        // The same, except the opposite quarter.
+        spawns[12][0] += 115.5;
+        spawns[12][1] -= 231;
+        spawns[13][0] -= 115.5;
+        spawns[13][1] += 231;
+        spawns[14][0] -= 231;
+        spawns[14][1] += 115.5;
+        spawns[15][0] += 231;
+        spawns[15][1] -= 115.5;
+
+        // Now we begin spawning them in the 'inner cage', the original spawnpoints that we maintain.
+        spawns[16][0] -= 105;
+        spawns[16][1] -= 105;
+        spawns[17][0] += 105;
+        spawns[17][1] += 105;
+        spawns[18][0] -= 105;
+        spawns[18][1] += 105;
+        spawns[19][0] += 105;
+        spawns[19][1] -= 105;
+
+        // Center of the inner cage.
+        //spawns[20][0] -= 0;
+        spawns[20][1] -= 105;
+        //spawns[21][0] += 0;
+        spawns[21][1] += 105;
+        spawns[22][0] -= 105;
+        //spawns[22][1] += 0;
+        spawns[23][0] += 105;
+        //spawns[23][1] -= 0;
+
+        // Spawn one fella in the absolute center.
+        //spawns[24][0] -= 0;
+        //spawns[24][1] -= 0;
+
+        // Have the extra ability to spawn four more, do this between the absolutes of the inner cage and the outer cage ( (231 - 105) / 2 + 105)
+        spawns[25][0] -= 168;
+        spawns[25][1] -= 168;
+        spawns[26][0] += 168;
+        spawns[26][1] += 168;
+        spawns[27][0] -= 168;
+        spawns[27][1] += 168;
+        spawns[28][0] += 168;
+        spawns[28][1] -= 168;
+    }
+
+    level.cagefight = qtrue;
+    level.customGameStarted = qtrue; // stop Seeker Released
+    level.customGameWeaponsDistributed = qtrue; // stop RPG/M4 stuff
+    if (level.hideseek_cageSize == 2) { // Spawn big cage.
+        spawnCage(level.hideseek_cage, qtrue, qtrue);
+        spawnCage(level.hideseek_cage, qtrue, qtrue); // 2 to be sure no parts are missing
+    }
+    else if (!level.hideseek_cageSize) {
+        spawnCage(level.hideseek_cage, qtrue, qfalse);
+        spawnCage(level.hideseek_cage, qtrue, qfalse); // 2 to be sure no parts are missing
+    }
+
+    //after spawning cage, add entities which were removed at first.
+    /* // FIXMEJAN - revisit cageextra entities.
+    while (NULL != (hscageExtras = G_Find(hscageExtras, FOFS(classname), "hideseek_cageextra"))) {
+        //swap classname with target.
+
+        hscageExtras->classname = "misc_bsp";
+
+        hscageExtras->cageextra = qtrue;
+        trap_LinkEntity(hscageExtras);
+
+    }
+    */
+    // not efficient but in the new cage system I don't have a better time to set it as players can switch teams during 3sec period after cagefight is announced and when it actually starts.
+    // level.lowestScore will become the "baseline" for our cagefight benefits. If lowest score is 1 and highest is 3, that means that score 1 gets no benefits, score 2 get +25hp and +10% dmg
+    // and score 3 get +50hp and +20% dmg
+    // so the baseline just shifts the benefits, no point of handing everyone a benefit if everyone has 1 pt.
+    //if (g_cageFightType.integer) { // Having everyone in cage is the new "normal", so not adding the option to choose which cagefight are we playing.
+        level.lowestScore = 999; // arbitrary number, you should never have above 999 score anyhow
+        for (i = 0; i < level.numConnectedClients; i++) {
+            if (level.clients[level.sortedClients[i]].sess.team == TEAM_RED && level.clients[level.sortedClients[i]].sess.kills < level.lowestScore) {
+                level.lowestScore = level.clients[level.sortedClients[i]].sess.kills;
+            }
+
+            if (level.lowestScore == 0) {
+                break; // as the lowest score is 0 we won't need to seek any further.
+            }
+        }
+    //}
+
+    for (i = 0; i < level.numConnectedClients; i++) {
+        if (level.clients[level.sortedClients[i]].sess.team == TEAM_RED && (level.clients[level.sortedClients[i]].sess.cageFighter == qtrue || level.mapHighScore == 0)) {
+            //respawn ( &g_entities[level.sortedClients[i]] );
+            if (level.hideseek_cageSize != 1) { // 1 = no cage at all, if this is the cage, don't teleport them to the 'cage'.
+                if (foundCageSpawns && cageSpawnPointIterator < count) {
+                    count = 0;
+                }
+                TeleportPlayerNoKillbox(&g_entities[level.sortedClients[i]], spawns[count], level.clients[level.sortedClients[i]].ps.viewangles, qtrue);
+                count += 1;
+            }
+            level.clients[level.sortedClients[i]].ps.stats[STAT_WEAPONS] = 0;
+            memset(level.clients[level.sortedClients[i]].ps.ammo, 0, sizeof(level.clients[level.sortedClients[i]].ps.ammo));
+            memset(level.clients[level.sortedClients[i]].ps.clip, 0, sizeof(level.clients[level.sortedClients[i]].ps.clip));
+            //g_entities[level.lastalive[0]].client->ps.ammo[weaponData[WP_RPG7_LAUNCHER].attack[ATTACK_NORMAL].ammoIndex]=2;
+            level.clients[level.sortedClients[i]].ps.stats[STAT_WEAPONS] |= (1 << WP_KNIFE);
+            level.clients[level.sortedClients[i]].ps.clip[ATTACK_NORMAL][WP_KNIFE] = 1;
+            level.clients[level.sortedClients[i]].ps.stats[STAT_WEAPONS] |= (1 << WP_AK74_ASSAULT_RIFLE);
+            //g_entities[level.lastalive[0]].client->ps.clip[ATTACK_NORMAL][WP_RPG7_LAUNCHER]=1;
+            //g_entities[level.lastalive[0]].client->ps.firemode[WP_RPG7_LAUNCHER] = BG_FindFireMode ( WP_RPG7_LAUNCHER, ATTACK_NORMAL, WP_FIREMODE_AUTO );
+            level.clients[level.sortedClients[i]].ps.weapon = WP_AK74_ASSAULT_RIFLE;
+            level.clients[level.sortedClients[i]].ps.weaponstate = WEAPON_READY;
+            level.clients[level.sortedClients[i]].ps.weaponTime = 0;
+            level.clients[level.sortedClients[i]].ps.weaponAnimTime = 0;
+            level.clients[level.sortedClients[i]].ps.stats[STAT_FROZEN] = 10000;
+
+            if (/*g_cageFightType.integer && */level.clients[level.sortedClients[i]].sess.kills > level.lowestScore) {
+                g_entities[level.sortedClients[i]].health += 25 * (level.clients[level.sortedClients[i]].sess.kills - level.lowestScore); //for each pt above lowestScore you get +25hp points.
+            }
+
+        }
+        else if (level.clients[level.sortedClients[i]].sess.team != TEAM_SPECTATOR) { // Boe!Man 8/30/11: Means the client is a Red or Blue player that wasn't qualified to play in the cage fight. Pop them.
+            G_Damage(&g_entities[level.sortedClients[i]], NULL, NULL, NULL, NULL, 10000, 0, MOD_POP, HL_NONE);
+        } // Boe!Man 9/4/11: Else would be spectator only, no need to do anything.
+    }
+}
+
+// JANFIXME merge teleportPlayerToPlayer with this., make teleportPlayerToPlayer as an alias.
+void TeleportPlayerNoKillbox(gentity_t* player, vec3_t origin, vec3_t angles, qboolean nojump)
+{
+    gentity_t* tent;
+
+    if (level.time < player->client->sess.lastTele)
+        return;
+    else
+        player->client->sess.lastTele = level.time + 500;
+    //Com_Printf("%s is teleporting to %s\n", player->client->pers.netname, vtos(origin));
+    // use temp events at source and destination to prevent the effect
+    // from getting dropped by a second player event
+    if (!G_IsClientSpectating(player->client))
+    {
+        tent = G_TempEntity(player->client->ps.origin, EV_PLAYER_TELEPORT_OUT);
+        tent->s.clientNum = player->s.clientNum;
+
+        tent = G_TempEntity(origin, EV_PLAYER_TELEPORT_IN);
+        tent->s.clientNum = player->s.clientNum;
+    }
+
+    // unlink to make sure it can't possibly interfere with G_KillBox
+    trap_UnlinkEntity(player);
+
+    VectorCopy(origin, player->client->ps.origin);
+    player->client->ps.origin[2] += 1;
+
+    // spit the player out
+    AngleVectors(angles, player->client->ps.velocity, NULL, NULL);
+    if (isCurrentGametype(GT_HNS)) {
+        if (!nojump) {
+            VectorScale(player->client->ps.velocity, 600, player->client->ps.velocity); // Henkie 22/02/10 -> Do not spit ( default 400)
+            player->client->ps.pm_time = 0;     // another jump available after 160ms
+        }
+    }
+    else {
+        if (!nojump) {
+            VectorScale(player->client->ps.velocity, 600, player->client->ps.velocity); // Henkie 22/02/10 -> Do not spit ( default 400)
+            player->client->ps.pm_time = 0;     // another jump available after 160ms
+        }
+    }
+
+    // toggle the teleport bit so the client knows to not lerp
+    player->client->ps.eFlags ^= EF_TELEPORT_BIT;
+
+    // set angles
+    if (!nojump) {
+        SetClientViewAngle(player, angles);
+    }
+
+
+
+    // save results of pmove
+    BG_PlayerStateToEntityState(&player->client->ps, &player->s, qtrue);
+
+    // use the precise origin for linking
+    VectorCopy(player->client->ps.origin, player->r.currentOrigin);
+
+    if (!G_IsClientSpectating(player->client))
+    {
+        trap_LinkEntity(player);
+    }
+
+    if (!nojump && player->client->sess.team != TEAM_SPECTATOR)
+        G_PlayEffect(G_EffectIndex("misc/electrical"), player->client->ps.origin, player->pos1);
+}

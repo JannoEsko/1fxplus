@@ -1125,7 +1125,7 @@ void ReachableObject_events(gentity_t* self) {
             // Boe!Man 6/13/11: End the round if specified.
             if (self->endround2) {
                 // Boe!Man 6/13/11: Gametype restart.
-                G_ResetGametype(qfalse);
+                G_ResetGametype(qfalse, qfalse);
             }
             else {
                 // Wait, is the client dead already? Or has he moved to the spectator team?

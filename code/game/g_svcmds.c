@@ -322,7 +322,7 @@ qboolean ConsoleCommand( void )
     if (Q_stricmp (cmd, "gametype_restart" ) == 0 )
     {
         trap_Argv( 1, cmd, sizeof( cmd ) );
-        G_ResetGametype ( Q_stricmp ( cmd, "full" ) == 0 );
+        G_ResetGametype ( Q_stricmp ( cmd, "full" ) == 0, qfalse );
         return qtrue;
     }
 

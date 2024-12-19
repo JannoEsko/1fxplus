@@ -1268,6 +1268,18 @@ void G_InitGame( int levelTime, int randomSeed, int restart )
     // parse the key/value pairs and spawn gentities
     G_SpawnEntitiesFromString(qfalse);
 
+    if (isCurrentGametype(GT_HNS)) {
+        AddSpawnField("classname", "gametype_item");
+        AddSpawnField("targetname", "briefcase");
+        AddSpawnField("gametype", "inf");
+        AddSpawnField("origin", "9999 9999 9999");
+        trap_UnlinkEntity(&g_entities[G_SpawnGEntityFromSpawnVars(qtrue)]);
+
+        Q_strncpyz(level.cagewinner, "none", sizeof(level.cagewinner));
+    }
+
+    initBspModelSpawns();
+
     // Now parse the gametype information that we need.  This needs to be
     // done after the entity spawn so that the items and triggers can be
     // linked up properly
@@ -2400,7 +2412,7 @@ void CheckWarmup ( void )
 //      level.warmupTime += 10000;
 //      trap_Cvar_Set( "g_restarted", "1" );
 
-        G_ResetGametype ( qtrue );
+        G_ResetGametype ( qtrue, qfalse );
 //      trap_SendConsoleCommand( EXEC_APPEND, "map_restart 0\n" );
 //      level.restarted = qtrue;
         return;
