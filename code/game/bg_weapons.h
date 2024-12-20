@@ -96,10 +96,10 @@ typedef enum
     WP_M15_GRENADE,
 
     // Boe!Man 7/27/15: Extra grenades for 1fx. Client Additions.
-    //WP_M67_GRENADE,
-    //WP_F1_GRENADE,
-    //WP_L2A2_GRENADE,
-    //WP_MDN11_GRENADE,
+    WP_M67_GRENADE,
+    WP_F1_GRENADE,
+    WP_L2A2_GRENADE,
+    WP_MDN11_GRENADE,
 
     WP_NUM_WEAPONS
 } weapon_t;
@@ -166,9 +166,32 @@ typedef enum
     //AMMO_L2A2,
     AMMO_MAX,
 
-    AMMO_NONE,
+    AMMO_NONE, 
 
 } ammo_t;
+
+typedef enum
+{
+    CLADD_AMMO_KNIFE,
+    CLADD_AMMO_045,
+    CLADD_AMMO_556,
+    CLADD_AMMO_9,
+    CLADD_AMMO_12,
+    CLADD_AMMO_762,
+    CLADD_AMMO_40,
+    CLADD_AMMO_RPG7,
+    CLADD_AMMO_M15,
+    CLADD_AMMO_M84,
+    CLADD_AMMO_SMOHG92,
+    CLADD_AMMO_ANM14,
+
+    CLADD_AMMO_F1,
+    CLADD_AMMO_MDN11,
+    CLADD_AMMO_M67,
+
+    CLADD_AMMO_L2A2,
+
+} goldAmmoClAdd_t;
 
 #define WP_FIREMODE_NONE        0
 #define WP_FIREMODE_AUTO        1
@@ -291,8 +314,8 @@ typedef struct  ammoData_s
 
 extern char *weaponNames[WP_NUM_WEAPONS];
 extern weaponData_t weaponData[WP_NUM_WEAPONS];
-extern char *ammoNames[AMMO_MAX];
-extern ammoData_t ammoData[AMMO_MAX];
+extern char *ammoNames[MAX_AMMO];
+extern ammoData_t ammoData[MAX_AMMO];
 
 // Specific weapon information
 

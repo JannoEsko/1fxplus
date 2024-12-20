@@ -33,11 +33,15 @@ char *bg_weaponNames[WP_NUM_WEAPONS] =
     "SMOHG92",                      // WP_SMOHG92_GRENADE,
     "ANM14",                        // WP_ANM14_GRENADE,
     "M15",                          // WP_M15_GRENADE,
+    "M67",
+    "F1",
+    "L2A2",
+    "MDN11"
 };
 
 weaponData_t weaponData[WP_NUM_WEAPONS];
 
-char *ammoNames[AMMO_MAX] =
+char *ammoNames[MAX_AMMO] =
 {
     "Knife",        //  AMMO_KNIFE,
     "0.45 ACP",     //  AMMO_045,
@@ -55,7 +59,7 @@ char *ammoNames[AMMO_MAX] =
     "9mm|mp5",      //  AMMO_9_MP5
 };
 
-ammoData_t ammoData[AMMO_MAX];
+ammoData_t ammoData[MAX_AMMO];
 
 static const char* BG_GetRealAmmoName ( ammo_t ammoNum )
 {
@@ -110,7 +114,7 @@ qboolean BG_InitAmmoStats(void)
     }
 
     topGroup = trap_GP_GetBaseParseGroup(GP2);
-    for ( i = 0; i < AMMO_MAX; i ++ )
+    for ( i = 0; i < MAX_AMMO; i ++ )
     {
         void*   topSubs;
         const char* realName;
@@ -217,7 +221,7 @@ static qboolean BG_ParseAttackStats ( int weaponNum, attackData_t* attack, void 
     }
 
     attack->ammoIndex = AMMO_NONE;
-    for (i = 0; i < AMMO_MAX; i++)
+    for (i = 0; i < MAX_AMMO; i++)
     {
         if (0 == Q_stricmp(tmpStr, ammoNames[i]))
         {
@@ -227,7 +231,7 @@ static qboolean BG_ParseAttackStats ( int weaponNum, attackData_t* attack, void 
     }
 
 #ifndef NDEBUG
-    if (AMMO_MAX == i)
+    if (MAX_AMMO == i)
     {
         Com_Printf("BG_ParseWeaponStats: Unknown ammo: %s\n", tmpStr);
     }

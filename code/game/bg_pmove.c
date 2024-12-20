@@ -2117,6 +2117,10 @@ TAnimWeapon* PM_GetAnimFromName ( char *animName, playerState_t *ps, int *animIn
         case WP_SMOHG92_GRENADE:
         case WP_ANM14_GRENADE:
         case WP_M15_GRENADE:
+        case WP_M67_GRENADE:
+        case WP_L2A2_GRENADE:
+        case WP_MDN11_GRENADE:
+        case WP_F1_GRENADE:
             if(!strcmp(animName,"charge"))
             {
                 // Get 'throwbegin' anim.
@@ -2337,7 +2341,7 @@ static void PM_BeginWeaponChange(int weapon)
     PM_AddEvent(EV_CHANGE_WEAPON);
     pm->ps->weaponstate = WEAPON_DROPPING;
 
-    if( pm->ps->weapon >= WP_M84_GRENADE && pm->ps->weapon <= WP_M15_GRENADE && pm->ps->clip[ATTACK_NORMAL][pm->ps->weapon] <= 0 )
+    if( pm->ps->weapon >= WP_M84_GRENADE && pm->ps->weapon < WP_NUM_WEAPONS && pm->ps->clip[ATTACK_NORMAL][pm->ps->weapon] <= 0 )
     {
         // We don't want to play the 'putaway' anim for the grenades if we are out of grenades!
         return;
@@ -2383,7 +2387,7 @@ static void PM_FinishWeaponChange( void )
     }
 
     // We don't want to play the 'takeout' anim for the grenades if we are about to reload anyway
-    if( pm->ps->weapon >= WP_M84_GRENADE && pm->ps->weapon <= WP_M15_GRENADE && pm->ps->clip[ATTACK_NORMAL][pm->ps->weapon] <=0 )
+    if( pm->ps->weapon >= WP_M84_GRENADE && pm->ps->weapon < WP_NUM_WEAPONS && pm->ps->clip[ATTACK_NORMAL][pm->ps->weapon] <=0 )
     {
         return;
     }
@@ -2932,13 +2936,13 @@ static void PM_Weapon( void )
     {
         // Handle the weapons idle animation
         PM_WeaponIdle ( );
-
         return;
     }
 
     // Reload the alt clip immediately
     if( !pm->ps->clip[ATTACK_ALTERNATE][pm->ps->weapon] && pm->ps->ammo[weaponData[pm->ps->weapon].attack[ATTACK_ALTERNATE].ammoIndex] > 0)
     {
+        
         switch(weaponData[pm->ps->weapon].attack[ATTACK_ALTERNATE].fireFromClip)
         {
             case 2:
@@ -2991,6 +2995,10 @@ static void PM_Weapon( void )
             case WP_SMOHG92_GRENADE:
             case WP_ANM14_GRENADE:
             case WP_M15_GRENADE:
+            case WP_M67_GRENADE:
+            case WP_L2A2_GRENADE:
+            case WP_MDN11_GRENADE:
+            case WP_F1_GRENADE:
                 if(!(attackButtons&(BUTTON_ATTACK|BUTTON_ALT_ATTACK)) )
                 {
                     if(pm->ps->weaponstate==WEAPON_CHARGING)
@@ -3113,7 +3121,7 @@ static void PM_Weapon( void )
         PM_StartRefillClip( ATTACK_NORMAL );
         return;
     }
-    else if( pm->ps->weapon==WP_KNIFE || (pm->ps->weapon>=WP_RPG7_LAUNCHER && pm->ps->weapon<=WP_M15_GRENADE) )
+    else if( pm->ps->weapon==WP_KNIFE || (pm->ps->weapon>=WP_RPG7_LAUNCHER && pm->ps->weapon< WP_NUM_WEAPONS) )
     {
         if(pm->ps->clip[ATTACK_NORMAL][pm->ps->weapon]<1)
         {
@@ -3355,6 +3363,10 @@ static void PM_Weapon( void )
         case WP_SMOHG92_GRENADE:
         case WP_ANM14_GRENADE:
         case WP_M15_GRENADE:
+        case WP_M67_GRENADE:
+        case WP_L2A2_GRENADE:
+        case WP_MDN11_GRENADE:
+        case WP_F1_GRENADE:
 
             // Start the detonation timer on the grenade going.
             pm->ps->grenadeTimer = attackData->projectileLifetime;

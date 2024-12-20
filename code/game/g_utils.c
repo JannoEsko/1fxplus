@@ -686,6 +686,9 @@ void G_PlayEffect(int fxID, vec3_t org, vec3_t ang)
     te = G_TempEntity( org, EV_PLAY_EFFECT );
     VectorCopy(ang, te->s.angles);
     VectorCopy(org, te->s.origin);
+    if (fxID == G_EffectIndex("arm2smallsmoke")) {
+        te->s.origin[2] -= 30;
+    }
     te->s.eventParm = fxID;
 }
 

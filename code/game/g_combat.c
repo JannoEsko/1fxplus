@@ -957,7 +957,7 @@ int G_Damage (
     gclient_t       *client;
     int             take;
     int             save;
-    int             asave;
+    int             asave = 0;
     int             knockback;
 
     if (!targ->takedamage)
@@ -1066,13 +1066,14 @@ int G_Damage (
     {
         damage = 1;
     }
-
+    int originalDamage = damage;
     // Start H&S specifics.
     if (isCurrentGametype(GT_HNS) && attacker && attacker->client && client) {
         float radius = 1000.0f;
+        
+        damage = 0;
         if (client->sess.team == TEAM_RED && attacker->client->sess.team == TEAM_BLUE && mod == MOD_USSOCOM_PISTOL) {
             // Stungun.
-            damage = 0;
             addSpeedAlteration(targ, qtrue, SPEEDALTERATION_STUNGUN);
             removeWeaponFromClient(attacker, WP_USSOCOM_PISTOL, qfalse, WP_KNIFE);
             G_Broadcast(BROADCAST_GAME, targ, qfalse, "You got \\tased\nby %s!", attacker->client->pers.netname);
@@ -1085,7 +1086,6 @@ int G_Damage (
             tent->s.time2 = (int)(radius * 1000.0f);
             G_AddEvent(tent, EV_GENERAL_SOUND, G_SoundIndex("sound/ambience/generic/sparks2.mp3", qfalse));
         } else if (mod == altAttack(MOD_KNIFE) && client->sess.team == TEAM_RED && attacker->client->sess.team == TEAM_RED && g_hsgiveknife.integer && !g_friendlyFire.integer) {
-            damage = 0;
             int ammoIdx = weaponData[WP_KNIFE].attack[ATTACK_ALTERNATE].ammoIndex;
             G_Broadcast(BROADCAST_GAME, attacker, qfalse, "You gave a knife to %s!", client->pers.netname);
             G_Broadcast(BROADCAST_GAME, targ, qfalse, "%s gave you a knife!", attacker->client->pers.netname);
@@ -1094,7 +1094,6 @@ int G_Damage (
                 client->ps.ammo[ammoIdx]++;
             }
         } else if (client->sess.team == TEAM_BLUE && attacker->client->sess.team == TEAM_RED) {
-            damage = 0;
             if (!client->pers.seekerAway && level.customGameStarted) {
                 qboolean stunned = qfalse;
                 speedAlterationReason_t speedAlterationReason = SPEEDALTERATION_NONE;
@@ -1128,11 +1127,9 @@ int G_Damage (
             }
         }
         else if (client->sess.team == TEAM_RED && attacker->client->sess.team == TEAM_BLUE) {
-            if (mod != MOD_KNIFE) {
-                damage = 0;
-            }
-            else {
-                if (level.MM1Given && hideSeek_Weapons.string[HSWPN_MM1] == '1') {
+            if (mod == MOD_KNIFE) {
+                damage = originalDamage;
+                if (!level.MM1Given && hideSeek_Weapons.string[HSWPN_MM1] == '1') {
                     level.MM1Given = qtrue;
                     giveWeaponToClient(attacker, WP_MM1_GRENADE_LAUNCHER, qfalse);
                     Q_strncpyz(level.MM1loc, attacker->client->pers.netname, sizeof(level.MM1loc));
@@ -1172,18 +1169,20 @@ int G_Damage (
                 }
             }
         }
-        else if (!g_friendlyFire.integer && mod != MOD_TELEFRAG && !level.cagefight) {
-            damage = 0;
+        else if (!g_friendlyFire.integer && mod == MOD_TELEFRAG && !level.cagefight) {
+            damage = originalDamage;
         }
-        else if (level.cagefight && mod != altAttack(MOD_AK74_ASSAULT_RIFLE)) {
-            damage = 0;
+        else if (level.cagefight && mod == altAttack(MOD_AK74_ASSAULT_RIFLE)) {
+            damage = originalDamage;
+        }
+        else if (g_friendlyFire.integer) {
+            damage = originalDamage;
         }
 
 
         if (attacker->client->sess.team != client->sess.team) {
             if (mod == MOD_ANM14_GRENADE) {
                 addSpeedAlteration(targ, qtrue, SPEEDALTERATION_FIRENADE);
-                damage = 0;
             }
             else if (mod == MOD_RPG7_LAUNCHER || mod == MOD_SMOHG92_GRENADE) {
                 G_ApplyKnockback(targ, dir, 50.0f);
@@ -1633,7 +1632,7 @@ qboolean G_RadiusDamage (
     int         numListedEntities;
     vec3_t      mins, maxs;
     vec3_t      v;
-    vec3_t      dir;
+    vec3_t      dir = { 0.0f, 0.0f, 0.0f };
     int         i, e;
     qboolean    hitClient = qfalse;
 

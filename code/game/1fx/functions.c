@@ -1932,7 +1932,7 @@ void parseChatTokens(gentity_t* ent, chatMode_t chatMode, const char* input, cha
             // Sound handling
             mvchat_ChatParse_t chatParse = { 0 };
             mvchat_chatDetermineSound(&chatParse, (char*)ptr, ent && ent->client ? ent->client->pers.identity : NULL);
-
+            
             if (chatParse.shouldSoundPlay) {
                 // JANFIXME - add playability based on sound modes + being alive/dead!
                 if (chatParse.isCustomSound) {
@@ -1954,21 +1954,21 @@ void parseChatTokens(gentity_t* ent, chatMode_t chatMode, const char* input, cha
                     G_GlobalSound(chatParse.soundIndex);
                 }
 
-                
-                
-            }
-
-            if (!chatParse.displayNoText && chatParse.text) {
-                int len = strlen(chatParse.text);
-                if (outIndex + len < sizeOfOutput - 1) {
-                    Q_strncpyz(&output[outIndex], chatParse.text, len + 1);
-                    outIndex += len;
+                if (!chatParse.displayNoText && chatParse.text) {
+                    int len = strlen(chatParse.text);
+                    if (outIndex + len < sizeOfOutput - 1) {
+                        Q_strncpyz(&output[outIndex], chatParse.text, len + 1);
+                        outIndex += len;
+                    }
                 }
+
+                ptr += chatParse.stripChars; // Skip processed characters
+                soundParsed = qtrue; // Stop processing further sounds
+                continue;
+                
             }
 
-            ptr += chatParse.stripChars; // Skip processed characters
-            soundParsed = qtrue; // Stop processing further sounds
-            continue;
+            
         }
 
         if (*ptr == '#') {

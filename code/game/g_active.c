@@ -1194,6 +1194,17 @@ void ClientThink_real( gentity_t *ent )
                 }
             }
         }
+        else if (level.time <= client->sess.speedIncrement.speedAlterationTo) {
+            client->ps.speed += g_stunSpeedIncrement.integer;
+
+            if (level.time >= client->sess.speedAnimation) {
+                if (ent->r.currentOrigin[1] != client->sess.oldvelocity[1] || ent->r.currentOrigin[2] != client->sess.oldvelocity[2]) {
+                    G_PlayEffect(G_EffectIndex("arm2smallsmoke"), client->ps.origin, ent->pos1);
+                    client->sess.speedAnimation = level.time + 30;
+                    VectorCopy(ent->r.currentOrigin, client->sess.oldvelocity);
+                }
+            }
+        }
         else if (level.time <= client->sess.speedDecrement.speedAlterationTo) {
             int slowSpeedValue, timeLeft;
             switch (client->sess.speedDecrement.speedAlterationReason) {

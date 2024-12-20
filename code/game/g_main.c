@@ -263,6 +263,8 @@ vmCvar_t    g_boxAttempts;
 vmCvar_t    g_cageAttempts;
 vmCvar_t    g_noHighFps;
 
+vmCvar_t    sv_useLegacyNades;
+
 static cvarTable_t gameCvarTable[] =
 {
     // don't override the cheat state set by the system
@@ -369,6 +371,12 @@ static cvarTable_t gameCvarTable[] =
     { NULL,                 "disable_pickup_weapon_SMOHG92",        "0", CVAR_ARCHIVE|CVAR_LATCH, 0.0, 0.0, 0, qfalse },
     { NULL,                 "disable_pickup_weapon_AN_M14",         "0", CVAR_ARCHIVE|CVAR_LATCH, 0.0, 0.0, 0, qfalse },
     { NULL,                 "disable_pickup_weapon_M15",            "0", CVAR_ARCHIVE|CVAR_LATCH, 0.0, 0.0, 0, qfalse },
+
+    // Client additions.
+    { NULL,                 "disable_pickup_weapon_M67",            "0", CVAR_ARCHIVE|CVAR_LATCH, 0.0, 0.0, 0, qfalse },
+    { NULL,                 "disable_pickup_weapon_F1",             "0", CVAR_ARCHIVE | CVAR_LATCH, 0.0, 0.0, 0, qfalse },
+    { NULL,                 "disable_pickup_weapon_L2A2",           "0", CVAR_ARCHIVE | CVAR_LATCH, 0.0, 0.0, 0, qfalse },
+    { NULL,                 "disable_pickup_weapon_MDN11",          "0", CVAR_ARCHIVE | CVAR_LATCH, 0.0, 0.0, 0, qfalse },
 
     { &g_forceFollow,       "g_forceFollow",     "0",             CVAR_ARCHIVE, 0.0, 0.0, 0, qfalse },
     { &g_followEnemy,       "g_followEnemy",     "1",             CVAR_ARCHIVE, 0.0, 0.0, 0, qfalse },
@@ -538,7 +546,7 @@ static cvarTable_t gameCvarTable[] =
     { &g_stunSpeedTime,         "g_stunSpeedTime",          "4000", CVAR_ARCHIVE | CVAR_LATCH | CVAR_LOCK_RANGE,                    0.0,    8000.0,  0, qfalse },
     { &g_fireSpeedTime,         "g_fireSpeedTime",          "1500", CVAR_ARCHIVE | CVAR_LATCH | CVAR_LOCK_RANGE,                    0.0,    8000.0,  0, qfalse },
         
-    
+    { &sv_useLegacyNades,      "sv_useLegacyNades",         "",     0, 0, 0, 0, qfalse },
 
 };
 
@@ -1187,6 +1195,16 @@ void G_InitGame( int levelTime, int randomSeed, int restart )
         trap_Cvar_Set("disable_pickup_weapon_silvertalon", "1");
         trap_Cvar_Set("disable_pickup_weapon_MP5", "1");
         trap_Cvar_Set("disable_pickup_weapon_SIG551", "1");
+
+        if (sv_useLegacyNades.integer) {
+
+            ammoNames[12] = "F1";
+            ammoNames[13] = "MDN11";
+            ammoNames[14] = "M67";
+            ammoNames[15] = "L2A2";
+
+        }
+
     }
 
     G_UpdateAvailableWeapons ( );

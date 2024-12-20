@@ -1599,6 +1599,7 @@ extern	vmCvar_t    g_hnsWeaponsMinPlayers;
 extern	vmCvar_t    g_boxAttempts;
 extern	vmCvar_t    g_cageAttempts;
 extern	vmCvar_t    g_noHighFps;
+extern  vmCvar_t    sv_useLegacyNades;
 
 //extern vmCvar_t     g_leanType;
 
@@ -2128,6 +2129,7 @@ void spawnCage(vec3_t org, qboolean autoremove, qboolean big);
 void resetCages(void);
 void initCageFight(void);
 void TeleportPlayerNoKillbox(gentity_t* player, vec3_t origin, vec3_t angles, qboolean nojump);
+void G_MissileImpact(gentity_t* ent, trace_t* trace);
 
 typedef struct
 {

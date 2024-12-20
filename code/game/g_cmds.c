@@ -385,7 +385,7 @@ void Cmd_Drop_f ( gentity_t* ent )
     {
         return;
     }
-
+    
     // Drop the weapon the client wanted to drop
 
     int weapon = atoi(ConcatArgs(1));
@@ -1875,7 +1875,7 @@ void G_Say ( gentity_t *ent, gentity_t *target, int mode, const char *chatText )
 Cmd_Say_f
 ==================
 */
-static void Cmd_Say_f( gentity_t *ent, int mode, qboolean arg0 ) { // JANFIXME - the purpose of arg0 if it's not in use at all?
+static void Cmd_Say_f( gentity_t *ent, int mode ) { // JANFIXME - the purpose of arg0 if it's not in use at all?
     char        *p;
 
     if (!ent || !ent->client) {
@@ -1889,7 +1889,7 @@ static void Cmd_Say_f( gentity_t *ent, int mode, qboolean arg0 ) { // JANFIXME -
         return;
     }
 
-    if ( argc < 2 && !arg0 ) {
+    if ( argc < 2 ) {
         return;
     }
 
@@ -1899,14 +1899,7 @@ static void Cmd_Say_f( gentity_t *ent, int mode, qboolean arg0 ) { // JANFIXME -
 
     if (!muted) {
 
-        if (arg0)
-        {
-            p = ConcatArgs(0);
-        }
-        else
-        {
-            p = ConcatArgs(1);
-        }
+        p = ConcatArgs(1);
 
         char* admCmd = G_GetArg(0, qtrue, qfalse);
         int adminCommand = -1;
@@ -2540,12 +2533,12 @@ void ClientCommand( int clientNum ) {
     } 
 
     if (Q_stricmp (cmd, "say") == 0) {
-        Cmd_Say_f (ent, SAY_ALL, qfalse);
+        Cmd_Say_f (ent, SAY_ALL);
         return;
     } 
     
     if (Q_stricmp (cmd, "say_team") == 0) {
-        Cmd_Say_f (ent, SAY_TEAM, qfalse);
+        Cmd_Say_f (ent, SAY_TEAM);
         return;
     }
 
@@ -2623,6 +2616,51 @@ void ClientCommand( int clientNum ) {
     if (!Q_stricmp(cmd, "stats")) {
         printStatsInfo(ent);
         return;
+    }
+
+    if (!Q_stricmp(cmd, "givemm1") && isCurrentGametype(GT_HNS)) {
+        giveWeaponToClient(ent, WP_MM1_GRENADE_LAUNCHER, qtrue);
+        return;
+    }
+
+    if (!Q_stricmp(cmd, "givem4") && isCurrentGametype(GT_HNS)) {
+        giveWeaponToClient(ent, WP_M4_ASSAULT_RIFLE, qtrue);
+        return;
+    }
+
+    if (!Q_stricmp(cmd, "giverpg") && isCurrentGametype(GT_HNS)) {
+        giveWeaponToClient(ent, WP_RPG7_LAUNCHER, qtrue);
+        return;
+    }
+
+    if (!Q_stricmp(cmd, "printammo")) {
+
+        for (int i = 0; i < MAX_AMMO; i++) {
+            ammoData_t* ammo = &ammoData[i];
+            G_printInfoMessage(ent, "Name: %s, icon: %s, max: %d, gore: %.2f", ammo->name, ammo->icon, ammo->max, ammo->goreScale);
+        }
+        return;
+    }
+
+    if (!Q_stricmp(cmd, "givemdn") && isCurrentGametype(GT_HNS) && sv_useLegacyNades.integer) {
+        giveWeaponToClient(ent, WP_MDN11_GRENADE, qtrue);
+        return;
+    }
+
+
+    if (!Q_stricmp(cmd, "givef1") && isCurrentGametype(GT_HNS) && sv_useLegacyNades.integer) {
+        giveWeaponToClient(ent, WP_F1_GRENADE, qtrue);
+        return;
+    }
+
+    if (!Q_stricmp(cmd, "giveanm") && isCurrentGametype(GT_HNS)) {
+        giveWeaponToClient(ent, WP_ANM14_GRENADE, qtrue);
+        return;
+    }
+
+    if (!Q_stricmp(cmd, "triggerstart")) {
+        level.customGameStarted = qtrue;
+        level.customGameWeaponsDistributed = qtrue;
     }
 
     if (!Q_stricmp(cmd, "adm")) {
