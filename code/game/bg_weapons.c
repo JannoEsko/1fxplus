@@ -57,6 +57,9 @@ char *ammoNames[MAX_AMMO] =
     "ANM14",        //  AMMO_ANM14,
     "7.62mm belt",  //  AMMO_762_BELT,
     "9mm|mp5",      //  AMMO_9_MP5
+    "M67",
+    "L2A2",
+
 };
 
 ammoData_t ammoData[MAX_AMMO];

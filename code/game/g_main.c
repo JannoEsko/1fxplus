@@ -1196,12 +1196,10 @@ void G_InitGame( int levelTime, int randomSeed, int restart )
         trap_Cvar_Set("disable_pickup_weapon_MP5", "1");
         trap_Cvar_Set("disable_pickup_weapon_SIG551", "1");
 
-        if (sv_useLegacyNades.integer) {
+        if (sv_useLegacyNades.integer && g_enforce1fxAdditions.integer) {
 
             ammoNames[12] = "F1";
             ammoNames[13] = "MDN11";
-            ammoNames[14] = "M67";
-            ammoNames[15] = "L2A2";
 
         }
 
