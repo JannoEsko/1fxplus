@@ -1494,6 +1494,9 @@ void G_CheckClientTeamkill ( gentity_t* ent )
     char userinfo[MAX_INFO_STRING];
     char *value;
 
+    // JANFIXME - with CSINF, maybe make use of this function. But up until that time........
+    return;
+
     if ( !g_teamkillDamageMax.integer || !level.gametypeData->teams || !ent->client->sess.teamkillDamage )
     {
         return;

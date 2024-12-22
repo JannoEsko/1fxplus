@@ -563,6 +563,7 @@ void G_ResetGametype ( qboolean fullRestart, qboolean cagefight )
         level.timelimitHit = qfalse; // allow timelimit hit message
         level.hns.secondBatchCustomWeaponsDistributed = qfalse;
         level.hns.roundOver = qfalse;
+        level.hns.cagefight = qfalse;
 
         // Boe!Man 6/29/11: Also set the appropriate message if the weapon's been disabled.
         if (hideSeek_Weapons.string[HSWPN_M4] == '0') { // M4

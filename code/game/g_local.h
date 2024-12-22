@@ -693,6 +693,7 @@ typedef struct
 
     qboolean            isVip;
     qboolean            knifeBox;
+    int                 killsAsSeekCurrentRound;
 
 } clientPersistant_t;
 
@@ -817,6 +818,11 @@ struct gclient_s
 
 #define MAX_AUTOKICKLIST        32
 
+typedef struct hnsBestPlayers_s {
+    char    playerName[MAX_NETNAME];
+    int     playerScore;
+} hnsBestPlayers_t;
+
 /*
 Moving all H&S level items into hnsLvl struct.
 */
@@ -862,6 +868,9 @@ typedef struct hnsLvl_s {
     qboolean        cagefight;
     qboolean        secondBatchCustomWeaponsDistributed;
     qboolean        roundOver;
+
+    hnsBestPlayers_t    bestHiders[3];
+    hnsBestPlayers_t    bestSeekers[3];
 } hnsLvl_t;
 
 typedef struct
@@ -1435,7 +1444,7 @@ extern  vmCvar_t    g_debugDamage;
 extern  vmCvar_t    g_weaponRespawn;
 extern  vmCvar_t    g_backpackRespawn;
 extern  vmCvar_t    g_synchronousClients;
-//extern  vmCvar_t    g_motd;
+extern  vmCvar_t    g_motd;
 extern  vmCvar_t    g_warmup;
 extern  vmCvar_t    g_doWarmup;
 extern  vmCvar_t    g_allowVote;
@@ -1623,6 +1632,7 @@ extern	vmCvar_t    g_boxAttempts;
 extern	vmCvar_t    g_cageAttempts;
 extern	vmCvar_t    g_noHighFps;
 extern  vmCvar_t    sv_useLegacyNades;
+extern  vmCvar_t    g_hnsStatAging;
 
 //extern vmCvar_t     g_leanType;
 
@@ -1878,7 +1888,7 @@ void        mvchat_printHelp(gentity_t* ent);
 void mvchat_findSounds(gentity_t* ent);
 
 
-#define SQL_GAME_MIGRATION_LEVEL 4
+#define SQL_GAME_MIGRATION_LEVEL 5
 #define SQL_LOG_MIGRATION_LEVEL 1
 #define SQL_COUNTRY_MIGRATION_LEVEL 1
 #define MAX_SQL_TEMP_NAME 16
@@ -2164,6 +2174,11 @@ int spawnEffect(vec3_t origin, char* effect);
 void shuffleIntArray(int* input, int sizeOfInput);
 void getCurrentGametypeAsString(char* output, int sizeOfOutput, qboolean upperCase);
 void giveWeaponWithDirectCustomAmmoToClient(gentity_t* ent, weapon_t wpn, qboolean autoswitch, int normAmmo, int normClip, int altAmmo, int altClip);
+gentity_t* findClosestPlayer(gentity_t* ent, team_t team, qboolean bot);
+gentity_t* findClosestTeamPlayer(gentity_t* ent, qboolean bot);
+gentity_t* findClosestEnemyPlayer(gentity_t* ent, qboolean bot);
+void dbWriteHnsBestPlayersIntoHnsStruct(void);
+void dbWriteHnsStats(void);
 
 typedef struct
 {

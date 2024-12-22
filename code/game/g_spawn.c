@@ -243,7 +243,7 @@ spawn_t spawns[] =
     {"func_train",                  SP_func_train},
     {"func_timer",                  SP_func_timer},
     {"func_glass",                  SP_func_glass},
-    //{"func_wall",                   SP_func_wall}, // func_wall has ET_WALL entity event, which does not exist in 1.00
+    {"func_wall",                   SP_func_wall}, // func_wall has ET_WALL entity event, which does not exist in 1.00
 
     // Triggers are brush objects that cause an effect when contacted
     // by a living player, usually involving firing targets.

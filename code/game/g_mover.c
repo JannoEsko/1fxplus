@@ -1440,7 +1440,7 @@ void SP_func_wall ( gentity_t* ent )
     VectorCopy( ent->s.pos.trBase, ent->r.currentOrigin );
     VectorCopy( ent->s.apos.trBase, ent->r.currentAngles );
 
-    ent->s.eType = ET_WALL;
+    ent->s.eType = ET_MOVER;
 
     ent->use = G_WallUse;
 
@@ -1487,7 +1487,13 @@ void SP_func_rotating (gentity_t *ent) {
         ent->damage = 2;
     }
 
-    trap_SetBrushModel( ent, ent->model );
+    if (!strstr(ent->model, "none")) {
+        trap_SetBrushModel(ent, ent->model);
+    }
+    else {
+        ent->s.modelindex = G_ModelIndex("models/objects/Armory/virus.md3");
+    }
+    
     InitMover( ent );
 
     VectorCopy( ent->s.origin, ent->s.pos.trBase );

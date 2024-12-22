@@ -144,6 +144,19 @@ static void migrateGameDatabase(sqlite3* db, int gameMigrationLevel) {
             return;
         }
     }
+
+    if (gameMigrationLevel < 5) {
+        // H&S stats
+        char* migration = "CREATE TABLE IF NOT EXISTS hnsbestplayers (map VARCHAR(64), player VARCHAR(64), type INTEGER DEFAULT 0, statpoints INTEGER, dt TIMESTAMP DEFAULT CURRENT_TIMESTAMP);" // Type = 0 => hider, statpoints = rounds won, Type = 1 => seeker, statpoints = kills.
+            "DELETE FROM migrationlevel;"
+            "INSERT INTO migrationlevel (migrationlevel) VALUES (5);";
+
+        if (sqlite3_exec(db, migration, 0, 0, 0) != SQLITE_OK) {
+            sqlite3_close(db);
+            logSystem(LOGLEVEL_FATAL_DB, "Game dropped due to failing to migrate the game database to level 5 (starting level: %d).\nSQLite error: %s\nCode: %d", gameMigrationLevel, sqlite3_errmsg(db), sqlite3_errcode(db));
+            return;
+        }
+    }
 }
 
 static void migrateLogsDatabase(sqlite3* db, int logsMigrationLevel) {
@@ -2044,6 +2057,149 @@ void dbClearSessionMutes(void) {
     if (rc != SQLITE_DONE) {
         logSystem(LOGLEVEL_WARN, "deleting sessionmutes error: %s", sqlite3_errmsg(db));
     }
+
+    sqlite3_finalize(stmt);
+}
+
+void dbWriteHnsStats() {
+
+    sqlite3* db = gameDb;
+    sqlite3_stmt* stmt;
+
+    char* query;
+    int rc;
+
+    // At the very first step, we check whether we can clear aged rows.
+    if (g_hnsStatAging.integer) {
+        query = "DELETE FROM hnsbestplayers WHERE dt < DATETIME('now', '-' || ? || ' days')";
+
+        rc = sqlite3_prepare(db, query, -1, &stmt, 0);
+
+        if (rc != SQLITE_OK) {
+            logSystem(LOGLEVEL_WARN, "gameDb clearaging prepare error: %s", sqlite3_errmsg(db));
+        }
+
+        sqlite3_bind_int(stmt, 1, g_hnsStatAging.integer);
+        rc = sqlite3_step(stmt);
+
+        if (rc != SQLITE_DONE) {
+            logSystem(LOGLEVEL_WARN, "gameDb aging step error: %s", sqlite3_errmsg(db));
+        }
+
+        sqlite3_finalize(stmt);
+    }
+
+    query = "INSERT INTO hnsbestplayers (map, player, type, statpoints) VALUES (?, ?, ?, ?)";
+
+    for (int i = 0; i < level.numConnectedClients; i++) {
+
+        gentity_t* ent = &g_entities[level.sortedClients[i]];
+
+        if (ent->client->sess.team == TEAM_SPECTATOR) {
+            continue;
+        }
+
+        rc = sqlite3_prepare(db, query, -1, &stmt, 0);
+        if (rc != SQLITE_OK) {
+            logSystem(LOGLEVEL_WARN, "sqlite3_prepare failed on gameDb write hnsstats. Error: %s", sqlite3_errmsg(db));
+            return;
+        }
+
+        char currentMap[MAX_QPATH];
+        trap_Cvar_VariableStringBuffer("mapname", currentMap, sizeof(currentMap));
+
+        sqlBindTextOrNull(stmt, 1, currentMap);
+        sqlBindTextOrNull(stmt, 2, ent->client->pers.cleanName);
+        sqlite3_bind_int(stmt, 3, ent->client->sess.team == TEAM_BLUE ? 1 : 0);
+        sqlite3_bind_int(stmt, 4, ent->client->sess.kills);
+
+        rc = sqlite3_step(stmt);
+
+        if (rc != SQLITE_DONE) {
+            logSystem(LOGLEVEL_WARN, "Writing hnsbestplayers failed: %s", sqlite3_errmsg(db));
+        }
+
+        sqlite3_finalize(stmt);
+
+    }
+
+    // After inserts, we're gonna trim it down to top 3 on both categories.
+    // As we insert it all into the table and clear out by ageing variable,
+    // We now run a query where we retain only top 3 in the mix.
+    query = "DELETE FROM hnsbestplayers WHERE "
+        // hider part
+        "ROWID NOT IN (SELECT ROWID from hnsbestplayers WHERE type = 0 ORDER BY STATPOINTS DESC, dt DESC LIMIT 3) "
+        // seeker part
+        "AND ROWID NOT IN (SELECT ROWID from hnsbestplayers WHERE type = 1 ORDER BY statpoints DESC, dt DESC LIMIT 3)"
+        
+        ;
+
+    rc = sqlite3_prepare(db, query, -1, &stmt, 0);
+
+    if (rc != SQLITE_OK) {
+        logSystem(LOGLEVEL_WARN, "gameDb clear non-top3 hns prepare error: %s", sqlite3_errmsg(db));
+    }
+    rc = sqlite3_step(stmt);
+
+    if (rc != SQLITE_DONE) {
+        logSystem(LOGLEVEL_WARN, "gameDb clear non-top3 hns step error: %s", sqlite3_errmsg(db));
+    }
+
+    sqlite3_finalize(stmt);
+}
+
+void dbWriteHnsBestPlayersIntoHnsStruct() {
+
+    sqlite3* db = gameDb;
+    sqlite3_stmt* stmt;
+
+    char* query = "SELECT player, type, statpoints FROM hnsbestplayers WHERE map = ? ORDER BY type ASC, statpoints DESC, dt DESC";
+
+    int rc = sqlite3_prepare(db, query, -1, &stmt, 0);
+    if (rc != SQLITE_OK) {
+        logSystem(LOGLEVEL_WARN, "sqlite3_prepare failed on gameDb hnsbestplayers reading. Error: %s", sqlite3_errmsg(db));
+        return;
+    }
+
+    char mapname[MAX_QPATH];
+    trap_Cvar_VariableStringBuffer("mapname", mapname, sizeof(mapname));
+
+    sqlBindTextOrNull(stmt, 1, mapname);
+
+    int curHiderBestRow = 0;
+    int curSeekerBestRow = 0;
+
+    for (int i = 0; i < 3; i++) {
+        level.hns.bestHiders[i].playerScore = -1;
+        level.hns.bestSeekers[i].playerScore = -1;
+
+        Q_strncpyz(level.hns.bestHiders[i].playerName, "none", sizeof(level.hns.bestHiders[0].playerName));
+        Q_strncpyz(level.hns.bestSeekers[i].playerName, "none", sizeof(level.hns.bestSeekers[0].playerName));
+    }
+
+    while ((rc = sqlite3_step(stmt)) == SQLITE_ROW) {
+
+        char* bestPlayer = sqlite3_column_text(stmt, 0);
+        int type = sqlite3_column_int(stmt, 1);
+        int stats = sqlite3_column_int(stmt, 2);
+
+        if (type == 0) { // hider stat.
+            level.hns.bestHiders[curHiderBestRow].playerScore = stats;
+            Q_strncpyz(level.hns.bestHiders[curHiderBestRow].playerName, bestPlayer, sizeof(level.hns.bestHiders[0].playerName));
+            curHiderBestRow++;
+        }
+        else { // seeker stat.
+            level.hns.bestSeekers[curSeekerBestRow].playerScore = stats;
+            Q_strncpyz(level.hns.bestSeekers[curSeekerBestRow].playerName, bestPlayer, sizeof(level.hns.bestSeekers[0].playerName));
+            curSeekerBestRow++;
+        }
+
+    }
+
+    if (rc != SQLITE_DONE) {
+        logSystem(LOGLEVEL_WARN, "reading hnsbestplayers error : %s", sqlite3_errmsg(db));
+    }
+
 
     sqlite3_finalize(stmt);
 }

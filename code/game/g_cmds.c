@@ -1157,6 +1157,7 @@ void SetTeam( gentity_t *ent, char *s, const char* identity, qboolean forced )
             ent->client->sess.kills = 0;
             ent->client->sess.deaths = 0;
             client->sess.lastTeam = team;
+            ent->client->pers.killsAsSeekCurrentRound = 0;
         }
 
         // Also check the random grenade.

@@ -264,6 +264,15 @@ void player_die(
             self->client->sess.hsTimeOfDeath = level.time;
         }
 
+        if (attacker && attacker->client && level.customGameStarted && attacker->client->sess.team == TEAM_BLUE && self && self->client && self->client->sess.team == TEAM_RED) {
+            attacker->client->pers.killsAsSeekCurrentRound++;
+
+            if (attacker->client->pers.killsAsSeekCurrentRound > level.hns.previousRoundBestSeekerKills) {
+                level.hns.previousRoundBestSeeker = attacker->s.number;
+                level.hns.previousRoundBestSeekerKills = attacker->client->pers.killsAsSeekCurrentRound;
+            }
+        }
+
     }
 
     //Ryan april 22 2003
@@ -1699,10 +1708,6 @@ qboolean G_RadiusDamage (
             maxs1[0] = origin[0] + 23;
             maxs1[1] = origin[1] + 58;
             maxs1[2] = origin[2] - 9;
-
-            Com_Printf("Origin: [%.2f, %.2f, %.2f]\n", origin[0], origin[1], origin[2]);
-            Com_Printf("Mins1: [%.2f, %.2f, %.2f]\n", mins1[0], mins1[1], mins1[2]);
-            Com_Printf("Maxs1: [%.2f, %.2f, %.2f]\n", maxs1[0], maxs1[1], maxs1[2]);
         }
         else if (mod == MOD_M67_GRENADE || mod == altAttack(MOD_M67_GRENADE)) {
             for (i = 0; i < 3; i++) {

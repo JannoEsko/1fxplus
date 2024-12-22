@@ -1991,7 +1991,15 @@ void parseChatTokens(gentity_t* ent, chatMode_t chatMode, const char* input, cha
                 char token = *start;
                 switch (token) {
                 case 'd': case 'D': { // Last player who damaged you
-                    const char* name = "JANFIXME LASTDMG";
+                    char* name = "none";
+                    if (ent->client->pers.statInfo.lasthurtby >= 0) {
+                        gentity_t* tent = &g_entities[ent->client->pers.statInfo.lasthurtby];
+
+                        if (tent && tent->client && strlen(tent->client->pers.netname)) {
+                            name = tent->client->pers.netname;
+                        }
+                    }
+                    
                     if (name) {
                         int len = strlen(name);
                         if (outIndex + len < sizeOfOutput - 1) {
@@ -2002,7 +2010,14 @@ void parseChatTokens(gentity_t* ent, chatMode_t chatMode, const char* input, cha
                     break;
                 }
                 case 't': case 'T': { // Last player you damaged
-                    const char* name = "JANFIXME LASTATK";
+                    char* name = "none";
+                    if (ent->client->pers.statInfo.lastclient_hurt >= 0) {
+                        gentity_t* tent = &g_entities[ent->client->pers.statInfo.lastclient_hurt];
+
+                        if (tent && tent->client && strlen(tent->client->pers.netname)) {
+                            name = tent->client->pers.netname;
+                        }
+                    }
                     if (name) {
                         int len = strlen(name);
                         if (outIndex + len < sizeOfOutput - 1) {
@@ -2063,6 +2078,101 @@ void parseChatTokens(gentity_t* ent, chatMode_t chatMode, const char* input, cha
                         int len = strlen(stunGunInfo);
                         if (outIndex + len < sizeOfOutput - 1) {
                             Q_strncpyz(&output[outIndex], stunGunInfo, len + 1);
+                            outIndex += len;
+                        }
+                    }
+                    break;
+                }
+                case 'r': case 'R': {
+                    const char* rpgInfo = level.hns.RPGloc;
+                    if (rpgInfo) {
+                        int len = strlen(rpgInfo);
+                        if (outIndex + len < sizeOfOutput - 1) {
+                            Q_strncpyz(&output[outIndex], rpgInfo, len + 1);
+                            outIndex += len;
+                        }
+                    }
+                    break;
+                }
+                case 'c': case 'C': {
+                    const char* m4info = level.hns.M4loc;
+                    if (m4info) {
+                        int len = strlen(m4info);
+                        if (outIndex + len < sizeOfOutput - 1) {
+                            Q_strncpyz(&output[outIndex], m4info, len + 1);
+                            outIndex += len;
+                        }
+                    }
+                    break;
+                }
+                case 'm': case 'M': {
+                    const char* mm1info = level.hns.MM1loc;
+                    if (mm1info) {
+                        int len = strlen(mm1info);
+                        if (outIndex + len < sizeOfOutput - 1) {
+                            Q_strncpyz(&output[outIndex], mm1info, len + 1);
+                            outIndex += len;
+                        }
+                    }
+                    break;
+                }
+                case 'e': case 'E': {
+                    gentity_t* tmp = findClosestEnemyPlayer(ent, qfalse);
+                    char* closestEnemy;
+                    if (tmp) {
+                        closestEnemy = tmp->client->pers.netname;
+                    }
+                    else {
+                        closestEnemy = "none";
+                    }
+
+                    if (closestEnemy) {
+                        int len = strlen(closestEnemy);
+                        if (outIndex + len < sizeOfOutput - 1) {
+                            Q_strncpyz(&output[outIndex], closestEnemy, len + 1);
+                            outIndex += len;
+                        }
+                    }
+                    break;
+                }
+                case 'f': case 'F': {
+                    gentity_t* tmp = findClosestTeamPlayer(ent, qfalse);
+                    char* closestFriend;
+                    if (tmp) {
+                        closestFriend = tmp->client->pers.netname;
+                    }
+                    else {
+                        closestFriend = "none";
+                    }
+
+                    if (closestFriend) {
+                        int len = strlen(closestFriend);
+                        if (outIndex + len < sizeOfOutput - 1) {
+                            Q_strncpyz(&output[outIndex], closestFriend, len + 1);
+                            outIndex += len;
+                        }
+                    }
+                    break;
+                }
+                case 'n': case 'N': {
+
+                    if (strlen(g_motd.string)) {
+                        int len = strlen(g_motd.string);
+                        if (outIndex + len < sizeOfOutput - 1) {
+                            Q_strncpyz(&output[outIndex], g_motd.string, len + 1);
+                            outIndex += len;
+                        }
+
+                        G_GlobalSound(mvchat_chatGetNextSound(NULL)); // JANFIXME - only play this when we haven't played a sound yet.
+                    }
+                    break;
+                }
+                case '?': {
+                    const char* randomNadeInfo = level.hns.randomNadeLoc;
+                    if (randomNadeInfo) {
+                        int len = strlen(randomNadeInfo);
+                        if (outIndex + len < sizeOfOutput - 1) {
+                            Q_strncpyz(&output[outIndex], randomNadeInfo, len + 1);
                             outIndex += len;
                         }
                     }
@@ -4311,6 +4421,7 @@ void hnsRunFrame() {
             gentity_t* ent = &g_entities[level.sortedClients[i]];
             if (ent->client->sess.team == TEAM_BLUE) {
                 eligibleSeekers[eligibleSeekerCount++] = level.sortedClients[i];
+                ent->client->pers.killsAsSeekCurrentRound = 0;
             }
         }
 
@@ -4428,4 +4539,48 @@ void getCurrentGametypeAsString(char* output, int sizeOfOutput, qboolean upperCa
 
     Q_strncpyz(output, tmp, sizeOfOutput);
 
+}
+
+gentity_t* findClosestTeamPlayer(gentity_t* ent, qboolean bot) {
+    return findClosestPlayer(ent, ent->client->sess.team, bot);
+}
+
+gentity_t* findClosestEnemyPlayer(gentity_t* ent, qboolean bot) {
+    return findClosestPlayer(ent, ent->client->sess.team == TEAM_BLUE ? TEAM_RED : TEAM_BLUE, bot);
+}
+
+gentity_t* findClosestPlayer(gentity_t* ent, team_t team, qboolean bot) {
+    
+    if (!level.gametypeData->teams) {
+        return NULL;
+    }
+
+    gentity_t* closest = NULL;
+    float closestDist = 999999.9f;
+
+    for (int i = 0; i < level.numConnectedClients; i++) {
+        gentity_t* tmp = &g_entities[level.sortedClients[i]];
+
+        if (tmp->team != team) {
+            continue;
+        }
+
+        if ((tmp->r.svFlags & SVF_BOT) && !bot) {
+            continue;
+        }
+
+        if (G_IsClientDead(tmp->client)) {
+            continue;
+        }
+
+        float dist = Distance(ent->r.currentOrigin, tmp->r.currentOrigin);
+
+        if (dist < closestDist) {
+            closest = tmp;
+            closestDist = dist;
+        }
+    }
+    
+
+    return closest;
 }

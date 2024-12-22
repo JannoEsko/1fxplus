@@ -55,10 +55,9 @@ void TeleportPlayer ( gentity_t *player, vec3_t origin, vec3_t angles, qboolean 
         VectorScale(player->client->ps.velocity, 600, player->client->ps.velocity); // Henkie 22/02/10 -> Do not spit ( default 400)
         player->client->ps.pm_time = 0;     // another jump available after 160ms
         SetClientViewAngle(player, angles);
-        player->client->ps.pm_flags |= PMF_TIME_KNOCKBACK;
+        //player->client->ps.pm_flags |= PMF_TIME_KNOCKBACK;
     }
     
-
     // toggle the teleport bit so the client knows to not lerp
     player->client->ps.eFlags ^= EF_TELEPORT_BIT;
 

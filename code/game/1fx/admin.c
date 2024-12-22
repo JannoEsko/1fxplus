@@ -819,7 +819,7 @@ int adm_Strip(int argNum, gentity_t* adm, qboolean shortCmd) {
 
 int adm_removeAdmin(int argNum, gentity_t* adm, qboolean shortCmd) {
 
-	int idNum = G_ClientNumFromArg(adm, argNum, "strip", qtrue, qtrue, qfalse, shortCmd);
+	int idNum = G_ClientNumFromArg(adm, argNum, "do this to", qfalse, qtrue, qfalse, shortCmd);
 
 	if (idNum >= 0) {
 		gentity_t* ent = &g_entities[idNum];
@@ -907,7 +907,7 @@ int adm_blockSeek(int argNum, gentity_t* adm, qboolean shortCmd) {
 		G_printInfoMessage(adm, "This command only works in H&S gametype.");
 	}
 
-	int idNum = G_ClientNumFromArg(adm, argNum, "blockseek", qtrue, qfalse, qfalse, shortCmd);
+	int idNum = G_ClientNumFromArg(adm, argNum, "blockseek", qfalse, qfalse, qfalse, shortCmd);
 
 	if (idNum >= 0) {
 
@@ -1948,7 +1948,7 @@ int adm_Flash(int argNum, gentity_t* adm, qboolean shortCmd) {
 	}
 	else {
 
-		int idNum = G_ClientNumFromArg(adm, argNum, "flash", qtrue, qtrue, qtrue, shortCmd);
+		int idNum = G_ClientNumFromArg(adm, argNum, "flash", qtrue, qtrue, qfalse, shortCmd);
 
 		if (idNum >= 0) {
 
@@ -2155,7 +2155,7 @@ int adm_Pause(int argNum, gentity_t* adm, qboolean shortCmd) {
 
 int adm_Burn(int argNum, gentity_t* adm, qboolean shortCmd) {
 
-	int idNum = G_ClientNumFromArg(adm, argNum, "kick", qtrue, qtrue, qfalse, shortCmd);
+	int idNum = G_ClientNumFromArg(adm, argNum, "burn", qtrue, qtrue, qfalse, shortCmd);
 
 	if (idNum >= 0) {
 		gentity_t* ent = &g_entities[idNum];
@@ -2247,7 +2247,7 @@ int adm_friendlyFire(int argNum, gentity_t* adm, qboolean shortCmd) {
 
 int adm_Rename(int argNum, gentity_t* adm, qboolean shortCmd) {
 
-	int idNum = G_ClientNumFromArg(adm, argNum, "mute", qfalse, qtrue, qfalse, shortCmd);
+	int idNum = G_ClientNumFromArg(adm, argNum, "rename", qfalse, qtrue, qfalse, shortCmd);
 
 	if (idNum >= 0) {
 		gentity_t* ent = &g_entities[idNum];
@@ -2301,7 +2301,7 @@ int adm_Switch(int argNum, gentity_t* adm, qboolean shortCmd) {
 		return -1;
 	}
 
-	int idNum = G_ClientNumFromArg(adm, argNum, "switch", qfalse, qtrue, qtrue, shortCmd);
+	int idNum = G_ClientNumFromArg(adm, argNum, "switch", qfalse, qtrue, qfalse, shortCmd);
 
 	if (idNum >= 0) {
 		

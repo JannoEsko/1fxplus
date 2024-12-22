@@ -42,7 +42,7 @@ vmCvar_t    g_debugDamage;
 vmCvar_t    g_debugAlloc;
 vmCvar_t    g_weaponRespawn;
 vmCvar_t    g_backpackRespawn;
-//vmCvar_t    g_motd;
+vmCvar_t    g_motd;
 vmCvar_t    g_synchronousClients;
 vmCvar_t    g_warmup;
 vmCvar_t    g_doWarmup;
@@ -262,6 +262,7 @@ vmCvar_t    g_hnsWeaponsMinPlayers;
 vmCvar_t    g_boxAttempts;
 vmCvar_t    g_cageAttempts;
 vmCvar_t    g_noHighFps;
+vmCvar_t    g_hnsStatAging;
 
 vmCvar_t    sv_useLegacyNades;
 
@@ -319,7 +320,7 @@ static cvarTable_t gameCvarTable[] =
     { &g_debugMove, "g_debugMove", "0", 0, 0.0, 0.0, 0, qfalse },
     { &g_debugDamage, "g_debugDamage", "0", 0, 0.0, 0.0, 0, qfalse },
     { &g_debugAlloc, "g_debugAlloc", "0", 0, 0.0, 0.0, 0, qfalse },
-    //{ &g_motd, "g_motd", "", 0, 0.0, 0.0, 0, qfalse },
+    { &g_motd, "g_motd", "", 0, 0.0, 0.0, 0, qfalse },
 
     { &g_allowVote, "g_allowVote", "1", CVAR_ARCHIVE, 0.0, 0.0, 0, qfalse },
     { &g_voteDuration, "g_voteDuration", "60", CVAR_ARCHIVE, 0.0, 0.0, 0, qfalse },
@@ -547,7 +548,7 @@ static cvarTable_t gameCvarTable[] =
     { &g_waterSpeedTime,        "g_waterSpeedTime",         "200",  CVAR_ARCHIVE | CVAR_LATCH | CVAR_LOCK_RANGE,                    0.0,    500.0,  0, qfalse },
     { &g_stunSpeedTime,         "g_stunSpeedTime",          "4000", CVAR_ARCHIVE | CVAR_LATCH | CVAR_LOCK_RANGE,                    0.0,    8000.0,  0, qfalse },
     { &g_fireSpeedTime,         "g_fireSpeedTime",          "1500", CVAR_ARCHIVE | CVAR_LATCH | CVAR_LOCK_RANGE,                    0.0,    8000.0,  0, qfalse },
-        
+    { &g_hnsStatAging,         "g_hnsStatAging",          "15", CVAR_ARCHIVE,                    0.0,    8000.0,  0, qfalse },
     { &sv_useLegacyNades,      "sv_useLegacyNades",         "",     0, 0, 0, 0, qfalse },
 
 };
@@ -2267,45 +2268,43 @@ void CheckExitRules(void)
     }
 
     // Check to see if the timelimit was hit
-    if (g_timelimit.integer && !level.warmupTime && !level.timelimitHit)
+    if (g_timelimit.integer && !level.warmupTime && !level.timelimitHit && !level.hns.cagefight)
     {
-        if (level.gametypeData->respawnType != RT_NONE || level.gametypeResetTime)
-        {
-            if (level.time - level.startTime >= (g_timelimit.integer + level.timeExtension) * 60000)
-            {
 
-                if (isCurrentGametypeInList((gameTypes_t[]){ GT_INF, GT_CSINF, GT_VIP, GT_PROP, GT_ELIM, GT_DEM, GT_HNS, GT_HNZ, GT_MAX })) {
-                    G_printInfoMessageToAll("Timelimit hit, waiting for round to finish.");
-                    level.timelimitHit = qtrue;
+        if (level.time - level.startTime >= (g_timelimit.integer + level.timeExtension) * 60000)
+        {
+
+            if (isCurrentGametypeInList((gameTypes_t[]){ GT_INF, GT_CSINF, GT_VIP, GT_PROP, GT_ELIM, GT_DEM, GT_HNS, GT_HNZ, GT_MAX })) {
+                G_printInfoMessageToAll("Timelimit hit, waiting for round to finish.");
+                level.timelimitHit = qtrue;
+            }
+            else {
+
+                if ((cm_state.integer == COMPMODE_ROUND1 || cm_state.integer == COMPMODE_ROUND2) && isCurrentGametype(GT_CTF)) {
+                    if (level.teamScores[TEAM_RED] + cm_prevRedTeamScore.integer == level.teamScores[TEAM_BLUE] + cm_prevBlueTeamScore.integer) {
+                        if (!level.timelimitMsg) {
+                            G_printInfoMessageToAll("Timelimit hit, waiting for the final flag to be captured.");
+                            level.timelimitMsg = qtrue;
+                        }
+                        return;
+                    }
+                }
+
+                gentity_t* tent;
+                tent = G_TempEntity(vec3_origin, EV_GAME_OVER);
+                if (cm_state.integer == COMPMODE_ROUND1 || cm_state.integer == COMPMODE_ROUND2) {
+                    tent->s.eventParm = LEEG;
                 }
                 else {
-
-                    if ((cm_state.integer == COMPMODE_ROUND1 || cm_state.integer == COMPMODE_ROUND2) && isCurrentGametype(GT_CTF)) {
-                        if (level.teamScores[TEAM_RED] + cm_prevRedTeamScore.integer == level.teamScores[TEAM_BLUE] + cm_prevBlueTeamScore.integer) {
-                            if (!level.timelimitMsg) {
-                                G_printInfoMessageToAll("Timelimit hit, waiting for the final flag to be captured.");
-                                level.timelimitMsg = qtrue;
-                            }
-                            return;
-                        }
-                    }
-
-                    gentity_t* tent;
-                    tent = G_TempEntity(vec3_origin, EV_GAME_OVER);
-                    if (cm_state.integer == COMPMODE_ROUND1 || cm_state.integer == COMPMODE_ROUND2) {
-                        tent->s.eventParm = LEEG;
-                    }
-                    else {
-                        tent->s.eventParm = GAME_OVER_TIMELIMIT;
-                    }
-                    tent->r.svFlags = SVF_BROADCAST;
-                    notifyPlayersOfTeamScores();
-
-                    LogExit("Timelimit hit.");
+                    tent->s.eventParm = GAME_OVER_TIMELIMIT;
                 }
+                tent->r.svFlags = SVF_BROADCAST;
+                notifyPlayersOfTeamScores();
 
-                return;
+                LogExit("Timelimit hit.");
             }
+
+            return;
         }
     }
 
