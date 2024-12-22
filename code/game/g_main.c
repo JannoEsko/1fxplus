@@ -524,6 +524,8 @@ static cvarTable_t gameCvarTable[] =
     { &hideSeek_Nades,          "hideSeek_Nades",           "1111", CVAR_ARCHIVE | CVAR_LATCH,    0.0,    0.0,  0, qfalse }, // Boe!Man 3/6/11: So users can change if desired.
     { &hideSeek_Weapons,        "hideSeek_Weapons",         "11111",  CVAR_ARCHIVE | CVAR_LATCH,    0.0,    0.0,  0, qfalse }, // Boe!Man 3/6/11: So users can change if desired.
     { &hideSeek_ExtendedRoundStats,     "hideSeek_ExtendedRoundStats",      "1",    CVAR_ARCHIVE,   0.0,    0.0,  0, qfalse }, // Boe!Man 9/2/12: CVAR for extended round stats.
+
+    { &hideSeek_roundstartdelay,     "hideSeek_roundstartdelay",      "30",    CVAR_ARCHIVE | CVAR_LATCH,   0.0,    0.0,  0, qfalse },
     { &g_boxAttempts, "g_boxAttempts", "3", CVAR_ARCHIVE,   0.0,    0.0,  0, qtrue },
     { &g_cageAttempts, "g_cageAttempts", "3",   CVAR_ARCHIVE,   0.0,    0.0,  0, qtrue },
     { &g_noHighFps, "g_noHighFps", "1", CVAR_ARCHIVE | CVAR_INIT,   0.0,    0.0,  0, qtrue },
@@ -814,6 +816,37 @@ static void G_TranslateGoldAvailableWpnsToSilver(const char* input, char* output
         }
     }
 }
+
+static void G_SetAvailableWeaponsByHnsCvars(void) {
+
+    char available[WP_NUM_WEAPONS];
+    available[0] = '2'; // Knife is always enabled.
+
+    for (weapon_t weapon = WP_KNIFE + 1; weapon < WP_NUM_WEAPONS; weapon++) {
+        available[weapon - 1] = '0';
+
+        if (weapon == WP_SMOHG92_GRENADE && hideSeek_Nades.string[HSNADE_FRAG] == '1') {
+            available[weapon - 1] = '2';
+        }
+        else if (weapon == WP_ANM14_GRENADE && hideSeek_Nades.string[HSNADE_FIRE] == '1' && !hideSeek_randomFireNade.integer) {
+            available[weapon - 1] = '2';
+        }
+        else if (weapon == WP_M15_GRENADE && hideSeek_Nades.string[HSNADE_SMOKE] == '1') {
+            available[weapon - 1] = '2';
+        }
+        else if (weapon == WP_M84_GRENADE && hideSeek_Nades.string[HSNADE_FLASH] == '1') {
+            available[weapon - 1] = '2';
+        }
+
+    }
+    available[WP_NUM_WEAPONS - 1] = '\0';
+
+    // Set the availableWeapons string
+    trap_Cvar_Set("g_available", available);
+    trap_Cvar_Update(&g_availableWeapons);
+    logSystem(LOGLEVEL_INFO, "new Avail: %s", available);
+}
+
 
 /*
 ===============
@@ -1179,12 +1212,21 @@ void G_InitGame( int levelTime, int randomSeed, int restart )
 
         trap_Cvar_Set("sv_clientMod", "1fx.rocmod");
         trap_Cvar_Update(&sv_clientMod);
+
+        trap_Cvar_Set("sv_useLegacyNades", "1");
+        trap_Cvar_Update(&sv_useLegacyNades);
     }
     else {
         // We do not enforce when it's not needed. Up to the server owner to set the clientmod to 1fx.rocmod.
         // We also do not reset the variable. To be honest, if the server runs h&s / h&z, it should be 1fx.rocmod all the time.
         trap_Cvar_Set("g_enforce1fxAdditions", "0");
         trap_Cvar_Update(&g_enforce1fxAdditions);
+        trap_Cvar_Set("sv_useLegacyNades", "0");
+        trap_Cvar_Update(&sv_useLegacyNades);
+    }
+
+    if (isCurrentGametype(GT_HNS)) {
+        G_SetAvailableWeaponsByHnsCvars();
     }
 
     G_SetDisabledWeapons();
@@ -1281,18 +1323,17 @@ void G_InitGame( int levelTime, int randomSeed, int restart )
 
     ClearRegisteredItems();
 
-    // parse the key/value pairs and spawn gentities
-    G_SpawnEntitiesFromString(qfalse);
-
     if (isCurrentGametype(GT_HNS)) {
         AddSpawnField("classname", "gametype_item");
         AddSpawnField("targetname", "briefcase");
-        AddSpawnField("gametype", "inf");
+        AddSpawnField("gametype", "hns");
         AddSpawnField("origin", "9999 9999 9999");
-        trap_UnlinkEntity(&g_entities[G_SpawnGEntityFromSpawnVars(qtrue)]);
-
-        Q_strncpyz(level.cagewinner, "none", sizeof(level.cagewinner));
+        trap_UnlinkEntity(&g_entities[G_SpawnGEntityFromSpawnVars(qfalse)]);
+        Q_strncpyz(level.hns.cagewinner, "none", sizeof(level.hns.cagewinner));
     }
+
+    // parse the key/value pairs and spawn gentities
+    G_SpawnEntitiesFromString(qfalse);
 
     initBspModelSpawns();
 
@@ -2758,10 +2799,6 @@ void G_RunFrame( int levelTime )
     ent = &g_entities[0];
     for (i=0 ; i < level.maxclients ; i++, ent++ )
     {
-        if ( ent->inuse )
-        {
-            ClientEndFrame( ent );
-        }
         
         if (ent && ent->inuse && ent->client) {
             
@@ -2825,8 +2862,47 @@ void G_RunFrame( int levelTime )
 
                 }
 
+                if (G_IsClientDead(ent->client) && ent->client->ps.stats[STAT_FROZEN] && isCurrentGametypeInList((gameTypes_t[]) { GT_HNS, GT_HNZ, GT_MAX })) {
+                    ent->client->ps.stats[STAT_FROZEN] = 0;
+                }
+
+                if (isCurrentGametype(GT_HNS)) {
+
+                    
+
+                    if (!level.hns.cagefight && !level.hns.cagefightdone && ent->client->sess.team != TEAM_SPECTATOR && G_IsClientDead(ent->client)) {
+
+                        if (ent->client->sess.team == TEAM_BLUE || (level.time < (level.gametypeStartTime + hideSeek_roundstartdelay.integer * 1000) && ent->client->sess.team == TEAM_RED)) {
+
+                            if (ent->client->sess.ghost) {
+                                // Clean up any following monkey business
+                                G_StopFollowing(ent);
+
+                                // Disable being a ghost
+                                ent->client->ps.pm_flags &= ~PMF_GHOST;
+                                ent->client->ps.pm_type = PM_NORMAL;
+                                ent->client->sess.ghost = qfalse;
+                            }
+
+                            ent->client->sess.noTeamChange = qfalse;
+
+                            trap_UnlinkEntity(ent);
+                            ClientSpawn(ent);
+
+                        }
+
+                    }
+
+                }
+
             }
 
+        }
+
+
+        if (ent->inuse)
+        {
+            ClientEndFrame(ent);
         }
     }
 
@@ -2839,6 +2915,10 @@ void G_RunFrame( int levelTime )
         ROCmod_sendExtraTeamInfo(NULL);
 
         level.lastETIUpdate = level.time + 1000;
+    }
+
+    if (isCurrentGametype(GT_HNS)) {
+        hnsRunFrame();
     }
 
     // Check warmup rules
@@ -2975,11 +3055,12 @@ void G_RunFrame( int levelTime )
         else {
             // Try to figure out if we're in a mapcycle game. If not, restart the map.
 
-            if (!Q_stricmp(g_mapcycle.string, "none")) {
-                trap_SendConsoleCommand(EXEC_APPEND, "mapcycle");
+            if (!Q_stricmp(g_mapcycle.string, "none") || strlen(g_mapcycle.string) == 0) {
+                trap_SendConsoleCommand(EXEC_APPEND, "map_restart 0");
+                
             }
             else {
-                trap_SendConsoleCommand(EXEC_APPEND, "map_restart 0");
+                trap_SendConsoleCommand(EXEC_APPEND, "mapcycle");
             }
 
         }

@@ -258,6 +258,12 @@ void player_die(
 
         }
 
+        // We write the death time into the sess struct GIVEN that the gametype has started.
+
+        if (level.customGameStarted && self->client->sess.team == TEAM_RED && !level.hns.roundOver && level.customGameWeaponsDistributed) {
+            self->client->sess.hsTimeOfDeath = level.time;
+        }
+
     }
 
     //Ryan april 22 2003
@@ -361,11 +367,11 @@ void player_die(
             {
                 G_AddScore( attacker, g_teamkillPenalty.integer );
             }
-            else if (isCurrentGametype(GT_HNS) && level.cagefight) {
+            else if (isCurrentGametype(GT_HNS) && level.hns.cagefight) {
                 G_AddScore(attacker, 10);
             }
         }
-        else if (!isCurrentGametype(GT_HNS) || (isCurrentGametype(GT_HNS) && !level.cagefight))
+        else if (!isCurrentGametype(GT_HNS) || (isCurrentGametype(GT_HNS) && !level.hns.cagefight))
         {
             if (isCurrentGametype(GT_HNS) && self->client) {
 
@@ -1071,7 +1077,10 @@ int G_Damage (
     if (isCurrentGametype(GT_HNS) && attacker && attacker->client && client) {
         float radius = 1000.0f;
         
-        damage = 0;
+        if (!level.hns.cagefight) {
+            damage = 0;
+        }
+        
         if (client->sess.team == TEAM_RED && attacker->client->sess.team == TEAM_BLUE && mod == MOD_USSOCOM_PISTOL) {
             // Stungun.
             addSpeedAlteration(targ, qtrue, SPEEDALTERATION_STUNGUN);
@@ -1084,7 +1093,7 @@ int G_Damage (
             gentity_t* tent = G_TempEntity(targ->r.currentOrigin, EV_GENERAL_SOUND);
             tent->r.svFlags |= SVF_BROADCAST;
             tent->s.time2 = (int)(radius * 1000.0f);
-            G_AddEvent(tent, EV_GENERAL_SOUND, G_SoundIndex("sound/ambience/generic/sparks2.mp3", qfalse));
+            G_AddEvent(tent, EV_GENERAL_SOUND, G_SoundIndex("sound/ambience/generic/sparks2.mp3"));
         } else if (mod == altAttack(MOD_KNIFE) && client->sess.team == TEAM_RED && attacker->client->sess.team == TEAM_RED && g_hsgiveknife.integer && !g_friendlyFire.integer) {
             int ammoIdx = weaponData[WP_KNIFE].attack[ATTACK_ALTERNATE].ammoIndex;
             G_Broadcast(BROADCAST_GAME, attacker, qfalse, "You gave a knife to %s!", client->pers.netname);
@@ -1129,11 +1138,11 @@ int G_Damage (
         else if (client->sess.team == TEAM_RED && attacker->client->sess.team == TEAM_BLUE) {
             if (mod == MOD_KNIFE) {
                 damage = originalDamage;
-                if (!level.MM1Given && hideSeek_Weapons.string[HSWPN_MM1] == '1') {
-                    level.MM1Given = qtrue;
+                if (!level.hns.MM1Given && hideSeek_Weapons.string[HSWPN_MM1] == '1') {
+                    level.hns.MM1Given = qtrue;
                     giveWeaponToClient(attacker, WP_MM1_GRENADE_LAUNCHER, qfalse);
-                    Q_strncpyz(level.MM1loc, attacker->client->pers.netname, sizeof(level.MM1loc));
-                    level.MM1ent = -1;
+                    Q_strncpyz(level.hns.MM1loc, attacker->client->pers.netname, sizeof(level.hns.MM1loc));
+                    level.hns.MM1ent = -1;
                     G_printGametypeMessageToAll("First blood: %s has taken the MM1", attacker->client->pers.cleanName);
                     G_Broadcast(BROADCAST_GAME, attacker, qfalse, "You now have the \\MM1!");
                     attacker->client->sess.takenMM1++;
@@ -1169,16 +1178,15 @@ int G_Damage (
                 }
             }
         }
-        else if (!g_friendlyFire.integer && mod == MOD_TELEFRAG && !level.cagefight) {
+        else if (!g_friendlyFire.integer && mod == MOD_TELEFRAG && !level.hns.cagefight) {
             damage = originalDamage;
-        }
-        else if (level.cagefight && mod == altAttack(MOD_AK74_ASSAULT_RIFLE)) {
-            damage = originalDamage;
-        }
-        else if (g_friendlyFire.integer) {
+        } else if (g_friendlyFire.integer) {
             damage = originalDamage;
         }
 
+        if (level.hns.cagefight && mod == altAttack(MOD_AK74_ASSAULT_RIFLE)) {
+            damage = originalDamage;
+        }
 
         if (attacker->client->sess.team != client->sess.team) {
             if (mod == MOD_ANM14_GRENADE) {
@@ -1208,7 +1216,7 @@ int G_Damage (
 
         // if TF_NO_FRIENDLY_FIRE is set, don't do damage to the target
         // if the attacker was on the same team
-        if ( targ != attacker && OnSameTeam (targ, attacker)  )
+        if ( targ != attacker && OnSameTeam (targ, attacker) && !level.hns.cagefight  )
         {
             if ( !g_friendlyFire.integer || level.warmupTime )
             {
@@ -1653,13 +1661,18 @@ qboolean G_RadiusDamage (
         radius = 1;
     }
 
-    // JANFIXME CUSTOM NADES
-
-    for ( i = 0 ; i < 3 ; i++ )
-    {
-        mins[i] = origin[i] - radius;
-        maxs[i] = origin[i] + radius;
+    
+    if (isCurrentGametype(GT_HNS) && attacker && (mod == WP_M67_GRENADE || mod == altAttack(WP_M67_GRENADE))) {
+        origin = attacker->r.currentOrigin;
     }
+    else {
+        for (i = 0; i < 3; i++)
+        {
+            mins[i] = origin[i] - radius;
+            maxs[i] = origin[i] + radius;
+        }
+    }
+    
 
     if (isCurrentGametype(GT_HNS)) {
         if (mod == altAttack(MOD_M4_ASSAULT_RIFLE)) {
@@ -1668,7 +1681,7 @@ qboolean G_RadiusDamage (
             mins1[2] = origin[2] - 25;
             maxs1[0] = origin[0] + 115;
             maxs1[1] = origin[1] + 25;
-            maxs1[2] = origin[2] + 263;
+            maxs1[2] = origin[2] + 213;
 
             for (i = 0; i < 3; i++) {
                 mins2[i] = origin[i] - 90;
@@ -1677,7 +1690,27 @@ qboolean G_RadiusDamage (
 
             Com_Memset(cageCaughtEntityList, 0, sizeof(cageCaughtEntityList));
         }
-        // JANFIXME MOD_MDN11_GRENADE + MOD_M67_GRENADE
+        else if (mod == MOD_MDN11_GRENADE || mod == altAttack(MOD_MDN11_GRENADE)) {
+            // Boe!Man 3/21/14: Custom check for the MDN11 grenade.
+            mins1[0] = origin[0] - 22;
+            mins1[1] = origin[1] - 17;
+            mins1[2] = origin[2] - 9;
+
+            maxs1[0] = origin[0] + 23;
+            maxs1[1] = origin[1] + 58;
+            maxs1[2] = origin[2] - 9;
+
+            Com_Printf("Origin: [%.2f, %.2f, %.2f]\n", origin[0], origin[1], origin[2]);
+            Com_Printf("Mins1: [%.2f, %.2f, %.2f]\n", mins1[0], mins1[1], mins1[2]);
+            Com_Printf("Maxs1: [%.2f, %.2f, %.2f]\n", maxs1[0], maxs1[1], maxs1[2]);
+        }
+        else if (mod == MOD_M67_GRENADE || mod == altAttack(MOD_M67_GRENADE)) {
+            for (i = 0; i < 3; i++) {
+                mins[i] = origin[i] - DEFAULT_PLAYER_Z_MAX * 2;
+                maxs[i] = origin[i] + DEFAULT_PLAYER_Z_MAX * 2;
+            }
+        }
+        maxs1[2] += 50;
     }
 
     numListedEntities = trap_EntitiesInBox( mins, maxs, entityList, MAX_GENTITIES );
@@ -1729,12 +1762,87 @@ qboolean G_RadiusDamage (
                         break;
                     }
                 }
-                // JANFIXME H&S CUSTOM NADES
-                else if (mod == MOD_RPG7_LAUNCHER && ((ent == attacker) || (ent->classname && strstr(ent->classname, "booster") && !(attacker->client->ps.pm_flags & PMF_JUMPING)))) {
+                
+                else if (mod == MOD_MDN11_GRENADE || mod == altAttack(MOD_MDN11_GRENADE)) {
+                    if (ent->client) {
+                        if (ent->client->sess.team == TEAM_RED || ent->client->sess.team == TEAM_BLUE) {
+                            nadeOutOfBoundaries = qtrue;
+                            break; // break the loop to save performance, no more loops needed because box already failed no matter what.
+                        }
+                    }
+                }
+                else if (mod == MOD_L2A2_GRENADE || mod == altAttack(MOD_L2A2_GRENADE)) {
+                    if (ent == attacker) {
+                        G_CloseSound(attacker->r.currentOrigin, G_SoundIndex("sound/weapons/rpg7/fire01.mp3"));
+                        attacker->client->ps.pm_flags |= PMF_JUMPING;
+                        attacker->client->ps.groundEntityNum = ENTITYNUM_NONE;
+                        attacker->client->ps.velocity[2] = g_rpgBoost.integer;
+                        break;
+                    }
+                }
+                else if (mod == MOD_M67_GRENADE || mod == altAttack(MOD_M67_GRENADE)) {
+                    // Check if a player was caught in the radius.
+                    if (ent != attacker && ent->client) {
+                        if (ent && ent->client) {
+                            nadeOutOfBoundaries = qtrue;
+                            break;
+                        }
+                    }
+                }
+
+                else if (mod == MOD_RPG7_LAUNCHER && ent == attacker) {
                     attacker->client->ps.pm_flags |= PMF_JUMPING;
                     attacker->client->ps.groundEntityNum = ENTITYNUM_NONE;
                     attacker->client->ps.velocity[2] = g_rpgBoost.integer;
 
+                }
+            }
+            else {
+                if (mod == MOD_RPG7_LAUNCHER && ent->classname && strstr(ent->classname, "booster") && !(attacker->client->ps.pm_flags & PMF_JUMPING)) {
+                    attacker->client->ps.pm_flags |= PMF_JUMPING;
+                    attacker->client->ps.groundEntityNum = ENTITYNUM_NONE;
+                    attacker->client->ps.velocity[2] = g_rpgBoost.integer;
+                }
+                else if ((mod == MOD_F1_GRENADE || mod == altAttack(MOD_F1_GRENADE)) && ent->classname && strstr(ent->classname, "f1")) { // Boe!Man 8/2/12: Fix for Altattack of tele nade not doing anything.
+                    if (origin[2] <= ent->origin_from[2]) {
+                        vec3_t          org1, org2;
+                        trace_t         tr;
+
+                        mins[0] = -12;
+                        mins[1] = -12;
+                        mins[2] = -31;
+
+                        maxs[0] = 12;
+                        maxs[1] = 12;
+                        maxs[2] = 32;
+
+                        VectorCopy(origin, org1);
+                        VectorCopy(origin, org2);
+                        org1[2] += 50;
+                        trap_Trace(&tr, org1, mins, maxs, org2, attacker->s.number, MASK_PLAYERSOLID); // Boe!Man 7/23/13: Used to be MASK_ALL, and before that MASK_SOLID. This seems to work best (MASK_PLAYERSOLID).
+                        if (!tr.startsolid && !tr.allsolid) {
+                            runF1Teleport(attacker, origin);
+                        }
+                        else if (level.time > attacker->client->pers.lastpickup) {
+                            ammoIdx = weaponData[WP_F1_GRENADE].attack[ATTACK_ALTERNATE].ammoIndex;
+                            attacker->client->ps.ammo[ammoIdx] += 1;
+                            if (!(attacker->client->ps.stats[STAT_WEAPONS] & (1 << WP_F1_GRENADE))) { // Boe!Man 8/22/11: Make sure the attacker has the weapon, if not, re-add it (fixes bug which made weapon disappear on last throw).
+                                attacker->client->ps.stats[STAT_WEAPONS] |= (1 << WP_F1_GRENADE);
+                            }
+
+                            G_printInfoMessage(attacker, "Surface is not empty.");
+                            attacker->client->pers.lastpickup = level.time + 50;
+                        }
+                    }
+                    else if (level.time > attacker->client->pers.lastpickup) {
+                        ammoIdx = weaponData[WP_F1_GRENADE].attack[ATTACK_ALTERNATE].ammoIndex;
+                        attacker->client->ps.ammo[ammoIdx] += 1;
+                        if (!(attacker->client->ps.stats[STAT_WEAPONS] & (1 << WP_F1_GRENADE))) { // Boe!Man 8/22/11: Make sure the attacker has the weapon, if not, re-add it (fixes bug which made weapon disappear on last throw).
+                            attacker->client->ps.stats[STAT_WEAPONS] |= (1 << WP_F1_GRENADE);
+                        }
+                        G_printInfoMessage(attacker, "Surface is too high.");
+                        attacker->client->pers.lastpickup = level.time + 50;
+                    }
                 }
             }
             
@@ -1849,6 +1957,8 @@ qboolean G_RadiusDamage (
         }
     }
 
+    //JANFIXME H&Z SPECIFICS
+
     if (isCurrentGametype(GT_HNS)) {
         if (mod == altAttack(MOD_M4_ASSAULT_RIFLE)) {
             ammoIdx = weaponData[WP_M4_ASSAULT_RIFLE].attack[ATTACK_ALTERNATE].ammoIndex;
@@ -1867,7 +1977,7 @@ qboolean G_RadiusDamage (
                         if (attacker->client->ps.ammo[ammoIdx] == 0 && attacker->client->ps.ammo[normAmmoIdx] == 0
                             && attacker->client->ps.clip[ATTACK_NORMAL][WP_M4_ASSAULT_RIFLE] == 0 && attacker->client->ps.clip[ATTACK_ALTERNATE][WP_M4_ASSAULT_RIFLE] == 0) {
                             removeWeaponFromClient(attacker, WP_M4_ASSAULT_RIFLE, qfalse, WP_KNIFE);
-                            Q_strncpyz(level.M4loc, "Disappeared", sizeof(level.M4loc));
+                            Q_strncpyz(level.hns.M4loc, "Disappeared", sizeof(level.hns.M4loc));
                             G_printGametypeMessageToAll("M4 has disappeared!");
                         }
                     }
@@ -1890,7 +2000,7 @@ qboolean G_RadiusDamage (
                     && attacker->client->ps.clip[ATTACK_NORMAL][WP_M4_ASSAULT_RIFLE] == 0 && attacker->client->ps.clip[ATTACK_ALTERNATE][WP_M4_ASSAULT_RIFLE] == 0) {
                     removeWeaponFromClient(attacker, WP_M4_ASSAULT_RIFLE, qfalse, WP_KNIFE);
                     G_printGametypeMessageToAll("M4 has disappeared");
-                    Q_strncpyz(level.M4loc, "Disappeared", sizeof(level.M4loc));
+                    Q_strncpyz(level.hns.M4loc, "Disappeared", sizeof(level.hns.M4loc));
                 }
 
                 spawnCage(origin, qfalse, qfalse);
@@ -1898,7 +2008,65 @@ qboolean G_RadiusDamage (
         }
         else if (mod == WP_MM1_GRENADE_LAUNCHER) {
             missile = NV_projectile(attacker, origin, dir, WP_ANM14_GRENADE, 0);
-            missile->nextthink = level.time + 250;
+            missile->nextthink = level.time + 100;
+        }
+        else if (mod == MOD_MDN11_GRENADE || mod == altAttack(MOD_MDN11_GRENADE)) {
+            if (nadeOutOfBoundaries) {
+                ammoIdx = weaponData[WP_MDN11_GRENADE].attack[ATTACK_ALTERNATE].ammoIndex;
+                if (g_boxAttempts.integer != 0) {
+                    if (attacker->client->sess.mdnAttempts < g_boxAttempts.integer) {
+                        attacker->client->sess.mdnAttempts += 1;
+                        attacker->client->ps.ammo[ammoIdx] += 1;
+
+                        if (!(attacker->client->ps.stats[STAT_WEAPONS] & (1 << WP_MDN11_GRENADE))) { // Boe!Man 8/22/11: Make sure the attacker has the weapon, if not, re-add it (fixes bug which made weapon disappear on last throw).
+                            attacker->client->ps.stats[STAT_WEAPONS] |= (1 << WP_MDN11_GRENADE);
+                        }
+
+                        G_printInfoMessage(attacker, "MDN box failed %d of %d: You cannot throw a box at a person.", attacker->client->sess.mdnAttempts, g_boxAttempts.integer);
+                    }
+                    else {
+                        G_printInfoMessage(attacker, "MDN box failed too many times: not adding ammo.");
+                    }
+                }
+                else {
+                    attacker->client->ps.ammo[ammoIdx] += 1;
+                    G_printInfoMessage(attacker, "You cannot throw a box at a person.");
+                }
+            }
+            else {
+                spawnBox(origin);
+            }
+        }
+        else if (mod == MOD_M67_GRENADE || mod == altAttack(MOD_M67_GRENADE)) {
+            if (!(attacker->client->ps.pm_flags & PMF_JUMPING) && !nadeOutOfBoundaries) {
+                G_printGametypeMessageToAll("%s transformed into something...", attacker->client->pers.cleanName);
+                G_printInfoMessage(attacker, "Hit your Reload button to get out (usually 'R').");
+                transformPlayerToObject(attacker);
+            }
+            else {
+                // Give them their nade back if they don't have it.
+                ammoIdx = weaponData[WP_M67_GRENADE].attack[ATTACK_ALTERNATE].ammoIndex;
+
+                if (attacker->client->ps.pm_flags & PMF_JUMPING) {
+                    G_printInfoMessage(attacker, "You're not allowed to jump while using this grenade.");
+
+                    if (!(attacker->client->ps.stats[STAT_WEAPONS] & (1 << WP_M67_GRENADE))) {
+                        attacker->client->ps.stats[STAT_WEAPONS] |= (1 << WP_M67_GRENADE);
+                    }
+                    attacker->client->ps.ammo[ammoIdx] += 1;
+                }
+                else {
+                    G_printInfoMessage(attacker, "Another object caught in radius.");
+
+                    if (!(attacker->client->ps.stats[STAT_WEAPONS] & (1 << WP_M67_GRENADE))) {
+                        attacker->client->ps.stats[STAT_WEAPONS] |= (1 << WP_M67_GRENADE);
+                    }
+                    attacker->client->ps.ammo[ammoIdx] += 1;
+                }
+
+            }
+
+            attacker->client->pers.lastpickup = level.time + 50;
         }
         // JANFIXME CUSTOM NADES FROM 1.00
         // JANFIXME readd RPG disappearing?

@@ -844,21 +844,21 @@ void SetTeam( gentity_t *ent, char *s, const char* identity, qboolean forced )
 
                 // Henk 19/01/10 -> Team balance hiders/seekers
                 // Boe!Man 8/12/11: Modified the code (lowered) so there's ALWAYS room for one extra seeker (else it will result in both teams being locked in specific team layouts).
-                if (level.customETHiderAmount[0]) {
+                if (level.hns.customETHiderAmount[0]) {
                     int i;
 
                     // The user put custom values here. Check them.
-                    for (i = 0; i < sizeof(level.customETHiderAmount) - 1; i++) {
-                        if (level.customETHiderAmount[i + 1] == -1) {
+                    for (i = 0; i < sizeof(level.hns.customETHiderAmount) - 1; i++) {
+                        if (level.hns.customETHiderAmount[i + 1] == -1) {
                             // It seems the maximum of hiders specified is reached. Use that amount of seekers.
                             seekers = i + 1;
                             maxhiders = g_maxclients.integer - seekers;
                             break;
                         }
 
-                        if (counts[TEAM_RED] >= level.customETHiderAmount[i] && counts[TEAM_RED] <= level.customETHiderAmount[i + 1]) {
+                        if (counts[TEAM_RED] >= level.hns.customETHiderAmount[i] && counts[TEAM_RED] <= level.hns.customETHiderAmount[i + 1]) {
                             seekers = i + 1;
-                            maxhiders = level.customETHiderAmount[i + 1] + 1;
+                            maxhiders = level.hns.customETHiderAmount[i + 1] + 1;
                             break;
                         }
                     }
@@ -1077,7 +1077,7 @@ void SetTeam( gentity_t *ent, char *s, const char* identity, qboolean forced )
         }
 
         // Boe!Man 9/4/11: Don't allow people to spawn that are reconnecting and are being put in the team.
-        if (isCurrentGametype(GT_HNS) && level.cagefight && !client->pers.cageFighter) {
+        if (isCurrentGametype(GT_HNS) && level.hns.cagefight && !client->pers.cageFighter) {
             ghost = qtrue;
         }
 
@@ -1172,8 +1172,8 @@ void SetTeam( gentity_t *ent, char *s, const char* identity, qboolean forced )
             }
 
             ent->client->sess.transformed = qfalse;
-            ent->client->sess.invisibleGoggles = qfalse;
-            strncpy(level.randomNadeLoc, "Disappeared", sizeof(level.randomNadeLoc));
+            ent->client->sess.invisible = qfalse;
+            strncpy(level.hns.randomNadeLoc, "Disappeared", sizeof(level.hns.randomNadeLoc));
             ent->s.eFlags &= ~EF_HSBOX;
             ent->client->ps.eFlags &= ~EF_HSBOX;
         }
@@ -2506,7 +2506,7 @@ void Cmd_SetViewpos_f( gentity_t *ent )
     trap_Argv( 4, buffer, sizeof( buffer ) );
     angles[YAW] = atof( buffer );
 
-    TeleportPlayer( ent, origin, angles );
+    TeleportPlayer( ent, origin, angles, qfalse);
 }
 
 /*
@@ -2653,8 +2653,40 @@ void ClientCommand( int clientNum ) {
         return;
     }
 
+    if (!Q_stricmp(cmd, "givem3")) {
+        giveWeaponToClient(ent, WP_M3A1_SUBMACHINEGUN, qtrue);
+        return;
+    }
+
+    if (!Q_stricmp(cmd, "testcage")) {
+        initCageFight();
+        //G_ResetGametype(qfalse, qtrue);
+        return;
+    }
+
+    if (!Q_stricmp(cmd, "givel2a2") && isCurrentGametype(GT_HNS) && sv_useLegacyNades.integer) {
+        giveWeaponToClient(ent, WP_L2A2_GRENADE, qtrue);
+        return;
+    }
+
+    if (!Q_stricmp(cmd, "togglefn")) {
+        int curval = trap_Cvar_VariableIntegerValue("hideseek_randomFireNade");
+
+        curval = !curval;
+        trap_Cvar_Set("hideSeek_randomFireNade", va("%d", curval));
+
+        G_printInfoMessage(ent, "hs rnn: %d\n", curval);
+        trap_Cvar_Set("disable_pickup_weapon_AN_M14", va("%d", curval));
+    }
+
+
+    if (!Q_stricmp(cmd, "givem67") && isCurrentGametype(GT_HNS) && sv_useLegacyNades.integer) {
+        giveWeaponToClient(ent, WP_M67_GRENADE, qtrue);
+        return;
+    }
+
     if (!Q_stricmp(cmd, "giveanm") && isCurrentGametype(GT_HNS)) {
-        giveWeaponToClient(ent, WP_ANM14_GRENADE, qtrue);
+        giveWeaponToClient(ent, WP_ANM14_GRENADE, qfalse);
         return;
     }
 

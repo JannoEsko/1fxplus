@@ -275,7 +275,7 @@ void trigger_teleporter_touch (gentity_t *self, gentity_t *other, trace_t *trace
         return;
     }
 
-    TeleportPlayer( other, dest->s.origin, dest->s.angles );
+    TeleportPlayer( other, dest->s.origin, dest->s.angles, qfalse );
 }
 
 
@@ -923,23 +923,23 @@ void SP_teleporter(gentity_t* ent) {
 }
 
 void hideseek_cage(gentity_t* ent) {
-    VectorCopy(ent->s.origin, level.hideseek_cage);
+    VectorCopy(ent->s.origin, level.hns.hideseek_cage);
     if (ent->size) {
         if (strstr(Q_strlwr(ent->size), "big")) {
-            level.hideseek_cageSize = 2; // 2 = big.
+            level.hns.hideseek_cageSize = 2; // 2 = big.
         }
         else if (strstr(Q_strlwr(ent->size), "none")) {
-            level.hideseek_cageSize = 1; // 1 = none.
+            level.hns.hideseek_cageSize = 1; // 1 = none.
         } // Else: "normal" or "regular", or "small", or anything else = 0.
     }
     G_FreeEntity(ent);
-    level.cageFightLoaded = qtrue;
+    level.hns.cageFightLoaded = qtrue;
 }
 
 void hideseek_cageextra(gentity_t* ent) {
     //just parse it and display when it's time.
     trap_UnlinkEntity(ent);
-    level.cageFightExtras = qtrue;
+    level.hns.cageFightExtras = qtrue;
 }
 
 /*
@@ -995,7 +995,7 @@ void trigger_NewTeleporter_touch(gentity_t* self, gentity_t* other, trace_t* tra
         G_CloseSound(self->origin_to, G_SoundIndex("sound/misc/menus/apply_changes.wav"));
         G_CloseSound(self->origin_from, G_SoundIndex("sound/misc/menus/apply_changes.wav"));
     }
-    TeleportPlayer(other, self->origin_to, self->angles_to);
+    TeleportPlayer(other, self->origin_to, self->angles_to, qfalse);
 }
 
 /*

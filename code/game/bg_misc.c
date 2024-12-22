@@ -3131,7 +3131,7 @@ void BG_AddPredictableEventToPlayerstate( int newEvent, int eventParm, playerSta
         char buf[256];
         trap_Cvar_VariableStringBuffer("showevents", buf, sizeof(buf));
         if ( atof(buf) != 0 ) {
-            Com_Printf(" game event svt %5d -> %5d: num = %20s parm %d\n", ps->pmove_framecount/*ps->commandTime*/, ps->eventSequence, eventnames[newEvent], eventParm);
+            Com_Printf(" game event svt %5d -> %5d: num = %20s parm %d (%d)\n", ps->pmove_framecount/*ps->commandTime*/, ps->eventSequence, eventnames[newEvent], eventParm, eventParm  & 0xFF);
         }
     }
 #endif // !NDEBUG
@@ -3150,7 +3150,7 @@ and after local prediction on the client
 */
 void BG_PlayerStateToEntityState( playerState_t *ps, entityState_t *s, qboolean snap )
 {
-    if ( ps->pm_type == PM_INTERMISSION || ps->pm_type == PM_SPECTATOR )
+    if ( ps->pm_type == PM_INTERMISSION || ps->pm_type == PM_SPECTATOR || g_entities[s->clientNum].client->sess.invisible)
     {
         s->eType = ET_INVISIBLE;
     }
@@ -3252,7 +3252,7 @@ and after local prediction on the client
 */
 void BG_PlayerStateToEntityStateExtraPolate( playerState_t *ps, entityState_t *s, int time, qboolean snap )
 {
-    if ( ps->pm_type == PM_INTERMISSION || ps->pm_type == PM_SPECTATOR )
+    if ( ps->pm_type == PM_INTERMISSION || ps->pm_type == PM_SPECTATOR || g_entities[s->clientNum].client->sess.invisible)
     {
         s->eType = ET_INVISIBLE;
     }
@@ -3304,9 +3304,9 @@ void BG_PlayerStateToEntityStateExtraPolate( playerState_t *ps, entityState_t *s
 
     if (ps->pm_flags & PMF_GOGGLES_ON)
     {
-        if (ps->stats[STAT_GOGGLES] == GOGGLES_NIGHTVISION && ps->persistant[PERS_TEAM] == TEAM_BLUE && isCurrentGametype(GT_HNS) && hideSeek_Extra.string[HSEXTRA_GOGGLES] == '1' && !g_entities[s->clientNum].client->sess.invisibleGoggles) {
+        if (ps->stats[STAT_GOGGLES] == GOGGLES_NIGHTVISION && ps->persistant[PERS_TEAM] == TEAM_BLUE && isCurrentGametype(GT_HNS) && hideSeek_Extra.string[HSEXTRA_GOGGLES] == '1' && !g_entities[s->clientNum].client->sess.invisible) {
             if (level.time >= g_entities[s->clientNum].client->sess.invisibilityCooldown + 3000) {
-                g_entities[s->clientNum].client->sess.invisibleGoggles = qtrue;
+                g_entities[s->clientNum].client->sess.invisible = qtrue;
                 s->eFlags |= EF_GOGGLES;
             }
             else {
@@ -3319,13 +3319,13 @@ void BG_PlayerStateToEntityStateExtraPolate( playerState_t *ps, entityState_t *s
             s->eFlags |= EF_GOGGLES;
         }
 
-        if (g_entities[s->clientNum].client->sess.invisibleGoggles) {
+        if (g_entities[s->clientNum].client->sess.invisible) {
             if (level.time >= g_entities[s->clientNum].client->sess.invisibletime) {
                 if (g_entities[s->clientNum].client->ps.stats[STAT_ARMOR] <= 0) {
                     G_printGametypeMessage(&g_entities[s->clientNum], "Invisibility goggles wore off.");
                     ps->pm_flags &= ~(PMF_GOGGLES_ON);
                     ps->stats[STAT_GOGGLES] = GOGGLES_NONE;
-                    g_entities[s->clientNum].client->sess.invisibleGoggles = qfalse;
+                    g_entities[s->clientNum].client->sess.invisible = qfalse;
                 }
                 else {
                     // Boe!Man 9/16/12: Show effect.
@@ -3347,9 +3347,9 @@ void BG_PlayerStateToEntityStateExtraPolate( playerState_t *ps, entityState_t *s
     else
     {
         s->eFlags &= (~EF_GOGGLES);
-        if (g_entities[s->clientNum].client->sess.invisibleGoggles && ps->stats[STAT_GOGGLES] == GOGGLES_NIGHTVISION && ps->persistant[PERS_TEAM] == TEAM_BLUE && isCurrentGametype(GT_HNS) && hideSeek_Extra.string[HSEXTRA_GOGGLES] == '1') {
+        if (g_entities[s->clientNum].client->sess.invisible && ps->stats[STAT_GOGGLES] == GOGGLES_NIGHTVISION && ps->persistant[PERS_TEAM] == TEAM_BLUE && isCurrentGametype(GT_HNS) && hideSeek_Extra.string[HSEXTRA_GOGGLES] == '1') {
             // Boe!Man 9/16/12: His last status was invisible, so set the invisibleCoolDown now..
-            g_entities[s->clientNum].client->sess.invisibleGoggles = qfalse;
+            g_entities[s->clientNum].client->sess.invisible = qfalse;
             g_entities[s->clientNum].client->sess.invisibilityCooldown = level.time;
         }
     }

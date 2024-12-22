@@ -1032,7 +1032,7 @@ qboolean BG_ParseInviewFile( qboolean pickupsDisabled )
     void        *GP2, *topGroup, *topSubs, *group;
     char        name[256], temp[256];
     int         i;
-
+    
     GP2 = trap_GP_ParseFile(g_inviewFile.string);
 
     if (!GP2) {

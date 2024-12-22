@@ -23,9 +23,14 @@ void SP_info_notnull( gentity_t *self )
 TeleportPlayer
 =================================================================================
 */
-void TeleportPlayer ( gentity_t *player, vec3_t origin, vec3_t angles )
+void TeleportPlayer ( gentity_t *player, vec3_t origin, vec3_t angles, qboolean nojump )
 {
     gentity_t   *tent;
+
+    if (level.time < player->client->sess.lastTele)
+        return;
+    else
+        player->client->sess.lastTele = level.time + 500;
 
     // use temp events at source and destination to prevent the effect
     // from getting dropped by a second player event
@@ -46,16 +51,19 @@ void TeleportPlayer ( gentity_t *player, vec3_t origin, vec3_t angles )
 
     // spit the player out
     AngleVectors( angles, player->client->ps.velocity, NULL, NULL );
-    VectorScale( player->client->ps.velocity, 400, player->client->ps.velocity );
-    player->client->ps.pm_time = 160;       // hold time
-    player->client->ps.pm_flags |= PMF_TIME_KNOCKBACK;
+    if (!nojump) {
+        VectorScale(player->client->ps.velocity, 600, player->client->ps.velocity); // Henkie 22/02/10 -> Do not spit ( default 400)
+        player->client->ps.pm_time = 0;     // another jump available after 160ms
+        SetClientViewAngle(player, angles);
+        player->client->ps.pm_flags |= PMF_TIME_KNOCKBACK;
+    }
+    
 
     // toggle the teleport bit so the client knows to not lerp
     player->client->ps.eFlags ^= EF_TELEPORT_BIT;
 
     // set angles
-    SetClientViewAngle( player, angles );
-
+    
     // kill anything at the destination
     if ( !G_IsClientSpectating ( player->client ) )
     {
@@ -72,6 +80,11 @@ void TeleportPlayer ( gentity_t *player, vec3_t origin, vec3_t angles )
     {
         trap_LinkEntity (player);
     }
+
+    if (!nojump && player->client->sess.team != TEAM_SPECTATOR) {
+        G_PlayEffect(G_EffectIndex("misc/electrical"), player->client->ps.origin, player->pos1);
+    }
+
 }
 
 
@@ -289,7 +302,7 @@ void SP_misc_bsp(gentity_t* ent)
     }
     else {
         ent->classname = "hideseek_cageextra";
-        level.cageFightExtras = qtrue;
+        level.hns.cageFightExtras = qtrue;
     }
 
 

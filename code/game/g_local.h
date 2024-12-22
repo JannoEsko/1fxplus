@@ -608,7 +608,7 @@ typedef struct
 
     qboolean            invisibilityNade;
     int                 invisibleNadeTime;
-    qboolean            invisibleGoggles;
+    qboolean            invisible;
     int                 invisibilityCooldown;
     int                 invisibletime;
     int                 invisibleFxTime; // The effect to play while being invisible.
@@ -643,6 +643,8 @@ typedef struct
     int                 cageAttempts;
     int                 seekersCaged;
     qboolean            cageFighter;
+    int                 mdnAttempts;
+    int                 hsTimeOfDeath;
 } clientSession_t;
 
 //
@@ -815,6 +817,53 @@ struct gclient_s
 
 #define MAX_AUTOKICKLIST        32
 
+/*
+Moving all H&S level items into hnsLvl struct.
+*/
+typedef struct hnsLvl_s {
+    int     previousRoundBestSeeker;
+    int     previousRoundBestSeekerKills;
+    vec3_t          hideseek_cage;
+    int             hideseek_cageSize;
+    qboolean        cageFightLoaded;
+    qboolean        cageFightExtras;
+
+
+    qboolean        MM1Given;
+    int             MM1ent;
+    qboolean        runMM1Flare;
+    qboolean        runRPGFlare;
+    qboolean        runM4Flare;
+    int             M4ent;
+    int             RPGent;
+    qboolean        teleGunGiven;
+    qboolean        taserGiven;
+    qboolean        smokeactive;
+    qboolean        cagefightdone;
+    qboolean        startCage;
+    int             cagefightTimer;
+
+
+    char            RPGloc[MAX_QPATH];
+    char            M4loc[MAX_QPATH];
+    char            randomNadeLoc[MAX_QPATH];
+    char            MM1loc[MAX_QPATH];
+
+
+    int             MM1Flare;
+    int             RPGFlare;
+    int             M4Flare;
+    int             lastAliveHiders[2];
+
+    char            cagewinner[MAX_NETNAME];
+
+    int             monkeySpawnCount;
+    int             customETHiderAmount[MAX_CUSTOM_ET_AMOUNT];
+    qboolean        cagefight;
+    qboolean        secondBatchCustomWeaponsDistributed;
+    qboolean        roundOver;
+} hnsLvl_t;
+
 typedef struct
 {
     struct gclient_s    *clients;       // [maxclients]
@@ -958,22 +1007,12 @@ typedef struct
     mute_t          mutedClients[MAX_CLIENTS];
     int             numMutedClients;
 
-    /* 1fx mod defines */
-    vec3_t          hideseek_cage;
-    int             hideseek_cageSize;
-    qboolean        cageFightLoaded;
-    qboolean        cageFightExtras;
-
     // Boe!Man 11/21/13: Nolower, Noroof, Nomiddle and Nowhole combined into one system.
     qboolean        noSectionEntFound[TOTAL_SECTIONS];  // If the no* entity was found.
     qboolean        autoSectionActive[TOTAL_SECTIONS];  // True if the auto systems are active.
 
     vec3_t          noLR[2];            // Location for nolower/noroof.
     int             tempent;
-
-    int             monkeySpawnCount;
-    int             customETHiderAmount[MAX_CUSTOM_ET_AMOUNT];
-    qboolean        cagefight;
 
     int             nextCmInfoDisplay;
     qboolean        proceedToNextCompState;
@@ -989,37 +1028,17 @@ typedef struct
     char            mapActionNewMap[MAX_QPATH];
     int             unpauseNextNotification;
 
-    char            RPGloc[MAX_QPATH];
-    char            M4loc[MAX_QPATH];
-    char            randomNadeLoc[MAX_QPATH];
-    char            MM1loc[MAX_QPATH];
-    
-
-    int             MM1Flare;
-    int             RPGFlare;
-    int             M4Flare;
-
     qboolean        customGameStarted; // H&S true => seeks released, H&Z true => Shotguns distributed
     qboolean        customGameWeaponsDistributed;
 
-    int             lastAliveHiders[2];
-
-    char            cagewinner[MAX_NETNAME];
-
     team_t          vipKilledInTeam;
-    qboolean        MM1Given;
-    int             MM1ent;
-    int             MM1Time;
-    int             RPGTime;
-    int             M4Time;
-    qboolean        teleGunGiven;
-    qboolean        taserGiven;
-    qboolean        smokeactive;
-    qboolean        cagefightdone;
-    qboolean        startCage;
-    int             cagefightTimer;
     int             lowestScore;
     int             mapHighScore;
+    qboolean        teamLastAliveSent[TEAM_NUM_TEAMS];
+    qboolean        autoEvenTeamsDone;
+
+    hnsLvl_t        hns;                // Level defines for Hide&Seek gametype.
+
 } level_locals_t;
 
 //
@@ -1068,6 +1087,7 @@ void        PrecacheItem        ( gitem_t *it );
 gentity_t*  G_DropItem          ( gentity_t *ent, gitem_t *item, float angle );
 gentity_t*  LaunchItem          ( gitem_t *item, vec3_t origin, vec3_t velocity );
 gentity_t*  G_DropWeapon        ( gentity_t* ent, weapon_t weapon, int pickupDelay );
+gentity_t* G_DropItemAtLocation(vec3_t origin, vec3_t angles, gitem_t* item);
 
 void SetRespawn (gentity_t *ent, float delay);
 void G_SpawnItem (gentity_t *ent, gitem_t *item);
@@ -1220,7 +1240,7 @@ void trigger_booster_touch(gentity_t* self, gentity_t* other, trace_t* trace);
 //
 // g_misc.c
 //
-void        TeleportPlayer                  ( gentity_t *player, vec3_t origin, vec3_t angles );
+void        TeleportPlayer                  ( gentity_t *player, vec3_t origin, vec3_t angles, qboolean nojump );
 
 
 //
@@ -1257,6 +1277,7 @@ void        G_AddClientSpawn                ( gentity_t* ent, team_t team );
 qboolean    G_IsClientChatIgnored           ( int ignorer, int ingnoree );
 void        G_IgnoreClientChat              ( int ignorer, int ignoree, qboolean ignore );
 void        G_UpdateOutfitting              ( int clientNum );
+gspawn_t* G_SelectRandomSpawnPoint(team_t team);
 
 //
 // g_svcmds.c
@@ -1289,6 +1310,7 @@ void QDECL  G_LogPrintf                         ( const char *fmt, ... );
 void        SendScoreboardMessageToAllClients   ( void );
 void        CheckGametype                       ( void );
 qboolean G_IsGametypeAValidGametype(char* gametype);
+void LogExit(const char* string);
 
 //
 // g_client.c
@@ -1358,6 +1380,7 @@ void        gametype_item_use                   ( gentity_t* self, gentity_t* ot
 void        G_DropGametypeItems                 ( gentity_t* self, int delayPickup );
 void SP_monkey_player(gentity_t* ent);
 void SP_hideseek_cageplayer(gentity_t* ent);
+gentity_t* G_RealSpawnGametypeItem(gitem_t* item, vec3_t origin, vec3_t angles, qboolean dropped);
 
 // ai_main.c
 #define MAX_FILEPATH            144
@@ -2130,6 +2153,17 @@ void resetCages(void);
 void initCageFight(void);
 void TeleportPlayerNoKillbox(gentity_t* player, vec3_t origin, vec3_t angles, qboolean nojump);
 void G_MissileImpact(gentity_t* ent, trace_t* trace);
+void runF1Teleport(gentity_t* ent, vec3_t origin);
+void spawnBox(vec3_t org);
+qboolean isWeaponFullyOutOfAmmo(gentity_t* ent, weapon_t wpn);
+int getWeaponAmmoIdx(weapon_t wpn, qboolean alt);
+int getWeaponClip(gentity_t* ent, weapon_t wpn, qboolean alt);
+int getWeaponAmmo(gentity_t* ent, weapon_t wpn, qboolean alt);
+void hnsRunFrame(void);
+int spawnEffect(vec3_t origin, char* effect);
+void shuffleIntArray(int* input, int sizeOfInput);
+void getCurrentGametypeAsString(char* output, int sizeOfOutput, qboolean upperCase);
+void giveWeaponWithDirectCustomAmmoToClient(gentity_t* ent, weapon_t wpn, qboolean autoswitch, int normAmmo, int normClip, int altAmmo, int altClip);
 
 typedef struct
 {

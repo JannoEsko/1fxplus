@@ -675,7 +675,7 @@ int adm_Rollercoaster(int argNum, gentity_t* adm, qboolean shortCmd) {
 
 int adm_Respawn(int argNum, gentity_t* adm, qboolean shortCmd) {
 
-	int idNum = G_ClientNumFromArg(adm, argNum, "rollercoaster", qtrue, qtrue, qfalse, shortCmd);
+	int idNum = G_ClientNumFromArg(adm, argNum, "respawn", qfalse, qtrue, qfalse, shortCmd);
 
 	if (idNum >= 0) {
 		gentity_t* ent = &g_entities[idNum];

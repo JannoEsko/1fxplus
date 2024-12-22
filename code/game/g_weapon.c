@@ -464,7 +464,7 @@ void G_FireBullet ( gentity_t* ent, int weapon, int attack )
             }
 
             // we hit something that noticed, so that is enough pellets
-            if ( (int)(attackDat->damage * damageMult) > 0 )
+            if ( (int)(attackDat->damage * damageMult) > 0 || (isCurrentGametype(GT_HNS) && weapon == WP_M4_ASSAULT_RIFLE))
             {
                 if ( !attackDat->melee )
                 {
@@ -840,6 +840,22 @@ gentity_t* G_FireWeapon( gentity_t *ent, attackType_t attack )
     else
     {
         G_FireBullet ( ent, ent->s.weapon, attack );
+
+        if (isCurrentGametype(GT_HNS)) {
+            if (ent->s.weapon == WP_M4_ASSAULT_RIFLE && isWeaponFullyOutOfAmmo(ent, ent->s.weapon)) {
+                removeWeaponFromClient(ent, ent->s.weapon, qfalse, WP_KNIFE);
+                Q_strncpyz(level.hns.M4loc, "Disappeared", sizeof(level.hns.M4loc));
+                G_printGametypeMessageToAll("M4 has disappeared");
+            } else if (ent->s.weapon == WP_M3A1_SUBMACHINEGUN && isWeaponFullyOutOfAmmo(ent, ent->s.weapon)) {
+                removeWeaponFromClient(ent, ent->s.weapon, qfalse, WP_KNIFE);
+                G_printGametypeMessageToAll("Telegun has disappeared");
+            }
+            else if (ent->s.weapon == WP_USSOCOM_PISTOL && isWeaponFullyOutOfAmmo(ent, ent->s.weapon)) {
+                removeWeaponFromClient(ent, ent->s.weapon, qfalse, WP_KNIFE);
+                G_printGametypeMessageToAll("Stungun has disappeared");
+            }
+        }
+        
     }
 
     return NULL;

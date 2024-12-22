@@ -724,12 +724,7 @@ void QDECL G_printGametypeMessage(gentity_t* ent, const char* msg, ...)
 
     // Get current gametype and turn it into uppercase.
     char gametypeInUppercase[12];
-    Com_Memset(gametypeInUppercase, 0, sizeof(gametypeInUppercase));
-    Q_strncpyz(gametypeInUppercase, g_gametype.string, sizeof(gametypeInUppercase));
-
-    for (int i = 0; gametypeInUppercase[i] != '\0'; i++) {
-        gametypeInUppercase[i] = toupper(gametypeInUppercase[i]);
-    }
+    getCurrentGametypeAsString(gametypeInUppercase, sizeof(gametypeInUppercase), qtrue);
 
     va_list     argptr;
 
@@ -742,12 +737,7 @@ void QDECL G_printGametypeMessageToAll(const char* msg, ...)
 {
     // Get current gametype and turn it into uppercase.
     char gametypeInUppercase[12];
-    Com_Memset(gametypeInUppercase, 0, sizeof(gametypeInUppercase));
-    Q_strncpyz(gametypeInUppercase, g_gametype.string, sizeof(gametypeInUppercase));
-
-    for (int i = 0; gametypeInUppercase[i] != '\0'; i++) {
-        gametypeInUppercase[i] = toupper(gametypeInUppercase[i]);
-    }
+    getCurrentGametypeAsString(gametypeInUppercase, sizeof(gametypeInUppercase), qtrue);
 
     va_list     argptr;
 
@@ -847,7 +837,7 @@ int evenTeams(qboolean autoEven) {
         return TEAMACTION_NOT_ENOUGH_PLAYERS;
     }
 
-    if (level.cagefight || level.intermissiontime || level.changemap) {
+    if (level.hns.cagefight || level.intermissiontime || level.changemap) {
         return TEAMACTION_FAILED;
     }
 
@@ -863,16 +853,16 @@ int evenTeams(qboolean autoEven) {
         int seekers = 0;
         // Henk 29/01/10 -> New player balance code
 
-        if (level.customETHiderAmount[0]) {
+        if (level.hns.customETHiderAmount[0]) {
             // The user put custom values here. Check them.
-            for (int i = 0; i < sizeof(level.customETHiderAmount) - 1; i++) {
-                if (level.customETHiderAmount[i + 1] == -1) {
+            for (int i = 0; i < sizeof(level.hns.customETHiderAmount) - 1; i++) {
+                if (level.hns.customETHiderAmount[i + 1] == -1) {
                     // It seems the maximum of hiders specified is reached. Use that amount of seekers.
                     seekers = i + 1;
                     break;
                 }
 
-                if (totalplayers >= level.customETHiderAmount[i] && totalplayers <= level.customETHiderAmount[i + 1]) {
+                if (totalplayers >= level.hns.customETHiderAmount[i] && totalplayers <= level.hns.customETHiderAmount[i + 1]) {
                     seekers = i + 1;
                     break;
                 }
@@ -2762,6 +2752,31 @@ void giveWeaponWithCustomAmmoToClient(gentity_t* ent, weapon_t wpn, qboolean aut
     }
 }
 
+void giveWeaponWithDirectCustomAmmoToClient(gentity_t* ent, weapon_t wpn, qboolean autoswitch, int normAmmo, int normClip, int altAmmo, int altClip) {
+    int normAmmoIdx, altAmmoIdx;
+
+    if (wpn < WP_KNIFE || wpn > WP_NUM_WEAPONS) {
+        return;
+    }
+
+    normAmmoIdx = weaponData[wpn].attack[ATTACK_NORMAL].ammoIndex;
+    altAmmoIdx = weaponData[wpn].attack[ATTACK_ALTERNATE].ammoIndex;
+
+    ent->client->ps.stats[STAT_WEAPONS] |= (1 << wpn);
+    ent->client->ps.ammo[normAmmoIdx] = normClip;
+    ent->client->ps.clip[ATTACK_NORMAL][wpn] = normAmmo;
+    ent->client->ps.ammo[altAmmoIdx] = altClip;
+    ent->client->ps.clip[ATTACK_ALTERNATE][wpn] = altAmmo;
+    ent->client->ps.firemode[wpn] = BG_FindFireMode(wpn, ATTACK_NORMAL, WP_FIREMODE_AUTO);
+
+    if (autoswitch) {
+        ent->client->ps.weapon = wpn;
+        ent->client->ps.weaponstate = WEAPON_RAISING;
+        ent->client->ps.weaponTime = 150;
+        ent->client->ps.weaponAnimTime = 150;
+    }
+}
+
 
 void removeWeaponFromClient(gentity_t* ent, weapon_t wpn, qboolean drop, weapon_t switchTo) {
     int normAmmoIdx, altAmmoIdx;
@@ -2806,21 +2821,21 @@ char* chooseTeam() {
     counts[TEAM_BLUE] = TeamCount(-1, TEAM_BLUE, NULL);
     counts[TEAM_RED] = TeamCount(-1, TEAM_RED, NULL);
 
-    if (level.customETHiderAmount[0]) {
+    if (level.hns.customETHiderAmount[0]) {
         int i;
 
         // The user put custom values here. Check them.
-        for (i = 0; i < sizeof(level.customETHiderAmount) - 1; i++) {
-            if (level.customETHiderAmount[i + 1] == -1) {
+        for (i = 0; i < sizeof(level.hns.customETHiderAmount) - 1; i++) {
+            if (level.hns.customETHiderAmount[i + 1] == -1) {
                 // It seems the maximum of hiders specified is reached. Use that amount of seekers.
                 seekers = i + 1;
-                maxhiders = level.customETHiderAmount[i] + 1;
+                maxhiders = level.hns.customETHiderAmount[i] + 1;
                 break;
             }
 
-            if (counts[TEAM_RED] >= level.customETHiderAmount[i] && counts[TEAM_RED] <= level.customETHiderAmount[i + 1]) {
+            if (counts[TEAM_RED] >= level.hns.customETHiderAmount[i] && counts[TEAM_RED] <= level.hns.customETHiderAmount[i + 1]) {
                 seekers = i + 1;
-                maxhiders = level.customETHiderAmount[i + 1];
+                maxhiders = level.hns.customETHiderAmount[i + 1];
                 break;
             }
         }
@@ -2957,7 +2972,7 @@ void transformPlayerBack(gentity_t* self, gentity_t* other, trace_t* trace)
     // First we make sure he can walk again.
     g_entities[self->hideseek].client->sess.transformed = qfalse;
     g_entities[self->hideseek].client->ps.pm_type = PM_NORMAL;
-    g_entities[self->hideseek].client->sess.invisibleGoggles = qfalse; // And that others can see him again as well.
+    g_entities[self->hideseek].client->sess.invisible = qfalse; // And that others can see him again as well.
 
     // Good, now we can free the entities spawned.
     if (g_entities[self->hideseek].client->sess.transformedEntityBBox) {
@@ -2977,7 +2992,7 @@ void transformPlayerBack(gentity_t* self, gentity_t* other, trace_t* trace)
             (g_entities[self->hideseek].client->pers.identity && strstr(g_entities[self->hideseek].client->pers.identity->mCharacter->mModel, "female") ? "her" : "his")));
     }
 
-    strncpy(level.randomNadeLoc, "Disappeared", sizeof(level.randomNadeLoc));
+    strncpy(level.hns.randomNadeLoc, "Disappeared", sizeof(level.hns.randomNadeLoc));
     g_entities[self->hideseek].s.eFlags &= ~EF_HSBOX;
     g_entities[self->hideseek].client->ps.eFlags &= ~EF_HSBOX;
     G_FreeEntity(self);
@@ -3136,7 +3151,7 @@ void freeProphuntProps(gentity_t* player) {
     player->client->sess.transformed = qfalse;
     player->client->pers.movingModelObject = -1;
     player->client->ps.pm_type = PM_NORMAL;
-    player->client->sess.invisibleGoggles = qfalse;
+    player->client->sess.invisible = qfalse;
     player->client->ps.stats[STAT_FROZEN] = 0;
     player->client->inactivityTime = level.time + g_inactivity.integer * 1000;
 
@@ -3185,7 +3200,7 @@ void transformPlayerToObject(gentity_t* ent)
     AddSpawnField("angles", transformableObjects[object].angles);
 
     // Take care of the player.
-    ent->client->sess.invisibleGoggles = qtrue; // Make sure he's invisible,
+    ent->client->sess.invisible = qtrue; // Make sure he's invisible,
     ent->client->sess.transformed = qtrue; // .. and that he can't move.
 
     // Reset the transformed entity if there is one.
@@ -3330,7 +3345,7 @@ void transformPlayerToProp(gentity_t* ent, int propId, qboolean thinkSingle)
 
     movingModel->nextthink = level.time + 1;
 
-    ent->client->sess.invisibleGoggles = qtrue;
+    ent->client->sess.invisible = qtrue;
     ent->client->pers.movingModel = qtrue;
     ent->client->pers.movingModelStatic = qfalse;
 }
@@ -3461,7 +3476,7 @@ void stealWeaponWithAmmo(gentity_t* from, gentity_t* to, weapon_t wpn) {
     int wpaltclip = from->client->ps.clip[ATTACK_ALTERNATE][wpn];
 
     removeWeaponFromClient(from, wpn, qfalse, WP_KNIFE);
-    giveWeaponWithCustomAmmoToClient(to, wpn, qfalse, wpammo, wpclip, wpaltammo, wpaltclip);
+    giveWeaponWithDirectCustomAmmoToClient(to, wpn, qfalse, wpammo, wpclip, wpaltammo, wpaltclip);
 
 }
 
@@ -3653,15 +3668,15 @@ void initCageFight(void) {
     gentity_t* hscageExtras = NULL;
     gentity_t* cagePlayers = NULL;
     vec3_t spawns[MAX_CLIENTS];
-    if (level.time < level.cagefightTimer) {
+    if (level.time < level.hns.cagefightTimer) {
         return;
     }
-    level.startCage = qfalse;
+    level.hns.startCage = qfalse;
 
     G_ResetGametype(qfalse, qtrue);
 
     for (i = 0; i < MAX_CLIENTS; i++) { // Janno - even although the previous limit was 32, we've been hitting higher numbers lately, therefore raising the limit to 64 on the condition that g_allowLargeCage is enabled. Boe!Man 6/30/12: 32, regardless of the amount of players. The recommended max for any gametype is 32, above, unsupported. So just spread them more equally instead of adding even more spawns.
-        VectorCopy(level.hideseek_cage, spawns[i]);
+        VectorCopy(level.hns.hideseek_cage, spawns[i]);
     }
 
     while (NULL != (cagePlayers = G_Find(cagePlayers, FOFS(classname), "hideseek_cageplayer"))) {
@@ -3673,7 +3688,7 @@ void initCageFight(void) {
 
     }
 
-    if (!foundCageSpawns && !level.hideseek_cageSize) { // 0 = regular.
+    if (!foundCageSpawns && !level.hns.hideseek_cageSize) { // 0 = regular.
         spawns[0][0] -= 105;
         spawns[0][1] -= 105;
         spawns[1][0] += 105;
@@ -3727,7 +3742,7 @@ void initCageFight(void) {
         //spawns[24][1] -= 0;
     
     }
-    else if (!foundCageSpawns && level.hideseek_cageSize == 2/* && cageSize == 2*/) { // Boe!Man 6/30/12: 2 = Big cage. So, add big cage spawnpoints.
+    else if (!foundCageSpawns && level.hns.hideseek_cageSize == 2/* && cageSize == 2*/) { // Boe!Man 6/30/12: 2 = Big cage. So, add big cage spawnpoints.
         // The absolute corners.
         spawns[0][0] -= 231;
         spawns[0][1] -= 231;
@@ -3803,16 +3818,16 @@ void initCageFight(void) {
         spawns[28][1] -= 168;
     }
 
-    level.cagefight = qtrue;
+    level.hns.cagefight = qtrue;
     level.customGameStarted = qtrue; // stop Seeker Released
     level.customGameWeaponsDistributed = qtrue; // stop RPG/M4 stuff
-    if (level.hideseek_cageSize == 2) { // Spawn big cage.
-        spawnCage(level.hideseek_cage, qtrue, qtrue);
-        spawnCage(level.hideseek_cage, qtrue, qtrue); // 2 to be sure no parts are missing
+    if (level.hns.hideseek_cageSize == 2) { // Spawn big cage.
+        spawnCage(level.hns.hideseek_cage, qtrue, qtrue);
+        spawnCage(level.hns.hideseek_cage, qtrue, qtrue); // 2 to be sure no parts are missing
     }
-    else if (!level.hideseek_cageSize) {
-        spawnCage(level.hideseek_cage, qtrue, qfalse);
-        spawnCage(level.hideseek_cage, qtrue, qfalse); // 2 to be sure no parts are missing
+    else if (!level.hns.hideseek_cageSize) {
+        spawnCage(level.hns.hideseek_cage, qtrue, qfalse);
+        spawnCage(level.hns.hideseek_cage, qtrue, qfalse); // 2 to be sure no parts are missing
     }
 
     //after spawning cage, add entities which were removed at first.
@@ -3845,9 +3860,9 @@ void initCageFight(void) {
     //}
 
     for (i = 0; i < level.numConnectedClients; i++) {
-        if (level.clients[level.sortedClients[i]].sess.team == TEAM_RED && (level.clients[level.sortedClients[i]].sess.cageFighter == qtrue || level.mapHighScore == 0)) {
+        if (level.clients[level.sortedClients[i]].sess.team == TEAM_RED) {
             //respawn ( &g_entities[level.sortedClients[i]] );
-            if (level.hideseek_cageSize != 1) { // 1 = no cage at all, if this is the cage, don't teleport them to the 'cage'.
+            if (level.hns.hideseek_cageSize != 1) { // 1 = no cage at all, if this is the cage, don't teleport them to the 'cage'.
                 if (foundCageSpawns && cageSpawnPointIterator < count) {
                     count = 0;
                 }
@@ -3945,4 +3960,472 @@ void TeleportPlayerNoKillbox(gentity_t* player, vec3_t origin, vec3_t angles, qb
 
     if (!nojump && player->client->sess.team != TEAM_SPECTATOR)
         G_PlayEffect(G_EffectIndex("misc/electrical"), player->client->ps.origin, player->pos1);
+}
+
+void runF1Teleport(gentity_t* ent, vec3_t origin) {
+    vec3_t angles;
+    char* origin1;
+    VectorCopy(ent->pos1, angles);
+    origin[2] += 50;
+    TeleportPlayer(ent, origin, ent->client->ps.viewangles, qtrue);
+    origin1 = va("%.0f %.0f %.0f", origin[0], origin[1], origin[2]);
+    //G_PlayEffect ( G_EffectIndex("effects/explosions/col9_boat_explosion"),origin, angles);
+    AddSpawnField("classname", "1fx_play_effect");
+    AddSpawnField("effect", "effects/explosions/col9_boat_explosion");
+    AddSpawnField("origin", origin1);
+    AddSpawnField("wait", "1");
+    AddSpawnField("count", "1");
+
+    G_SpawnGEntityFromSpawnVars(qtrue);
+}
+
+void spawnBox(vec3_t org)
+{
+    char* origin;
+    int             numb;
+    origin = va("%.0f %.0f %.0f", org[0], org[1], org[2]);// - (ent->client->ps.viewheight));
+
+    AddSpawnField("classname", "misc_bsp"); // blocker
+    AddSpawnField("bspmodel", "instances/Colombia/npc_jump1");
+    AddSpawnField("origin", origin);
+    AddSpawnField("angles", "0 90 0");
+    AddSpawnField("model", "trigger_hurt"); //blocked_trigger
+    AddSpawnField("count", "1");
+    AddSpawnField("hideseek", "1");
+
+    numb = G_SpawnGEntityFromSpawnVars(qtrue);
+    if (numb != -1) {
+        g_entities[numb].think = G_FreeEntity;
+        g_entities[numb].nextthink = level.time + 10000;
+    }
+    level.numSpawnVars = 0;
+    level.numSpawnVarChars = 0;
+}
+
+qboolean isWeaponFullyOutOfAmmo(gentity_t* ent, weapon_t wpn) {
+
+    return (getWeaponAmmo(ent, wpn, qfalse) + getWeaponAmmo(ent, wpn, qtrue) + getWeaponClip(ent, wpn, qfalse) + getWeaponClip(ent, wpn, qtrue)) == 0;
+
+}
+
+int getWeaponAmmoIdx(weapon_t wpn, qboolean alt) {
+    return weaponData[wpn].attack[alt ? ATTACK_ALTERNATE : ATTACK_NORMAL].ammoIndex;
+}
+
+int getWeaponClip(gentity_t* ent, weapon_t wpn, qboolean alt) {
+    return ent->client->ps.clip[alt ? ATTACK_ALTERNATE : ATTACK_NORMAL][wpn];
+}
+
+int getWeaponAmmo(gentity_t* ent, weapon_t wpn, qboolean alt) {
+    return ent->client->ps.ammo[getWeaponAmmoIdx(wpn, alt)];
+}
+
+// Henk 23/01/10 -> Give players their outfitting nades and give seekers box nades
+static void hsUpdateOutfitting(void) {
+
+    for (int i = 0; i < level.numConnectedClients; i++) {
+
+        gentity_t* ent = &g_entities[level.sortedClients[i]];
+
+        ent->client->sess.hsTimeOfDeath = 0; // We will use this to grant weapons.
+        ent->client->noOutfittingChange = qfalse;
+
+        G_UpdateOutfitting(ent->s.number);
+        if (ent->client->sess.team == TEAM_BLUE) {
+            if (hideSeek_Extra.string[HSEXTRA_MDN11] == '1') {
+                giveWeaponToClient(ent, WP_MDN11_GRENADE, qfalse);
+            }
+            if (hideSeek_Extra.string[HSEXTRA_F1] == '1') {
+                giveWeaponToClient(ent, WP_F1_GRENADE, qfalse);
+            }
+            if (hideSeek_Extra.string[HSEXTRA_L2A2] == '1') {
+                giveWeaponToClient(ent, WP_L2A2_GRENADE, qfalse);
+            }
+
+            if (hideSeek_Nades.string[HSNADE_FIRE] == '1' && hideSeek_randomFireNade.integer) {
+                // On random firenade, every seeker gets a firenade.
+                giveWeaponToClient(ent, WP_ANM14_GRENADE, qfalse);
+            }
+        }
+        else if (ent->client->sess.team == TEAM_RED && g_rpgSpeedDrain.integer) {
+            //give all armor irregardless of what they picked.
+            ent->client->ps.stats[STAT_ARMOR] = MAX_ARMOR;
+        }
+    }
+}
+
+static void giveRandomFirenadesToHiders(void) {
+    // Get the number of red team players
+    int hiderCount = TeamCount(-1, TEAM_RED, NULL);
+    int seekerCount = TeamCount(-1, TEAM_BLUE, NULL);
+    int totalRandomFirenades = min(hiderCount, seekerCount);
+
+    if (totalRandomFirenades > 0) {
+        int* hiderClients = malloc(hiderCount * sizeof(int));
+        int j = 0;
+        char playerNameBuf[1024] = { 0 };
+
+        for (int i = 0; i < level.numConnectedClients; i++) {
+            gentity_t* ent = &g_entities[level.sortedClients[i]];
+            if (ent->client->sess.team == TEAM_RED) {
+                hiderClients[j++] = ent->s.number;
+            }
+        }
+
+        // Run a Fisher-Yates shuffle on them
+        for (int i = 0; i < j; i++) {
+            int randIdx = irand(i, j - 1);
+            int temp = hiderClients[i];
+            hiderClients[i] = hiderClients[randIdx];
+            hiderClients[randIdx] = temp;
+        }
+
+        // Distribute random firenades
+        for (int i = 0; i < totalRandomFirenades && i < j; i++) {
+            gentity_t* ent = &g_entities[hiderClients[i]];
+            if (!(ent->client->ps.stats[STAT_WEAPONS] & (1 << WP_ANM14_GRENADE))) { // Theoretically they should NOT have the firenade anyhow...
+                giveWeaponToClient(ent, WP_ANM14_GRENADE, qfalse);
+                if (i > 0) {
+                    Q_strcat(playerNameBuf, sizeof(playerNameBuf), ", ");
+                }
+                Q_strcat(playerNameBuf, sizeof(playerNameBuf), ent->client->pers.cleanName);
+            }
+        }
+
+        // Send the final message with all player names at once
+        if (strlen(playerNameBuf) > 0) {
+            G_printGametypeMessageToAll("Random firenade given to: %s", playerNameBuf);
+        }
+
+        free(hiderClients);
+    }
+}
+
+void hnsRunFrame() {
+
+    // Don't continue if we are in intermission.
+    if (level.intermissionQueued || level.intermissiontime || level.paused || level.changemap) {
+        return;
+    }
+
+    if (level.hns.MM1ent && g_entities[level.hns.MM1ent].s.pos.trType == TR_STATIONARY && level.hns.runMM1Flare && level.gametypeStartTime >= 5000) {
+        level.hns.MM1Flare = spawnEffect(g_entities[level.hns.MM1ent].r.currentOrigin, "flare_blue");
+        level.hns.runMM1Flare = qfalse;
+    }
+    if (level.hns.M4ent && g_entities[level.hns.M4ent].s.pos.trType == TR_STATIONARY && level.hns.runM4Flare && level.gametypeStartTime >= 5000) {
+        level.hns.M4Flare = spawnEffect(g_entities[level.hns.M4ent].r.currentOrigin, "flare_red");
+        level.hns.runM4Flare = qfalse;
+    }
+    if (level.hns.RPGent && g_entities[level.hns.RPGent].s.pos.trType == TR_STATIONARY && level.hns.runRPGFlare && level.gametypeStartTime >= 5000) {
+        level.hns.RPGFlare = spawnEffect(g_entities[level.hns.RPGent].r.currentOrigin, "flare_red");
+        level.hns.runRPGFlare = 0;
+    }
+
+    if (level.time >= level.gametypeDelayTime - 50 && !level.autoEvenTeamsDone && !level.hns.cagefight && g_autoEvenTeams.integer) {
+        level.autoEvenTeamsDone = qtrue;
+        evenTeams(qtrue);
+    }
+
+    if (level.time > level.gametypeStartTime + 20000 && !level.hns.cagefight && !level.hns.secondBatchCustomWeaponsDistributed) {
+        level.hns.secondBatchCustomWeaponsDistributed = qtrue;
+        // We hand out telegun and ? grenade at random.
+        int shuffledClients[MAX_CLIENTS];
+        for (int i = 0; i < level.numConnectedClients; i++) {
+            shuffledClients[i] = level.sortedClients[i];
+        }
+
+        shuffleIntArray(shuffledClients, level.numConnectedClients);
+
+        if (level.numConnectedClients > 0 && hideSeek_Extra.string[HSEXTRA_RANDOMGRENADE] == '1') {
+            gentity_t* ent = &g_entities[shuffledClients[0]];
+
+            if (ent->client->sess.team == TEAM_RED) { // If it's not a red team player, we do not give it out at all.
+                giveWeaponToClient(ent, WP_M67_GRENADE, qfalse);
+                G_Broadcast(BROADCAST_GAME, ent, qfalse, "You now have the \\random grenade!");
+                G_printGametypeMessageToAll("%s has been given the random grenade.", ent->client->pers.cleanName);
+                Q_strncpyz(level.hns.randomNadeLoc, ent->client->pers.netname, sizeof(level.hns.randomNadeLoc));
+            } 
+        }
+        else {
+            Q_strncpyz(level.hns.randomNadeLoc, "Not given this round", sizeof(level.hns.randomNadeLoc));
+        }
+
+        if (level.numConnectedClients > 1 && hideSeek_Weapons.string[HSWPN_TELEGUN] == '1') {
+            gentity_t* ent = &g_entities[shuffledClients[1]];
+
+            if (ent->client->sess.team == TEAM_RED) { // If it's not a red team player, we do not give it out at all.
+                giveWeaponToClient(ent, WP_M3A1_SUBMACHINEGUN, qfalse);
+                G_Broadcast(BROADCAST_GAME, ent, qfalse, "You now have the \\telegun!");
+                G_printGametypeMessageToAll("%s has been given the telegun.", ent->client->pers.cleanName);
+            }
+        }
+
+    }
+
+    if (level.time > level.gametypeStartTime + 10000 && !level.hns.cagefight && !level.customGameWeaponsDistributed) {
+
+        level.customGameWeaponsDistributed = qtrue;
+
+        // We will not run a check of hiders as the values will already tell the story.
+
+        int longestSurvivor = -1;
+        int longestSurvivorTime = -1;
+        int secondLongestSurvivor = -1;
+        int secondLongestSurvivorTime = -1;
+
+        // We shuffle our own version of sortedClients
+        // This way, we also get a random client in one go.
+        int shuffledClients[MAX_CLIENTS];
+        for (int i = 0; i < level.numConnectedClients; i++) {
+            shuffledClients[i] = level.sortedClients[i];
+        }
+
+        shuffleIntArray(shuffledClients, level.numConnectedClients);
+
+        for (int i = 0; i < level.numConnectedClients; i++) {
+            gentity_t* ent = &g_entities[shuffledClients[i]];
+
+            if (ent->client->sess.team == TEAM_RED) {
+                int tod = ent->client->sess.hsTimeOfDeath;
+
+                if (tod > longestSurvivorTime) {
+                    secondLongestSurvivor = longestSurvivor;
+                    secondLongestSurvivorTime = longestSurvivorTime;
+
+                    longestSurvivor = ent->s.number;
+                    longestSurvivorTime = ent->client->sess.hsTimeOfDeath;
+                }
+                else if (tod > secondLongestSurvivorTime) {
+                    secondLongestSurvivor = ent->s.number;
+                    secondLongestSurvivorTime = tod;
+                }
+            }
+        }
+
+        if (longestSurvivor != -1) {
+            gentity_t* ent = &g_entities[longestSurvivor];
+            giveWeaponToClient(ent, WP_RPG7_LAUNCHER, qfalse);
+            Q_strncpyz(level.hns.RPGloc, ent->client->pers.netname, sizeof(level.hns.RPGloc));
+            level.hns.RPGent = -1;
+            level.hns.runRPGFlare = qfalse;
+            G_Broadcast(BROADCAST_GAME, ent, qfalse, "You now have the \\RPG!");
+            if (longestSurvivorTime == 0) {
+                G_printGametypeMessageToAll("RPG has been given at random to %s.", ent->client->pers.cleanName);
+            }
+            else {
+                G_printGametypeMessageToAll("RPG has been given to the round winner %s.", ent->client->pers.cleanName);
+            }
+        }
+        else {
+            // If longestSurvivor is -1, considering that we should have hsTimeOfDeath set to 0 initially, we have no valid hiders.
+            gspawn_t* spawnPoint = G_SelectRandomSpawnPoint(TEAM_BLUE);
+
+            if (spawnPoint) {
+                gentity_t* rpg = G_DropItemAtLocation(spawnPoint->origin, spawnPoint->angles, BG_FindWeaponItem(WP_RPG7_LAUNCHER));
+                // Count field packs the ammo in it
+                // Gotta love it...
+
+                int clip = weaponData[WP_RPG7_LAUNCHER].attack[ATTACK_NORMAL].clipSize;
+                int ammo = weaponData[WP_RPG7_LAUNCHER].attack[ATTACK_NORMAL].extraClips * clip;
+
+                rpg->count = clip & 0xFF;
+                rpg->count += (ammo << 8) & 0xFF00;
+                level.hns.RPGent = rpg->s.number;
+                level.hns.runRPGFlare = qtrue;
+                Q_strncpyz(level.hns.RPGloc, "blue base", sizeof(level.hns.RPGloc));
+                G_printGametypeMessageToAll("Not enough hiders connected. RPG dropped at blue base.");
+
+            }
+            else {
+                G_printGametypeMessageToAll("The RPG could not be spawned.");
+                logSystem(LOGLEVEL_INFO, "RPG could not be spawned (missing blue spawns?)");
+            }
+        }
+
+        if (secondLongestSurvivor != -1) {
+            gentity_t* ent = &g_entities[secondLongestSurvivor];
+            giveWeaponToClient(ent, WP_M4_ASSAULT_RIFLE, qfalse);
+            Q_strncpyz(level.hns.M4loc, ent->client->pers.netname, sizeof(level.hns.M4loc));
+            level.hns.M4ent = -1;
+            level.hns.runM4Flare = qfalse;
+            G_Broadcast(BROADCAST_GAME, ent, qfalse, "You now have the \\M4!");
+            if (secondLongestSurvivorTime == 0) {
+                G_printGametypeMessageToAll("M4 has been given at random to %s.", ent->client->pers.cleanName);
+            }
+            else {
+                G_printGametypeMessageToAll("M4 has been given to the round winner %s.", ent->client->pers.cleanName);
+            }
+        }
+        else {
+            // If secondLongestSurvivor is -1, considering that we should have hsTimeOfDeath set to 0 initially, we have less than 2 hiders.
+            gspawn_t* spawnPoint = G_SelectRandomSpawnPoint(TEAM_BLUE);
+
+            if (spawnPoint) {
+                gentity_t* m4 = G_DropItemAtLocation(spawnPoint->origin, spawnPoint->angles, BG_FindWeaponItem(WP_M4_ASSAULT_RIFLE));
+                // Count field packs the ammo in it
+                // Gotta love it...
+
+                int clip = weaponData[WP_M4_ASSAULT_RIFLE].attack[ATTACK_NORMAL].clipSize;
+                int ammo = weaponData[WP_M4_ASSAULT_RIFLE].attack[ATTACK_NORMAL].extraClips * clip;
+                int altclip = weaponData[WP_M4_ASSAULT_RIFLE].attack[ATTACK_ALTERNATE].clipSize;
+                int altammo = weaponData[WP_M4_ASSAULT_RIFLE].attack[ATTACK_ALTERNATE].extraClips * altclip;
+
+                m4->count = clip & 0xFF;
+                m4->count += (ammo << 8) & 0xFF00;
+                m4->count += (altclip << 16) & 0xFF0000;
+                m4->count += (altammo << 24) & 0xFF000000;
+
+
+                level.hns.M4ent = m4->s.number;
+                level.hns.runM4Flare = qtrue;
+                Q_strncpyz(level.hns.M4loc, "blue base", sizeof(level.hns.M4loc));
+                G_printGametypeMessageToAll("Not enough hiders connected. M4 dropped at blue base.");
+
+            }
+            else {
+                G_printGametypeMessageToAll("The M4 could not be spawned.");
+                logSystem(LOGLEVEL_INFO, "M4 could not be spawned (missing blue spawns?)");
+            }
+        }
+    }
+
+    if (level.time >= level.gametypeDelayTime && !level.customGameStarted && !level.hns.cagefight && level.time < level.gametypeRoundTime) {
+        G_Broadcast(BROADCAST_GAME, NULL, qtrue, "\\Seekers released!");
+        hsUpdateOutfitting();
+        if (hideSeek_Nades.string[HSNADE_FIRE] == '1' && hideSeek_randomFireNade.integer) {
+            giveRandomFirenadesToHiders();
+        }
+        
+        level.customGameStarted = qtrue;
+
+        int seekers = TeamCount(-1, TEAM_BLUE, NULL);
+
+        // Need to determine the best seeker from previous round
+        // the 2 longest alive players
+        // Rest are purely random.
+
+        int eligibleSeekers[MAX_CLIENTS];
+        int eligibleSeekerCount = 0;
+
+        for (int i = 0; i < level.numConnectedClients; i++) {
+            gentity_t* ent = &g_entities[level.sortedClients[i]];
+            if (ent->client->sess.team == TEAM_BLUE) {
+                eligibleSeekers[eligibleSeekerCount++] = level.sortedClients[i];
+            }
+        }
+
+        if (seekers) {
+
+            
+
+            if (hideSeek_Extra.string[HSEXTRA_BRIEFCASE] == '1') {
+                qboolean caseGiven = qfalse;
+                if (level.hns.previousRoundBestSeeker >= 0 && level.hns.previousRoundBestSeeker < MAX_CLIENTS) {
+                    gentity_t* ent = &g_entities[level.hns.previousRoundBestSeeker];
+
+                    if (ent && ent->client && ent->client->pers.connected == CON_CONNECTED && ent->client->sess.team == TEAM_BLUE) {
+                        caseGiven = qtrue;
+                        G_printGametypeMessageToAll("Briefcase given to %s (%d kills last round).", ent->client->pers.cleanName, level.hns.previousRoundBestSeekerKills);
+                        G_RealSpawnGametypeItem(BG_FindGametypeItem(0), ent->r.currentOrigin, ent->s.angles, qtrue);
+                    }
+                }
+
+                if (!caseGiven) {
+                    // Pick a random seek.
+                    // We do not have to have a validation whether eligibleSeekerCount is 0, because we wouldn't even be here (TeamCount already takes care of 0 seek case).
+
+                    gentity_t* ent = &g_entities[eligibleSeekers[rand() % eligibleSeekerCount]];
+                    G_printGametypeMessageToAll("Briefcase given at random to %s.", ent->client->pers.cleanName);
+                    G_RealSpawnGametypeItem(BG_FindGametypeItem(0), ent->r.currentOrigin, ent->s.angles, qtrue);
+
+                }
+
+            }
+
+            if (hideSeek_Weapons.string[HSWPN_TASER] == '1') {
+                gentity_t* ent = &g_entities[eligibleSeekers[rand() % eligibleSeekerCount]];
+                G_printGametypeMessageToAll("%s has been given a taser.", ent->client->pers.cleanName);
+                giveWeaponToClient(ent, WP_USSOCOM_PISTOL, qfalse);
+                G_Broadcast(BROADCAST_GAME, ent, qfalse, "You now have the \\taser!");
+            }
+
+        }
+        else {
+
+            if (hideSeek_Extra.string[HSEXTRA_BRIEFCASE] == '1') {
+                // We have no seekers -> we spawn the case at seeker's base.
+                gspawn_t* spawnPoint = G_SelectRandomSpawnPoint(TEAM_BLUE);
+
+                if (spawnPoint) {
+                    G_RealSpawnGametypeItem(BG_FindGametypeItem(0), spawnPoint->origin, spawnPoint->angles, qtrue);
+                    G_printGametypeMessageToAll("Not enough seekers connected. Briefcase has been dropped at blue base.");
+                }
+                else {
+                    G_printGametypeMessageToAll("Briefcase could not be spawned.");
+                    logSystem(LOGLEVEL_INFO, "Briefcase could not be spawned as no spawnpoint was found.");
+                }
+            }
+        }
+
+        // Always clear out the level variable.
+        level.hns.previousRoundBestSeeker = -1;
+        level.hns.previousRoundBestSeekerKills = -1;
+    }
+
+}
+
+int spawnEffect(vec3_t origin, char* effect) {
+
+    AddSpawnField("classname", "1fx_play_effect");
+    AddSpawnField("effect", effect);
+    AddSpawnField("origin", va("%.0f %.0f %.0f", origin[0], origin[1], origin[2]));
+    AddSpawnField("wait", "3");
+    AddSpawnField("count", "-1");
+
+    int ent = G_SpawnGEntityFromSpawnVars(qtrue);
+
+    level.numSpawnVars = 0;
+    level.numSpawnVarChars = 0;
+
+
+    return ent;
+}
+
+void shuffleIntArray(int* input, int sizeOfInput) {
+    for (int i = sizeOfInput - 1; i > 0; i--) {
+        int j = rand() % (i + 1);
+        int tmp = input[i];
+        input[i] = input[j];
+        input[j] = tmp;
+    }
+}
+
+void getCurrentGametypeAsString(char* output, int sizeOfOutput, qboolean upperCase) {
+
+    if (!output || sizeOfOutput <= 0) {
+        return;
+    }
+
+    Com_Memset(output, 0, sizeOfOutput);
+
+    char tmp[12] = "";
+
+    if (isCurrentGametype(GT_HNS)) {
+        Q_strncpyz(tmp, "h&s", sizeof(tmp));
+    }
+    else if (isCurrentGametype(GT_HNZ)) {
+        Q_strncpyz(tmp, "h&z", sizeof(tmp));
+    }
+    else {
+        trap_Cvar_VariableStringBuffer("g_gametype", tmp, sizeof(tmp));
+    }
+
+    if (upperCase) {
+        for (int i = 0; tmp[i] != '\0'; i++) {
+            tmp[i] = toupper(tmp[i]);
+        }
+    }
+
+    Q_strncpyz(output, tmp, sizeOfOutput);
+
 }

@@ -109,7 +109,6 @@ void G_ExplodeMissile( gentity_t *ent ) {
     G_AddEvent( ent, EV_MISSILE_MISS, (DirToByte( dir ) << MATERIAL_BITS) | MATERIAL_NONE);
 
     ent->freeAfterEvent = qtrue;
-
     // All grenade explosions are now broadcast to ensure that fire and smoke is always seen
     ent->r.svFlags |= SVF_BROADCAST;
 
@@ -216,6 +215,7 @@ gentity_t* G_CreateMissile( vec3_t org, vec3_t dir, float vel, int life, gentity
     VectorCopy( org, missile->s.pos.trBase );
     VectorScale( dir, vel, missile->s.pos.trDelta );
     VectorCopy( org, missile->r.currentOrigin);
+    VectorCopy(org, missile->origin_from); // Boe!Man 7/10/13: Use this for grenades like the F1 (in H&S), to determine where the seeker threw it from.
     SnapVector(missile->s.pos.trDelta);
 
     return missile;
@@ -301,7 +301,7 @@ void G_MissileImpact( gentity_t *ent, trace_t *trace )
     d = 0;
 
     // check for bounce
-    if ( ( ent->s.eFlags & ( EF_BOUNCE | EF_BOUNCE_HALF | EF_BOUNCE_SCALE ) ) )
+    if (!isCurrentGametypeInList((gameTypes_t[]) { GT_HNS, GT_HNZ, GT_MAX }) && ( ent->s.eFlags & ( EF_BOUNCE | EF_BOUNCE_HALF | EF_BOUNCE_SCALE ) ) )
     {
         G_BounceMissile( ent, trace );
         return;

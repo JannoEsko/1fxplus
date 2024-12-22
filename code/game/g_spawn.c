@@ -576,19 +576,6 @@ int G_SpawnGEntityFromSpawnVars( qboolean inSubBSP )
                 ent->think = G_FreeEntity;
                 ent->nextthink = level.time + 100;
             }
-            else if (strstr(level.spawnVars[i][0], "effect")) {
-                if (strstr(level.spawnVars[i][1], "flare_blue")) {
-                    level.MM1Flare = ent->s.number;
-                }
-            }
-            if (strstr(level.spawnVars[i][0], "rpg")) {
-                if (strstr(level.spawnVars[i][1], "true")) {
-                    level.RPGFlare = ent->s.number;
-                }
-                else {
-                    level.M4Flare = ent->s.number;
-                }
-            }
         }
         if (strstr(level.spawnVars[i][0], "tempent")) {
             ent->think = G_FreeEntity;
@@ -596,13 +583,7 @@ int G_SpawnGEntityFromSpawnVars( qboolean inSubBSP )
             level.tempent = ent->s.number;
         }
 
-        if (strstr(level.spawnVars[i][1], "flare") && isCurrentGametype(GT_HNS)) {
-            Com_Printf("Ignoring flares in .ent\n");
-            G_FreeEntity(ent);
-        }
-        else {
-            G_ParseField(level.spawnVars[i][0], level.spawnVars[i][1], ent);
-        }
+        G_ParseField(level.spawnVars[i][0], level.spawnVars[i][1], ent);
         
     }
 
@@ -1164,9 +1145,9 @@ static void Preload_Effects(void)
     G_SpawnGEntityFromSpawnVars(qtrue);
     G_FreeEntity(&g_entities[level.tempent]);
 
-    level.MM1Flare = -1;
-    level.M4Flare = -1;
-    level.RPGFlare = -1;
+    level.hns.MM1Flare = -1;
+    level.hns.M4Flare = -1;
+    level.hns.RPGFlare = -1;
 }
 // End
 
@@ -1609,7 +1590,7 @@ void SP_seekers(gentity_t* ent)
         G_SpawnInt(va("%i", i), "-1", &tempInt);
 
         if (tempInt) {
-            level.customETHiderAmount[i - 1] = tempInt;
+            level.hns.customETHiderAmount[i - 1] = tempInt;
         }
     }
 }

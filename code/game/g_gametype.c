@@ -133,7 +133,7 @@ void SP_gametype_trigger ( gentity_t* ent )
     ent->s.eType = ET_GAMETYPE_TRIGGER;
 }
 
-static gentity_t* G_RealSpawnGametypeItem ( gitem_t* item, vec3_t origin, vec3_t angles, qboolean dropped )
+gentity_t* G_RealSpawnGametypeItem ( gitem_t* item, vec3_t origin, vec3_t angles, qboolean dropped )
 {
     gentity_t* it_ent;
 
@@ -515,12 +515,11 @@ void G_ResetGametype ( qboolean fullRestart, qboolean cagefight )
                 level.gametypeDelayTime = level.time + g_roundstartdelay.integer * 1000;
                 level.gametypeRoundTime = level.time + (g_roundtimelimit.integer * 60000) + g_roundstartdelay.integer * 1000;
 
-            }
+                if (level.gametypeDelayTime != level.time)
+                {
+                    trap_SetConfigstring(CS_GAMETYPE_MESSAGE, va("%i,@Get Ready", level.gametypeDelayTime));
+                }
 
-            
-            if ( level.gametypeDelayTime != level.time )
-            {
-                trap_SetConfigstring ( CS_GAMETYPE_MESSAGE, va("%i,@Get Ready", level.gametypeDelayTime ) );
             }
 
             trap_SetConfigstring ( CS_GAMETYPE_TIMER, va("%i", level.gametypeRoundTime) );
@@ -547,40 +546,42 @@ void G_ResetGametype ( qboolean fullRestart, qboolean cagefight )
 
     if (isCurrentGametype(GT_HNS)) {
         // Henk 19/01/10 -> Reset level variables
-        level.cagefightdone = qfalse;
+        level.hns.cagefightdone = qfalse;
         //level.lastaliveCheck[0] = qfalse;
         //level.lastaliveCheck[1] = qfalse;
         level.customGameStarted = qfalse;
         level.customGameWeaponsDistributed = qfalse;
-        level.teleGunGiven = qfalse;
-        level.taserGiven = qfalse;
-        level.smokeactive = qfalse;
-        level.MM1Given = qfalse;
+        level.hns.teleGunGiven = qfalse;
+        level.hns.taserGiven = qfalse;
+        level.hns.smokeactive = qfalse;
+        level.hns.MM1Given = qfalse;
         //level.rememberSeekKills = level.SeekKills;
         //level.SeekKills = 0;
-        level.MM1Time = 0;
-        level.RPGTime = 0;
-        level.M4Time = 0;
+        level.hns.runMM1Flare = qfalse;
+        level.hns.runRPGFlare = qfalse;
+        level.hns.runM4Flare = qfalse;
         level.timelimitHit = qfalse; // allow timelimit hit message
+        level.hns.secondBatchCustomWeaponsDistributed = qfalse;
+        level.hns.roundOver = qfalse;
 
         // Boe!Man 6/29/11: Also set the appropriate message if the weapon's been disabled.
         if (hideSeek_Weapons.string[HSWPN_M4] == '0') { // M4
-            Com_sprintf(level.M4loc, sizeof(level.M4loc), "%s", "Disabled");
+            Com_sprintf(level.hns.M4loc, sizeof(level.hns.M4loc), "%s", "Disabled");
         }
         else {
-            Com_sprintf(level.M4loc, sizeof(level.M4loc), "%s", "Not given yet");
+            Com_sprintf(level.hns.M4loc, sizeof(level.hns.M4loc), "%s", "Not given yet");
         }
         if (hideSeek_Weapons.string[HSWPN_RPG] == '0') { // RPG
-            Com_sprintf(level.RPGloc, sizeof(level.RPGloc), "%s", "Disabled");
+            Com_sprintf(level.hns.RPGloc, sizeof(level.hns.RPGloc), "%s", "Disabled");
         }
         else {
-            Com_sprintf(level.RPGloc, sizeof(level.RPGloc), "%s", "Not given yet");
+            Com_sprintf(level.hns.RPGloc, sizeof(level.hns.RPGloc), "%s", "Not given yet");
         }
         if (hideSeek_Weapons.string[HSWPN_MM1] == '0') { // MM1
-            Com_sprintf(level.MM1loc, sizeof(level.MM1loc), "%s", "Disabled");
+            Com_sprintf(level.hns.MM1loc, sizeof(level.hns.MM1loc), "%s", "Disabled");
         }
         else {
-            Com_sprintf(level.MM1loc, sizeof(level.MM1loc), "%s", "Not given yet");
+            Com_sprintf(level.hns.MM1loc, sizeof(level.hns.MM1loc), "%s", "Not given yet");
         }
 
         /*
@@ -802,7 +803,7 @@ CheckGametype
 void CheckGametype ( void )
 {
 
-    if (isCurrentGametype(GT_HNS) && level.startCage) {
+    if (isCurrentGametype(GT_HNS) && level.hns.startCage) {
         initCageFight();
     }
 
@@ -885,9 +886,12 @@ void CheckGametype ( void )
     {
         int i;
         int dead[TEAM_NUM_TEAMS];
+        int players[TEAM_NUM_TEAMS];
+        int lastalive[TEAM_NUM_TEAMS];
 
         memset ( &level.teamAliveCount[0], 0, sizeof(level.teamAliveCount) );
         memset ( &dead[0], 0, sizeof(dead) );
+        memset(players, 0, sizeof(players));
         for ( i = 0; i < level.numConnectedClients; i ++ )
         {
             gentity_t* ent = &g_entities[level.sortedClients[i]];
@@ -897,6 +901,8 @@ void CheckGametype ( void )
                 continue;
             }
 
+            players[ent->client->sess.team]++;
+
             if ( G_IsClientDead ( ent->client ) )
             {
                 dead[ent->client->sess.team] ++;
@@ -904,26 +910,191 @@ void CheckGametype ( void )
             else
             {
                 level.teamAliveCount[ent->client->sess.team] ++;
+                lastalive[ent->client->sess.team] = ent->s.number;
             }
         }
 
-        if ( level.time > level.gametypeDelayTime )
-        {
-            // If everyone is dead on a team then reset the gametype, but only if
-            // there was someone on that team to begin with.
-            if ( !level.teamAliveCount[TEAM_RED] && dead[TEAM_RED] )
-            {
-                trap_GT_SendEvent ( GTEV_TEAM_ELIMINATED, level.time, TEAM_RED, 0, 0, 0, 0 );
+        for (int i = TEAM_RED; i <= TEAM_BLUE; i++) {
+            if (level.teamAliveCount[i] == 1 && !level.teamLastAliveSent[i] && players[i] > 1 && !isCurrentGametype(GT_HNS)) {
+               
+                gentity_t* tent = &g_entities[level.sortedClients[lastalive[i]]];
+
+                if (tent && tent->client) {
+                    level.teamLastAliveSent[i] = qtrue;
+                    G_Broadcast(BROADCAST_GAME, tent, qfalse, "You are the \\last player alive!");
+                    G_printInfoMessageToAll("%s is the last player alive in the %s team.", tent->client->pers.cleanName, i == TEAM_RED ? "Red" : "Blue");
+                    G_ClientSound(tent, G_SoundIndex("sound/misc/events/tut_door01.mp3"));
+                }
             }
-            else if ( !level.teamAliveCount[TEAM_BLUE] && dead[TEAM_BLUE] )
-            {
-                trap_GT_SendEvent ( GTEV_TEAM_ELIMINATED, level.time, TEAM_BLUE, 0, 0, 0, 0 );
+        }
+
+        if (!level.teamAliveCount[TEAM_RED] && (
+                (
+                    dead[TEAM_RED] &&
+                    !isCurrentGametype(GT_HNZ) &&
+                    (!isCurrentGametype(GT_HNS) || level.customGameStarted)
+                    ) ||
+                (
+                    isCurrentGametype(GT_HNZ) &&
+                    players[TEAM_BLUE] > 1
+                    )
+                )
+            ) {
+
+            qboolean alreadyHit = qfalse;
+            if (level.timelimitHit && !level.hns.cagefight) {
+
+                if (isCurrentGametype(GT_HNS)) {
+                    int redPlayers = TeamCount(-1, TEAM_RED, NULL);
+                    if (redPlayers < 2 || !level.hns.cageFightLoaded) {
+                        gentity_t* tent = G_TempEntity(vec3_origin, EV_GAME_OVER);
+                        tent->s.eventParm = GAME_OVER_TIMELIMIT;
+                        tent->r.svFlags = SVF_BROADCAST;
+                        level.timelimitHit = qfalse;
+
+                        //UpdateScores(); // JANFIXME H&S scoring table?
+                        trap_GT_SendEvent(GTEV_TEAM_ELIMINATED, level.time, TEAM_RED, 0, 0, 0, 0); // Boe!Man 9/6/11: Add this here to prevent the gametype not being properly ended (when timelimit's hit).
+                        alreadyHit = qtrue;
+                        LogExit("Timelimit hit.");
+                    }
+                    else {
+                        G_printGametypeMessageToAll("Prepare for cage round...");
+                        level.hns.cagefightTimer = level.time + 3000;
+                        level.hns.startCage = qtrue;
+                    }
+                }
+                else {
+                    gentity_t* tent = G_TempEntity(vec3_origin, EV_GAME_OVER);
+                    if (cm_state.integer > 0) { // Boe!Man 3/18/11: Only change the entry if competition mode's enabled.
+                        tent->s.eventParm = LEEG;
+                    }
+                    else {
+                        tent->s.eventParm = GAME_OVER_TIMELIMIT;
+                    }
+                    tent->r.svFlags = SVF_BROADCAST;
+
+                    notifyPlayersOfTeamScores();
+                    LogExit("Timelimit hit.");
+                }
             }
 
-            // See if the time has expired
-            if ( level.time > level.gametypeRoundTime )
-            {
-                trap_GT_SendEvent ( GTEV_TIME_EXPIRED, level.time, 0, 0, 0, 0, 0 );
+            // Boe!Man 8/1/16: Only do this if we haven't done so already.
+            if (!alreadyHit) {
+                trap_GT_SendEvent(GTEV_TEAM_ELIMINATED, level.time, TEAM_RED, 0, 0, 0, 0);
+            }
+        } else if (!level.teamAliveCount[TEAM_BLUE] && dead[TEAM_BLUE] && !isCurrentGametype(GT_HNS)) {
+            if (level.timelimitHit) {
+                gentity_t* tent;
+                tent = G_TempEntity(vec3_origin, EV_GAME_OVER);
+                tent->s.eventParm = GAME_OVER_TIMELIMIT;
+                tent->r.svFlags = SVF_BROADCAST;
+                level.timelimitHit = qfalse;
+                LogExit("Timelimit hit.");
+            }
+
+            trap_GT_SendEvent(GTEV_TEAM_ELIMINATED, level.time, TEAM_BLUE, 0, 0, 0, 0);
+        } else if (level.hns.cagefight && level.teamAliveCount[TEAM_RED] == 1) {
+            for (i = 0; i < level.numConnectedClients; i++) {
+                if (!G_IsClientDead(g_entities[level.sortedClients[i]].client) && g_entities[level.sortedClients[i]].client->sess.team == TEAM_RED) {
+                    g_entities[level.sortedClients[i]].client->sess.kills += 1; // round winner should get 1 point more.
+                    G_AddScore(&g_entities[level.sortedClients[i]], 100);
+                }
+            }
+
+            G_printGametypeMessageToAll("Fight ended.");
+            G_Broadcast(BROADCAST_GAME, NULL, qtrue, "\\Fight ended!");
+
+            //UpdateScores(); // JANFIXME H&S scores
+            level.timelimitHit = qfalse;
+            level.hns.cagefight = qfalse;
+            level.hns.cagefightdone = qtrue;
+
+            // Reset the game type timer.
+            trap_SetConfigstring(CS_GAMETYPE_TIMER, va("%d", level.time));
+
+            LogExit("Cagefight is done.");
+            return;
+        }
+        // See if the time has expired
+        if ( level.time > level.gametypeRoundTime )
+        {
+
+            if (level.hns.cagefight && isCurrentGametype(GT_HNS)) {
+                for (i = 0; i < level.numConnectedClients; i++) {
+                    if (!G_IsClientDead(g_entities[level.sortedClients[i]].client) && g_entities[level.sortedClients[i]].client->sess.team == TEAM_RED) {
+                        g_entities[level.sortedClients[i]].client->sess.kills += 1; // round winner should get 1 point more.
+                        G_AddScore(&g_entities[level.sortedClients[i]], 100);
+                    }
+                }
+                trap_SendServerCommand(-1, va("print \"^3[H&S] ^7Fight ended.\n\""));
+                G_printGametypeMessageToAll("Fight ended.");
+                G_Broadcast(BROADCAST_GAME, NULL, qtrue, "\\Fight ended.");
+
+                //UpdateScores(); // JANFIXME H&S scores
+                level.timelimitHit = qfalse;
+                level.hns.cagefight = qfalse;
+                LogExit("Timelimit hit.");
+                return;
+            }
+
+            if (isCurrentGametype(GT_HNS)) {
+                stripTeam(TEAM_RED, qtrue);
+
+                // For the alive players, we set the dead timers.
+                // This ensures they will end up with weapons as well.
+
+                for (i = 0; i < level.numConnectedClients; i++) {
+                    gentity_t* tent = &g_entities[level.sortedClients[i]];
+
+                    if (!G_IsClientDead(tent->client) && tent->client->sess.team == TEAM_RED) {
+                        tent->client->sess.hsTimeOfDeath = level.time;
+                    }
+                }
+
+                level.hns.roundOver = qtrue; // This will limit abusing /kill after round end.
+
+            }
+            else if (isCurrentGametype(GT_HNZ)) {
+                // Add 5 points for each human that's still alive.
+                for (i = 0; i < level.numConnectedClients; i++) {
+                    if (g_entities[level.sortedClients[i]].client->sess.team == TEAM_RED && !G_IsClientDead(g_entities[level.sortedClients[i]].client)) {
+                        g_entities[level.sortedClients[i]].client->sess.score += 5;
+                        g_entities[level.sortedClients[i]].client->sess.kills += 5;
+                    }
+                }
+            }
+
+            trap_GT_SendEvent ( GTEV_TIME_EXPIRED, level.time, 0, 0, 0, 0, 0 );
+
+            if (level.timelimitHit) {
+
+                gentity_t* tent = G_TempEntity(vec3_origin, EV_GAME_OVER);
+
+                if (cm_state.integer > 0) { // Boe!Man 3/18/11: Only change the entry if competition mode's enabled.
+                    tent->s.eventParm = LEEG;
+                }
+                else {
+                    tent->s.eventParm = GAME_OVER_TIMELIMIT;
+                }
+                tent->r.svFlags = SVF_BROADCAST;
+
+                if (isCurrentGametype(GT_HNS)) {
+                    int redPlayers = TeamCount(-1, TEAM_RED, NULL);
+                    if (redPlayers < 2 || !level.hns.cageFightLoaded) {
+                        //UpdateScores(); // JANFIXME H&S SCORES
+                        level.timelimitHit = qfalse;
+                        LogExit("Timelimit hit.");
+                    }
+                    else {
+                        G_printGametypeMessageToAll("Prepare for cage round...");
+                        level.hns.cagefightTimer = level.time + 3000;
+                        level.hns.startCage = qtrue;
+                    }
+                }
+                else {
+                    notifyPlayersOfTeamScores();
+                    LogExit("Timelimit hit.");
+                }
             }
         }
     }
@@ -1228,7 +1399,7 @@ Potential spawning position for dead monkey players in the Hide&Seek gametype.
 void SP_monkey_player(gentity_t* ent)
 {
     // Cant take any more spawns!!
-    if (level.monkeySpawnCount >= MAX_SPAWNS)
+    if (level.hns.monkeySpawnCount >= MAX_SPAWNS)
     {
         G_FreeEntity(ent);
         return;

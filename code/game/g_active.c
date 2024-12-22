@@ -1043,6 +1043,16 @@ void ClientThink_real( gentity_t *ent )
         ucmd->serverTime = ((ucmd->serverTime + pmove_msec.integer-1) / pmove_msec.integer) * pmove_msec.integer;
     }
 
+    if (client->sess.transformed && !(client->pers.cmd.buttons & BUTTON_RELOAD)) {
+        client->ps.pm_type = PM_FREEZE;
+        Com_Memset(&pm, 0, sizeof(pm));
+        pm.ps = &client->ps;
+        ucmd->buttons = 0;
+        pm.cmd = *ucmd;
+        Pmove(&pm);
+        return;
+    }
+
     //
     // check for exiting intermission
     //
@@ -1181,7 +1191,7 @@ void ClientThink_real( gentity_t *ent )
                 if (ent->client->ps.clip[ATTACK_NORMAL][WP_RPG7_LAUNCHER] == 0 && ent->client->ps.clip[ATTACK_ALTERNATE][WP_RPG7_LAUNCHER] == 0 && client->ps.stats[STAT_ARMOR] <= 0 && g_rpgRemove.integer) {
                     removeWeaponFromClient(ent, WP_RPG7_LAUNCHER, qfalse, WP_KNIFE);
                     G_printInfoMessage(ent, "No more RPG rounds and boost!");
-                    Com_sprintf(level.RPGloc, sizeof(level.RPGloc), "%s", "Disappeared");
+                    Com_sprintf(level.hns.RPGloc, sizeof(level.hns.RPGloc), "%s", "Disappeared");
                     G_printGametypeMessageToAll("RPG has disappeared.");
                 }
             }
@@ -1268,7 +1278,7 @@ void ClientThink_real( gentity_t *ent )
                     client->sess.transformedEntityBBox = 0;
                 }
 
-                client->sess.invisibleGoggles = qfalse;
+                client->sess.invisible = qfalse;
                 client->sess.transformed = qfalse;
                 client->ps.pm_type = PM_NORMAL;
                 client->ps.eFlags &= ~EF_HSBOX;

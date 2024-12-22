@@ -225,7 +225,7 @@ int GT_Event ( int cmd, int time, int arg0, int arg1, int arg2, int arg3, int ar
                     {
                         char clientname[MAX_QPATH];
                         trap_Cmd_GetClientName ( arg1, clientname, MAX_QPATH, qtrue);
-                        trap_Cmd_ConsoleTextMessage(-1, GAMETYPE_NAME, va("%s has taken the briefcase."));
+                        trap_Cmd_ConsoleTextMessage(-1, GAMETYPE_NAME, va("%s has taken the briefcase.", clientname));
 
                         return 1;
                     }

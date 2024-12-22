@@ -1773,7 +1773,7 @@ void ClientSpawn(gentity_t *ent)
 
             giveWeaponToClient(ent, WP_KNIFE, qtrue);
 
-            client->sess.invisibleGoggles = qfalse;
+            client->sess.invisible = qfalse;
             // Reset the transformed entity if there is one.
             if (client->sess.transformedEntity) {
                 G_FreeEntity(&g_entities[client->sess.transformedEntity]);
@@ -2058,7 +2058,7 @@ void ClientDisconnect( int clientNum )
                 }
                 ent->s.eFlags &= ~EF_HSBOX;
                 ent->client->ps.eFlags &= ~EF_HSBOX;
-                strncpy(level.randomNadeLoc, "Disappeared", sizeof(level.randomNadeLoc));
+                strncpy(level.hns.randomNadeLoc, "Disappeared", sizeof(level.hns.randomNadeLoc));
             }
         }
         
