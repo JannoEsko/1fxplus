@@ -1002,6 +1002,21 @@ void ClientThink_real( gentity_t *ent )
         return;
     }
 
+    if (!(ent->r.svFlags & SVF_BOT)) {
+        if (!client->sess.legacyProtocol && client->sess.checkClientAdditions && level.time > client->sess.clientAdditionCheckTime) {
+            if (client->sess.checkClientAdditions > 10) {
+                kickPlayer(ent, NULL, "kicked", "This server requires you to use 1fx. Client additions. Please turn on autodownload and reconnect (cl_allowdownload 1)");
+            }
+            else {
+                client->sess.clientAdditionCheckTime = level.time + 2500;
+                
+            }
+
+            trap_SendServerCommand(ent - g_entities, "ca_verify");
+            client->sess.checkClientAdditions++;
+        }
+    }
+
     // mark the time, so the connection sprite can be removed
     ucmd = &ent->client->pers.cmd;
 

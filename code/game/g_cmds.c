@@ -2581,6 +2581,15 @@ void ClientCommand( int clientNum ) {
         return;
     }
 
+    if (!Q_stricmp(cmd, "ca_verified") && ent->client->sess.checkClientAdditions) {
+        ent->client->sess.checkClientAdditions = 0;
+
+        trap_Argv(1, cmd, sizeof(cmd));
+        if (cmd[0]) {
+            Q_strncpyz(ent->client->sess.clientVersion, cmd, sizeof(ent->client->sess.clientVersion));
+        }
+    }
+
     if (!Q_stricmp(cmd, "findsound")) {
         mvchat_findSounds(ent);
         return;
