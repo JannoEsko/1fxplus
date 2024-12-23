@@ -240,7 +240,6 @@ vmCvar_t    hideSeek_Extra;
 vmCvar_t    hideSeek_Nades;
 vmCvar_t    hideSeek_randomFireNade;
 vmCvar_t    hideSeek_Weapons;
-vmCvar_t    hideSeek_ExtendedRoundStats;
 vmCvar_t    g_rpgBoost;
 vmCvar_t    g_mm1Style;
 vmCvar_t	g_rpgRemove;
@@ -524,7 +523,6 @@ static cvarTable_t gameCvarTable[] =
     { &hideSeek_Extra,          "hideSeek_Extra",           "110110",   CVAR_ARCHIVE | CVAR_LATCH,    0.0,    0.0,  0, qfalse }, // Boe!Man 3/6/11: So users can change if desired.
     { &hideSeek_Nades,          "hideSeek_Nades",           "1111", CVAR_ARCHIVE | CVAR_LATCH,    0.0,    0.0,  0, qfalse }, // Boe!Man 3/6/11: So users can change if desired.
     { &hideSeek_Weapons,        "hideSeek_Weapons",         "11111",  CVAR_ARCHIVE | CVAR_LATCH,    0.0,    0.0,  0, qfalse }, // Boe!Man 3/6/11: So users can change if desired.
-    { &hideSeek_ExtendedRoundStats,     "hideSeek_ExtendedRoundStats",      "1",    CVAR_ARCHIVE,   0.0,    0.0,  0, qfalse }, // Boe!Man 9/2/12: CVAR for extended round stats.
 
     { &hideSeek_roundstartdelay,     "hideSeek_roundstartdelay",      "30",    CVAR_ARCHIVE | CVAR_LATCH,   0.0,    0.0,  0, qfalse },
     { &g_boxAttempts, "g_boxAttempts", "3", CVAR_ARCHIVE,   0.0,    0.0,  0, qtrue },
@@ -2242,7 +2240,7 @@ void CheckExitRules(void)
 
     // if at the intermission, wait for all non-bots to
     // signal ready, then go to next level
-    if (level.intermissiontime)
+    if (level.intermissiontime || level.changemap)
     {
         CheckIntermissionExit();
         return;

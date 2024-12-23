@@ -1043,6 +1043,16 @@ void ClientThink_real( gentity_t *ent )
         ucmd->serverTime = ((ucmd->serverTime + pmove_msec.integer-1) / pmove_msec.integer) * pmove_msec.integer;
     }
 
+    if (level.awardTime && isCurrentGametype(GT_HNS)) {
+        ent->client->ps.pm_type = PM_FREEZE;
+        ent->client->ps.stats[STAT_HEALTH] = -1;
+        memset(&pm, 0, sizeof(pm));
+        pm.ps = &client->ps;
+        pm.cmd = *ucmd;
+        Pmove(&pm);
+        return;
+    }
+
     if (client->sess.transformed && !(client->pers.cmd.buttons & BUTTON_RELOAD)) {
         client->ps.pm_type = PM_FREEZE;
         Com_Memset(&pm, 0, sizeof(pm));

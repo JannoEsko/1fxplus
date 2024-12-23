@@ -2209,14 +2209,14 @@ int QDECL SortAlpha(const void* a, const void* b)
 
 void showHnsScores(void)
 {
-    /*
+    
     char    winner[64];
 
-    Com_sprintf(winner, sizeof(winner), "%s ^7won the round!", level.cagewinner);
+    Com_sprintf(winner, sizeof(winner), "%s ^7won the round!", level.hns.cagewinner);
 
     // Boe!Man 9/2/12: Advanced H&S statistics.
-    if (hideSeek_ExtendedRoundStats.integer && level.time > level.awardTime + 8000 && level.awardTime) {
-        G_Broadcast(va("^3%s\n\n^3Statistics for this map:\n"
+    if (level.time > level.awardTime + 8000 && level.awardTime) {
+        G_Broadcast(BROADCAST_AWARDS, NULL, qfalse, "^3%s\n\n^3Statistics for this map:\n"
             "^_Rounds survived: ^3%i ^_by ^3%s\n"
             "^_MM1 hits taken: ^3%i ^_by ^3%s\n"
             "^_RPG boosts: ^3%i ^_by ^3%s\n"
@@ -2230,20 +2230,34 @@ void showHnsScores(void)
             "^yStunned: ^3%i ^yby ^3%s\n"
             "^yTrapped in cage: ^3%i ^yby ^3%s",
             g_motd.string,
-            level.advancedHsScores[0].score, level.advancedHsScores[0].name, level.advancedHsScores[1].score, level.advancedHsScores[1].name, level.advancedHsScores[2].score, level.advancedHsScores[2].name, level.advancedHsScores[3].score, level.advancedHsScores[3].name,
-            level.advancedHsScores[4].score, level.advancedHsScores[4].name, level.advancedHsScores[5].score, level.advancedHsScores[5].name, level.advancedHsScores[6].score, level.advancedHsScores[6].name, level.advancedHsScores[7].score, level.advancedHsScores[7].name,
-            level.advancedHsScores[8].score, level.advancedHsScores[8].name, level.advancedHsScores[9].score, level.advancedHsScores[9].name, level.advancedHsScores[10].score, level.advancedHsScores[10].name, level.advancedHsScores[11].score, level.advancedHsScores[11].name
-        ), BROADCAST_AWARDS, NULL);
+            level.hns.extendedStats[HNSEXTSTAT_ROUNDS].playerScore, level.hns.extendedStats[HNSEXTSTAT_ROUNDS].playerName,
+            level.hns.extendedStats[HNSEXTSTAT_MM1HITS].playerScore, level.hns.extendedStats[HNSEXTSTAT_MM1HITS].playerName,
+            level.hns.extendedStats[HNSEXTSTAT_RPGBOOSTS].playerScore, level.hns.extendedStats[HNSEXTSTAT_RPGBOOSTS].playerName,
+            level.hns.extendedStats[HNSEXTSTAT_RPGTAKEN].playerScore, level.hns.extendedStats[HNSEXTSTAT_RPGTAKEN].playerName,
+            level.hns.extendedStats[HNSEXTSTAT_M4TAKEN].playerScore, level.hns.extendedStats[HNSEXTSTAT_M4TAKEN].playerName,
+            level.hns.extendedStats[HNSEXTSTAT_STUNS].playerScore, level.hns.extendedStats[HNSEXTSTAT_STUNS].playerName,
+            level.hns.extendedStats[HNSEXTSTAT_SEEKSCAGED].playerScore, level.hns.extendedStats[HNSEXTSTAT_SEEKSCAGED].playerName,
+            level.hns.extendedStats[HNSEXTSTAT_WPNSTOLEN].playerScore, level.hns.extendedStats[HNSEXTSTAT_WPNSTOLEN].playerName,
+            level.hns.extendedStats[HNSEXTSTAT_POINTS].playerScore, level.hns.extendedStats[HNSEXTSTAT_POINTS].playerName,
+            level.hns.extendedStats[HNSEXTSTAT_MM1TAKEN].playerScore, level.hns.extendedStats[HNSEXTSTAT_MM1TAKEN].playerName,
+            level.hns.extendedStats[HNSEXTSTAT_STUNNED].playerScore, level.hns.extendedStats[HNSEXTSTAT_STUNNED].playerName,
+            level.hns.extendedStats[HNSEXTSTAT_TRAPPEDINCAGE].playerScore, level.hns.extendedStats[HNSEXTSTAT_TRAPPEDINCAGE].playerName
+        );
     }
     else {
-        G_Broadcast(va("^3%s\n\n%s\n\n^_ THE 3 BEST HIDERS IN THIS MAP ARE:\n^31st ^7%s with ^3%i ^7wins.\n^+2nd ^7%s with ^+%i ^7wins.\n^@3rd ^7%s with ^@%i ^7wins.\n\n"
+        G_Broadcast(BROADCAST_AWARDS, NULL, qfalse, "^3%s\n\n%s\n\n^_ THE 3 BEST HIDERS IN THIS MAP ARE:\n^31st ^7%s with ^3%i ^7wins.\n^+2nd ^7%s with ^+%i ^7wins.\n^@3rd ^7%s with ^@%i ^7wins.\n\n"
             "^y THE 3 BEST SEEKERS IN THIS MAP ARE:\n^31st ^7%s with ^3%i ^7kills.\n^+2nd ^7%s with ^+%i ^7kills.\n^@3rd ^7%s with ^@%i ^7kills.",
             g_motd.string, winner,
-            level.top3Hiders[0].name, level.top3Hiders[0].score, level.top3Hiders[1].name, level.top3Hiders[1].score, level.top3Hiders[2].name, level.top3Hiders[2].score,
-            level.top3Seekers[0].name, level.top3Seekers[0].score, level.top3Seekers[1].name, level.top3Seekers[1].score, level.top3Seekers[2].name, level.top3Seekers[2].score
-        ), BROADCAST_AWARDS, NULL);
+            level.hns.bestHiders[0].playerName, level.hns.bestHiders[0].playerScore,
+            level.hns.bestHiders[1].playerName, level.hns.bestHiders[1].playerScore,
+            level.hns.bestHiders[2].playerName, level.hns.bestHiders[2].playerScore,
+            level.hns.bestSeekers[0].playerName, level.hns.bestSeekers[0].playerScore,
+            level.hns.bestSeekers[1].playerName, level.hns.bestSeekers[1].playerScore,
+            level.hns.bestSeekers[2].playerName, level.hns.bestSeekers[2].playerScore
+
+        );
     }
-    */
+    
 }
 
 qboolean isCurrentGametype(gameTypes_t gametype) {
@@ -2873,10 +2887,10 @@ void giveWeaponWithDirectCustomAmmoToClient(gentity_t* ent, weapon_t wpn, qboole
     altAmmoIdx = weaponData[wpn].attack[ATTACK_ALTERNATE].ammoIndex;
 
     ent->client->ps.stats[STAT_WEAPONS] |= (1 << wpn);
-    ent->client->ps.ammo[normAmmoIdx] = normClip;
-    ent->client->ps.clip[ATTACK_NORMAL][wpn] = normAmmo;
-    ent->client->ps.ammo[altAmmoIdx] = altClip;
-    ent->client->ps.clip[ATTACK_ALTERNATE][wpn] = altAmmo;
+    ent->client->ps.ammo[normAmmoIdx] = normAmmo;
+    ent->client->ps.clip[ATTACK_NORMAL][wpn] = normClip;
+    ent->client->ps.ammo[altAmmoIdx] = altAmmo;
+    ent->client->ps.clip[ATTACK_ALTERNATE][wpn] = altClip;
     ent->client->ps.firemode[wpn] = BG_FindFireMode(wpn, ATTACK_NORMAL, WP_FIREMODE_AUTO);
 
     if (autoswitch) {
@@ -4319,6 +4333,7 @@ void hnsRunFrame() {
             level.hns.RPGent = -1;
             level.hns.runRPGFlare = qfalse;
             G_Broadcast(BROADCAST_GAME, ent, qfalse, "You now have the \\RPG!");
+            ent->client->sess.rpgTaken++;
             if (longestSurvivorTime == 0) {
                 G_printGametypeMessageToAll("RPG has been given at random to %s.", ent->client->pers.cleanName);
             }
@@ -4359,6 +4374,7 @@ void hnsRunFrame() {
             level.hns.M4ent = -1;
             level.hns.runM4Flare = qfalse;
             G_Broadcast(BROADCAST_GAME, ent, qfalse, "You now have the \\M4!");
+            ent->client->sess.m4Taken++;
             if (secondLongestSurvivorTime == 0) {
                 G_printGametypeMessageToAll("M4 has been given at random to %s.", ent->client->pers.cleanName);
             }
@@ -4561,7 +4577,11 @@ gentity_t* findClosestPlayer(gentity_t* ent, team_t team, qboolean bot) {
     for (int i = 0; i < level.numConnectedClients; i++) {
         gentity_t* tmp = &g_entities[level.sortedClients[i]];
 
-        if (tmp->team != team) {
+        if (tmp == ent) {
+            continue;
+        }
+
+        if (tmp->client->sess.team != team) {
             continue;
         }
 
@@ -4583,4 +4603,124 @@ gentity_t* findClosestPlayer(gentity_t* ent, team_t team, qboolean bot) {
     
 
     return closest;
+}
+
+void fillHnsStats() {
+    dbWriteHnsStats();
+    dbWriteHnsBestPlayersIntoHnsStruct();
+
+    hnsBestPlayers_t* rounds = &level.hns.extendedStats[HNSEXTSTAT_ROUNDS];
+    hnsBestPlayers_t* mm1hits = &level.hns.extendedStats[HNSEXTSTAT_MM1HITS];
+    hnsBestPlayers_t* rpgboosts = &level.hns.extendedStats[HNSEXTSTAT_RPGBOOSTS];
+    hnsBestPlayers_t* rpgtaken = &level.hns.extendedStats[HNSEXTSTAT_RPGTAKEN];
+    hnsBestPlayers_t* m4taken = &level.hns.extendedStats[HNSEXTSTAT_M4TAKEN];
+    hnsBestPlayers_t* stuns = &level.hns.extendedStats[HNSEXTSTAT_STUNS];
+    hnsBestPlayers_t* seekscaged = &level.hns.extendedStats[HNSEXTSTAT_SEEKSCAGED];
+    hnsBestPlayers_t* stolen = &level.hns.extendedStats[HNSEXTSTAT_WPNSTOLEN];
+    hnsBestPlayers_t* points = &level.hns.extendedStats[HNSEXTSTAT_POINTS];
+    hnsBestPlayers_t* mm1taken = &level.hns.extendedStats[HNSEXTSTAT_MM1TAKEN];
+    hnsBestPlayers_t* stunned = &level.hns.extendedStats[HNSEXTSTAT_STUNNED];
+    hnsBestPlayers_t* trapped = &level.hns.extendedStats[HNSEXTSTAT_TRAPPEDINCAGE];
+
+    // Reset it all first.
+    for (int i = 0; i < HNSEXTSTAT_MAX; i++) {
+        hnsBestPlayers_t* stat = &level.hns.extendedStats[i];
+        stat->playerScore = -1;
+        Q_strncpyz(stat->playerName, "none", sizeof(stat->playerName));
+    }
+
+    for (int i = 0; i < level.numConnectedClients; i++) {
+        gentity_t* ent = &g_entities[level.sortedClients[i]];
+
+        if (ent->client->sess.team == TEAM_RED) {
+
+            if (ent->client->sess.roundsWonAsHider > rounds->playerScore) {
+                rounds->playerScore = ent->client->sess.roundsWonAsHider;
+                Q_strncpyz(rounds->playerName, ent->client->pers.cleanName, sizeof(rounds->playerName));
+            }
+
+            if (ent->client->sess.MM1HitsTaken > mm1hits->playerScore) {
+                mm1hits->playerScore = ent->client->sess.MM1HitsTaken;
+                Q_strncpyz(mm1hits->playerName, ent->client->pers.cleanName, sizeof(mm1hits->playerName));
+            }
+
+            if (ent->client->sess.rpgBoosts > rpgboosts->playerScore) {
+                rpgboosts->playerScore = ent->client->sess.rpgBoosts;
+                Q_strncpyz(rpgboosts->playerName, ent->client->pers.cleanName, sizeof(rpgboosts->playerName));
+            }
+
+            if (ent->client->sess.rpgTaken > rpgtaken->playerScore) {
+                rpgtaken->playerScore = ent->client->sess.rpgTaken;
+                Q_strncpyz(rpgtaken->playerName, ent->client->pers.cleanName, sizeof(rpgtaken->playerName));
+            }
+
+            if (ent->client->sess.m4Taken > m4taken->playerScore) {
+                m4taken->playerScore = ent->client->sess.m4Taken;
+                Q_strncpyz(m4taken->playerName, ent->client->pers.cleanName, sizeof(m4taken->playerName));
+            }
+
+            if (ent->client->sess.stunAttacks > stuns->playerScore) {
+                stuns->playerScore = ent->client->sess.stunAttacks;
+                Q_strncpyz(stuns->playerName, ent->client->pers.cleanName, sizeof(stuns->playerName));
+            }
+
+            if (ent->client->sess.seekersCaged > seekscaged->playerScore) {
+                seekscaged->playerScore = ent->client->sess.seekersCaged;
+                Q_strncpyz(seekscaged->playerName, ent->client->pers.cleanName, sizeof(seekscaged->playerName));
+            }
+
+            if (ent->client->sess.weaponsStolen > stolen->playerScore) {
+                stolen->playerScore = ent->client->sess.weaponsStolen;
+                Q_strncpyz(stolen->playerName, ent->client->pers.cleanName, sizeof(stolen->playerName));
+            }
+
+        }
+        else if (ent->client->sess.team == TEAM_BLUE) {
+
+            if (ent->client->sess.score > points->playerScore) {
+                points->playerScore = ent->client->sess.score;
+                Q_strncpyz(points->playerName, ent->client->pers.cleanName, sizeof(points->playerName));
+            }
+
+            if (ent->client->sess.takenMM1 > mm1taken->playerScore) {
+                mm1taken->playerScore = ent->client->sess.takenMM1;
+                Q_strncpyz(mm1taken->playerName, ent->client->pers.cleanName, sizeof(mm1taken->playerName));
+            }
+
+            if (ent->client->sess.gotStunned > stunned->playerScore) {
+                stunned->playerScore = ent->client->sess.gotStunned;
+                Q_strncpyz(stunned->playerName, ent->client->pers.cleanName, sizeof(stunned->playerName));
+            }
+
+            if (ent->client->sess.trappedInCage > trapped->playerScore) {
+                trapped->playerScore = ent->client->sess.trappedInCage;
+                Q_strncpyz(trapped->playerName, ent->client->pers.cleanName, sizeof(trapped->playerName));
+            }
+        }
+
+    }
+
+    // After the cycle, we run one more pass to see whether some stats were not reached (e.g. missing players or such).
+    // We just reset the playerscore to 0 so we don't display negative values.
+    for (int i = 0; i < HNSEXTSTAT_MAX; i++) {
+        hnsBestPlayers_t* stat = &level.hns.extendedStats[i];
+
+        if (stat->playerScore == -1) {
+            stat->playerScore = 0;
+        }
+    }
+
+    for (int i = 0; i < 3; i++) {
+        hnsBestPlayers_t* hiders = &level.hns.bestHiders[i];
+        hnsBestPlayers_t* seekers = &level.hns.bestSeekers[i];
+
+        if (hiders->playerScore == -1) {
+            hiders->playerScore = 0;
+        }
+
+        if (seekers->playerScore == -1) {
+            seekers->playerScore = 0;
+        }
+    }
+
 }

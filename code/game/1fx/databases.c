@@ -2111,7 +2111,7 @@ void dbWriteHnsStats() {
         sqlBindTextOrNull(stmt, 1, currentMap);
         sqlBindTextOrNull(stmt, 2, ent->client->pers.cleanName);
         sqlite3_bind_int(stmt, 3, ent->client->sess.team == TEAM_BLUE ? 1 : 0);
-        sqlite3_bind_int(stmt, 4, ent->client->sess.kills);
+        sqlite3_bind_int(stmt, 4, ent->client->sess.team == TEAM_BLUE ? ent->client->sess.score : ent->client->sess.kills);
 
         rc = sqlite3_step(stmt);
 

@@ -21,7 +21,7 @@ void DeathmatchScoreboardMessage( gentity_t *ent )
 
     //Ryan may 15 2004
     //dont let the scores update duing the awards
-    if (level.levelState == LEVELSTATE_AWARDS)
+    if (level.awardTime || level.intermissionQueued || level.hns.cagefightdone)
     {
         return;
     }
@@ -78,9 +78,9 @@ void DeathmatchScoreboardMessage( gentity_t *ent )
                     //	g_teamkillDamageMax.integer ? 100 * cl->sess.teamkillDamage / g_teamkillDamageMax.integer : 0,
                     //	cl->pers.statinfo.accuracy,
                     //	cl->pers.statinfo.headShotKills,
-                    cl->pers.weaponsStolen,
-                    cl->pers.stunAttacks,
-                    cl->pers.seekersCaged
+                    cl->sess.weaponsStolen,
+                    cl->sess.stunAttacks,
+                    cl->sess.seekersCaged
                 );
             } else if (level.legacyMod == CL_RPM && ent->client->sess.clientMod == CL_RPM && atof(ent->client->sess.clientVersion) > 0.5) {
                 if (atof(ent->client->sess.clientVersion) == 1.1) {
@@ -1077,7 +1077,7 @@ void SetTeam( gentity_t *ent, char *s, const char* identity, qboolean forced )
         }
 
         // Boe!Man 9/4/11: Don't allow people to spawn that are reconnecting and are being put in the team.
-        if (isCurrentGametype(GT_HNS) && level.hns.cagefight && !client->pers.cageFighter) {
+        if (isCurrentGametype(GT_HNS) && level.hns.cagefight && !client->sess.cageFighter) {
             ghost = qtrue;
         }
 

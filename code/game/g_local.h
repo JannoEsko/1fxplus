@@ -645,6 +645,13 @@ typedef struct
     qboolean            cageFighter;
     int                 mdnAttempts;
     int                 hsTimeOfDeath;
+
+    int                 roundsWonAsHider;
+    int                 rpgBoosts;
+    int                 rpgTaken;
+    int                 m4Taken;
+
+    int                 weaponsStolen;
 } clientSession_t;
 
 //
@@ -679,12 +686,9 @@ typedef struct
     qboolean            seekerAway;
     int                 seekerAwayTime;
     int                 seekerAwayEnt;
-    int                 weaponsStolen;
-    int                 stunAttacks;
-    int                 seekersCaged;
     int                 lastpickup;
     int                 deathTime;
-    qboolean            cageFighter;
+    
 
 
     qboolean            movingModel;
@@ -823,6 +827,22 @@ typedef struct hnsBestPlayers_s {
     int     playerScore;
 } hnsBestPlayers_t;
 
+typedef enum hnsExtendedStats_s {
+    HNSEXTSTAT_ROUNDS,
+    HNSEXTSTAT_MM1HITS,
+    HNSEXTSTAT_RPGBOOSTS,
+    HNSEXTSTAT_RPGTAKEN,
+    HNSEXTSTAT_M4TAKEN,
+    HNSEXTSTAT_STUNS,
+    HNSEXTSTAT_SEEKSCAGED,
+    HNSEXTSTAT_WPNSTOLEN,
+    HNSEXTSTAT_POINTS,
+    HNSEXTSTAT_MM1TAKEN,
+    HNSEXTSTAT_STUNNED,
+    HNSEXTSTAT_TRAPPEDINCAGE,
+    HNSEXTSTAT_MAX
+} hnsExtendedStats_t;
+
 /*
 Moving all H&S level items into hnsLvl struct.
 */
@@ -871,6 +891,7 @@ typedef struct hnsLvl_s {
 
     hnsBestPlayers_t    bestHiders[3];
     hnsBestPlayers_t    bestSeekers[3];
+    hnsBestPlayers_t    extendedStats[HNSEXTSTAT_MAX];
 } hnsLvl_t;
 
 typedef struct
@@ -1609,7 +1630,6 @@ extern	vmCvar_t    hideSeek_Extra;
 extern	vmCvar_t    hideSeek_Nades;
 extern	vmCvar_t    hideSeek_randomFireNade;
 extern	vmCvar_t    hideSeek_Weapons;
-extern	vmCvar_t    hideSeek_ExtendedRoundStats;
 extern	vmCvar_t    g_rpgBoost;
 extern	vmCvar_t    g_mm1Style;
 extern	vmCvar_t	g_rpgRemove;
@@ -2179,6 +2199,7 @@ gentity_t* findClosestTeamPlayer(gentity_t* ent, qboolean bot);
 gentity_t* findClosestEnemyPlayer(gentity_t* ent, qboolean bot);
 void dbWriteHnsBestPlayersIntoHnsStruct(void);
 void dbWriteHnsStats(void);
+void fillHnsStats(void);
 
 typedef struct
 {

@@ -1139,7 +1139,9 @@ int G_Damage (
                     addSpeedAlteration(targ, qtrue, speedAlterationReason);
                     addSpeedAlteration(attacker, qfalse, speedAlterationReason);
                     G_Broadcast(BROADCAST_GAME, targ, qfalse, "You got stunned by %s!", attacker->client->pers.netname);
+                    targ->client->sess.gotStunned++;
                     G_Broadcast(BROADCAST_GAME, attacker, qfalse, "You have stunned %s!", targ->client->pers.netname);
+                    attacker->client->sess.stunAttacks++;
                 }
 
             }
@@ -1178,12 +1180,14 @@ int G_Damage (
                     G_Broadcast(BROADCAST_GAME, attacker, qfalse, "You stole the \\RPG!");
                     G_Broadcast(BROADCAST_GAME, targ, qfalse, "%s stole your \\RPG!", attacker->client->pers.netname);
                     G_printGametypeMessageToAll("%s took the RPG from %s.", attacker->client->pers.cleanName, client->pers.cleanName);
+                    attacker->client->sess.weaponsStolen++;
                 }
                 else if (client->ps.weapon == WP_M4_ASSAULT_RIFLE) {
                     stealWeaponWithAmmo(targ, attacker, WP_M4_ASSAULT_RIFLE);
                     G_Broadcast(BROADCAST_GAME, attacker, qfalse, "You stole the \\M4!");
                     G_Broadcast(BROADCAST_GAME, targ, qfalse, "%s stole your \\M4!", attacker->client->pers.netname);
                     G_printGametypeMessageToAll("%s took the M4 from %s.", attacker->client->pers.cleanName, client->pers.cleanName);
+                    attacker->client->sess.weaponsStolen++;
                 }
             }
         }
@@ -1193,8 +1197,13 @@ int G_Damage (
             damage = originalDamage;
         }
 
-        if (level.hns.cagefight && mod == altAttack(MOD_AK74_ASSAULT_RIFLE)) {
-            damage = originalDamage;
+        if (level.hns.cagefight) {
+            if (mod == altAttack(MOD_AK74_ASSAULT_RIFLE)) {
+                damage = originalDamage;
+            }
+            else {
+                damage = 0;
+            }
         }
 
         if (attacker->client->sess.team != client->sess.team) {
@@ -1799,7 +1808,7 @@ qboolean G_RadiusDamage (
                     attacker->client->ps.pm_flags |= PMF_JUMPING;
                     attacker->client->ps.groundEntityNum = ENTITYNUM_NONE;
                     attacker->client->ps.velocity[2] = g_rpgBoost.integer;
-
+                    attacker->client->sess.rpgBoosts++;
                 }
             }
             else {
@@ -1807,6 +1816,7 @@ qboolean G_RadiusDamage (
                     attacker->client->ps.pm_flags |= PMF_JUMPING;
                     attacker->client->ps.groundEntityNum = ENTITYNUM_NONE;
                     attacker->client->ps.velocity[2] = g_rpgBoost.integer;
+                    attacker->client->sess.rpgBoosts++;
                 }
                 else if ((mod == MOD_F1_GRENADE || mod == altAttack(MOD_F1_GRENADE)) && ent->classname && strstr(ent->classname, "f1")) { // Boe!Man 8/2/12: Fix for Altattack of tele nade not doing anything.
                     if (origin[2] <= ent->origin_from[2]) {

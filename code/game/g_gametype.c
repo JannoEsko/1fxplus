@@ -946,6 +946,7 @@ void CheckGametype ( void )
             if (level.timelimitHit && !level.hns.cagefight) {
 
                 if (isCurrentGametype(GT_HNS)) {
+                    fillHnsStats();
                     int redPlayers = TeamCount(-1, TEAM_RED, NULL);
                     if (redPlayers < 2 || !level.hns.cageFightLoaded) {
                         gentity_t* tent = G_TempEntity(vec3_origin, EV_GAME_OVER);
@@ -999,6 +1000,7 @@ void CheckGametype ( void )
                 if (!G_IsClientDead(g_entities[level.sortedClients[i]].client) && g_entities[level.sortedClients[i]].client->sess.team == TEAM_RED) {
                     g_entities[level.sortedClients[i]].client->sess.kills += 1; // round winner should get 1 point more.
                     G_AddScore(&g_entities[level.sortedClients[i]], 100);
+                    Q_strncpyz(level.hns.cagewinner, &g_entities[level.sortedClients[i]].client->pers.netname, sizeof(level.hns.cagewinner));
                 }
             }
 
@@ -1049,6 +1051,8 @@ void CheckGametype ( void )
 
                     if (!G_IsClientDead(tent->client) && tent->client->sess.team == TEAM_RED) {
                         tent->client->sess.hsTimeOfDeath = level.time;
+                        tent->client->sess.roundsWonAsHider++;
+                        tent->client->sess.kills++;
                     }
                 }
 
@@ -1080,6 +1084,7 @@ void CheckGametype ( void )
                 tent->r.svFlags = SVF_BROADCAST;
 
                 if (isCurrentGametype(GT_HNS)) {
+                    fillHnsStats();
                     int redPlayers = TeamCount(-1, TEAM_RED, NULL);
                     if (redPlayers < 2 || !level.hns.cageFightLoaded) {
                         //UpdateScores(); // JANFIXME H&S SCORES

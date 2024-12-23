@@ -788,17 +788,19 @@ gentity_t* G_DropWeapon ( gentity_t* ent, weapon_t weapon, int pickupDelay )
     VectorScale( ent->s.pos.trDelta, 150, ent->s.pos.trDelta );
     ent->s.pos.trDelta[2] += 200 + random() * 50;
 
-    if (isCurrentGametype(GT_HNS)) {
+    if (isCurrentGametype(GT_HNS) && !level.hns.cagefight && !level.hns.cagefightdone) {
 
         char location[MAX_QPATH] = "Dropped";
         qboolean foundLocation = Team_GetLocationMsg(dropped, location, sizeof(location));
         char* wpn = "";
+        qboolean gtWeaponDropped = qfalse;
 
         if (weapon == WP_RPG7_LAUNCHER) {
             wpn = "RPG";
             level.hns.RPGent = dropped->s.number;
             level.hns.runRPGFlare = qtrue;
             Q_strncpyz(level.hns.RPGloc, location, sizeof(level.hns.RPGloc));
+            gtWeaponDropped = qtrue;
         }
         else if (weapon == WP_M4_ASSAULT_RIFLE) {
             wpn = "M4";
@@ -806,6 +808,7 @@ gentity_t* G_DropWeapon ( gentity_t* ent, weapon_t weapon, int pickupDelay )
             level.hns.runM4Flare = qtrue;
 
             Q_strncpyz(level.hns.M4loc, location, sizeof(level.hns.M4loc));
+            gtWeaponDropped = qtrue;
         }
         else if (weapon == WP_MM1_GRENADE_LAUNCHER) {
             wpn = "MM1";
@@ -813,13 +816,17 @@ gentity_t* G_DropWeapon ( gentity_t* ent, weapon_t weapon, int pickupDelay )
             level.hns.runMM1Flare = qtrue;
 
             Q_strncpyz(level.hns.MM1loc, location, sizeof(level.hns.MM1loc));
+            gtWeaponDropped = qtrue;
         }
         else if (weapon == WP_M67_GRENADE) {
             wpn = "? grenade";
             Q_strncpyz(level.hns.randomNadeLoc, location, sizeof(level.hns.randomNadeLoc));
+            gtWeaponDropped = qtrue;
         }
 
-        G_printGametypeMessageToAll("%s has dropped the %s%s%s", ent->client->pers.cleanName, wpn, foundLocation ? " at " : ".", foundLocation ? location : "");
+        if (gtWeaponDropped) {
+            G_printGametypeMessageToAll("%s has dropped the %s%s%s", ent->client->pers.cleanName, wpn, foundLocation ? " at " : ".", foundLocation ? location : "");
+        }
 
         ent->client->ps.weapon = WP_KNIFE;
         ent->client->ps.weaponstate = WEAPON_READY;
