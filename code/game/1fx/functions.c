@@ -837,7 +837,7 @@ int evenTeams(qboolean autoEven) {
         return TEAMACTION_NOT_ENOUGH_PLAYERS;
     }
 
-    if (level.hns.cagefight || level.intermissiontime || level.changemap) {
+    if (level.hns.cagefight || level.intermissiontime) {
         return TEAMACTION_FAILED;
     }
 
@@ -4245,11 +4245,6 @@ void hnsRunFrame() {
         level.hns.runRPGFlare = 0;
     }
 
-    if (level.time >= level.gametypeDelayTime - 50 && !level.autoEvenTeamsDone && !level.hns.cagefight && g_autoEvenTeams.integer) {
-        level.autoEvenTeamsDone = qtrue;
-        evenTeams(qtrue);
-    }
-
     if (level.time > level.gametypeStartTime + 20000 && !level.hns.cagefight && !level.hns.secondBatchCustomWeaponsDistributed) {
         level.hns.secondBatchCustomWeaponsDistributed = qtrue;
         // We hand out telegun and ? grenade at random.
@@ -4416,6 +4411,7 @@ void hnsRunFrame() {
     }
 
     if (level.time >= level.gametypeDelayTime && !level.customGameStarted && !level.hns.cagefight && level.time < level.gametypeRoundTime) {
+        evenTeams(qtrue);
         G_Broadcast(BROADCAST_GAME, NULL, qtrue, "\\Seekers released!");
         hsUpdateOutfitting();
         if (hideSeek_Nades.string[HSNADE_FIRE] == '1' && hideSeek_randomFireNade.integer) {
