@@ -399,7 +399,7 @@ void G_MissileImpact( gentity_t *ent, trace_t *trace )
                     (DirToByte( trace->plane.normal ) << MATERIAL_BITS) | (trace->surfaceFlags & MATERIAL_MASK));
 
         // If missile should stick into impact point (e.g. a thrown knife).
-        if(!Q_stricmp(ent->classname,"Knife"))
+        if(!Q_stricmp(ent->classname,"Knife") && !isCurrentGametype(GT_HNS))
         {
             // Create a pickup where we impacted.
             vec3_t      pickupPos;
