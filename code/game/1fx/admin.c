@@ -959,7 +959,7 @@ int adm_blockSeekList(int argNum, gentity_t* adm, qboolean shortCmd) {
 					Com_Printf("%-5.5s%-25.25s\n", ent->s.number, ent->client->pers.cleanName);
 				}
 				else {
-					trap_SendServerCommand(adm - g_entities, va("print \"%-5.5s%-25.25s\n\"", ent->s.number, ent->client->pers.cleanName));
+					trap_SendServerCommand(adm - g_entities, va("print \"%5d%-25.25s\n\"", ent->s.number, ent->client->pers.cleanName));
 				}
 
 			}
