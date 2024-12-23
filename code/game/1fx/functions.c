@@ -4321,91 +4321,99 @@ void hnsRunFrame() {
             }
         }
 
-        if (longestSurvivor != -1) {
-            gentity_t* ent = &g_entities[longestSurvivor];
-            giveWeaponToClient(ent, WP_RPG7_LAUNCHER, qfalse);
-            Q_strncpyz(level.hns.RPGloc, ent->client->pers.netname, sizeof(level.hns.RPGloc));
-            level.hns.RPGent = -1;
-            level.hns.runRPGFlare = qfalse;
-            G_Broadcast(BROADCAST_GAME, ent, qfalse, "You now have the \\RPG!");
-            ent->client->sess.rpgTaken++;
-            if (longestSurvivorTime == 0) {
-                G_printGametypeMessageToAll("RPG has been given at random to %s.", ent->client->pers.cleanName);
+        if (hideSeek_Weapons.string[HSWPN_RPG] == '1') {
+            if (longestSurvivor != -1) {
+                gentity_t* ent = &g_entities[longestSurvivor];
+                giveWeaponToClient(ent, WP_RPG7_LAUNCHER, qfalse);
+                Q_strncpyz(level.hns.RPGloc, ent->client->pers.netname, sizeof(level.hns.RPGloc));
+                level.hns.RPGent = -1;
+                level.hns.runRPGFlare = qfalse;
+                G_Broadcast(BROADCAST_GAME, ent, qfalse, "You now have the \\RPG!");
+                ent->client->sess.rpgTaken++;
+                if (longestSurvivorTime == 0) {
+                    G_printGametypeMessageToAll("RPG has been given at random to %s.", ent->client->pers.cleanName);
+                }
+                else {
+                    G_printGametypeMessageToAll("RPG has been given to the round winner %s.", ent->client->pers.cleanName);
+                }
             }
             else {
-                G_printGametypeMessageToAll("RPG has been given to the round winner %s.", ent->client->pers.cleanName);
+                // If longestSurvivor is -1, considering that we should have hsTimeOfDeath set to 0 initially, we have no valid hiders.
+                gspawn_t* spawnPoint = G_SelectRandomSpawnPoint(TEAM_BLUE);
+
+                if (spawnPoint) {
+                    gentity_t* rpg = G_DropItemAtLocation(spawnPoint->origin, spawnPoint->angles, BG_FindWeaponItem(WP_RPG7_LAUNCHER));
+                    // Count field packs the ammo in it
+                    // Gotta love it...
+
+                    int clip = weaponData[WP_RPG7_LAUNCHER].attack[ATTACK_NORMAL].clipSize;
+                    int ammo = weaponData[WP_RPG7_LAUNCHER].attack[ATTACK_NORMAL].extraClips * clip;
+
+                    rpg->count = clip & 0xFF;
+                    rpg->count += (ammo << 8) & 0xFF00;
+                    level.hns.RPGent = rpg->s.number;
+                    level.hns.runRPGFlare = qtrue;
+                    Q_strncpyz(level.hns.RPGloc, "blue base", sizeof(level.hns.RPGloc));
+                    G_printGametypeMessageToAll("Not enough hiders connected. RPG dropped at blue base.");
+
+                }
+                else {
+                    G_printGametypeMessageToAll("The RPG could not be spawned.");
+                    logSystem(LOGLEVEL_INFO, "RPG could not be spawned (missing blue spawns?)");
+                }
             }
+
         }
         else {
-            // If longestSurvivor is -1, considering that we should have hsTimeOfDeath set to 0 initially, we have no valid hiders.
-            gspawn_t* spawnPoint = G_SelectRandomSpawnPoint(TEAM_BLUE);
-
-            if (spawnPoint) {
-                gentity_t* rpg = G_DropItemAtLocation(spawnPoint->origin, spawnPoint->angles, BG_FindWeaponItem(WP_RPG7_LAUNCHER));
-                // Count field packs the ammo in it
-                // Gotta love it...
-
-                int clip = weaponData[WP_RPG7_LAUNCHER].attack[ATTACK_NORMAL].clipSize;
-                int ammo = weaponData[WP_RPG7_LAUNCHER].attack[ATTACK_NORMAL].extraClips * clip;
-
-                rpg->count = clip & 0xFF;
-                rpg->count += (ammo << 8) & 0xFF00;
-                level.hns.RPGent = rpg->s.number;
-                level.hns.runRPGFlare = qtrue;
-                Q_strncpyz(level.hns.RPGloc, "blue base", sizeof(level.hns.RPGloc));
-                G_printGametypeMessageToAll("Not enough hiders connected. RPG dropped at blue base.");
-
-            }
-            else {
-                G_printGametypeMessageToAll("The RPG could not be spawned.");
-                logSystem(LOGLEVEL_INFO, "RPG could not be spawned (missing blue spawns?)");
-            }
+            secondLongestSurvivor = longestSurvivor; // If RPG is not given out but M4 is, ensure that the round winner gets it.
         }
-
-        if (secondLongestSurvivor != -1) {
-            gentity_t* ent = &g_entities[secondLongestSurvivor];
-            giveWeaponToClient(ent, WP_M4_ASSAULT_RIFLE, qfalse);
-            Q_strncpyz(level.hns.M4loc, ent->client->pers.netname, sizeof(level.hns.M4loc));
-            level.hns.M4ent = -1;
-            level.hns.runM4Flare = qfalse;
-            G_Broadcast(BROADCAST_GAME, ent, qfalse, "You now have the \\M4!");
-            ent->client->sess.m4Taken++;
-            if (secondLongestSurvivorTime == 0) {
-                G_printGametypeMessageToAll("M4 has been given at random to %s.", ent->client->pers.cleanName);
+        
+        if (hideSeek_Weapons.string[HSWPN_M4] == '1') {
+            if (secondLongestSurvivor != -1) {
+                gentity_t* ent = &g_entities[secondLongestSurvivor];
+                giveWeaponToClient(ent, WP_M4_ASSAULT_RIFLE, qfalse);
+                Q_strncpyz(level.hns.M4loc, ent->client->pers.netname, sizeof(level.hns.M4loc));
+                level.hns.M4ent = -1;
+                level.hns.runM4Flare = qfalse;
+                G_Broadcast(BROADCAST_GAME, ent, qfalse, "You now have the \\M4!");
+                ent->client->sess.m4Taken++;
+                if (secondLongestSurvivorTime == 0) {
+                    G_printGametypeMessageToAll("M4 has been given at random to %s.", ent->client->pers.cleanName);
+                }
+                else {
+                    G_printGametypeMessageToAll("M4 has been given to the round winner %s.", ent->client->pers.cleanName);
+                }
             }
             else {
-                G_printGametypeMessageToAll("M4 has been given to the round winner %s.", ent->client->pers.cleanName);
-            }
-        }
-        else {
-            // If secondLongestSurvivor is -1, considering that we should have hsTimeOfDeath set to 0 initially, we have less than 2 hiders.
-            gspawn_t* spawnPoint = G_SelectRandomSpawnPoint(TEAM_BLUE);
+                // If secondLongestSurvivor is -1, considering that we should have hsTimeOfDeath set to 0 initially, we have less than 2 hiders.
+                gspawn_t* spawnPoint = G_SelectRandomSpawnPoint(TEAM_BLUE);
 
-            if (spawnPoint) {
-                gentity_t* m4 = G_DropItemAtLocation(spawnPoint->origin, spawnPoint->angles, BG_FindWeaponItem(WP_M4_ASSAULT_RIFLE));
-                // Count field packs the ammo in it
-                // Gotta love it...
+                if (spawnPoint) {
+                    gentity_t* m4 = G_DropItemAtLocation(spawnPoint->origin, spawnPoint->angles, BG_FindWeaponItem(WP_M4_ASSAULT_RIFLE));
+                    // Count field packs the ammo in it
+                    // Gotta love it...
 
-                int clip = weaponData[WP_M4_ASSAULT_RIFLE].attack[ATTACK_NORMAL].clipSize;
-                int ammo = weaponData[WP_M4_ASSAULT_RIFLE].attack[ATTACK_NORMAL].extraClips * clip;
-                int altclip = weaponData[WP_M4_ASSAULT_RIFLE].attack[ATTACK_ALTERNATE].clipSize;
-                int altammo = weaponData[WP_M4_ASSAULT_RIFLE].attack[ATTACK_ALTERNATE].extraClips * altclip;
+                    int clip = weaponData[WP_M4_ASSAULT_RIFLE].attack[ATTACK_NORMAL].clipSize;
+                    int ammo = weaponData[WP_M4_ASSAULT_RIFLE].attack[ATTACK_NORMAL].extraClips * clip;
+                    int altclip = weaponData[WP_M4_ASSAULT_RIFLE].attack[ATTACK_ALTERNATE].clipSize;
+                    int altammo = weaponData[WP_M4_ASSAULT_RIFLE].attack[ATTACK_ALTERNATE].extraClips * altclip;
 
-                m4->count = clip & 0xFF;
-                m4->count += (ammo << 8) & 0xFF00;
-                m4->count += (altclip << 16) & 0xFF0000;
-                m4->count += (altammo << 24) & 0xFF000000;
+                    m4->count = clip & 0xFF;
+                    m4->count += (ammo << 8) & 0xFF00;
+                    m4->count += (altclip << 16) & 0xFF0000;
+                    m4->count += (altammo << 24) & 0xFF000000;
 
 
-                level.hns.M4ent = m4->s.number;
-                level.hns.runM4Flare = qtrue;
-                Q_strncpyz(level.hns.M4loc, "blue base", sizeof(level.hns.M4loc));
-                G_printGametypeMessageToAll("Not enough hiders connected. M4 dropped at blue base.");
+                    level.hns.M4ent = m4->s.number;
+                    level.hns.runM4Flare = qtrue;
+                    Q_strncpyz(level.hns.M4loc, "blue base", sizeof(level.hns.M4loc));
+                    G_printGametypeMessageToAll("Not enough hiders connected. M4 dropped at blue base.");
 
-            }
-            else {
-                G_printGametypeMessageToAll("The M4 could not be spawned.");
-                logSystem(LOGLEVEL_INFO, "M4 could not be spawned (missing blue spawns?)");
+                }
+                else {
+                    G_printGametypeMessageToAll("The M4 could not be spawned.");
+                    logSystem(LOGLEVEL_INFO, "M4 could not be spawned (missing blue spawns?)");
+                }
             }
         }
     }
