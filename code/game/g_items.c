@@ -62,9 +62,40 @@ int Pickup_Weapon (gentity_t *ent, gentity_t *other, qboolean* autoswitch )
     int         weaponNum = ent->item->giTag;
     qboolean    hasAltAmmo;
 
+    if (isCurrentGametype(GT_HNS)) {
+        // Henk 26/01/10 -> Notification if people pickup special weapons
+        if (other) {
+            if (weaponNum == WP_M4_ASSAULT_RIFLE) {
+                G_FreeEntity(&g_entities[level.hns.M4Flare]);
+                level.hns.M4ent = -1;
+                level.hns.runM4Flare = qfalse;
+                G_printGametypeMessageToAll("%s has taken the M4.", other->client->pers.cleanName);
+                Q_strncpyz(level.hns.M4loc, other->client->pers.netname, sizeof(level.hns.M4loc));
+            }
+            else if (weaponNum == WP_RPG7_LAUNCHER) {
+                G_FreeEntity(&g_entities[level.hns.RPGFlare]);
+                level.hns.RPGent = -1;
+                level.hns.runRPGFlare = qfalse;
+                G_printGametypeMessageToAll("%s has taken the RPG.", other->client->pers.cleanName);
+                Q_strncpyz(level.hns.RPGloc, other->client->pers.netname, sizeof(level.hns.RPGloc));
+            }
+            else if (weaponNum == WP_MM1_GRENADE_LAUNCHER) {
+                G_FreeEntity(&g_entities[level.hns.MM1Flare]);
+                level.hns.MM1ent = -1;
+                level.hns.runMM1Flare = qfalse;
+                G_printGametypeMessageToAll("%s has taken the MM1.", other->client->pers.cleanName);
+                Q_strncpyz(level.hns.MM1loc, other->client->pers.netname, sizeof(level.hns.MM1loc));
+            }
+            else if (weaponNum == WP_M67_GRENADE) {
+                G_printGametypeMessageToAll("%s has taken the ? grenade.", other->client->pers.cleanName);
+                Q_strncpyz(level.hns.randomNadeLoc, other->client->pers.netname, sizeof(level.hns.randomNadeLoc));
+            }
+        }
+    }
+
     hasAltAmmo = BG_WeaponHasAlternateAmmo ( weaponNum );
 
-    if ( ent->count < 0 )
+    if ( ent->count < 0 || ( !ent->count && isCurrentGametype(GT_HNS && (weaponNum == WP_RPG7_LAUNCHER || weaponNum == WP_M4_ASSAULT_RIFLE || weaponNum == WP_MM1_GRENADE_LAUNCHER))))
     {
         quantity = 0; // None for you, sir!
     }
@@ -124,6 +155,11 @@ int Pickup_Weapon (gentity_t *ent, gentity_t *other, qboolean* autoswitch )
 
     // add the weapon
     other->client->ps.stats[STAT_WEAPONS] |= ( 1 << weaponNum );
+
+    if (isCurrentGametype(GT_HNS)) {
+        other->client->ps.weapon = WP_KNIFE;
+        other->client->ps.weaponstate = WEAPON_READY;
+    }
 
     return g_weaponRespawn.integer;
 }
@@ -313,6 +349,19 @@ void Touch_Item (gentity_t *ent, gentity_t *other, trace_t *trace)
         return;
     }
 
+    if (isCurrentGametype(GT_HNS)) {
+        if (level.gametypeResetTime) {
+            return;
+        }
+
+        if ((ent->item->giTag == WP_MM1_GRENADE_LAUNCHER || ent->item->giTag == WP_F1_GRENADE || ent->item->giTag == WP_MDN11_GRENADE || ent->item->giTag == WP_L2A2_GRENADE) && other->client->sess.team == TEAM_RED) {
+            return;
+        }
+        if ((ent->item->giTag == WP_M4_ASSAULT_RIFLE || ent->item->giTag == WP_RPG7_LAUNCHER || ent->item->giTag == WP_M67_GRENADE) && other->client->sess.team == TEAM_BLUE) {
+            return;
+        }
+    }
+
     // If its a gametype item the gametype handles it
     if ( ent->item->giType == IT_GAMETYPE )
     {
@@ -340,6 +389,14 @@ void Touch_Item (gentity_t *ent, gentity_t *other, trace_t *trace)
     switch( ent->item->giType )
     {
         case IT_WEAPON:
+
+            // Disabled weapons cannot be picked up. This might happen if a weapon
+            // that was previously enabled with the weapon Admin command has been
+            // dropped somewhere.
+            if (!BG_IsWeaponAvailableForOutfitting(ent->item->giTag, 2) && level.pickupsDisabled && !isCurrentGametypeInList((gameTypes_t[]) { GT_HNS, GT_HNZ, GT_MAX })) {
+                return;
+            }
+
             respawn = Pickup_Weapon(ent, other, &autoswitch );
             break;
         case IT_AMMO:
@@ -352,6 +409,9 @@ void Touch_Item (gentity_t *ent, gentity_t *other, trace_t *trace)
             respawn = Pickup_Health(ent, other);
             break;
         case IT_GAMETYPE:
+            //if (isCurrentGametype(GT_HNS)) {
+            //    G_printGametypeMessageToAll("%s has taken the briefcase.", other->client->pers.cleanName);
+            //}
             respawn = Pickup_Gametype(ent, other);
             predict = qfalse;
             break;
@@ -369,7 +429,7 @@ void Touch_Item (gentity_t *ent, gentity_t *other, trace_t *trace)
     }
 
     eventID = EV_ITEM_PICKUP;
-    if ( other->client && (other->client->ps.pm_flags & PMF_DUCKED ) )
+    if ( other->client && (other->client->ps.pm_flags & PMF_DUCKED ) && !other->client->sess.legacyProtocol )
     {
         eventID = EV_ITEM_PICKUP_QUIET;
     }
@@ -534,6 +594,24 @@ gentity_t *G_DropItem( gentity_t *ent, gitem_t *item, float angle )
 }
 
 /*
+G_DropItem2 in 1fxmod.
+*/
+gentity_t* G_DropItemAtLocation(vec3_t origin, vec3_t angles, gitem_t* item) {
+
+    vec3_t velocity;
+    gentity_t* dropped;
+
+    AngleVectors(angles, velocity, NULL, NULL);
+    VectorScale(velocity, 150, velocity);
+    velocity[2] += 200 + crandom() * 50;
+
+    dropped = LaunchItem(item, origin, velocity);
+    dropped->nextthink = 0;
+    return dropped;
+
+}
+
+/*
 =================
 G_EnablePickup
 
@@ -626,6 +704,13 @@ gentity_t* G_DropWeapon ( gentity_t* ent, weapon_t weapon, int pickupDelay )
     // No more outfitting changes
     ent->client->noOutfittingChange = qtrue;
 
+    // Telegun and stungun are not droppable.
+    if (isCurrentGametype(GT_HNS) && (weapon == WP_M3A1_SUBMACHINEGUN || weapon == WP_USSOCOM_PISTOL)) {
+        removeWeaponFromClient(ent, weapon, qfalse, WP_KNIFE);
+        G_printGametypeMessageToAll("%s has disappeared!", weapon == WP_M3A1_SUBMACHINEGUN ? "Telegun" : "Stungun");
+        return NULL;
+    }
+
     // find the item type for this weapon
     item = BG_FindWeaponItem ( weapon );
 
@@ -664,12 +749,20 @@ gentity_t* G_DropWeapon ( gentity_t* ent, weapon_t weapon, int pickupDelay )
     ent->client->ps.stats[STAT_WEAPONS] &= ~(1<<weapon);
 
     // if the gun is empty then just kill it soon after its dropped
-    if ( !dropped->count )
+    if ( !dropped->count && !isCurrentGametype(GT_HNS) )
     {
         dropped->nextthink = level.time + 2500;
         dropped->think     = G_FreeEntity;
         dropped->s.eFlags |= EF_NOPICKUP;
     }
+    else if (!dropped->count && weapon == WP_M4_ASSAULT_RIFLE && isCurrentGametype(GT_HNS)) {
+        dropped->nextthink = level.time;
+        dropped->think = G_FreeEntity;
+        dropped->s.eFlags |= EF_NOPICKUP;
+        Q_strncpyz(level.hns.M4loc, "Disappeared", sizeof(level.hns.M4loc));
+        G_printGametypeMessageToAll("M4 has disappeared.");
+        return NULL;
+    } // JANFIXME bring back RPG removal?
     // Dont allow the item to be picked up againt for 3 seconds if in a no pickup game, otherwise
     // let them pick it up immediately
     else if ( pickupDelay )
@@ -694,6 +787,51 @@ gentity_t* G_DropWeapon ( gentity_t* ent, weapon_t weapon, int pickupDelay )
     AngleVectors( angles, ent->s.pos.trDelta, NULL, NULL );
     VectorScale( ent->s.pos.trDelta, 150, ent->s.pos.trDelta );
     ent->s.pos.trDelta[2] += 200 + random() * 50;
+
+    if (isCurrentGametype(GT_HNS) && !level.hns.cagefight && !level.hns.cagefightdone) {
+
+        char location[MAX_QPATH] = "Dropped";
+        qboolean foundLocation = Team_GetLocationMsg(dropped, location, sizeof(location));
+        char* wpn = "";
+        qboolean gtWeaponDropped = qfalse;
+
+        if (weapon == WP_RPG7_LAUNCHER) {
+            wpn = "RPG";
+            level.hns.RPGent = dropped->s.number;
+            level.hns.runRPGFlare = qtrue;
+            Q_strncpyz(level.hns.RPGloc, location, sizeof(level.hns.RPGloc));
+            gtWeaponDropped = qtrue;
+        }
+        else if (weapon == WP_M4_ASSAULT_RIFLE) {
+            wpn = "M4";
+            level.hns.M4ent = dropped->s.number;
+            level.hns.runM4Flare = qtrue;
+
+            Q_strncpyz(level.hns.M4loc, location, sizeof(level.hns.M4loc));
+            gtWeaponDropped = qtrue;
+        }
+        else if (weapon == WP_MM1_GRENADE_LAUNCHER) {
+            wpn = "MM1";
+            level.hns.MM1ent = dropped->s.number;
+            level.hns.runMM1Flare = qtrue;
+
+            Q_strncpyz(level.hns.MM1loc, location, sizeof(level.hns.MM1loc));
+            gtWeaponDropped = qtrue;
+        }
+        else if (weapon == WP_M67_GRENADE) {
+            wpn = "? grenade";
+            Q_strncpyz(level.hns.randomNadeLoc, location, sizeof(level.hns.randomNadeLoc));
+            gtWeaponDropped = qtrue;
+        }
+
+        if (gtWeaponDropped) {
+            G_printGametypeMessageToAll("%s has dropped the %s%s%s", ent->client->pers.cleanName, wpn, foundLocation ? " at " : ".", foundLocation ? location : "");
+        }
+
+        ent->client->ps.weapon = WP_KNIFE;
+        ent->client->ps.weaponstate = WEAPON_READY;
+        
+    }
 
     return dropped;
 }
@@ -1023,6 +1161,25 @@ void G_RunItem( gentity_t *ent )
     contents = trap_PointContents( ent->r.currentOrigin, -1 );
     if ( contents & CONTENTS_NODROP )
     {
+
+        if (isCurrentGametype(GT_HNS) && ent->item) {
+            if (ent->item->giTag == WP_RPG7_LAUNCHER) {
+                level.hns.runRPGFlare = qfalse;
+                Q_strncpyz(level.hns.RPGloc, "Disappeared", sizeof(level.hns.RPGloc));
+                G_printGametypeMessageToAll("RPG has disappeared.");
+            }
+            else if (ent->item->giTag == WP_M4_ASSAULT_RIFLE) {
+                level.hns.runM4Flare = 0;
+                Q_strncpyz(level.hns.M4loc, "Disappeared", sizeof(level.hns.M4loc));
+                G_printGametypeMessageToAll("M4 has disappeared.");
+            }
+            else if (ent->item->giTag == WP_MM1_GRENADE_LAUNCHER) {
+                level.hns.runMM1Flare = 0;
+                Q_strncpyz(level.hns.MM1loc, "Disappeared", sizeof(level.hns.MM1loc));
+                G_printGametypeMessageToAll("MM1 has disappeared.");
+            }
+        }
+
         // Gametype items are reported to the gametype when they are stuck like this
         if ( ent->item && ent->item->giType == IT_GAMETYPE )
         {

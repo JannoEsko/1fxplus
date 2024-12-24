@@ -1,9 +1,6 @@
 // Copyright (C) 2001-2002 Raven Software
 //
 #include "g_local.h"
-#include "1fx/1fxFunctions.h"
-#include "../ext/rocmod/rocmod.h"
-#include "1fx/threadedFunctions.h"
 
 // g_client.c -- client functions that don't happen every frame
 
@@ -835,17 +832,20 @@ void G_UpdateOutfitting ( int clientNum )
     }
 
     // Clear all ammo, clips, and weapons
-    client->ps.stats[STAT_WEAPONS] = 0;
-    memset ( client->ps.ammo, 0, sizeof(client->ps.ammo) );
-    memset ( client->ps.clip, 0, sizeof(client->ps.clip) );
+    if (!isCurrentGametypeInList((gameTypes_t[]) { GT_HNS, GT_CSINF, GT_MAX })) {
+        client->ps.stats[STAT_WEAPONS] = 0;
+        memset(client->ps.ammo, 0, sizeof(client->ps.ammo));
+        memset(client->ps.clip, 0, sizeof(client->ps.clip));
 
+    }
+    
     // Everyone gets some knives
     client->ps.stats[STAT_WEAPONS] |= ( 1 << WP_KNIFE );
     ammoIndex=weaponData[WP_KNIFE].attack[ATTACK_NORMAL].ammoIndex;
     client->ps.clip[ATTACK_NORMAL][WP_KNIFE]=weaponData[WP_KNIFE].attack[ATTACK_NORMAL].clipSize;
     client->ps.firemode[WP_KNIFE] = BG_FindFireMode ( WP_KNIFE, ATTACK_NORMAL, WP_FIREMODE_AUTO );
 
-    if ( BG_IsWeaponAvailableForOutfitting ( WP_KNIFE, 2 ) )
+    if ( BG_IsWeaponAvailableForOutfitting ( WP_KNIFE, 2 ) && !isCurrentGametype(GT_HNS) )
     {
         client->ps.ammo[ammoIndex]=ammoData[ammoIndex].max;
     }
@@ -866,7 +866,13 @@ void G_UpdateOutfitting ( int clientNum )
         }
 
         // Grab the item that represents the weapon
-        item = &bg_itemlist[bg_outfittingGroups[group][client->pers.outfitting.items[group]]];
+        if (client->sess.legacyProtocol) {
+            item = &bg_itemlist[legacy_bg_outfittingGroups[group][client->pers.outfitting.items[group]]];
+        }
+        else {
+            item = &bg_itemlist[bg_outfittingGroups[group][client->pers.outfitting.items[group]]];
+        }
+        
 
         client->ps.stats[STAT_WEAPONS] |= (1 << item->giTag);
         ammoIndex = weaponData[item->giTag].attack[ATTACK_NORMAL].ammoIndex;
@@ -900,9 +906,22 @@ void G_UpdateOutfitting ( int clientNum )
     client->ps.zoomTime  = 0;
     client->ps.pm_flags &= ~(PMF_ZOOM_FLAGS);
 
-    client->ps.weapon = equipWeapon;
-    client->ps.weaponstate = WEAPON_READY; //WEAPON_SPAWNING;
-    client->ps.weaponTime = 0;
+    if (!isCurrentGametype(GT_HNS)) {
+        client->ps.weapon = equipWeapon;
+        client->ps.weaponstate = WEAPON_READY; //WEAPON_SPAWNING;
+    }
+
+    if (!isCurrentGametype(GT_HNS) || client->ps.weaponTime == 0 || client->sess.team != TEAM_RED) {
+        client->ps.weaponTime = 0;
+        // Default to auto (or next available fire mode).
+        BG_GetInviewAnim(client->ps.weapon, "idle", &idle);
+        client->ps.weaponAnimId = idle;
+        client->ps.weaponAnimIdChoice = 0;
+        client->ps.weaponCallbackStep = 0;
+    }
+
+    
+    
     client->ps.weaponAnimTime = 0;
 
     // Bot clients cant use the spawning state
@@ -913,20 +932,23 @@ void G_UpdateOutfitting ( int clientNum )
     }
 #endif
 
-    // Default to auto (or next available fire mode).
-    BG_GetInviewAnim(client->ps.weapon,"idle",&idle);
-    client->ps.weaponAnimId = idle;
-    client->ps.weaponAnimIdChoice = 0;
-    client->ps.weaponCallbackStep = 0;
 
     // Armor?
-    client->ps.stats[STAT_ARMOR]   = 0;
-    client->ps.stats[STAT_GOGGLES] = GOGGLES_NONE;
-    switch ( bg_outfittingGroups[OUTFITTING_GROUP_ACCESSORY][client->pers.outfitting.items[OUTFITTING_GROUP_ACCESSORY]] )
-    {
+    //client->ps.stats[STAT_ARMOR]   = 0;
+    if (!isCurrentGametype(GT_CSINF)) {
+        client->ps.stats[STAT_GOGGLES] = GOGGLES_NONE;
+        switch (bg_outfittingGroups[OUTFITTING_GROUP_ACCESSORY][client->pers.outfitting.items[OUTFITTING_GROUP_ACCESSORY]])
+        {
         default:
         case MODELINDEX_ARMOR:
-            client->ps.stats[STAT_ARMOR] = MAX_HEALTH;
+            // Boe!Man 9/16/12: Give them invisible goggles in H&S if they're enabled.
+            if (isCurrentGametype(GT_HNS) && hideSeek_Extra.string[HSEXTRA_GOGGLES] == '1' && ent->client->sess.team == TEAM_BLUE) {
+                client->ps.stats[STAT_GOGGLES] = GOGGLES_NIGHTVISION;
+                client->ps.stats[STAT_ARMOR] = MAX_ARMOR;
+            }
+            else {
+                client->ps.stats[STAT_ARMOR] = MAX_ARMOR;
+            }
             break;
 
         case MODELINDEX_THERMAL:
@@ -934,12 +956,28 @@ void G_UpdateOutfitting ( int clientNum )
             break;
 
         case MODELINDEX_NIGHTVISION:
-            client->ps.stats[STAT_GOGGLES] = GOGGLES_NIGHTVISION;
+            if (isCurrentGametype(GT_HNS)) {
+                if (hideSeek_Extra.string[HSEXTRA_GOGGLES] == '1' && ent->client->sess.team == TEAM_BLUE) {
+                    client->ps.stats[STAT_ARMOR] = MAX_ARMOR;
+                }
+                // Boe!Man 9/16/12: Do give them goggles if the invisible goggles are disabled, they just don't have any effect. And hiders will get 'em as well.
+                client->ps.stats[STAT_GOGGLES] = GOGGLES_NIGHTVISION;
+            }
+            else {
+                client->ps.stats[STAT_GOGGLES] = GOGGLES_NIGHTVISION;
+            }
             break;
+        }
     }
 
     // Stuff which grenade is being used into stats for later use by
     // the backpack code
+    if (!isCurrentGametype(GT_HNS)) {
+        client->ps.ammo[weaponData[WP_KNIFE].attack[ATTACK_NORMAL].ammoIndex] = weaponData[WP_KNIFE].attack->extraClips;
+    }
+    else if (client->sess.team == TEAM_BLUE) {
+        client->ps.ammo[weaponData[WP_KNIFE].attack[ATTACK_ALTERNATE].ammoIndex] = 0;
+    }
     client->ps.stats[STAT_OUTFIT_GRENADE] = bg_itemlist[bg_outfittingGroups[OUTFITTING_GROUP_GRENADE][client->pers.outfitting.items[OUTFITTING_GROUP_GRENADE]]].giTag;
 }
 
@@ -1014,6 +1052,9 @@ void ClientUserinfoChanged( int clientNum )
         client->pers.localClient = qtrue;
     }
 
+    Q_strncpyz(client->pers.ip, s, sizeof(client->pers.ip));
+    getSubnet(client->pers.ip, client->pers.subnet, sizeof(client->pers.subnet));
+
     // check the item prediction
     s = Info_ValueForKey( userinfo, "cg_predictItems" );
     if ( !atoi( s ) )
@@ -1041,24 +1082,16 @@ void ClientUserinfoChanged( int clientNum )
         client->ps.pm_flags &= ~PMF_AUTORELOAD;
     }
 
-    // set name
-    Q_strncpyz ( oldname, client->pers.netname, sizeof( oldname ) );
-    s = Info_ValueForKey (userinfo, "name");
+    // JANFIXME Profanity
 
-    if (!client->sess.isNameChangeBlocked) {
-        G_ClientCleanName(s, client->pers.netname, sizeof(client->pers.netname), qtrue);
+    if (client->sess.nameChangeBlock == NAMECHANGEBLOCK_NONE) {
+        // set name
+        Q_strncpyz(oldname, client->pers.netname, sizeof(oldname));
+        s = Info_ValueForKey(userinfo, "name");
         G_ClientCleanName(s, client->pers.cleanName, sizeof(client->pers.cleanName), qfalse);
-
-        if (strlen(client->pers.netname) > MAX_NETNAME - 3) {
-            client->pers.netname[MAX_NETNAME - 3] = '\0';
-        }
-
-        if (strlen(client->pers.cleanName) > MAX_NETNAME - 3) {
-            client->pers.cleanName[MAX_NETNAME - 3] = '\0';
-        }
-
-        strcat(client->pers.netname, S_COLOR_WHITE);
-    }
+        G_ClientCleanName(s, client->pers.netname, sizeof(client->pers.netname), qtrue);
+        dbAddAlias(ent);
+    }    
 
     if ( client->sess.team == TEAM_SPECTATOR )
     {
@@ -1105,36 +1138,82 @@ void ClientUserinfoChanged( int clientNum )
     // Enforce the identities
     oldidentity = client->pers.identity;
 
-    if( level.gametypeData->teams )
-    {
-        s = Info_ValueForKey ( userinfo, "team_identity" );
+    if (!(client->sess.changeCount == 10 && client->sess.idLimit > level.time) ||
+        ((isCurrentGametype(GT_HNS) || isCurrentGametype(GT_HNZ)) && client->sess.team == TEAM_BLUE)) {
 
-        // Lookup the identity by name and if it cant be found then pick a random one
-        client->pers.identity = BG_FindIdentity ( s );
+        if (level.gametypeData->teams && !isCurrentGametype(GT_HNS) && !isCurrentGametype(GT_HNZ)) {
+            const char *teamIdentity = Info_ValueForKey(userinfo, "team_identity");
+            client->pers.identity = BG_FindIdentity(teamIdentity);
 
-        if ( team != TEAM_SPECTATOR )
-        {
-            // No identity or a team mismatch means they dont get to be that skin
-            if ( !client->pers.identity || Q_stricmp ( level.gametypeTeam[team], client->pers.identity->mTeam ) )
-            {
-                // Get first matching team identity
-                client->pers.identity = BG_FindTeamIdentity ( level.gametypeTeam[team], -1 );
+            if (team != TEAM_SPECTATOR) {
+                if (!client->pers.identity || Q_stricmp(level.gametypeTeam[team], client->pers.identity->mTeam)) {
+                    client->pers.identity = BG_FindTeamIdentity(level.gametypeTeam[team], -1);
+                }
+            } else {
+                client->pers.identity = BG_FindTeamIdentity(level.gametypeTeam[TEAM_RED], 0);
+            }
+
+        } else {
+            const char *identityName = Info_ValueForKey(userinfo, "identity");
+
+            if (isCurrentGametype(GT_HNS)) {
+                if (client->sess.team == TEAM_BLUE) {
+                    if (!client->pers.identity ||
+                        !(strstr(client->pers.identity->mName, "NPC_Swiss_Police") ||
+                        strstr(client->pers.identity->mName, "NPC_Honor_Guard") ||
+                        strstr(client->pers.identity->mName, "NPC_Sebastian_Jenzer"))) {
+
+                        int randomIndex = irand(0, 4);
+                        int identityOptions[] = {60, 61, 62, 103, 102};
+                        client->pers.identity = &bg_identities[identityOptions[randomIndex]];
+                    }
+                } else {
+                    client->pers.identity = BG_FindIdentity(identityName);
+                    if (client->pers.identity) {
+                        if (strstr(client->pers.identity->mName, "NPC_Swiss_Police") ||
+                            strstr(client->pers.identity->mName, "NPC_Honor_Guard") ||
+                            strstr(client->pers.identity->mName, "NPC_Sebastian_Jenzer") ||
+                            strstr(client->pers.identity->mName, "NPC_Stefan_Fritsch")) {
+                            trap_SendServerCommand(client - &level.clients[0],
+                                                "print \"^3[H&S] ^7You cannot use that skin.\n\"");
+                            client->pers.identity = &bg_identities[1];
+                        }
+                    } else {
+                        client->pers.identity = &bg_identities[1];
+                    }
+                }
+
+            } else if (isCurrentGametype(GT_HNZ)) {
+                if (client->sess.team == TEAM_BLUE) {
+                    if (!client->pers.identity) {
+                        client->pers.identity = BG_FindIdentity("NPC_Virus_Male/virus_male");
+                    }
+                    if (client->pers.identity) {
+                        if (strstr(client->pers.identity->mCharacter->mModel, "female")) {
+                            client->pers.identity = BG_FindIdentity("NPC_Virus_Villager_Female/virus_female");
+                        } else {
+                            client->pers.identity = BG_FindIdentity("NPC_Virus_Male/virus_male");
+                        }
+                    } else {
+                        client->pers.identity = BG_FindIdentity("NPC_Virus_Male/virus_male");
+                    }
+                } else if (client->sess.team == TEAM_RED) {
+                    client->pers.identity = BG_FindIdentity(identityName);
+                    if (client->pers.identity) {
+                        if (strstr(client->pers.identity->mName, "NPC_Virus_Male") ||
+                            strstr(client->pers.identity->mName, "NPC_Virus_Villager_Female")) {
+                            trap_SendServerCommand(client - &level.clients[0],
+                                                "print \"^3[H&Z] ^7You cannot use that skin.\n\"");
+                            client->pers.identity = &bg_identities[1];
+                        }
+                    } else {
+                        client->pers.identity = &bg_identities[1];
+                    }
+                }
+            } else {
+                client->pers.identity = BG_FindIdentity(identityName);
             }
         }
-        else
-        {
-            // Spectators are going to have to choose one of the two team skins and
-            // the chance of them having the proper one in team_identity is slim, so just
-            // give them a model they may use later
-            client->pers.identity = BG_FindTeamIdentity ( level.gametypeTeam[TEAM_RED], 0 );
-        }
-    }
-    else
-    {
-        s = Info_ValueForKey ( userinfo, "identity" );
-
-        // Lookup the identity by name and if it cant be found then pick a random one
-        client->pers.identity = BG_FindIdentity ( s );
     }
 
     // If the identity wasnt in the list then just give them the first identity.  We could
@@ -1150,11 +1229,24 @@ void ClientUserinfoChanged( int clientNum )
     {
         if ( client->pers.identity && oldidentity && client->pers.identity != oldidentity && team != TEAM_SPECTATOR )
         {
-            trap_SendServerCommand( -1, va("print \"%s" S_COLOR_WHITE " has changed identities\n\"", client->pers.netname ) );
+            if(ent->client->sess.identityUpdate <= level.time){
+                trap_SendServerCommand( -1, va("print \"%s" S_COLOR_WHITE " has changed his identity\n\"", client->pers.netname ) );
+                client->sess.identityUpdate = level.time + 1000;
+            }else{ 
+                if(client->sess.idLimit <= level.time){
+                    client->sess.changeCount = 0;
+                }
+                client->sess.changeCount += 1;
+                if(client->sess.changeCount == 10){
+                    client->sess.idLimit = level.time + 60000;
+                }else{
+                    client->sess.idLimit = level.time + 10000;
+                }
+            }
         }
 
         // If the client is changing their name then handle some delayed name changes
-        if ( strcmp( oldname, client->pers.netname ) )
+        if ( strcmp( oldname, client->pers.netname ) && client->sess.nameChangeBlock == NAMECHANGEBLOCK_NONE )
         {
             // Dont let them change their name too much
             if ( level.time - client->pers.netnameTime < 5000 )
@@ -1179,6 +1271,7 @@ void ClientUserinfoChanged( int clientNum )
             {
                 trap_SendServerCommand( -1, va("print \"%s renamed to %s\n\"", oldname, client->pers.netname) );
                 client->pers.netnameTime = level.time;
+                dbAddAlias(ent);
             }
         }
     }
@@ -1187,8 +1280,51 @@ void ClientUserinfoChanged( int clientNum )
     if ( level.pickupsDisabled )
     {
         // Parse out the new outfitting
-        BG_DecompressOutfitting ( Info_ValueForKey ( userinfo, "outfitting" ), &client->pers.outfitting );
-        G_UpdateOutfitting ( clientNum );
+        BG_DecompressOutfitting ( Info_ValueForKey ( userinfo, "outfitting" ), &client->pers.outfitting, client->sess.legacyProtocol );
+        
+        if (!isCurrentGametypeInList((gameTypes_t[]) { GT_HNS, GT_HNZ, GT_GUNGAME, GT_CSINF, GT_MAX })) {
+            G_UpdateOutfitting(clientNum);
+        }
+    }
+
+    // Client mods.
+    if (client->sess.legacyProtocol) {
+        memset(client->sess.clientVersion, 0, sizeof(client->sess.clientVersion));
+        if (level.legacyMod == CL_RPM) {
+            s = Info_ValueForKey(userinfo, "cg_rpm");
+            if (*s)
+            {
+                client->sess.clientMod = CL_RPM;
+                Q_strncpyz(client->sess.clientVersion, "0.5", sizeof(client->sess.clientVersion));
+            }
+            // not using older client so lets test for new client
+            else
+            {
+                s = Info_ValueForKey(userinfo, "cg_rpmClient");
+                if (*s)
+                {
+
+                    if (!client->sess.verifyRoxAC && !client->sess.hasRoxAC) {
+                        char* rox = Info_ValueForKey(userinfo, "cg_roxclient");
+                        if (*rox) {
+                            ent->client->sess.verifyRoxAC = qtrue;
+                            ent->client->sess.nextRoxVerificationMessage = level.time + 5000;
+                        }
+                    }
+
+                    // new client sends the version of the client mod eg. 0.6
+                    Q_strncpyz(client->sess.clientVersion, s, sizeof(client->sess.clientVersion));
+
+                    client->sess.clientMod = CL_RPM;
+
+
+                }
+                else { // if no rpm client
+                    client->sess.clientMod = CL_NONE; // To be fair, we could display RPMPro info here, but without proper RPMPro support, I do not see the point.
+                }
+            }
+        }
+
     }
 
     // send over a subset of the userinfo keys so other clients can
@@ -1239,10 +1375,6 @@ char *ClientConnect( int clientNum, qboolean firstTime, qboolean isBot )
     char        ip[128];
     char        guid[64];
     gentity_t   *ent;
-    int         n = 0;
-    char* countryCode;
-    char* country;
-    qboolean ipCache = qfalse;
 
     ent = &g_entities[ clientNum ];
 
@@ -1254,26 +1386,6 @@ char *ClientConnect( int clientNum, qboolean firstTime, qboolean isBot )
     // check to see if they are on the banned IP list
     value = Info_ValueForKey (userinfo, "ip");
     Com_sprintf ( ip, sizeof(ip), value );
-
-    if ( *value && !( isBot ) && (strcmp(value, "localhost") != 0))
-    {
-        n = 0;
-
-        while(value[n] && (value[n] != ':'))
-        {
-            n++;
-        }
-        value[n] = '\0';
-
-        Q_strncpyz ( ip, value, MAX_IP );
-    }
-    else if(isBot)
-    {
-        Q_strncpyz ( ip, "bot", MAX_IP );
-    }
-
-    // for every connect, first clear out outdated bans.
-    dbClearOutdatedBans(qfalse);
 
     // we don't check password for bots and local client
     // NOTE: local client <-> "ip" "localhost"
@@ -1288,22 +1400,13 @@ char *ClientConnect( int clientNum, qboolean firstTime, qboolean isBot )
             return va("Invalid password: %s", value );
         }
 
-        // check banlist whether the client should be rejected.
-        char banReason[512];
-        qboolean banned = dbCheckBanReason(ip, qfalse, banReason);
-        if (banned) {
-
-            return va("Banned: %s", banReason);
-        }
-
-        char subnet[MAX_IP];
-
-        getSubnet(ip, subnet);
-
-        banned = dbCheckBanReason(subnet, qtrue, banReason);
+        // Check for ban information.
+        char banReason[128];
+        int endOfMap = 0, banEnd = 0;
+        qboolean banned = dbCheckBan(ip, banReason, sizeof(banReason), &endOfMap, &banEnd);
 
         if (banned) {
-            return va("Subnetbanned: %s", banReason);
+            return va("Banned: %s%s", banReason, endOfMap ? " (end of map)" : va(", left: %dd, %02dh, %02dm", banEnd / (60 * 24), (banEnd / 60) % 24, banEnd % 60));
         }
 
     }
@@ -1318,36 +1421,14 @@ char *ClientConnect( int clientNum, qboolean firstTime, qboolean isBot )
 
     client->sess.team = TEAM_SPECTATOR;
 
-    // Boe!Man 12/27/09: Let's save the IP global; will make the lag a lot less as everything's stored globally.
-    Q_strncpyz ( client->pers.ip, ip, MAX_IP);
-    getSubnet(client->pers.ip, client->pers.subnet);
-
+    client->sess.legacyProtocol = trap_IsClientLegacy(clientNum);
     // read or initialize the session data
     if ( firstTime || level.newSession )
     {
-        G_InitSessionData( ent, userinfo );
+        G_InitSessionData( client, userinfo, firstTime );
     }
 
-    G_ReadSessionData( ent );
-
-    if (!Q_stricmp(client->sess.countryCode, "N/A") && g_useCountryAPI.integer) {
-        int blockLevel = 0;
-
-        ipCache = dbGetFromIpCache(G_IP2Integer(ip), &countryCode, &country, &blockLevel);
-
-        if (ipCache) {
-            if (g_dontAllowVPN.integer && blockLevel == 1) {
-                return "VPN Detected";
-            }
-            Q_strncpyz(client->sess.countryCode, countryCode, sizeof(client->sess.countryCode));
-            Q_strncpyz(client->sess.countryName, country, sizeof(client->sess.countryName));
-            free(countryCode);
-            free(country);
-        }
-        else if (g_useThreads.integer) {
-            enqueueOutbound(IPHUB_DATA_REQUEST, clientNum, ip);
-        }
-    }
+    G_ReadSessionData( client );
 
     if( isBot )
     {
@@ -1363,6 +1444,26 @@ char *ClientConnect( int clientNum, qboolean firstTime, qboolean isBot )
     G_LogPrintf( "ClientConnect: %i - %s [%s]\n", clientNum, ip, guid );
     ClientUserinfoChanged( clientNum );
 
+    // Check whether country is set.
+
+    if (!strlen(ent->client->sess.countryCode) && g_useCountryDb.integer) {
+        int blockLevel = 0;
+
+        qboolean hasCountry = dbGetCountry(ip, ent->client->sess.countryCode, sizeof(ent->client->sess.countryCode), ent->client->sess.country, sizeof(ent->client->sess.country), &blockLevel);
+        if (!hasCountry) {
+            if (g_useCountryAPI.integer && strlen(g_iphubAPIKey.string) > 0) {
+                int enqueue = enqueueOutbound(THREADACTION_IPHUB_DATA_REQUEST, clientNum, ent->client->pers.ip, sizeof(ent->client->pers.ip));
+
+                if (enqueue == THREADRESPONSE_ENQUEUE_COULDNT_MALLOC) {
+                    logSystem(LOGLEVEL_WARN, "Couldn't malloc in thread!");
+                }
+            }
+        }
+        else if (g_vpnAutoKick.integer && blockLevel == IPHUBBLOCK_VPN) {
+            return "VPN Detected!";
+        }
+    }
+
     // don't do the "xxx connected" messages if they were caried over from previous level
     if ( firstTime )
     {
@@ -1374,25 +1475,32 @@ char *ClientConnect( int clientNum, qboolean firstTime, qboolean isBot )
             BroadcastTeamChange( client, -1 );
         }
 
-        if (!isBot) {
+        client->sess.firstTime = qtrue;
+    }
 
-            if (!client->sess.adminLevel) {
-                // this is in firstTime only because after that, if the player was indeed an admin, session will already drag it going forwards.
 
-                int adminLevel = dbGetPlayerAdminLevel(qfalse, client->pers.ip, client->pers.cleanName, NULL);
+    if (ent->client->sess.adminLevel == ADMLVL_NONE) {
 
-                if (adminLevel >= LEVEL_BADMIN) {
-                    // initial admin level on connects / begins is a silent one, so just give them the power.
-                    Q_strncpyz(client->sess.adminName, client->pers.cleanName, sizeof(client->sess.adminName));
-                    client->sess.adminLevel = adminLevel;
-                    client->sess.adminType = ADMINTYPE_IP;
-                }
-            } 
+        int admlvl = dbGetAdminLevel(ADMTYPE_IP, ent, NULL);
 
-            client->sess.firstTime = qtrue;
-            
-
+        if (admlvl > ADMLVL_NONE) {
+            ent->client->sess.adminLevel = admlvl;
+            ent->client->sess.adminType = ADMTYPE_IP;
+            Q_strncpyz(ent->client->sess.adminName, ent->client->pers.cleanName, sizeof(ent->client->sess.adminName));
         }
+
+    }
+
+    if (!ent->client->sess.clanMember) {
+
+        qboolean isClanMember = dbGetClan(CLANTYPE_IP, ent, NULL);
+
+        if (isClanMember) {
+            ent->client->sess.clanMember = qtrue;
+            ent->client->sess.clanType = CLANTYPE_IP;
+            Q_strncpyz(ent->client->sess.clanName, ent->client->pers.cleanName, sizeof(ent->client->sess.clanName));
+        }
+
     }
 
     // count current clients and rank for scoreboard
@@ -1402,11 +1510,14 @@ char *ClientConnect( int clientNum, qboolean firstTime, qboolean isBot )
     ent->s.number = clientNum;
     trap_UnlinkEntity ( ent );
 
-    G_EmptyStatsMemory(ent);
-    ent->client->pers.statinfo.lasthurtby = -1;
-    ent->client->pers.statinfo.lastclient_hurt = -1;
-    ent->client->pers.statinfo.lastKillerHealth = -1;
-    ent->client->pers.statinfo.lastKillerArmor = -1;
+    reapplyMuteAfterConnect(ent);
+
+    // Zero out statinfo.
+    Com_Memset(&ent->client->pers.statInfo, 0, sizeof(ent->client->pers.statInfo));
+    ent->client->pers.statInfo.lastclient_hurt = -1;
+    ent->client->pers.statInfo.lasthurtby = -1;
+    ent->client->pers.statInfo.lastKillerHealth = -1;
+    ent->client->pers.statInfo.lastKillerArmor = -1;
 
     return NULL;
 }
@@ -1488,27 +1599,41 @@ void ClientBegin( int clientNum )
         }
     }
 
-    // check admin if we have not yet done so.
-    if (!ent->client->sess.playerDbChecksDone) {
-        ent->client->sess.playerDbChecksDone = qtrue;
-
-        if (!ent->client->sess.adminLevel) {
-            // means that no admin level was found with IP+name combination during connecting, check over here as well.
-            int adminLevel = dbGetPlayerAdminLevel(qfalse, ent->client->pers.ip, ent->client->pers.cleanName, NULL);
-
-            if (adminLevel >= LEVEL_BADMIN) {
-                // initial admin level on connects / begins is a silent one, so just give them the power.
-                Q_strncpyz(ent->client->sess.adminName, ent->client->pers.cleanName, sizeof(ent->client->sess.adminName));
-                ent->client->sess.adminLevel = adminLevel;
-                ent->client->sess.adminType = ADMINTYPE_IP;
-            }
-        }
-
-        // FIXME add alias checks over here as well.
-    }
-
     // count current clients and rank for scoreboard
     CalculateRanks();
+    
+    if (g_teamAutoJoin.integer && client->sess.team == TEAM_SPECTATOR && /*setTime &&*/ client->pers.connected == CON_CONNECTED && isCurrentGametypeInList((gameTypes_t[]) { GT_HNS, GT_HNZ, GT_PROP, GT_MAX })) {
+        if (isCurrentGametypeInList((gameTypes_t[]) { GT_HNZ, GT_PROP, GT_MAX })) {
+            // Boe!Man 10/26/14: Force clients after shotguns are distributed to blue instead of red.
+
+            if (g_teamAutoJoin.integer == 1 || (g_teamAutoJoin.integer == 2 && !client->sess.afkSpec)) {
+                if (level.customGameStarted) {
+                    SetTeam(ent, "blue", NULL, qfalse);
+                }
+                else {
+                    SetTeam(ent, "red", NULL, qfalse);
+                }
+            }
+
+
+
+        }
+        else if (!(ent->r.svFlags & SVF_BOT)) { //differentiate between 1 and 2
+            if (g_teamAutoJoin.integer == 1) {
+                SetTeam(ent, chooseTeam(), NULL, qfalse);
+            }
+            else if (!client->sess.afkSpec && g_teamAutoJoin.integer == 2) {
+                SetTeam(ent, chooseTeam(), NULL, qfalse);
+            }
+
+        }
+    }
+
+    // Boe!Man 7/6/15: Check if we require the use of the modified cgame.
+    if (g_enforce1fxAdditions.integer) {
+        client->sess.checkClientAdditions = 1;
+        client->sess.clientAdditionCheckTime = level.time + 2500; // Check after 2.5 second to avoid flooding the client.
+    }
 }
 
 /*
@@ -1627,7 +1752,7 @@ void ClientSpawn(gentity_t *ent)
     }
     else
     {
-        SetTeam ( ent, "s", NULL, TEAMCHANGE_REGULAR);
+        SetTeam ( ent, "s", NULL, qfalse );
         return;
     }
 
@@ -1702,7 +1827,29 @@ void ClientSpawn(gentity_t *ent)
     // Give the client their weapons depending on whether or not pickups are enabled
     if ( level.pickupsDisabled )
     {
-        G_UpdateOutfitting ( index );
+
+        if (isCurrentGametypeInList((gameTypes_t[]) { GT_HNS, GT_HNZ, GT_MAX })) {
+
+            giveWeaponToClient(ent, WP_KNIFE, qtrue);
+
+            client->sess.invisible = qfalse;
+            // Reset the transformed entity if there is one.
+            if (client->sess.transformedEntity) {
+                G_FreeEntity(&g_entities[client->sess.transformedEntity]);
+                client->sess.transformedEntity = 0;
+                client->sess.transformed = qfalse;
+            }
+            if (client->sess.transformedEntityBBox) {
+                G_FreeEntity(&g_entities[client->sess.transformedEntityBBox]);
+                client->sess.transformedEntityBBox = 0;
+            }
+
+            client->ps.eFlags &= ~EF_HSBOX;
+            ent->s.eFlags &= ~EF_HSBOX;
+        }
+        else {
+            G_UpdateOutfitting(index);
+        }
 
         // Prevent the client from picking up a whole bunch of stuff
         client->ps.pm_flags |= PMF_LIMITED_INVENTORY;
@@ -1772,6 +1919,12 @@ void ClientSpawn(gentity_t *ent)
             client->ps.weaponAnimIdChoice = 0;
             client->ps.weaponCallbackStep = 0;
         }
+
+        if (g_voiceFloodCount.integer) {
+            client->sess.voiceFloodPenalty = 0;
+            client->sess.voiceFloodTimer = 0;
+            client->sess.voiceFloodCount = 0;
+        }
     }
     else
     {
@@ -1810,12 +1963,28 @@ void ClientSpawn(gentity_t *ent)
         MoveClientToIntermission( ent );
     }
 
-    // Frozen?
-    if ( level.gametypeDelayTime > level.time )
-    {
-        ent->client->ps.stats[STAT_FROZEN] = level.gametypeDelayTime - level.time;
+    if (level.paused) {
+        ent->client->ps.pm_type = PM_INTERMISSION;
     }
 
+    // Frozen?
+    if (!isCurrentGametypeInList((gameTypes_t[]) { GT_HNS, GT_PROP, GT_MAX })) {
+        if (level.gametypeDelayTime > level.time)
+        {
+            ent->client->ps.stats[STAT_FROZEN] = level.gametypeDelayTime - level.time;
+        }
+    }
+    else {
+        // Frozen?
+        if (level.gametypeDelayTime > level.time && ent->client->sess.team == TEAM_BLUE) // Henk 21/01/10 -> Only seekers have a start delay
+        {
+            ent->client->ps.stats[STAT_FROZEN] = level.gametypeDelayTime - level.time;
+        }
+    }
+    if (isCurrentGametype(GT_HNZ)) {
+        ent->client->ps.stats[STAT_FROZEN] = 0;
+    }
+        
     // run a client frame to drop exactly to the floor,
     // initialize animations and other things
     client->ps.commandTime = level.time - 100;
@@ -1841,9 +2010,21 @@ void ClientSpawn(gentity_t *ent)
     {
         trap_SendServerCommand( -1, va("print \"%s" S_COLOR_WHITE " renamed to %s\n\"", client->pers.netname, client->pers.deferredname) );
         strcpy ( client->pers.netname, client->pers.deferredname );
+        dbAddAlias(ent);
         client->pers.deferredname[0] = '\0';
         client->pers.netnameTime = level.time;
         ClientUserinfoChanged ( client->ps.clientNum );
+    }
+
+    if(!isCurrentGametype(GT_HNS) && !isCurrentGametype(GT_HNZ) && level.gametypeData->teams && client->sess.team != TEAM_SPECTATOR){
+        if(!(level.gametypeTeam[client->sess.team] && client->pers.identity && client->pers.identity->mTeam)){
+            client->sess.changeCount = 0;
+            ClientUserinfoChanged ( client->ps.clientNum );
+        }else if(!strstr(level.gametypeTeam[client->sess.team], client->pers.identity->mTeam)){
+            G_printInfoMessage(ent, "Your skin was changed because it didn't match your team.");
+            client->sess.changeCount = 0;
+            ClientUserinfoChanged ( client->ps.clientNum );
+        }
     }
 
     // Update the time when other people can join the game
@@ -1854,6 +2035,32 @@ void ClientSpawn(gentity_t *ent)
         {
             level.gametypeJoinTime = level.time;
         }
+    }
+
+
+    if (isCurrentGametypeInList((gameTypes_t[]) { GT_HNS, GT_HNZ, GT_MAX })) {
+        // Henk 19/01/10 -> Start with knife
+        ent->client->ps.ammo[weaponData[WP_KNIFE].attack[ATTACK_ALTERNATE].ammoIndex] = 0;
+        ent->client->ps.weapon = WP_KNIFE;
+        ent->client->ps.weaponstate = WEAPON_READY;
+
+        client->ps.stats[STAT_ARMOR] = 0; // Henk 27/02/10 -> Fix that ppl start with no armor
+        client->ps.stats[STAT_GOGGLES] = GOGGLES_NONE;
+
+        // Boe!Man 1/28/14: Also (re-)set some inactivity stuff.
+        if (!g_inactivity.integer || g_inactivity.integer >= 10) {
+            if (!level.customGameStarted) { // Seekers are still waiting to be released.
+                client->pers.seekerAwayTime = level.time + (level.gametypeDelayTime - level.time) + 2000; // Give the seeker two initial seconds to get away prior to being away.
+            }
+            else {
+                client->pers.seekerAwayTime = level.time + 10000; // Or 10 seconds if he joins the team in the middle of a running game.
+            }
+        }
+        else {
+            client->pers.seekerAwayTime = -1;
+        }
+        client->pers.seekerAway = qfalse;
+        client->pers.seekerAwayEnt = -1;
     }
 }
 
@@ -1906,7 +2113,25 @@ void ClientDisconnect( int clientNum )
         tent->s.clientNum = ent->s.clientNum;
 
         // Dont drop weapons
-        ent->client->ps.stats[STAT_WEAPONS] = 0;
+        if (!isCurrentGametypeInList((gameTypes_t[]) { GT_HNZ, GT_HNZ, GT_MAX })) {
+            ent->client->ps.stats[STAT_WEAPONS] = 0;
+        }
+        else if (isCurrentGametype(GT_HNS)) {
+            // Also check the random grenade.
+            if (hideSeek_Extra.string[HSEXTRA_RANDOMGRENADE] == '1' && ent->client->sess.transformedEntity) {
+                G_FreeEntity(&g_entities[ent->client->sess.transformedEntity]);
+                ent->client->sess.transformedEntity = 0;
+
+                if (ent->client->sess.transformedEntityBBox) {
+                    G_FreeEntity(&g_entities[ent->client->sess.transformedEntityBBox]);
+                    ent->client->sess.transformedEntityBBox = 0;
+                }
+                ent->s.eFlags &= ~EF_HSBOX;
+                ent->client->ps.eFlags &= ~EF_HSBOX;
+                strncpy(level.hns.randomNadeLoc, "Disappeared", sizeof(level.hns.randomNadeLoc));
+            }
+        }
+        
 
         // Get rid of things that need to drop
         TossClientItems( ent );
@@ -1925,10 +2150,6 @@ void ClientDisconnect( int clientNum )
     trap_SetConfigstring( CS_PLAYERS + clientNum, "");
 
     CalculateRanks();
-    resetSession(ent);
-    if (level.intermissiontime && !level.pause && level.clientMod == CL_ROCMOD) {
-        ROCmod_sendBestPlayerStats();
-    }
 
 #ifdef _SOF2_BOTS
     if ( ent->r.svFlags & SVF_BOT )
@@ -1937,10 +2158,7 @@ void ClientDisconnect( int clientNum )
     }
 #endif
 
-    // Boe!Man 5/30/13: If the player count hits 0, backup *critical* in-memory databases to disk.
-    if (!level.numConnectedClients) {
-        backupInMemoryDatabases("game.db", gameDb);
-    }
+    backupInMemoryDatabases();
 }
 
 /*

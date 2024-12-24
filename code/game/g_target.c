@@ -194,7 +194,7 @@ void SP_target_speaker( gentity_t *ent )
     } else {
         Q_strncpyz( buffer, s, sizeof(buffer) );
     }
-    ent->noise_index = G_SoundIndex(buffer, qtrue);
+    ent->noise_index = G_SoundIndex(buffer);
 
     // a repeating speaker can be done completely client side
     ent->s.eType = ET_SPEAKER;
@@ -344,7 +344,7 @@ void target_teleporter_use( gentity_t *self, gentity_t *other, gentity_t *activa
         return;
     }
 
-    TeleportPlayer( activator, dest->s.origin, dest->s.angles );
+    TeleportPlayer( activator, dest->s.origin, dest->s.angles, qfalse);
 }
 
 /*QUAKED target_teleporter (1 0 0) (-8 -8 -8) (8 8 8)

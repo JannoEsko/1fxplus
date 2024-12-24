@@ -8,7 +8,9 @@
 // Notes:           -
 //===========================================================================
 
+#ifndef CONTEXT_ALL
 #define CONTEXT_ALL                     0xFFFFFFFF
+#endif
 #define CONTEXT_NORMAL                  1
 #define CONTEXT_NEARBYITEM              2
 #define CONTEXT_CTFREDTEAM              4

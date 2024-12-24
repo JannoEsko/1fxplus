@@ -44,10 +44,14 @@ qboolean    trap_Cmd_RegisterTrigger        ( int triggerid, const char* name, g
 void        trap_Cmd_GetTriggerTarget       ( int triggerid, const char* buffer, int buffersize );
 
 // Client commands
-void        trap_Cmd_GetClientName          ( int clientid, const char* buffer, int buffersize );
+void        trap_Cmd_GetClientName          ( int clientid, const char* buffer, int buffersize, qboolean cleanName );
 qboolean    trap_Cmd_DoesClientHaveItem     ( int clientid, int itemid );
 void        trap_Cmd_AddClientScore         ( int clientid, int score );
 void        trap_Cmd_GetClientOrigin        ( int clientid, vec3_t origin );
 void        trap_Cmd_GiveClientItem         ( int clientid, int itemid );
 void        trap_Cmd_TakeClientItem         ( int clientid, int itemid );
 int         trap_Cmd_GetClientList          ( team_t team, int* clients, int clientcount );
+
+void		trap_Cmd_Teamnames				( const char* redTeam, const char* blueTeam );
+void		trap_Cmd_Broadcast				( int client, const char* message, qboolean playSound );
+void		trap_Cmd_ConsoleTextMessage(int client, const char* gametype, const char* message);

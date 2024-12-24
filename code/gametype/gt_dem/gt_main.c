@@ -30,6 +30,8 @@ vmCvar_t            gt_bombFuseTime;
 vmCvar_t            gt_bombDefuseTime;
 vmCvar_t            gt_bombPlantTime;
 vmCvar_t            gt_simpleScoring;
+vmCvar_t            gt_redTeamColored;
+vmCvar_t            gt_blueTeamColored;
 
 static cvarTable_t gametypeCvarTable[] =
 {
@@ -38,6 +40,8 @@ static cvarTable_t gametypeCvarTable[] =
     { &gt_bombDefuseTime,   "gt_bombDefuseTime",    "3",  CVAR_ARCHIVE|CVAR_LATCH, 0.0f, 0.0f, 0, qfalse },
     { &gt_bombPlantTime,    "gt_bombPlantTime",     "3",  CVAR_ARCHIVE|CVAR_LATCH, 0.0f, 0.0f, 0, qfalse },
     { &gt_simpleScoring,    "gt_simpleScoring",     "0",  CVAR_ARCHIVE, 0.0f, 0.0f, 0, qfalse },
+    { &gt_blueTeamColored,      "gt_blueTeamColored",   "^yB^Il^fu^+e^7 Team", CVAR_ARCHIVE, 0.0f, 0.0f, 0, qfalse },
+    { &gt_redTeamColored, "gt_redTeamColored", "^$R^Te^Hd^7 Team", CVAR_ARCHIVE, 0.0, 0.0, 0,  qfalse },
     { NULL, NULL, NULL, 0, 0.0f, 0.0f, 0, qfalse },
 };
 
@@ -178,6 +182,9 @@ void GT_Init ( void )
     gametype.iconBombPlanted[4] = trap_Cmd_RegisterIcon ( "gfx/menus/hud/dem_planted4" );
     gametype.iconBombPlanted[5] = trap_Cmd_RegisterIcon ( "gfx/menus/hud/dem_planted5" );
     gametype.iconBombPlanted[6] = trap_Cmd_RegisterIcon ( "gfx/menus/hud/dem_planted6" );
+
+    // Report back the used team names to the game module.
+    trap_Cmd_Teamnames(gt_redTeamColored.string, gt_blueTeamColored.string);
 }
 
 /*
@@ -302,7 +309,7 @@ int GT_Event ( int cmd, int time, int arg0, int arg1, int arg2, int arg3, int ar
         case GTEV_ITEM_DROPPED:
         {
             char clientname[MAX_QPATH];
-            trap_Cmd_GetClientName ( arg1, clientname, MAX_QPATH );
+            trap_Cmd_GetClientName ( arg1, clientname, MAX_QPATH, qfalse);
             trap_Cmd_TextMessage ( -1, va("%s has dropped the bomb!", clientname ) );
             break;
         }
@@ -311,7 +318,7 @@ int GT_Event ( int cmd, int time, int arg0, int arg1, int arg2, int arg3, int ar
             if ( arg0 == ITEM_BOMB && arg2 == TEAM_BLUE )
             {
                 char clientname[MAX_QPATH];
-                trap_Cmd_GetClientName ( arg1, clientname, MAX_QPATH );
+                trap_Cmd_GetClientName ( arg1, clientname, MAX_QPATH, qfalse);
                 trap_Cmd_TextMessage ( -1, va("%s has taken the bomb!", clientname ) );
                 trap_Cmd_StartGlobalSound ( gametype.bombTakenSound );
                 trap_Cmd_RadioMessage ( arg1, "got_it" );
@@ -375,7 +382,7 @@ int GT_Event ( int cmd, int time, int arg0, int arg1, int arg2, int arg3, int ar
             gametype.bombPlantTime = 0;
             gametype.bombBeepTime = 0;
             trap_Cmd_AddTeamScore ( TEAM_RED, 1 );
-            trap_Cmd_GetClientName ( arg1, name, 128 );
+            trap_Cmd_GetClientName ( arg1, name, 128, qfalse);
             trap_Cmd_TextMessage ( -1, va("%s has defused the bomb!", name ) );
             trap_Cmd_StartGlobalSound ( gametype.bombExplodedSound );
             trap_Cmd_Restart ( 5 );
@@ -399,7 +406,7 @@ int GT_Event ( int cmd, int time, int arg0, int arg1, int arg2, int arg3, int ar
             trap_Cmd_GetClientOrigin ( arg1, gametype.bombPlantOrigin );
             trap_Cmd_TakeClientItem ( arg1, ITEM_BOMB );
             trap_Cmd_SpawnItem ( ITEM_PLANTED_BOMB, gametype.bombPlantOrigin, vec3_origin );
-            trap_Cmd_GetClientName ( arg1, name, 128 );
+            trap_Cmd_GetClientName ( arg1, name, 128, qfalse);
             trap_Cmd_TextMessage ( -1, va("%s has planted the bomb!", name ) );
             trap_Cmd_GetTriggerTarget ( arg0, gametype.bombPlantTarget, sizeof(gametype.bombPlantTarget) );
             trap_Cmd_SetHUDIcon ( 0, gametype.iconBombPlanted[0] );

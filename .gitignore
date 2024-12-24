@@ -39,4 +39,11 @@ profile
 *.sdf
 *.opensdf
 *.suo
-.vs
+/.vs
+*enc_temp_folder*
+*Debug*
+*.vs*
+*.obj
+*.enc
+*.tlog
+*.log

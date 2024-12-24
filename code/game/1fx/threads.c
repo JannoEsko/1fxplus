@@ -1,6 +1,5 @@
 #include "../g_local.h"
 #include "../../ext/jsmn/jsmn.h"
-#include "threadedFunctions.h"
 
 queueNode* outboundHead;
 queueNode* outboundTail;
@@ -10,6 +9,17 @@ queueNode* inboundTail;
 int killThread;
 CURL* curl;
 
+static void cleanupQueue(queueNode** head) {
+	queueNode* current = *head;
+	while (current) {
+		queueNode* temp = current;
+		current = current->next;
+		free(temp->message);
+		free(temp);
+	}
+	*head = NULL;
+}
+
 // preprocessor flags to handle both OS's handling the threaded functions in the game library.
 // both in and out will have a mutex on both write and read as we expect to NULL the values after they're used.
 // which can cause a crash if one call is about to write to the queue, which another call just NULL's.
@@ -18,6 +28,8 @@ CURL* curl;
 
 #include <pthread.h>
 #include <unistd.h>
+
+static void* runThread(void* data);
 
 pthread_mutex_t outboundMutex;
 pthread_mutex_t inboundMutex;
@@ -54,8 +66,21 @@ void startThread() {
 }
 
 void closeThread() {
-	killThread = 1;
-	usleep(THREAD_SLEEP_DURATION * 1.5);
+	if (killThread != 1) {
+		killThread = 1;
+		usleep(THREAD_SLEEP_DURATION * 1.5);
+
+		acquireInboundMutex();
+		cleanupQueue(&inboundHead);
+		freeInboundMutex();
+
+		acquireOutboundMutex();
+		cleanupQueue(&outboundHead);
+		freeOutboundMutex();
+
+		pthread_mutex_destroy(&inboundMutex);
+		pthread_mutex_destroy(&outboundMutex);
+	}
 }
 
 
@@ -63,6 +88,9 @@ void closeThread() {
 
 #include <windows.h>
 #include <process.h>
+
+
+static unsigned int WINAPI runThread(void* data);
 
 HANDLE outboundMutex;
 HANDLE inboundMutex;
@@ -98,18 +126,34 @@ void startThread() {
 }
 
 void closeThread() {
-	killThread = 1;
-    
-	WaitForSingleObject(thread, 1000);
-    CloseHandle(inboundMutex);
-    CloseHandle(outboundMutex);
-	CloseHandle(thread);
+
+	if (killThread != 1) {
+		killThread = 1;
+
+		WaitForSingleObject(thread, 1000);
+
+		acquireInboundMutex();
+		cleanupQueue(&inboundHead);
+		freeInboundMutex();
+
+		acquireOutboundMutex();
+		cleanupQueue(&outboundHead);
+		freeOutboundMutex();
+
+		CloseHandle(inboundMutex);
+		CloseHandle(outboundMutex);
+		CloseHandle(thread);
+	}
 }
 
 
 #endif
 
-int enqueueInbound(int action, int playerId, char* message) {
+int enqueueInbound(int action, int playerId, char* message, int sizeOfMessage) {
+
+	if (killThread) {
+		return THREADRESPONSE_THREAD_STOPPED;
+	}
 
 	queueNode* tmp = (queueNode*)malloc(sizeof(queueNode));
 
@@ -118,13 +162,13 @@ int enqueueInbound(int action, int playerId, char* message) {
 		return THREADRESPONSE_ENQUEUE_COULDNT_MALLOC;
 	}
 
-	tmp->message = (char*)malloc(strlen(message) + 1);
+	tmp->message = (char*)malloc(sizeOfMessage);
 
 	if (!tmp->message) {
 		return THREADRESPONSE_ENQUEUE_COULDNT_MALLOC;
 	}
 
-	Q_strncpyz(tmp->message, message, strlen(message));
+	Q_strncpyz(tmp->message, message, sizeOfMessage);
 	tmp->action = action;
 	tmp->playerId = playerId;
 	tmp->next = NULL;
@@ -144,7 +188,11 @@ int enqueueInbound(int action, int playerId, char* message) {
 	return THREADRESPONSE_SUCCESS;
 }
 
-int enqueueOutbound(int action, int playerId, char* message) {
+int enqueueOutbound(int action, int playerId, char* message, int sizeOfMessage) {
+
+	if (killThread) {
+		return THREADRESPONSE_THREAD_STOPPED;
+	}
 
 	queueNode* tmp = (queueNode*)malloc(sizeof(queueNode));
 
@@ -153,13 +201,13 @@ int enqueueOutbound(int action, int playerId, char* message) {
 		return THREADRESPONSE_ENQUEUE_COULDNT_MALLOC;
 	}
 
-	tmp->message = (char*)malloc(strlen(message) + 2);
+	tmp->message = (char*)malloc(sizeOfMessage);
 
 	if (!tmp->message) {
 		return THREADRESPONSE_ENQUEUE_COULDNT_MALLOC;
 	}
 
-	Q_strncpyz(tmp->message, message, strlen(message) + 1);
+	Q_strncpyz(tmp->message, message, sizeOfMessage);
 	tmp->action = action;
 	tmp->playerId = playerId;
 	tmp->next = NULL;
@@ -175,28 +223,33 @@ int enqueueOutbound(int action, int playerId, char* message) {
 	}
 
 	freeOutboundMutex();
-
+	
 	return THREADRESPONSE_SUCCESS;
 }
 
-int dequeueInbound(int* action, int* playerId, char* message) {
+int dequeueInbound(int* action, int* playerId, char* message, int sizeOfMessage) {
+
+	if (killThread) {
+		return THREADRESPONSE_THREAD_STOPPED;
+	}
 
 	queueNode* tmp;
 
+	acquireInboundMutex();
+
 	if (inboundHead == NULL) {
+		freeInboundMutex();
 		return THREADRESPONSE_NOTHING_ENQUEUED;
 	}
 
-	// acquire mutex.
-	acquireInboundMutex();
-
-	Q_strncpyz(message, inboundHead->message, strlen(inboundHead->message) + 1);
+	Q_strncpyz(message, inboundHead->message, sizeOfMessage);
 	*action = inboundHead->action;
 	*playerId = inboundHead->playerId;
 
 	tmp = inboundHead;
 	inboundHead = inboundHead->next;
 
+	free(tmp->message);
 	free(tmp);
 
 	if (inboundHead == NULL) {
@@ -210,24 +263,29 @@ int dequeueInbound(int* action, int* playerId, char* message) {
 
 }
 
-int dequeueOutbound(int* action, int* playerId, char* message) {
+int dequeueOutbound(int* action, int* playerId, char* message, int sizeOfMessage) {
+
+	if (killThread) {
+		return THREADRESPONSE_THREAD_STOPPED;
+	}
 
 	queueNode* tmp;
 
+	acquireOutboundMutex();
+
 	if (outboundHead == NULL) {
+		freeOutboundMutex();
 		return THREADRESPONSE_NOTHING_ENQUEUED;
 	}
 
-	// acquire mutex.
-	acquireOutboundMutex();
-
-	Q_strncpyz(message, outboundHead->message, strlen(outboundHead->message) + 1);
+	Q_strncpyz(message, outboundHead->message, sizeOfMessage);
 	*action = outboundHead->action;
 	*playerId = outboundHead->playerId;
 
 	tmp = outboundHead;
 	outboundHead = outboundHead->next;
 
+	free(tmp->message);
 	free(tmp);
 
 	if (outboundHead == NULL) {
@@ -247,12 +305,13 @@ void shutdownThread() {
 
 // this looks ugly, but because the inside of this function is exactly the same no matter what platform we're on, this is fine.
 // this function dequeues from outbound queue and enqueues into inbound queue
+static 
 #ifdef __linux__
 void* 
 #elif defined _WIN32
-unsigned int WINAPI
+unsigned int WINAPI 
 #endif
- runThread(void* data) {
+runThread(void* data) {
 
 	// the body itself might change in the future, depending on what do we want to do with the thread.
 	// as-is, we want to query IPHub for country and VPN check
@@ -263,10 +322,10 @@ unsigned int WINAPI
 	struct curl_slist* iphubCustomHeaders = NULL;
 
 	while (!killThread) {
-		int response = dequeueOutbound(&action, &playerId, message);
+		int response = dequeueOutbound(&action, &playerId, message, sizeof(message));
 
 		if (response == THREADRESPONSE_SUCCESS) {
-			if (action == IPHUB_DATA_REQUEST) {
+			if (action == THREADACTION_IPHUB_DATA_REQUEST) {
 				// message will be the ip address of the player.
 				if (strlen(g_iphubAPIKey.string) > 0 && g_useCountryAPI.integer) {
 
@@ -285,7 +344,10 @@ unsigned int WINAPI
 						int response = jsmn_parse(&jsonParser, curlOutput, strlen(curlOutput), jsonTokens, 50);
 
 						if (response) {
-							char countryCode[10], countryName[100], blockLevel[10];
+							char countryCode[MAX_COUNTRYCODE], countryName[MAX_COUNTRYNAME], blockLevel[10];
+							Com_Memset(countryCode, 0, sizeof(countryCode));
+							Com_Memset(countryName, 0, sizeof(countryName));
+							Com_Memset(blockLevel, 0, sizeof(blockLevel));
 							for (int i = 1; i < response; i++) {
 
 								if (jsoneq(curlOutput, &jsonTokens[i], "countryCode") == 0) {
@@ -301,7 +363,9 @@ unsigned int WINAPI
 
 							if (strlen(countryCode) > 0 && strlen(countryName) > 0 && strlen(blockLevel) > 0) {
 								// got everything I need.
-								enqueueInbound(IPHUB_DATA_RESPONSE, playerId, va("countryCode\\%s\\countryName\\%s\\blockLevel\\%s", countryCode, countryName, blockLevel));
+								char outputString[MAX_THREAD_OUTPUT];
+								Q_strncpyz(outputString, va("countryCode\\%s\\countryName\\%s\\blockLevel\\%s", countryCode, countryName, blockLevel), sizeof(outputString));
+								enqueueInbound(THREADACTION_IPHUB_DATA_RESPONSE, playerId, outputString, sizeof(outputString));
 							}
 
 						}
@@ -310,12 +374,16 @@ unsigned int WINAPI
 			}
 		}
 #ifdef __linux__
-		usleep((unsigned int) THREAD_SLEEP_DURATION);
+		usleep((unsigned int)THREAD_SLEEP_DURATION);
 #elif defined _WIN32
 		Sleep(THREAD_SLEEP_DURATION);
 #endif
 	}
-	
+
+	if (iphubCustomHeaders) {
+		curl_slist_free_all(iphubCustomHeaders);
+	}
+
 	shutdownThread();
 #ifdef __linux__
 	return NULL;
@@ -336,7 +404,7 @@ qboolean performCurlRequest(char* url, struct curl_slist* customHeaders, qboolea
 	curl = curl_easy_init();
 
 	curl_easy_setopt(curl, CURLOPT_URL, url);
-	
+
 	if (customHeaders) {
 		curl_easy_setopt(curl, CURLOPT_HTTPHEADER, customHeaders);
 	}
@@ -347,7 +415,7 @@ qboolean performCurlRequest(char* url, struct curl_slist* customHeaders, qboolea
 
 	curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, curlCallbackWriteToChar);
 	curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void*)&curlChunk);
-	
+
 	res = curl_easy_perform(curl);
 
 	if (res == CURLE_OK) {

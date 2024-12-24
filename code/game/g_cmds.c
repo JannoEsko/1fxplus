@@ -1,8 +1,6 @@
 // Copyright (C) 2001-2002 Raven Software.
 //
 #include "g_local.h"
-#include "1fx/1fxFunctions.h"
-#include "../ext/rocmod/rocmod.h"
 
 int AcceptBotCommand(char *cmd, gentity_t *pl);
 
@@ -13,32 +11,38 @@ DeathmatchScoreboardMessage
 */
 void DeathmatchScoreboardMessage( gentity_t *ent )
 {
-    char        entry[1024], rocmodEntry[1024];
-    char        string[1400], rocmodString[1400];
-    int         stringlength, rocmodStringLength;
+    char        entry[1024];
+    char        string[2048], string2[2048];
+    int         stringlength, stringlength2;
     int         i, j;
-    gclient_t   *cl;
+    gclient_t* cl;
     int         numSorted;
+    char entry2[1024];
 
-    if (level.awardTime) {
+    //Ryan may 15 2004
+    //dont let the scores update duing the awards
+    if (level.awardTime || level.intermissionQueued || level.hns.cagefightdone)
+    {
         return;
     }
+    //Ryan
 
     // send the latest information on all clients
-    string[0]    = 0;
+    string[0] = 0;
+    string2[0] = 0;
     stringlength = 0;
-    rocmodString[0] = 0;
-    rocmodStringLength = 0;
+    stringlength2 = 0;
 
     numSorted = level.numConnectedClients;
 
-    for (i=0 ; i < numSorted ; i++)
+    for (i = 0; i < numSorted; i++)
     {
         int ping;
+        qboolean ghost;
 
         cl = &level.clients[level.sortedClients[i]];
 
-        if ( cl->pers.connected == CON_CONNECTING )
+        if (cl->pers.connected == CON_CONNECTING)
         {
             ping = -1;
         }
@@ -47,59 +51,156 @@ void DeathmatchScoreboardMessage( gentity_t *ent )
             ping = cl->ps.ping < 999 ? cl->ps.ping : 999;
         }
 
-        Com_sprintf (entry, sizeof(entry),
-            " %i %i %i %i %i %i %i %i %i",
-            level.sortedClients[i],
-            cl->sess.score,
-            cl->sess.kills,
-            cl->sess.deaths,
-            ping,
-            (level.time - cl->pers.enterTime)/60000,
-            (cl->sess.ghost || cl->ps.pm_type == PM_DEAD) ? qtrue : qfalse,
-            g_entities[level.sortedClients[i]].s.gametypeitems,
-            g_teamkillDamageMax.integer ? 100 * cl->sess.teamkillDamage / g_teamkillDamageMax.integer : 0
+        ghost = cl->sess.ghost;
+#ifdef _3DServer
+        if (!ghost && cl->sess.deadMonkey) {
+            ghost = qtrue;
+        }
+#endif // _3DServer
+
+        
+        
+        //Ryan may 12 2004
+        //Add some info for client-side users
+        //RxCxW - 1.20.2005 - NOT compatible with 0.5. #Version
+        if (ent->client->sess.legacyProtocol) {
+            if (ent->client->sess.hasRoxAC && isCurrentGametype(GT_HNS)) {
+                Com_sprintf(entry, sizeof(entry),
+                    " %i %i %i %i %i %i %i %i %i %i %i",
+                    level.sortedClients[i],
+                    cl->sess.score,
+                    cl->sess.kills,
+                    cl->sess.deaths,
+                    ping,
+                    (level.time - cl->pers.enterTime) / 60000,
+                    (ghost || cl->ps.pm_type == PM_DEAD) ? qtrue : qfalse,
+                    g_entities[level.sortedClients[i]].s.gametypeitems,
+                    //	g_teamkillDamageMax.integer ? 100 * cl->sess.teamkillDamage / g_teamkillDamageMax.integer : 0,
+                    //	cl->pers.statinfo.accuracy,
+                    //	cl->pers.statinfo.headShotKills,
+                    cl->sess.weaponsStolen,
+                    cl->sess.stunAttacks,
+                    cl->sess.seekersCaged
+                );
+            } else if (level.legacyMod == CL_RPM && ent->client->sess.clientMod == CL_RPM && atof(ent->client->sess.clientVersion) > 0.5) {
+                if (atof(ent->client->sess.clientVersion) == 1.1) {
+                    Com_sprintf(entry, sizeof(entry),
+                        " %i %i %i %i %i %i %i %i %i",
+                        level.sortedClients[i],
+                        cl->sess.score,
+                        cl->sess.kills,
+                        cl->sess.deaths, // JANFIXME Zombies kills
+                        ping,
+                        (level.time - cl->pers.enterTime) / 60000,
+                        (ghost || cl->ps.pm_type == PM_DEAD) ? qtrue : qfalse,
+                        g_entities[level.sortedClients[i]].s.gametypeitems,
+                        g_teamkillDamageMax.integer ? 100 * cl->sess.teamkillDamage / g_teamkillDamageMax.integer : 0
+                    );
+                } 
+                else {
+                    Com_sprintf(entry, sizeof(entry),
+                        " %i %i %i %i %i %i %i %i %i %.2f %i",
+                        level.sortedClients[i],
+                        cl->sess.score,
+                        cl->sess.kills,
+                        cl->sess.deaths, // JANFIXME Zombies kills
+                        ping,
+                        (level.time - cl->pers.enterTime) / 60000,
+                        (ghost || cl->ps.pm_type == PM_DEAD) ? qtrue : qfalse,
+                        g_entities[level.sortedClients[i]].s.gametypeitems,
+                        g_teamkillDamageMax.integer ? 100 * cl->sess.teamkillDamage / g_teamkillDamageMax.integer : 0,
+                        cl->pers.statInfo.accuracy,
+                        cl->pers.statInfo.headShotKills
+                        //cl->pers.statinfo.damageDone
+                    );
+                }
+            }
+
+            else {
+                Com_sprintf(entry, sizeof(entry),
+                    " %i %i %i %i %i %i %i %i %i",
+                    level.sortedClients[i],
+                    cl->sess.score,
+                    cl->sess.kills,
+                    cl->sess.deaths, // JANFIXME zombies
+                    ping,
+                    (level.time - cl->pers.enterTime) / 60000,
+                    (ghost || cl->ps.pm_type == PM_DEAD) ? qtrue : qfalse,
+                    g_entities[level.sortedClients[i]].s.gametypeitems,
+                    g_teamkillDamageMax.integer ? 100 * cl->sess.teamkillDamage / g_teamkillDamageMax.integer : 0
+                );
+            }
+            j = strlen(entry);
+            if (stringlength + j > 1022)
+                break;
+
+            strcpy(string + stringlength, entry);
+            stringlength += j;
+        }
+        else { // Gold client
+            Com_sprintf(entry, sizeof(entry),
+                " %i %i %i %i %i %i %i %i %i",
+                level.sortedClients[i],
+                cl->sess.score,
+                cl->sess.kills,
+                cl->sess.deaths,
+                ping,
+                (level.time - cl->pers.enterTime) / 60000,
+                (ghost || cl->ps.pm_type == PM_DEAD) ? qtrue : qfalse,
+                g_entities[level.sortedClients[i]].s.gametypeitems,
+                g_teamkillDamageMax.integer ? 100 * cl->sess.teamkillDamage / g_teamkillDamageMax.integer : 0
             );
 
-        Com_sprintf(rocmodEntry, sizeof(rocmodEntry),
+            j = strlen(entry);
+            if (stringlength + j > 1022)
+                break;
 
-            " %i %i %i %i %i %i %i %i %i %i",
-            cl->sess.adminLevel,
-            cl->pers.statinfo.hitcount,
-            cl->pers.statinfo.shotcount,
-            cl->pers.statinfo.headShotKills,
-            cl->pers.statinfo.itemCaptures,
-            cl->pers.statinfo.bestKillsInARow,
-            cl->pers.statinfo.knifeKills,
-            cl->pers.statinfo.explosiveKills,
-            cl->sess.isClanMember,
-            cl->pers.statinfo.itemDefends
+            strcpy(string + stringlength, entry);
+            stringlength += j;
 
-            );
+            if (level.goldMod == CL_ROCMOD) {
+                int admin = 0;
 
-        j = strlen(entry);
-        if (stringlength + j > 1022 )
-        {
-            break;
+                if (cl->sess.adminLevel >= ADMLVL_ADMIN)
+                    admin = 3;
+                else if (cl->sess.adminLevel > ADMLVL_NONE)
+                    admin = 2;
+                else if (cl->sess.referee)
+                    admin = 1;
+
+                Com_sprintf(entry2, sizeof(entry2),
+                    " %i %i %i %i %i %i %i %i %i %i",
+                    admin,
+                    cl->pers.statInfo.hitcount,
+                    (cl->pers.statInfo.shotcount - cl->pers.statInfo.hitcount), // As it seems, ROCmod does not want to see a shotcount for a hit (1 bullet kill = 50% accuracy).
+                    cl->pers.statInfo.headShotKills,
+                    cl->pers.statInfo.itemCaptures,
+                    cl->pers.statInfo.bestKillsInARow,
+                    cl->pers.statInfo.knifeKills,
+                    cl->pers.statInfo.explosiveKills,
+                    cl->sess.clanMember,
+                    cl->pers.statInfo.itemDefends
+                );
+
+                j = strlen(entry2);
+                if (stringlength2 + j > 1022)
+                    break;
+
+                strcpy(string2 + stringlength2, entry2);
+                stringlength2 += j;
+            }
         }
-
-        strcpy (string + stringlength, entry);
-        stringlength += j;
-
-        if (rocmodStringLength + strlen(rocmodEntry) < 1022) {
-            strcpy(rocmodString + rocmodStringLength, rocmodEntry);
-            rocmodStringLength += strlen(rocmodEntry);
-        }
-
+    
     }
+    trap_SendServerCommand(ent - g_entities, va("scores %i %i %i%s", i,
+        level.teamScores[TEAM_RED],
+        level.teamScores[TEAM_BLUE],
+        string));
 
-    trap_SendServerCommand( ent-g_entities, va("scores %i %i %i%s", i,
-                            level.teamScores[TEAM_RED],
-                            level.teamScores[TEAM_BLUE],
-                            string ) );
-
-    if (level.clientMod == CL_ROCMOD && ent->client->sess.clientMod == CL_ROCMOD) {
-        trap_SendServerCommand(ent - g_entities, va("scores4 %i 10 %i%s", g_timelimit.integer ? (g_timelimit.integer + level.timeExtension) : 0, i, rocmodString));
+    if (level.goldMod == CL_ROCMOD && ent->client->sess.clientMod == CL_ROCMOD) {
+        trap_SendServerCommand(ent - g_entities, va("scores4 %i 10 %i%s", g_timelimit.integer ? (g_timelimit.integer + level.timeExtension) : 0, i, string2));
     }
+    
 }
 
 
@@ -284,12 +385,42 @@ void Cmd_Drop_f ( gentity_t* ent )
     {
         return;
     }
-
+    
     // Drop the weapon the client wanted to drop
-    dropped = G_DropWeapon ( ent, atoi(ConcatArgs( 1 )), 3000 );
-    if ( !dropped )
-    {
+
+    int weapon = atoi(ConcatArgs(1));
+
+    if (ent->client->sess.legacyProtocol) {
+        weapon = trap_TranslateSilverWeaponToGoldWeapon(weapon);
+    }
+
+    if (isCurrentGametype(GT_HNS)) {
+        if (level.time > level.gametypeRoundTime) // Henk  07/03/11 -> Don't let ppl drop stuff when the round has ended.
+        {
+            return;
+        }
+        if (!ent->client->ps.stats[STAT_WEAPONS] & (1 << weapon))
+        {
+            // The client doesn't have any item to drop.
+            ent->client->ps.stats[STAT_WEAPONS] |= (1 << WP_KNIFE);
+            ent->client->ps.ammo[weaponData[WP_KNIFE].attack[ATTACK_NORMAL].ammoIndex] = 0;
+            ent->client->ps.clip[ATTACK_NORMAL][WP_KNIFE] = weaponData[WP_KNIFE].attack[ATTACK_NORMAL].clipSize;
+            ent->client->ps.firemode[WP_KNIFE] = BG_FindFireMode(WP_KNIFE, ATTACK_NORMAL, WP_FIREMODE_AUTO);
+            ent->client->ps.weapon = WP_KNIFE;
+            ent->client->ps.weaponstate = WEAPON_READY;
+            return;
+        }
+    }
+    if (level.time < ent->client->pers.lastpickup && isCurrentGametype(GT_HNS)) {
         return;
+    }
+    else {
+
+        dropped = G_DropWeapon(ent, weapon, 3000); // FIXMEJAN - this needs to account for the weapon differences - client will send drop cmd with the gun they think they got.
+        if (!dropped)
+        {
+            return;
+        }
     }
 }
 
@@ -343,6 +474,12 @@ void Cmd_Give_f (gentity_t *ent)
     int start;
     int end;
     int l;
+
+    // Early exit if we're running multiprotocol.
+    if (level.multiprotocol) {
+        G_printInfoMessage(ent, "You cannot use 'give' command while the game runs in multiprotocol mode.");
+        return;
+    }
 
     trap_Argv( 1, arg, sizeof( arg ) );
 
@@ -593,22 +730,22 @@ void BroadcastTeamChange( gclient_t *client, int oldTeam )
     switch ( client->sess.team )
     {
         case TEAM_RED:
-            trap_SendServerCommand( -1, va("cp \"%s" S_COLOR_WHITE " joined the red team.\n\"", client->pers.netname) );
+            G_Broadcast(BROADCAST_CMD, NULL, qfalse, "%s\njoined the %s", client->pers.netname, g_customRedName.string);
             break;
 
         case TEAM_BLUE:
-            trap_SendServerCommand( -1, va("cp \"%s" S_COLOR_WHITE " joined the blue team.\n\"", client->pers.netname));
+            G_Broadcast(BROADCAST_CMD, NULL, qfalse, "%s\njoined the %s", client->pers.netname, g_customBlueName.string);
             break;
 
         case TEAM_SPECTATOR:
             if ( oldTeam != TEAM_SPECTATOR )
             {
-                trap_SendServerCommand( -1, va("cp \"%s" S_COLOR_WHITE " joined the spectators.\n\"", client->pers.netname));
+                G_Broadcast(BROADCAST_CMD, NULL, qfalse, "%s\njoined the \\spectators", client->pers.netname);
             }
             break;
 
         case TEAM_FREE:
-            trap_SendServerCommand( -1, va("cp \"%s" S_COLOR_WHITE " joined the battle.\n\"", client->pers.netname));
+            G_Broadcast(BROADCAST_CMD, NULL, qfalse, "%s\njoined the \\battle", client->pers.netname);
             break;
     }
 }
@@ -618,7 +755,7 @@ void BroadcastTeamChange( gclient_t *client, int oldTeam )
 SetTeam
 =================
 */
-void SetTeam( gentity_t *ent, char *s, const char* identity, int teamChangeType )
+void SetTeam( gentity_t *ent, char *s, const char* identity, qboolean forced )
 {
     int                 team;
     int                 oldTeam;
@@ -642,6 +779,9 @@ void SetTeam( gentity_t *ent, char *s, const char* identity, int teamChangeType 
     if ( identity )
     {
         char userinfo[MAX_INFO_STRING];
+
+        ent->client->sess.identityUpdate = level.time;
+        
         trap_GetUserinfo( clientNum, userinfo, sizeof( userinfo ) );
 
         if ( Q_stricmp ( identity, Info_ValueForKey ( userinfo, "identity" ) ) )
@@ -677,54 +817,160 @@ void SetTeam( gentity_t *ent, char *s, const char* identity, int teamChangeType 
     {
         // if running a team game, assign player to one of the teams
         specState = SPECTATOR_NOT;
-        if (!Q_stricmp(s, "red") || !Q_stricmp(s, "r"))
+        if ( !Q_stricmp( s, "red" ) || !Q_stricmp( s, "r" ) )
         {
             team = TEAM_RED;
         }
-        else if (!Q_stricmp(s, "blue") || !Q_stricmp(s, "b"))
+        else if ( !Q_stricmp( s, "blue" ) || !Q_stricmp( s, "b" ) )
         {
             team = TEAM_BLUE;
         }
         else
         {
             // pick the team with the least number of players
-            team = PickTeam(clientNum);
+            team = PickTeam( clientNum );
+            if (isCurrentGametype(GT_HNS)) {
+                team = TEAM_RED;
+            }
         }
 
-        if (g_teamForceBalance.integer && teamChangeType == TEAMCHANGE_REGULAR)
+        if ( g_teamForceBalance.integer && !forced )
         {
             int     counts[TEAM_NUM_TEAMS];
 
-            counts[TEAM_BLUE] = TeamCount(ent->client->ps.clientNum, TEAM_BLUE, NULL);
-            counts[TEAM_RED] = TeamCount(ent->client->ps.clientNum, TEAM_RED, NULL);
+            counts[TEAM_BLUE] = TeamCount( ent->client->ps.clientNum, TEAM_BLUE, NULL );
+            counts[TEAM_RED] = TeamCount( ent->client->ps.clientNum, TEAM_RED, NULL );
 
-            // We allow a spread of two
-            if (team == TEAM_RED && counts[TEAM_RED] - counts[TEAM_BLUE] > 1)
-            {
-                trap_SendServerCommand(ent->client->ps.clientNum,
-                    "cp \"Red team has too many players.\n\"");
+            if (isCurrentGametype(GT_HNS)) {
 
-                // ignore the request
-                return;
+                int seekers = 0, maxhiders = 0;
+
+                // Henk 19/01/10 -> Team balance hiders/seekers
+                // Boe!Man 8/12/11: Modified the code (lowered) so there's ALWAYS room for one extra seeker (else it will result in both teams being locked in specific team layouts).
+                if (level.hns.customETHiderAmount[0]) {
+                    int i;
+
+                    // The user put custom values here. Check them.
+                    for (i = 0; i < sizeof(level.hns.customETHiderAmount) - 1; i++) {
+                        if (level.hns.customETHiderAmount[i + 1] == -1) {
+                            // It seems the maximum of hiders specified is reached. Use that amount of seekers.
+                            seekers = i + 1;
+                            maxhiders = g_maxclients.integer - seekers;
+                            break;
+                        }
+
+                        if (counts[TEAM_RED] >= level.hns.customETHiderAmount[i] && counts[TEAM_RED] <= level.hns.customETHiderAmount[i + 1]) {
+                            seekers = i + 1;
+                            maxhiders = level.hns.customETHiderAmount[i + 1] + 1;
+                            break;
+                        }
+                    }
+                }
+                else {
+                    if (counts[TEAM_RED] < 4) {
+                        seekers = 1;
+                    }
+                    else {
+                        seekers = (counts[TEAM_RED] + 2) / 5 + 1;
+                    }
+
+                    if (counts[TEAM_BLUE] < 2) {
+                        maxhiders = 6; // Henkie 24/02/10 -> Was 4
+                    }
+                    else {
+                        maxhiders = seekers * 5 - 2;
+                    }
+                }
+
+                //Janno 160221 - if client is blocked from entering seekers, don't allow him to enter seekers...
+                if (team == TEAM_BLUE && client->sess.blockseek == qtrue) {
+                    trap_SendServerCommand(client - &level.clients[0], "print\"^3[H&S] ^7You're blocked from entering seekers.\n\"");
+                    return;
+                }
+
+                if (team == TEAM_BLUE && counts[TEAM_BLUE] >= seekers) {
+                    trap_SendServerCommand(client - &level.clients[0], "print\"^3[H&S] ^7Seekers have too many players.\n\"");
+
+                    // ignore the request
+                    return;
+                }
+                else if (team == TEAM_RED && counts[TEAM_RED] >= maxhiders && client->sess.blockseek != qtrue && counts[TEAM_BLUE] < seekers && level.gametypeDelayTime < level.time) { //if I am able to join blue, then I should join blue instead. if they're blocked from seeking, then allow them to go to the team.
+                    trap_SendServerCommand(client - &level.clients[0], "print\"^3[H&S] ^7Hiders have too many players.\n\"");
+
+                    // ignore the request
+                    return;
+                }
             }
-            if (team == TEAM_BLUE && counts[TEAM_BLUE] - counts[TEAM_RED] > 1)
-            {
-                trap_SendServerCommand(ent->client->ps.clientNum,
-                    "cp \"Blue team has too many players.\n\"");
+            else if (isCurrentGametype(GT_HNZ)) {
+                if (client->sess.team != TEAM_BLUE) {
+                    trap_SendServerCommand(client - &level.clients[0], "print\"^3[H&Z] ^7Round already started, forcing you to the zombie team.\n\"");
+                }
+                else {
+                    trap_SendServerCommand(client - &level.clients[0], "print\"^3[H&Z] ^7Humans are locked, stay put in the zombie team.\n\"");
+                }
 
-                // ignore the request
-                return;
+                team = TEAM_BLUE;
+            }
+            else if (isCurrentGametype(GT_PROP)) {
+                if (client->sess.team == TEAM_BLUE && team == TEAM_RED) {
+                    G_printInfoMessage(ent, "You cannot change to red team as you're the designated seeker.");
+                    return;
+                }
+                else if (team == TEAM_RED && client->sess.team != TEAM_RED) {
+                    G_printInfoMessage(ent, "Round has started, forcing you to the seekers team instead.");
+                    team = TEAM_BLUE;
+                }
+                else if (team == TEAM_RED && client->sess.team == TEAM_RED) {
+                    G_printInfoMessage(ent, "You're already in the props team.");
+                    return;
+                }
+                else {
+                    //freeProphuntProps(ent);
+                }
+            }
+            else {
+
+                // We allow a spread of two
+                if (team == TEAM_RED && counts[TEAM_RED] - counts[TEAM_BLUE] > 1)
+                {
+                    trap_SendServerCommand(ent->client->ps.clientNum,
+                        "cp \"Red team has too many players.\n\"");
+
+                    // ignore the request
+                    return;
+                }
+                if (team == TEAM_BLUE && counts[TEAM_BLUE] - counts[TEAM_RED] > 1)
+                {
+                    trap_SendServerCommand(ent->client->ps.clientNum,
+                        "cp \"Blue team has too many players.\n\"");
+
+                    // ignore the request
+                    return;
+                }
             }
 
             // It's ok, the team we are switching to has less or same number of players
         }
-
     }
     else
     {
         // force them to spectators if there aren't any spots free
         team = TEAM_FREE;
     }
+
+    if (!forced) {
+        if (team == TEAM_BLUE && level.blueLocked) {
+            G_printInfoMessage(ent, "%s is locked.", g_customBlueName.string);
+            return;
+        }
+
+        if (team == TEAM_RED && level.redLocked) {
+            G_printInfoMessage(ent, "%s is locked.", g_customRedName.string);
+            return;
+        }
+    }
+
+    
 
     // override decision if limiting the players
     if ( g_maxGameClients.integer > 0 && level.numNonSpectatorClients >= g_maxGameClients.integer )
@@ -753,22 +999,19 @@ void SetTeam( gentity_t *ent, char *s, const char* identity, int teamChangeType 
     // he starts at 'base'
     client->pers.teamState.state = TEAM_BEGIN;
 
-    if (ent->s.gametypeitems > 0) {
-        G_DropGametypeItems(ent, 0);
-    }
-
-    ent->client->ps.stats[STAT_WEAPONS] = 0;
-    TossClientItems(ent);
-
-    // janno 160223 - We drop the items before this call and we only enter player_die (and alter their score) if it's a regular teamchange.
     if ( oldTeam != TEAM_SPECTATOR )
     {
         if ( ghost )
         {
             G_StopGhosting ( ent );
         }
-        else if ( !G_IsClientDead ( client ) && teamChangeType == TEAMCHANGE_REGULAR )
+        else if ( !G_IsClientDead ( client ) )
         {
+
+            // Boe!Man 7/5/13: Also toss the client items in H&S/H&Z (M4/RPG/MM1)..
+            if (isCurrentGametypeInList((gameTypes_t[]){GT_HNS, GT_HNZ, GT_MAX})) {
+                TossClientItems(ent);
+            }
             // Kill him (makes sure he loses flags, etc)
             ent->flags &= ~FL_GODMODE;
             ent->client->ps.stats[STAT_HEALTH] = ent->health = 0;
@@ -798,18 +1041,24 @@ void SetTeam( gentity_t *ent, char *s, const char* identity, int teamChangeType 
     G_FreeEnitityChildren ( ent );
 
     // Always spawn into a ctf game using a respawn timer.
-    if ( team != TEAM_SPECTATOR && level.gametypeData->respawnType == RT_INTERVAL && teamChangeType == TEAMCHANGE_REGULAR )
-    {
-        G_SetRespawnTimer ( ent );
-        ghost = qtrue;
+    if (!level.paused) {
+        if (team != TEAM_SPECTATOR && level.gametypeData->respawnType == RT_INTERVAL)
+        {
+            G_SetRespawnTimer(ent);
+            ghost = qtrue;
+        }
     }
-
-    if (teamChangeType == TEAMCHANGE_REGULAR) {
-        BroadcastTeamChange(client, oldTeam);
+    
+    //Ryan
+    //Ryan june 15 2003
+    if (!level.paused && !client->sess.firstTime)
+    {
+        if (!forced)
+            BroadcastTeamChange(client, oldTeam);
     }
 
     // See if we should spawn as a ghost
-    if ( team != TEAM_SPECTATOR && level.gametypeData->respawnType == RT_NONE && teamChangeType == TEAMCHANGE_REGULAR )
+    if ( team != TEAM_SPECTATOR && level.gametypeData->respawnType == RT_NONE )
     {
         // If there are ghosts already then spawn as a ghost because
         // the game is already in progress.
@@ -818,8 +1067,47 @@ void SetTeam( gentity_t *ent, char *s, const char* identity, int teamChangeType 
             ghost = qtrue;
         }
 
+        // Boe!Man 6/5/13: Check if the client wants to abuse the spec to team bug. Note this doesn't apply to H&S/H&Z.
+        if (!isCurrentGametypeInList((gameTypes_t[]) { GT_HNS, GT_HNZ, GT_MAX }) && client->pers.deathTime > level.gametypeJoinTime)
+        {
+            ghost = qtrue;
+        }
+
+        if (isCurrentGametype(GT_HNZ)) {
+            if (level.gametypeJoinTime && (level.time - level.gametypeJoinTime) > 10000) {
+                ghost = qtrue;
+            }
+        }
+
+        // Boe!Man 9/4/11: Don't allow people to spawn that are reconnecting and are being put in the team.
+        if (isCurrentGametype(GT_HNS) && level.hns.cagefight && !client->sess.cageFighter) {
+            ghost = qtrue;
+        }
+
+        // don't respawn if they join after gametype start (abusing !et)
+
+        if (isCurrentGametype(GT_HNS) && level.gametypeDelayTime < level.time) {
+            ghost = qtrue;
+        }
+
+        if (!isCurrentGametypeInList((gameTypes_t[]) { GT_HNS, GT_HNZ, GT_MAX })) {
+            int i;
+            int teamCount[2];
+            int aliveCount[2];
+
+            teamCount[0] = TeamCount(-1, TEAM_RED, &aliveCount[0]);
+            teamCount[1] = TeamCount(-1, TEAM_BLUE, &aliveCount[1]);
+
+            for (i = 0; i < 2; i++) {
+                if (teamCount[i] != aliveCount[i]) {
+                    ghost = qtrue;
+                    break;
+                }
+            }
+        }
+
         // Spectator to a team doesnt count
-        if ( oldTeam != TEAM_SPECTATOR && teamChangeType == TEAMCHANGE_REGULAR )
+        if ( oldTeam != TEAM_SPECTATOR )
         {
             client->sess.noTeamChange = qtrue;
         }
@@ -837,6 +1125,24 @@ void SetTeam( gentity_t *ent, char *s, const char* identity, int teamChangeType 
             client->pers.identity = NULL;
             ClientUserinfoChanged( clientNum );
 
+            // Henk 02/02/10 -> Set score to 0 when switching team.
+            // Boe!Man 2/8/11: Forcing this to be H&S only.
+            if (isCurrentGametype(GT_HNS)) {
+                if (client->sess.lastTeam != team) {
+                    ent->client->sess.score = 0;
+                    ent->client->sess.kills = 0;
+                    ent->client->sess.deaths = 0;
+                    client->sess.lastTeam = team;
+                }
+
+            }
+
+
+            // Boe!Man 6/3/12: Reset noroof data when setting team.
+            ent->client->sess.isOnRoof = qfalse;
+            ent->client->sess.isOnRoofTime = 0;
+
+
             CalculateRanks();
 
             return;
@@ -846,6 +1152,41 @@ void SetTeam( gentity_t *ent, char *s, const char* identity, int teamChangeType 
     // get and distribute relevent paramters
     client->pers.identity = NULL;
     ClientUserinfoChanged( clientNum );
+
+    // Henk 02/02/10 -> Set score to 0 when switching team.
+    if (isCurrentGametype(GT_HNS)) {
+        if (team != TEAM_SPECTATOR && client->sess.lastTeam != team) {
+            ent->client->sess.score = 0;
+            ent->client->sess.kills = 0;
+            ent->client->sess.deaths = 0;
+            client->sess.lastTeam = team;
+            ent->client->pers.killsAsSeekCurrentRound = 0;
+        }
+
+        // Also check the random grenade.
+        if (ent->client->sess.transformed) {
+            if (ent->client->sess.transformedEntity) {
+                G_FreeEntity(&g_entities[ent->client->sess.transformedEntity]);
+                ent->client->sess.transformedEntity = 0;
+            }
+
+            if (ent->client->sess.transformedEntityBBox) {
+                G_FreeEntity(&g_entities[ent->client->sess.transformedEntityBBox]);
+                ent->client->sess.transformedEntityBBox = 0;
+            }
+
+            ent->client->sess.transformed = qfalse;
+            ent->client->sess.invisible = qfalse;
+            strncpy(level.hns.randomNadeLoc, "Disappeared", sizeof(level.hns.randomNadeLoc));
+            ent->s.eFlags &= ~EF_HSBOX;
+            ent->client->ps.eFlags &= ~EF_HSBOX;
+        }
+    }
+
+    // Boe!Man 6/3/12: Reset noroof data when setting team.
+    ent->client->sess.isOnRoof = qfalse;
+    ent->client->sess.isOnRoofTime = 0;
+
 
     CalculateRanks();
 
@@ -939,6 +1280,12 @@ void G_StopFollowing( gentity_t *ent )
         return;
     }
 
+    // Don't allow stopfollowing when in compmode and followEnemy is disabled.
+
+    if (cm_state.integer > COMPMODE_NONE && !match_followEnemy.integer) {
+        return;
+    }
+
     // Clear the following variables
     ent->client->ps.pm_flags &= ~PMF_FOLLOW;
     ent->client->sess.spectatorState = SPECTATOR_FREE;
@@ -1029,7 +1376,7 @@ void Cmd_Team_f( gentity_t *ent )
     trap_Argv( 1, team, sizeof( team ) );
     trap_Argv( 2, identity, sizeof( identity ) );
 
-    SetTeam( ent, team, identity[0]?identity:NULL, TEAMCHANGE_REGULAR);
+    SetTeam( ent, team, identity[0]?identity:NULL, qfalse );
 
     // Remember the team switch time so they cant do it again really quick
     ent->client->switchTeamTime = level.time + 5000;
@@ -1046,9 +1393,13 @@ void Cmd_Follow_f( gentity_t *ent )
     int     i;
     char    arg[MAX_TOKEN_CHARS];
 
+    if (level.specLocked) {
+        return;
+    }
+
     if ( trap_Argc() != 2 )
     {
-        if ( ent->client->sess.spectatorState == SPECTATOR_FOLLOW )
+        if ( ent->client->sess.spectatorState == SPECTATOR_FOLLOW && (!cm_state.integer || (cm_state.integer > COMPMODE_NONE && match_followEnemy.integer)))
         {
             G_StopFollowing( ent );
         }
@@ -1081,7 +1432,7 @@ void Cmd_Follow_f( gentity_t *ent )
     }
 
     // Dissallow following of the enemy if the cvar is set
-    if ( level.gametypeData->teams && !g_followEnemy.integer && ent->client->sess.team != TEAM_SPECTATOR )
+    if ( level.gametypeData->teams && (!g_followEnemy.integer || (cm_state.integer > COMPMODE_NONE && !match_followEnemy.integer)) && ent->client->sess.team != TEAM_SPECTATOR )
     {
         // Are they on the same team?
         if ( level.clients[ i ].sess.team != ent->client->sess.team )
@@ -1093,7 +1444,7 @@ void Cmd_Follow_f( gentity_t *ent )
     // first set them to spectator as long as they arent a ghost
     if ( !ent->client->sess.ghost && ent->client->sess.team != TEAM_SPECTATOR )
     {
-        SetTeam( ent, "spectator", NULL, TEAMCHANGE_REGULAR);
+        SetTeam( ent, "spectator", NULL, qfalse );
     }
 
     ent->client->sess.spectatorState = SPECTATOR_FOLLOW;
@@ -1114,12 +1465,16 @@ void Cmd_FollowCycle_f( gentity_t *ent, int dir )
     // first set them to spectator
     if ( !ent->client->sess.ghost && ent->client->sess.team != TEAM_SPECTATOR )
     {
-        SetTeam( ent, "spectator", NULL, TEAMCHANGE_REGULAR);
+        SetTeam( ent, "spectator", NULL, qfalse );
     }
 
     if ( dir != 1 && dir != -1 )
     {
         Com_Error( ERR_FATAL, "Cmd_FollowCycle_f: bad dir %i", dir );
+    }
+
+    if (level.specLocked) {
+        return;
     }
 
     if ( ent->client->sess.spectatorClient == -1 )
@@ -1164,7 +1519,7 @@ void Cmd_FollowCycle_f( gentity_t *ent, int dir )
         }
 
         // Dissallow following of the enemy if the cvar is set
-        if ( level.gametypeData->teams && !g_followEnemy.integer && ent->client->sess.team != TEAM_SPECTATOR )
+        if ( level.gametypeData->teams && (!g_followEnemy.integer || (cm_state.integer > COMPMODE_NONE && !match_followEnemy.integer)) && ent->client->sess.team != TEAM_SPECTATOR )
         {
             // Are they on the same team?
             if ( level.clients[ clientnum ].sess.team != ent->client->sess.team )
@@ -1197,49 +1552,45 @@ void Cmd_FollowCycle_f( gentity_t *ent, int dir )
 /*
 ==================
 G_SayTo
-Mostly copy-pasted from 1fxmod
 ==================
 */
 static void G_SayTo( gentity_t *ent, gentity_t *other, int mode, const char *name, const char *message )
 {
     qboolean     ghost = qfalse;
     qboolean     spec  = qfalse;
-    qboolean     beep  = qfalse;
-    char    type[128];
-    char    admin[128];
-    char    star[128];
-    int i;
+    const char* teamPrefix;
+    char adminPrefix[MAX_SAY_TEXT];
 
     if (!other)
     {
         return;
     }
 
-    if (!other->inuse) {
-        return;
-    } else if (!other->client) {
-        return;
-    } else if ( other->client->pers.connected != CON_CONNECTED ) {
-        return;
-    } else if ( mode == SAY_TEAM  && !OnSameTeam(ent, other) ) {
+    if (!other->inuse)
+    {
         return;
     }
 
-    // Boe!Man 1/17/10: We do not wish to send the chat when it's Admin/Clan only..
-    /*if ( mode == ADM_CHAT  && !other->client->sess.adminLevel )
+    if (!other->client)
+    {
         return;
-    else if (mode == REF_CHAT && !other->client->sess.referee && !other->client->sess.admin && !isDev)
+    }
+
+    if ( other->client->pers.connected != CON_CONNECTED )
+    {
         return;
-    else if ( mode == SADM_CHAT  && other->client->sess.admin != 4 && !isDev)
+    }
+
+    if ( mode == SAY_TEAM  && !OnSameTeam(ent, other) )
+    {
         return;
-    else if (mode == CLAN_CHAT && !other->client->sess.clanMember && !isDev)
+    }
+
+    if ( ent->client->sess.muted || G_IsClientChatIgnored ( other->s.number, ent->s.number ) )
+    {
         return;
-    else if (mode == CLAN_TALK && !other->client->sess.clanMember && !isDev)
-        return;
-        // Boe!Man 9/26/10: Hey Admin! chat needs to be visible for admins AND the one saying it.
-    else if (mode == CADM_CHAT && ent->s.number != other->s.number && other->client->sess.admin < 2 && !isDev)
-        return;
-    */ // FIXME implement different chat modes
+    }
+
     if ( !level.intermissiontime && !level.intermissionQueued )
     {
         // Spectators cant talk to alive people
@@ -1256,187 +1607,104 @@ static void G_SayTo( gentity_t *ent, gentity_t *other, int mode, const char *nam
                 ghost = qtrue;
             }
 
-            // Boe!Man 1/17/10: Admins need to be heard, even if they're dead/spec.
-            /*if(mode >= ADM_TALK && mode <= CADM_CHAT)
-            {
-                ghost = qfalse;
-                spec = qfalse;
-            }*/ // FIXME implement different chat modes
-
             // If the client we are talking to is alive then a check
             // must be made to see if this talker is alowed to speak to this person
-            if ( ent->s.number != other->s.number && !G_IsClientDead ( other->client ) && !G_IsClientSpectating( other->client) && (ghost || spec))
+            if (mode < SAY_ADMTALK && ent->s.number != other->s.number && !G_IsClientDead ( other->client ) && !G_IsClientSpectating( other->client) && (ghost || spec))
             {
                 return;
             }
-
         }
     }
 
-    /*
-    for(i=0;i<ent->client->sess.IgnoredClientCount;i++){
-        if(ent->client->sess.IgnoredClients[i] == other->s.number){
-            return;
-        }
-    }
-*/ // FIXME add ignoreclients
-    strcpy(admin, ""); // Boe!Man 1/18/10: Clean the Admin data.
-
-    if (mode != SAY_TELL){
-        // Boe!Man 1/7/10: Team prefixes.
-        if (ghost)
-        {
-            strcpy(type, "^7[^Cg^7] ");
-        }
-        else if (spec)
-        {
-            strcpy(type, "^7[^Cs^7] ");
-        }
-            // Boe!Man 4/5/10: We delete the team prefixes.
-            // Boe!Man 2/8/11: And we re-add them for Hide&Seek lol.
-/*
-        else if (ent->client->sess.team == TEAM_RED && current_gametype.value == GT_HS)
-        {
-            strcpy(type, "^7[^1h^7] ");
-        }
-        else if (ent->client->sess.team == TEAM_BLUE && current_gametype.value == GT_HS)
-        {
-            strcpy(type, "^7[^ys^7] ");
-        }
-        else if (ent->client->sess.team == TEAM_RED && current_gametype.value == GT_HZ)
-        {
-            strcpy(type, "^7[^1h^7] ");
-        }
-        else if (ent->client->sess.team == TEAM_BLUE && current_gametype.value == GT_HZ)
-        {
-            strcpy(type, "^7[^yz^7] ");
-        }
-*/ // FIXME different team prefixes for different gametypes
-            // Boe!Man 4/6/10: And replace the type with something, well nothing.
-        else{
-            strcpy(type, "");
-        }
-    }else{
-        strcpy(type, "");
-    }
-
-    // Boe!Man 1/17/10: Admin Talk/Chat.
-    /*if(mode >= ADM_TALK && mode <= CADM_CHAT){ // Henk 03/05/10 -> Optimized so cpu can calculate faster FIXME
-        strcpy(star, server_starprefix.string);
-        strcpy(admin, "");
-    }else */if(mode != SAY_TELL){
-        strcpy(star, "");
-        // Boe!Man 1/6/10: Admin prefixes. - Update 1/18/10: New CVARs for prefixes if the hoster wishes to change the values.
-
-
-        strncpy(admin, getAdminPrefixByLevel(ent->client->sess.adminLevel), sizeof(admin));
-
-        // Boe!Man 11/5/12: Fix for space in chat when *adminprefix CVAR was empty but the client was still an Admin.
-        if(strlen(admin) > 0){
-            Q_strcat(admin, sizeof(admin), " ");
-        }
-    }else{
-        strcpy(star, "");
-        strcpy(admin, "");
-    }
-
-    // Boe!Man 1/17/10: Different kinds of Talking 'Modes'.
-
-
-/*
-    switch(mode)
+    teamPrefix = "";
+    if ( ghost )
     {
-        case ADM_CHAT:
-            strcpy(type, server_acprefix.string);
-            if (beep == qtrue && g_specialChatSound.integer){
-#ifndef _DEMO
-                Boe_ClientSound(other, G_SoundIndex("sound/misc/c4/beep.mp3", qtrue));
-#else
-                Boe_ClientSound(other, level.actionSoundIndex);
-#endif // not _DEMO
-            }
-            break;
-        case SADM_CHAT:
-            strcpy(type, server_scprefix.string);
-            if (beep == qtrue && g_specialChatSound.integer){
-#ifndef _DEMO
-                Boe_ClientSound(other, G_SoundIndex("sound/misc/c4/beep.mp3", qtrue));
-#else
-                Boe_ClientSound(other, level.actionSoundIndex);
-#endif // not _DEMO
-            }
-            break;
-        case ADM_TALK:
-            if(ent->client->sess.admin == 2){
-                strcpy(type, server_badminprefix.string);
-            }else if(ent->client->sess.admin == 3){
-                strcpy(type, server_adminprefix.string);
-            }else if(ent->client->sess.admin == 4){
-                strcpy(type, server_sadminprefix.string);
-            }
-            if (beep == qtrue){
-#ifndef _DEMO
-                Boe_ClientSound(other, G_SoundIndex("sound/misc/c4/beep.mp3", qtrue));
-#else
-                Boe_ClientSound(other, level.actionSoundIndex);
-#endif // not _DEMO
-            }
-            break;
-        case CADM_CHAT:
-            strcpy(type, server_caprefix.string);
-            if (beep == qtrue && g_specialChatSound.integer){
-#ifndef _DEMO
-                Boe_ClientSound(other, G_SoundIndex("sound/misc/c4/beep.mp3", qtrue));
-#else
-                Boe_ClientSound(other, level.actionSoundIndex);
-#endif // not _DEMO
-            }
-            break;
-        case CLAN_CHAT:
-            strcpy(type, server_ccprefix.string);
-            if (beep == qtrue && g_specialChatSound.integer){
-#ifndef _DEMO
-                Boe_ClientSound(other, G_SoundIndex("sound/misc/c4/beep.mp3", qtrue));
-#else
-                Boe_ClientSound(other, level.actionSoundIndex);
-#endif // not _DEMO
-            }
-            break;
-        case CLAN_TALK:
-            strcpy(type, server_ctprefix.string);
-            if (beep == qtrue){
-#ifndef _DEMO
-                Boe_ClientSound(other, G_SoundIndex("sound/misc/c4/beep.mp3", qtrue));
-#else
-                Boe_ClientSound(other, level.actionSoundIndex);
-#endif // not _DEMO
-            }
-            break;
-        default:
-            break;
-    }*/ // FIXME chat modes
-
-
-    // Boe!Man 1/6/10 - Update 2/8/11: Finally fixing these space issues. This would be the best way for it.
-    /*if(ent->client->sess.adminLevel > 0 && mode >= ADM_TALK && mode <= SADM_CHAT || mode == CLAN_CHAT || mode == CADM_CHAT || mode == CLAN_TALK){ // Henk 13/02/11 -> Fixed.
-        trap_SendServerCommand( other-g_entities, va("%s %d \"%s %s %s%s %s\"", // Boe!Man 1/6/10: Adding prefixes. - Update 1/17/10: Adding Admin Talk/Chat prefixes. - Update 5/8/10: Solved message problem.
-                                                     mode == SAY_TEAM ? "tchat" : "chat",
-                                                     ent->s.number,
-                // Boe!Man 1/6/10: Adding the Admin prefix in front of the chat. - Update 1/17/10.
-                                                     star, type, name, message, star)); // Boe!Man 1/17/10: Adding stars.
-    }else */if(ent->client->sess.adminLevel > 0){
-        trap_SendServerCommand( other-g_entities, va("%s %d \"%s%s%s%s\"", // Boe!Man 1/6/10: Adding prefixes. - Update 1/17/10: Adding Admin Talk/Chat prefixes. - Update 5/8/10: Solved message problem.
-                                                     mode == SAY_TEAM ? "tchat" : "chat",
-                                                     ent->s.number,
-                // Boe!Man 1/6/10: Adding the Admin prefix in front of the chat. - Update 1/17/10.
-                                                     type, admin, name, message));
-    }else{
-        trap_SendServerCommand( other-g_entities, va("%s %d \"%s%s%s\"", // Boe!Man 1/6/10: Adding prefixes. - Update 1/17/10: Adding Admin Talk/Chat prefixes. - Update 5/8/10: Solved message problem.
-                                                     mode == SAY_TEAM ? "tchat" : "chat",
-                                                     ent->s.number,
-                // Boe!Man 1/6/10: Adding the Admin prefix in front of the chat. - Update 1/17/10.
-                                                     type, name, message));
+        teamPrefix = "^7[^Cg^7] ";
     }
+    else if ( spec )
+    {
+        teamPrefix = "^7[^Cs^7] ";
+    }
+    else if (isCurrentGametypeInList((gameTypes_t[]) { GT_HNS, GT_HNZ, GT_MAX }) && ent->client->sess.team == TEAM_RED) {
+        teamPrefix = "^7[^1h^7] ";
+    }
+    else if (ent->client->sess.team == TEAM_BLUE && isCurrentGametype(GT_HNS)) {
+        teamPrefix = "^7[^ys^7] ";
+    }
+    else if (ent->client->sess.team == TEAM_BLUE && isCurrentGametype(GT_HNZ)) {
+        teamPrefix = "^7[^yz^7] ";
+    }
+    else if (ent->client->sess.team == TEAM_BLUE) {
+        teamPrefix = "^7[^yb^7] ";
+    }
+    else if (ent->client->sess.team == TEAM_RED) {
+        teamPrefix = "^7[^1r^7] ";
+    }
+    getChatAdminPrefixByMode(ent, mode, adminPrefix, sizeof(adminPrefix));
+    char* starPrefixSuffix = "";
+
+    char newMessage[MAX_SAY_TEXT];
+    Com_Memset(newMessage, 0, sizeof(newMessage));
+
+    if (mode > SAY_TELL) {
+        starPrefixSuffix = "^j*^7 ";
+        teamPrefix = "";
+
+        // There is a chat prefix preceeding the message, so we remove the part with the prefix.
+        
+        // Find the command starting point.
+        char* cmdStart = strchr(message, '!');
+
+        // We should check for cmdStart to have a valid pointer, but we wouldn't have the chat mode pointing to it if it would be invalid, therefore ignored.
+        char* cmdEnd = cmdStart;
+
+        while (*cmdEnd && *cmdEnd != ' ') {
+            if (Q_IsColorString(cmdEnd)) {
+                cmdEnd += 2; // Skip the color code.
+            }
+            else {
+                cmdEnd++;
+            }
+        }
+
+        if (*cmdEnd == ' ') {
+            cmdEnd++;
+        }
+
+        // Should have a clean string now.
+        int msgBeforeCommand = cmdStart - message;
+
+        // Ensure we don't copy more than the buffer size
+        if (msgBeforeCommand < sizeof(newMessage)) {
+            // Copy before the command using strncpy
+            strncpy(newMessage, message, msgBeforeCommand);
+            newMessage[msgBeforeCommand] = '\0'; // Ensure null termination
+        }
+        else {
+            logSystem(LOGLEVEL_WARN, "msgBeforeCommand > sizeof(newMessage)?");
+        }
+
+        // Calculate the space remaining in the buffer after copying the first part
+        int remainingSpace = sizeof(newMessage) - msgBeforeCommand;
+
+        // Ensure we don't copy more than the remaining space in the buffer
+        if (remainingSpace > 0 && cmdEnd && *cmdEnd) {
+            Q_strncpyz(newMessage + msgBeforeCommand, cmdEnd, remainingSpace);
+        }
+    }
+    else {
+        Q_strncpyz(newMessage, message, sizeof(newMessage));
+    }
+
+    if (shouldChatModeBeep(mode)) {
+        G_ClientSound(other, G_SoundIndex("sound/misc/c4/beep.mp3"));
+    }
+
+    // In a special mode we will always append stars.
+    trap_SendServerCommand( other-g_entities, va("%s %d \"%s%s%s%s%s%s %s\"",
+                            mode == SAY_TEAM ? "tchat" : "chat",
+                            ent->s.number,
+                            starPrefixSuffix, teamPrefix, adminPrefix, strlen(adminPrefix) ? " " : "", name, newMessage, starPrefixSuffix));
 }
 
 /*
@@ -1566,10 +1834,7 @@ void G_Say ( gentity_t *ent, gentity_t *target, int mode, const char *chatText )
     G_GetChatPrefix ( ent, target, mode, name, sizeof(name) );
 
     // Save off the chat text
-    snprintf(text, sizeof(text), "%s%s%s", ent && ent->client && strlen(ent->client->sess.textColor) > 0 ? "^" : "",
-                                           ent && ent->client && strlen(ent->client->sess.textColor) > 0 ? ent->client->sess.textColor : "",
-                                           chatText
-    );
+    Q_strncpyz( text, chatText, sizeof(text) );
 
     if ( target )
     {
@@ -1587,7 +1852,24 @@ void G_Say ( gentity_t *ent, gentity_t *target, int mode, const char *chatText )
     for (j = 0; j < level.numConnectedClients; j++)
     {
         other = &g_entities[level.sortedClients[j]];
-        G_SayTo( ent, other, mode, name, text );
+
+        // We need to figure out whether this indeed should go to everyone.
+        if (mode > SAY_ADMTALK) {
+            if (ent == other) {
+                // Always allow the same client to see the message they wrote.
+                G_SayTo(ent, other, mode, name, text);
+            } else if ((mode == SAY_ADMCHAT || mode == SAY_CALLADMCHAT) && other->client->sess.adminLevel > ADMLVL_NONE) {
+                G_SayTo(ent, other, mode, name, text);
+            } else if (mode == SAY_SADMCHAT && other->client->sess.adminLevel >= ADMLVL_SADMIN) {
+                G_SayTo(ent, other, mode, name, text);
+            } else if (mode == SAY_HADMCHAT && other->client->sess.adminLevel == ADMLVL_HADMIN) {
+                G_SayTo(ent, other, mode, name, text);
+            } 
+            // Otherwise, do not send.
+        }
+        else {
+            G_SayTo(ent, other, mode, name, text);
+        }
     }
 }
 
@@ -1597,37 +1879,53 @@ void G_Say ( gentity_t *ent, gentity_t *target, int mode, const char *chatText )
 Cmd_Say_f
 ==================
 */
-static void Cmd_Say_f( gentity_t *ent, int mode, qboolean arg0 ) {
+static void Cmd_Say_f( gentity_t *ent, int mode ) { // JANFIXME - the purpose of arg0 if it's not in use at all?
     char        *p;
 
-    int argc = trap_Argc();
-
-    if ( argc < 2 && !arg0 ) {
+    if (!ent || !ent->client) {
         return;
     }
 
-    if (arg0)
-    {
-        p = ConcatArgs( 0 );
-    }
-    else
-    {
-        p = ConcatArgs( 1 );
+    int argc = trap_Argc();
+
+    // Boe!Man 4/30/14: Check if the client said this while in-game and not in the loading screen (to avoid spam).
+    if (!ent->client->pers.enterTime) {
+        return;
     }
 
-    char* admCmd = G_GetArg(0, qtrue);
+    if ( argc < 2 ) {
+        return;
+    }
 
-    if (ent->client->sess.adminLevel >= LEVEL_BADMIN) {
-        int adminCommand = cmdIsAdminCmd(admCmd, qtrue);
+    // Check for mutes every time someone writes.
+    checkMutes();
+    qboolean muted = isClientMuted(ent, qtrue);
 
-        if (canClientRunAdminCommand(ent, adminCommand)) {
-            runAdminCommand(adminCommand, argc == 2 ? 1 : 2, ent, (qboolean)argc == 2);
+    if (!muted) {
+
+        p = ConcatArgs(1);
+
+        char* admCmd = G_GetArg(0, qtrue, qfalse);
+        int adminCommand = -1;
+        if (ent->client->sess.adminLevel > ADMLVL_NONE) {
+            adminCommand = cmdIsAdminCmd(admCmd, qtrue);
+
+            if (canClientRunAdminCommand(ent, adminCommand)) {
+                runAdminCommand(adminCommand, argc == 2 ? 1 : 2, ent, (qboolean)argc == 2);
+            }
+            else if (adminCommand != -1) {
+                G_printInfoMessage(ent, "You're not privileged enough to run this command.");
+            }
         }
+
+        mode = getChatModeFromCommand(ent, admCmd, mode, adminCommand);
+
+        // Run all of the tokens.
+        char tokenizedBuffer[MAX_SAY_TEXT];
+        parseChatTokens(ent, mode, p, tokenizedBuffer, sizeof(tokenizedBuffer));
+
+        G_Say(ent, NULL, mode, tokenizedBuffer);
     }
-
-    
-
-    G_Say( ent, NULL, mode, p );
 }
 
 /*
@@ -2212,7 +2510,7 @@ void Cmd_SetViewpos_f( gentity_t *ent )
     trap_Argv( 4, buffer, sizeof( buffer ) );
     angles[YAW] = atof( buffer );
 
-    TeleportPlayer( ent, origin, angles );
+    TeleportPlayer( ent, origin, angles, qfalse);
 }
 
 /*
@@ -2222,7 +2520,7 @@ ClientCommand
 */
 void ClientCommand( int clientNum ) {
     gentity_t *ent;
-    char    cmd[MAX_TOKEN_CHARS], arg1[MAX_TOKEN_CHARS], arg2[MAX_TOKEN_CHARS];
+    char    cmd[MAX_TOKEN_CHARS];
 
     ent = g_entities + clientNum;
     if ( !ent->client ) {
@@ -2236,186 +2534,22 @@ void ClientCommand( int clientNum ) {
     if (strstr(cmd, "bot_") && AcceptBotCommand(cmd, ent))
     {
         return;
-    }
-    //end rww
-
-    if (!Q_stricmp(cmd, "adm")) {
-        trap_Argv(1, arg1, sizeof(arg1));
-
-        // special commands which actually do not require admin powers.
-
-        if (!Q_stricmp(arg1, "login")) {
-            // handle login
-            if (ent->client->sess.adminLevel) {
-                G_printInfoMessage(ent, "You already have admin powers.");
-            }
-            else if (ent->client->sess.adminPassRegistration) {
-                G_printInfoMessage(ent, "You have to set a password with /adm pass first.");
-            }
-            else {
-                trap_Argv(2, arg2, sizeof(arg2)); // password
-                int adminLevel = dbGetPlayerAdminLevel(qtrue, NULL, ent->client->pers.cleanName, arg2);
-
-                if (adminLevel == -1) {
-                    G_printInfoMessage(ent, "Player name and password combination did not fit. Please try again...");
-                }
-                else if (adminLevel >= LEVEL_BADMIN) {
-                    ent->client->sess.adminLevel = adminLevel;
-                    ent->client->sess.adminType = ADMINTYPE_PASS;
-                    Q_strncpyz(ent->client->sess.adminName, ent->client->pers.cleanName, sizeof(ent->client->sess.adminName));
-                    G_printInfoMessageToAll("%s has been granted %s.", ent->client->pers.cleanName, getAdminNameByLevel(ent->client->sess.adminLevel));
-                    logLogin(ent->client->pers.cleanName, ent->client->pers.ip, adminLevel, ADMINTYPE_PASS);
-                }
-            }
-        } else if (!Q_stricmp(arg1, "pass")) {
-            if (ent->client->sess.adminPassRegistration) {
-                // set the password, if function passes, grant admin.
-                trap_Argv(2, arg2, sizeof(arg2));
-                if (checkAdminPassword(arg2)) {
-                    ent->client->sess.adminLevel = ent->client->sess.adminPassRegistration;
-                    ent->client->sess.adminPassRegistration = 0;
-                    Q_strncpyz(ent->client->sess.adminName, ent->client->pers.cleanName, sizeof(ent->client->sess.adminName));
-                    dbAddPassAdmin(ent->client->pers.cleanName, ent->client->sess.adminLevel, ent->client->sess.adminPassAddedBy, arg2);
-                    G_printInfoMessageToAll("%s has been granted %s.", ent->client->pers.cleanName, getAdminNameByLevel(ent->client->sess.adminLevel));
-                    ent->client->sess.adminType = ADMINTYPE_PASS;
-                }
-                else {
-                    G_printInfoMessage(ent, "The password is not safe enough (consists only of the same characters) or local language characters not known by SoF were used.");
-                }
-            } else if (ent->client->sess.adminLevel > LEVEL_NOADMIN) {
-                // expect that the user wants to update their admin password.
-                trap_Argv(2, arg2, sizeof(arg2));
-
-                if (checkAdminPassword(arg2)) {
-                    G_printInfoMessage(ent, "Your admin password on name %s has been updated.", ent->client->sess.adminName);
-                    dbUpdatePassAdmin(ent->client->sess.adminName, arg2);
-                }
-                else {
-                    G_printInfoMessage(ent, "The password was not updated due to it not being safe enough (consists only of the same characters) or local language characters not known by SoF were used.");
-                }
-
-            } else {
-                G_printInfoMessage(ent, "You need to have admin powers to use this command.");
-            }
-        }
-        else if (ent->client->sess.adminLevel >= LEVEL_BADMIN) {
-
-            if (!Q_stricmp(arg1, "?") || !Q_stricmp(arg1, "help") || !Q_stricmp(arg1, "commands") || !Q_stricmp(arg1, "list") || !Q_stricmp(arg1, "")) {
-                // list displays all.
-                // mostly taken from 1fx. Mod
-                char bigbuf[16384] = "\0";
-                char sendbuf[1024] = "\0";
-                char* bbPointer;
-                int admCommandsLevelTo = ent->client->sess.adminLevel;
-
-                trap_SendServerCommand(ent - g_entities, va("print \" \n^3%-5s %-20s %-14s Explanation\n\"", "Lvl", "Commands", "Arguments"));
-                trap_SendServerCommand(ent - g_entities, va("print \" ----------------------------------------------------------\n\""));
-
-                if (!Q_stricmp(arg1, "list")) {
-                    admCommandsLevelTo = LEVEL_RCON;
-                }
-                admCmd_t* admcmd;
-                for (int admLvl = LEVEL_BADMIN; admLvl <= admCommandsLevelTo; admLvl++) {
-
-                    for (int cmds = 0; cmds < adminCommandsSize; cmds++) {
-                        admcmd = &adminCommands[cmds];
-                        
-                        if (*admcmd->adminLevel == admLvl) {
-                            Q_strcat(bigbuf, sizeof(bigbuf), va("[^3%i^7%-3s %-7s %-12.12s %-14s ^7[^3%.32s^7]\n", admLvl, "]", admcmd->shortCmd, admcmd->adminCmd, admcmd->params, admcmd->desc));
-                        }
-                    }
-
-                }
-
-                if (strlen(bigbuf) <= 1000) {
-                    trap_SendServerCommand(ent - g_entities, va("print \"%s\"", bigbuf));
-                }
-                else {
-                    bbPointer = bigbuf;
-                    int totalPackets = strlen(bigbuf) / 1000;
-
-                    if (strlen(bigbuf) % 1000 > 0) {
-                        totalPackets++;
-                    }
-
-                    for (int packetNum = 0; packetNum < totalPackets; packetNum++) {
-
-                        if (packetNum + 1 == totalPackets) {
-                            Q_strncpyz(sendbuf, bbPointer, strlen(bbPointer)); // the 998 row should by max make the bigpointer go over with
-                        }
-                        else if (bbPointer[999] == '^') { // if the packet is about to end with a color...
-                            Q_strncpyz(sendbuf, bbPointer, 998); // in 1fxmod this was 1001 and later it had additional logic to bring the color back in the next packet.
-                            bbPointer += 998;
-                        }
-                        else {
-                            Q_strncpyz(sendbuf, bbPointer, 1000);
-                            bbPointer += 1000;
-                        }
-
-                        trap_SendServerCommand(ent - g_entities, va("print \"%s\"", sendbuf));
-                        memset(sendbuf, 0, sizeof(sendbuf));
-                    }
-                }
-
-                memset(bigbuf, 0, sizeof(bigbuf));
-                trap_SendServerCommand(ent - g_entities, va("print \"%3s^31^7] %-17s^7[^32^7] %-15s^7[^33^7] %-15s^7[^34^7] RCON\n\"", "[", "B-Admin", "Admin", "S-Admin"));
-                trap_SendServerCommand(ent - g_entities, va("print \"\n^7Use ^3[Page Up]^7 and ^3[Page Down]^7 keys to scroll.\n\""));
-            } 
-            else {
-                int adminCommand = cmdIsAdminCmd(arg1, qfalse);
-
-                if (adminCommand == -1) {
-                    G_printInfoMessage(ent, "Such a command does not exist as an admin command.");
-                    G_printInfoMessage(ent, "Type '/adm ?' to see commands for your level or '/adm list' to see all commands.");
-                    return;
-                }
-
-                if (canClientRunAdminCommand(ent, adminCommand)) {
-                    runAdminCommand(adminCommand, 2, ent, qfalse);
-                }
-                else {
-                    G_printInfoMessage(ent, "You're not privileged enough to run that command.");
-                }
-            }
-        }
-        else {
-            G_printInfoMessage(ent, "You need to have admin powers to use this command.");
-        }
-
-        return;
-    }
-
-    if (!Q_stricmp(cmd, "settextcolor")) {
-        trap_Argv(1, arg1, sizeof(arg1));
-
-        if (strlen(arg1) > 1) {
-            G_printInfoMessage(ent, "Only a single character is allowed.");
-        }
-        else if (strlen(arg1) == 0) {
-            G_printInfoMessage(ent, "Usage: /settextcolor x, where x designates any sort of a character / number / symbol, except caret.");
-        } else if (arg1[0] == '^') {
-            G_printInfoMessage(ent, "Carets are not allowed. Please enter a single character / number / symbol for getting chat color");
-        }
-        else {
-            Q_strncpyz(ent->client->sess.textColor, arg1, sizeof(ent->client->sess.textColor));
-            G_printInfoMessage(ent, "Text color set to %s.", arg1);
-        }
-
-        return;
-    }
+    } 
 
     if (Q_stricmp (cmd, "say") == 0) {
-        Cmd_Say_f (ent, SAY_ALL, qfalse);
+        Cmd_Say_f (ent, SAY_ALL);
         return;
-    }
+    } 
+    
     if (Q_stricmp (cmd, "say_team") == 0) {
-        Cmd_Say_f (ent, SAY_TEAM, qfalse);
+        Cmd_Say_f (ent, SAY_TEAM);
         return;
     }
 
     if (Q_stricmp (cmd, "tell") == 0)
     {
         Cmd_Tell_f ( ent );
+
         return;
     }
 
@@ -2436,6 +2570,142 @@ void ClientCommand( int clientNum ) {
         return;
     }
 
+    if (!Q_stricmp(cmd, "tmi") && level.legacyMod == CL_RPM) {
+        RPM_UpdateTMI();
+    }
+
+    if (Q_stricmp(cmd, "verified") == 0 && level.goldMod == CL_ROCMOD && !ent->client->sess.legacyProtocol) {
+        ROCmod_verifyClient(ent, clientNum);
+        return;
+    }
+        
+    if (Q_stricmp(cmd, "uef") == 0 && level.goldMod == CL_ROCMOD && !ent->client->sess.legacyProtocol) {
+        ROCmod_clientUpdate(ent, clientNum);
+        return;
+    }
+
+    if (!Q_stricmp(cmd, "ca_verified") && ent->client->sess.checkClientAdditions) {
+        ent->client->sess.checkClientAdditions = 0;
+
+        trap_Argv(1, cmd, sizeof(cmd));
+        if (cmd[0]) {
+            Q_strncpyz(ent->client->sess.clientVersion, cmd, sizeof(ent->client->sess.clientVersion));
+        }
+    }
+
+    if (!Q_stricmp(cmd, "findsound")) {
+        mvchat_findSounds(ent);
+        return;
+    }
+
+    if (Q_stristr(cmd, "sounds")) {
+
+        const char* soundPagePtr = cmd + 6;
+        int soundPage = -1;
+
+        if (isdigit(*soundPagePtr) && *(soundPagePtr + 1) == '\0') {
+            soundPage = *soundPagePtr - '0';
+        }
+
+        if (soundPage == -1) {
+            G_printInfoMessage(ent, "Usage: /soundsX, where X denotes an integer between 0 and 9.");
+            return;
+        }
+
+        mvchat_listSounds(ent, soundPage);
+        return;
+    }
+
+    if (!Q_stricmp(cmd, "checkguid")) {
+        parseACCheckGuidMessage(ent);
+        return;
+    }
+
+    if (!Q_stricmp(cmd, "players")) {
+        printPlayersInfo(ent);
+        return;
+    }
+
+    if (!Q_stricmp(cmd, "stats")) {
+        printStatsInfo(ent);
+        return;
+    }
+
+    if (!Q_stricmp(cmd, "adm")) {
+
+        // There are 4 special commands to cater for here - /adm pass, /adm otplogin, /adm login and /adm ? (/adm help)
+        char arg[MAX_STRING_TOKENS];
+        trap_Argv(1, arg, sizeof(arg));
+
+        if (!Q_stricmp(arg, "pass")) {
+
+            char password[MAX_STRING_TOKENS];
+            trap_Argv(2, password, sizeof(password));
+            adm_setPassword(ent, password);
+
+            return;
+        }
+        else if (!Q_stricmp(arg, "otplogin")) {
+            G_printInfoMessage(ent, "Not yet implemented.");
+        }
+        else if (!Q_stricmp(arg, "login")) {
+
+            char password[MAX_STRING_TOKENS];
+            trap_Argv(2, password, sizeof(password));
+            adm_Login(ent, password);
+
+            return;
+        }
+        // Rest of it will all imply you do have admin rights.
+        else if (ent->client->sess.adminLevel <= ADMLVL_NONE || ent->client->sess.adminLevel > ADMLVL_HADMIN) {
+            G_printInfoMessage(ent, "You do not have admin powers.");
+            return;
+        }
+        else if (!Q_stricmp(arg, "?") || !Q_stricmp(arg, "help")) {
+            // List adm cmds
+            adm_printAdminCommands(ent);
+        }
+        else {
+            int adminCommand = -1;
+            if ((adminCommand = cmdIsAdminCmd(arg, qfalse)) != -1 && canClientRunAdminCommand(ent, adminCommand)) {
+                runAdminCommand(adminCommand, 2, ent, qfalse);
+                return;
+            }
+            else if (adminCommand != -1) {
+                G_printInfoMessage(ent, "You're not privileged enough to use this command.");
+            }
+            else {
+                G_printInfoMessage(ent, "Unknown command.");
+                adm_printAdminCommands(ent);
+            }
+        }
+        return;
+    }
+
+    if (!Q_stricmp(cmd, "clan")) {
+
+        char arg[MAX_STRING_TOKENS];
+        trap_Argv(1, arg, sizeof(arg));
+
+        if (!Q_stricmp(arg, "pass")) {
+            char password[MAX_STRING_TOKENS];
+            trap_Argv(2, password, sizeof(password));
+            clan_setPassword(ent, password);
+        }
+        else if (!Q_stricmp(arg, "login")) {
+            char password[MAX_STRING_TOKENS];
+            trap_Argv(2, password, sizeof(password));
+            clan_Login(ent, password);
+        }
+        else if (!ent->client->sess.clanMember) {
+            G_printInfoMessage(ent, "You do not have clan-member rights.");
+        }
+
+
+        return;
+    }
+        
+
     // ignore all other commands when at intermission
     if (level.intermissiontime)
     {
@@ -2443,46 +2713,40 @@ void ClientCommand( int clientNum ) {
         return;
     }
 
-    if (Q_stricmp(cmd, "drop") == 0)
-        Cmd_Drop_f(ent);
-    else if (!Q_stricmp(cmd, "motd")) 
-        showMotd(ent);
-    else if (Q_stricmp(cmd, "dropitem") == 0)
-        Cmd_DropItem_f(ent);
-    else if (Q_stricmp(cmd, "give") == 0)
-        Cmd_Give_f(ent);
-    else if (Q_stricmp(cmd, "god") == 0)
-        Cmd_God_f(ent);
-    else if (Q_stricmp(cmd, "notarget") == 0)
-        Cmd_Notarget_f(ent);
-    else if (Q_stricmp(cmd, "noclip") == 0)
-        Cmd_Noclip_f(ent);
-    else if (Q_stricmp(cmd, "kill") == 0)
-        Cmd_Kill_f(ent);
-    else if (Q_stricmp(cmd, "levelshot") == 0)
-        Cmd_LevelShot_f(ent);
-    else if (Q_stricmp(cmd, "follow") == 0)
-        Cmd_Follow_f(ent);
-    else if (Q_stricmp(cmd, "follownext") == 0)
-        Cmd_FollowCycle_f(ent, 1);
-    else if (Q_stricmp(cmd, "followprev") == 0)
-        Cmd_FollowCycle_f(ent, -1);
-    else if (Q_stricmp(cmd, "where") == 0)
-        Cmd_Where_f(ent);
-    else if (Q_stricmp(cmd, "callvote") == 0)
-        Cmd_CallVote_f(ent);
-    else if (Q_stricmp(cmd, "vote") == 0)
-        Cmd_Vote_f(ent);
-    else if (Q_stricmp(cmd, "setviewpos") == 0)
-        Cmd_SetViewpos_f(ent);
-    else if (Q_stricmp(cmd, "ignore") == 0)
-        Cmd_Ignore_f(ent);
-    else if (Q_stricmp(cmd, "verified") == 0 && level.clientMod == CL_ROCMOD)
-        ROCmod_verifyClient(ent, clientNum);
-    else if (Q_stricmp(cmd, "uef") == 0 && level.clientMod == CL_ROCMOD)
-        ROCmod_clientUpdate(ent, clientNum);
-    else if (!Q_stricmp(cmd, "refresh"))
-        refreshStats(ent);
+     if ( Q_stricmp ( cmd, "drop" ) == 0 )
+        Cmd_Drop_f ( ent );
+    else if (Q_stricmp (cmd, "dropitem" ) == 0 )
+        Cmd_DropItem_f ( ent );
+    else if (Q_stricmp (cmd, "give") == 0)
+        Cmd_Give_f (ent);
+    else if (Q_stricmp (cmd, "god") == 0)
+        Cmd_God_f (ent);
+    else if (Q_stricmp (cmd, "notarget") == 0)
+        Cmd_Notarget_f (ent);
+    else if (Q_stricmp (cmd, "noclip") == 0)
+        Cmd_Noclip_f (ent);
+    else if (Q_stricmp (cmd, "kill") == 0)
+        Cmd_Kill_f (ent);
+    else if (Q_stricmp (cmd, "levelshot") == 0)
+        Cmd_LevelShot_f (ent);
+    else if (Q_stricmp (cmd, "follow") == 0)
+        Cmd_Follow_f (ent);
+    else if (Q_stricmp (cmd, "follownext") == 0)
+        Cmd_FollowCycle_f (ent, 1);
+    else if (Q_stricmp (cmd, "followprev") == 0)
+        Cmd_FollowCycle_f (ent, -1);
+    else if (Q_stricmp (cmd, "where") == 0)
+        Cmd_Where_f (ent);
+    else if (Q_stricmp (cmd, "callvote") == 0)
+        Cmd_CallVote_f (ent);
+    else if (Q_stricmp (cmd, "vote") == 0)
+        Cmd_Vote_f (ent);
+    else if (Q_stricmp (cmd, "setviewpos") == 0)
+        Cmd_SetViewpos_f( ent );
+    else if (Q_stricmp ( cmd, "ignore" ) == 0 )
+        Cmd_Ignore_f ( ent );
+    else if (!Q_stricmp(cmd, "motd"))
+         showMotd(ent);
 
 #ifdef _SOF2_BOTS
     else if (Q_stricmp (cmd, "addbot") == 0)

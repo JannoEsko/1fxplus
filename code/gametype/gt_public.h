@@ -55,6 +55,9 @@ typedef enum
     GT_GETCLIENTLIST,               // int  ( team_t team, int* clients, int clientcount );
 
     GT_SETHUDICON,                  // void ( int index, int icon );
+    GT_REPORT_TEAMNAMES,
+    GT_BROADCAST,
+    GT_CONSOLETEXTMESSAGE
 
 } gametypeImport_t;
 
@@ -90,6 +93,7 @@ typedef enum
 
     GTEV_ITEM_CANBEUSED,        // int  ( int itemID, int clientID, int clientTeam );
     GTEV_ITEM_USED,             // int  ( int itemID, int clientID, int clientTeam );
+    GTEV_PAUSE,
 
     GTEV_MAX
 

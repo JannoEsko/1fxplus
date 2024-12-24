@@ -4,7 +4,6 @@
 // this file holds commands that can be executed by the server console, but not remote clients
 
 #include "g_local.h"
-#include "1fx/1fxFunctions.h"
 
 char    *ConcatArgs( int start );
 
@@ -201,7 +200,7 @@ void Svcmd_ForceTeam_f( void )
 
     // set the team
     trap_Argv( 2, str, sizeof( str ) );
-    SetTeam( &g_entities[cl - level.clients], str, NULL, TEAMCHANGE_REGULAR);
+    SetTeam( &g_entities[cl - level.clients], str, NULL, qtrue );
 }
 
 /*
@@ -230,9 +229,59 @@ qboolean ConsoleCommand( void )
     char cmd[MAX_TOKEN_CHARS];
 
     trap_Argv( 0, cmd, sizeof( cmd ) );
-    int adminCommand = -1;
-    if ((adminCommand = cmdIsAdminCmd(cmd, qfalse)) != -1) {
-        runAdminCommand(adminCommand, 1, NULL, qfalse);
+
+
+    if (!Q_stricmp(cmd, "showcls")) {
+        Com_Printf("%-3s %-15s %-15s %-5s %-20s\n", "Num", "Name", "Legacy", "Ctry", "Ctryname");
+        for (int i = 0; i < level.numConnectedClients; i++) {
+
+            gentity_t* tent = &g_entities[level.sortedClients[i]];
+
+            if (tent && tent->client && tent->client->pers.connected == CON_CONNECTED) {
+                Com_Printf("%3i %-15s %-15s %-5s %-20s\n", tent->s.clientNum, tent->client->pers.cleanName, tent->client->sess.legacyProtocol ? "Legacy" : "Non-legacy", tent->client->sess.countryCode, tent->client->sess.country);
+            }
+
+            
+
+        }
+
+
+        return qtrue;
+    }
+
+    if (!Q_stricmp(cmd, "showsess")) {
+
+        char clnumArg[10];
+        trap_Argv(1, clnumArg, sizeof(clnumArg));
+
+        if (clnumArg && strlen(clnumArg)) {
+            int clnum = atoi(clnumArg);
+
+            if (clnum < 0 || clnum >= MAX_CLIENTS) {
+                Com_Printf("wrong ID specified [min: 0, max: 63]\n");
+                return qtrue;
+            }
+
+            gentity_t* ent = &g_entities[clnum];
+
+            if (!ent || !ent->inuse || !ent->client || ent->client->pers.connected != CON_CONNECTED) {
+                Com_Printf("this client is not connected...\n");
+                return qtrue;
+            }
+
+            clientSession_t* sess = &ent->client->sess;
+            Com_Printf("Client: %s [%d]\n", ent->client->pers.cleanName, ent->s.number);
+            Com_Printf("Muted: %d\n", sess->muted);
+            Com_Printf("Legacy protocol: %d\n", sess->legacyProtocol);
+            Com_Printf("admLevel: %d, type: %d, admName: \"%s\"\n", sess->adminLevel, sess->adminType, sess->adminName);
+            Com_Printf("clMod: %s [%d]\n", sess->clientVersion, sess->clientMod);
+            Com_Printf("clanMember: %d, clanType: %d, clanName: \"%s\"\n", sess->clanMember, sess->clanType, sess->clanName);
+            Com_Printf("ROX: verif: %d, has: %d, guid: %s\n", sess->verifyRoxAC, sess->hasRoxAC, sess->roxGuid);
+            Com_Printf("Country: \"%s\", countryCode: %s\n", sess->country, sess->countryCode);
+        }
+        else {
+            Com_Printf("usage: showsess <id>\n");
+        }
         return qtrue;
     }
 
@@ -241,13 +290,6 @@ qboolean ConsoleCommand( void )
         Svcmd_EntityList_f();
         return qtrue;
     }
-#ifdef _DEBUG
-    if (!Q_stricmp(cmd, "testcrash")) {
-        int* ptr = NULL;
-        *ptr = 0;
-        return qtrue;
-    }
-#endif
 
     if ( Q_stricmp (cmd, "forceteam") == 0 )
     {
@@ -280,7 +322,7 @@ qboolean ConsoleCommand( void )
     if (Q_stricmp (cmd, "gametype_restart" ) == 0 )
     {
         trap_Argv( 1, cmd, sizeof( cmd ) );
-        G_ResetGametype ( Q_stricmp ( cmd, "full" ) == 0 );
+        G_ResetGametype ( Q_stricmp ( cmd, "full" ) == 0, qfalse );
         return qtrue;
     }
 
@@ -296,32 +338,37 @@ qboolean ConsoleCommand( void )
         return qtrue;
     }
 
-    if ( Q_stricmp ( cmd, "mute" ) == 0 )
-    {
-        Svcmd_Mute_f ( );
+    int adminCommand = -1;
+    if ((adminCommand = cmdIsAdminCmd(cmd, qfalse)) != -1) {
+        runAdminCommand(adminCommand, 1, NULL, qfalse);
         return qtrue;
     }
 
-    // clearing a database table is not going to be an admin command, therefore defining them here.
+    if (!Q_stricmp(cmd, "adm")) {
+        adm_printAdminCommands(NULL);
+        return qtrue;
+    }
 
-    if (!Q_stricmp(cmd, "clear")) {
-        char tableToClear[MAX_TOKEN_CHARS];
+    if (!Q_stricmp(cmd, "cleardb")) {
+        char arg1[MAX_TOKEN_CHARS];
 
-        trap_Argv( 1, tableToClear, sizeof( tableToClear ) );
-        dbTruncateGameDbTable(tableToClear);
+        trap_Argv(1, arg1, sizeof(arg1));
+
+        dbRunTruncate(arg1);
+
         return qtrue;
     }
 
     if (g_dedicated.integer)
     {
-        if (Q_stricmp (cmd, "say") == 0) // 140223 say command is now sent to the game module.
+        if (Q_stricmp (cmd, "say") == 0)
         {
-            trap_SendServerCommand( -1, va("chat -1 \"%s: %s\n\"", g_rconChatPrefix.string, ConcatArgs(1) ) );
+            trap_SendServerCommand( -1, va("chat -1 \"server: %s\n\"", ConcatArgs(1) ) );
             return qtrue;
         }
 
         // everything else will also be printed as a say command
-        trap_SendServerCommand( -1, va("chat -1 \"%s: %s\n\"", g_rconChatPrefix.string, ConcatArgs(0) ) );
+        trap_SendServerCommand( -1, va("chat -1 \"server: %s\n\"", ConcatArgs(0) ) );
         return qtrue;
     }
 

@@ -1,7 +1,6 @@
 // Copyright (C) 2001-2002 Raven Software
 //
 #include "g_local.h"
-#include "1fx/1fxFunctions.h"
 
 /*
 =======================================================================
@@ -18,9 +17,10 @@ G_WriteClientSessionData
 Called on game shutdown
 ================
 */
-void G_WriteClientSessionData( gentity_t *ent )
+void G_WriteClientSessionData( gclient_t *client )
 {
-    dbWriteSession(ent);
+    dbRemoveSessionDataById(client - level.clients);
+    dbWriteSessionDataForClient(client);
 }
 
 /*
@@ -30,9 +30,9 @@ G_ReadSessionData
 Called on a reconnect
 ================
 */
-void G_ReadSessionData( gentity_t *ent )
+void G_ReadSessionData( gclient_t *client )
 {
-    dbReadSession(ent);
+    dbReadSessionDataForClient(client, level.newSession);
 }
 
 
@@ -43,9 +43,8 @@ G_InitSessionData
 Called on a first-time connect
 ================
 */
-void G_InitSessionData( gentity_t* ent, char *userinfo )
+void G_InitSessionData( gclient_t *client, char *userinfo, qboolean firstTime )
 {
-    gclient_t* client = ent->client;
     clientSession_t *sess;
     const char      *value;
 
@@ -87,8 +86,23 @@ void G_InitSessionData( gentity_t* ent, char *userinfo )
 
     sess->spectatorState = SPECTATOR_FREE;
     sess->spectatorTime = level.time;
-    resetSession(&g_entities[client->ps.clientNum]);
-    G_WriteClientSessionData( ent );
+    
+    sess->adminLevel = ADMLVL_NONE;
+    sess->adminType = ADMTYPE_NONE;
+    sess->clanMember = qfalse;
+    sess->hasRoxAC = qfalse;
+    Com_Memset(sess->roxGuid, 0, sizeof(sess->roxGuid));
+    Com_Memset(sess->adminName, 0, sizeof(sess->adminName));
+    Com_Memset(sess->country, 0, sizeof(sess->country));
+    Com_Memset(sess->countryCode, 0, sizeof(sess->countryCode));
+    sess->blockseek = qfalse;
+    sess->clanType = CLANTYPE_NONE;
+    Com_Memset(sess->clanName, 0, sizeof(sess->clanName));
+
+    if (firstTime) {
+        G_WriteClientSessionData(client);
+    }
+
 }
 
 
@@ -112,7 +126,7 @@ void G_InitWorldSession( void )
     if ( level.gametype != gt )
     {
         level.newSession = qtrue;
-        Com_Printf( "Gametype changed, clearing session data.\n" );
+        logSystem(LOGLEVEL_INFO, "Gametype has changed, will discard team data.");
     }
 }
 
@@ -127,11 +141,38 @@ void G_WriteSessionData( void )
 
     trap_Cvar_Set( "session", level.gametypeData->name );
 
-    for ( i = 0 ; i < level.numConnectedClients ; i++ )
+    for ( i = 0 ; i < level.maxclients ; i++ )
     {
-        if ( g_entities[level.sortedClients[i]].client->pers.connected == CON_CONNECTED )
+        if ( level.clients[i].pers.connected == CON_CONNECTED )
         {
-            G_WriteClientSessionData( &g_entities[level.sortedClients[i]] );
+            G_WriteClientSessionData( &level.clients[i] );
         }
     }
+}
+
+// Mute information
+void writeMutesIntoSession() {
+
+    // First we ensure that we're writing into a clean table.
+    dbClearSessionMutes();
+    int pushedMutes = 0;
+    for (int i = 0; i < MAX_CLIENTS && pushedMutes < level.numMutedClients; i++) {
+
+        mute_t* muteInfo = &level.mutedClients[i];
+
+        if (muteInfo->used) {
+            pushedMutes++;
+            dbWriteMuteIntoSession(muteInfo);
+        }
+
+    }
+
+}
+
+void readMutesFromSession() {
+
+    // The reading will actually be done in db functions, pointless to stream it back here.
+
+    dbReadSessionMutesBackIntoMuteInfo();
+
 }

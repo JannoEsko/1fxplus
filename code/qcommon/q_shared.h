@@ -43,10 +43,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
   #define PRODUCT_VERSION "0.01"
 #endif
 
-#define MOD_NAME "1fxplus"
-#define MOD_NAME_COLORED "^71fx^1plus^7"
-#define MOD_MOTD_INFO "Inspired by 1fx. Mod, originally developed by ^GBoe!Man ^7& ^6Henkie\n^7Running on SoF2Plus, which is a fork of ioquake3\nMade compatible with SoF2 by ^GBoe!Man\n^71fx^1plus^7 developed by 1fx^1.^K # ^7Janno\nhttps://github.com/sof2plus\nhttps://github.com/JannoEsko/1fxplus\n\n"
-
 #ifndef PRODUCT_DATE
 #  define PRODUCT_DATE __DATE__
 #endif
@@ -136,7 +132,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #ifdef _WIN32
   // vsnprintf is ISO/IEC 9899:1999
   // abstracting this to make it portable
-  int Q_vsnprintf(char *str, size_t size, const char *format, va_list ap);
+int Q_vsnprintf(char *str, size_t size, const char *format, va_list ap);
 #else
   #define Q_vsnprintf vsnprintf
 #endif
@@ -277,6 +273,10 @@ void *Hunk_Alloc( int size, ha_pref preference );
 #define Com_Memset memset
 #define Com_Memcpy memcpy
 
+#ifdef _WIN32
+#define snprintf _snprintf
+#endif
+
 /*
 ==============================================================
 
@@ -316,7 +316,8 @@ extern  vec4_t      colorMdGrey;
 extern  vec4_t      colorDkGrey;
 
 #define Q_COLOR_ESCAPE  '^'
-#define Q_IsColorString(p)  ((p) && *(p) == Q_COLOR_ESCAPE && *((p)+1) && isalnum(*((p)+1))) // ^[0-9a-zA-Z]
+//#define Q_IsColorString(p)  ((p) && *(p) == Q_COLOR_ESCAPE && *((p)+1) && isalnum(*((p)+1))) // ^[0-9a-zA-Z]
+#define Q_IsColorString(p)  ( p && *(p) == Q_COLOR_ESCAPE && *((p)+1) && *((p)+1) != Q_COLOR_ESCAPE )
 
 #define COLOR_BLACK '0'
 #define COLOR_RED   '1'
@@ -751,6 +752,10 @@ void Info_NextPair( const char **s, char *key, char *value );
 // this is only here so the functions in q_shared.c and bg_*.c can link
 void    QDECL Com_Error( int level, const char *error, ... ) __attribute__ ((noreturn, format(printf, 2, 3)));
 void    QDECL Com_Printf( const char *msg, ... ) __attribute__ ((format (printf, 1, 2)));
+void    QDECL Com_DPrintf(const char* msg, ...) __attribute__((format(printf, 1, 2)));
+void    QDECL Com_PrintInfo(const char* msg, ...) __attribute__((format(printf, 1, 2)));
+void    QDECL Com_PrintWarn(const char* msg, ...) __attribute__((format(printf, 1, 2)));
+void    QDECL Com_PrintLog(const char* msg, ...) __attribute__((format(printf, 1, 2)));
 
 
 /*
@@ -786,6 +791,8 @@ default values.
 #define CVAR_SERVER_CREATED 0x0800  // cvar was created by a server the client connected to.
 #define CVAR_VM_CREATED     0x1000  // cvar was created exclusively in one of the VMs.
 #define CVAR_PROTECTED      0x2000  // prevent modifying this var from VMs or the server
+#define CVAR_LOCK_RANGE     0x4000
+#define CVAR_INTERNAL       0x8000  // From SoF2 - do not display this CVAR through console activities.
 // These flags are only returned by the Cvar_Flags() function
 #define CVAR_MODIFIED       0x40000000  // Cvar was modified
 #define CVAR_NONEXISTENT    0x80000000  // Cvar doesn't exist.
@@ -1314,9 +1321,25 @@ typedef struct qtime_s {
     int tm_isdst;   /* daylight savings time flag */
 } qtime_t;
 
-#define SAY_ALL     0
-#define SAY_TEAM    1
-#define SAY_TELL    2
+//#define SAY_ALL     0
+//#define SAY_TEAM    1
+//#define SAY_TELL    2
+
+typedef enum chatMode_s {
+    SAY_ALL,
+    SAY_TEAM,
+    SAY_TELL,
+    SAY_ADMTALK,
+    SAY_ADMCHAT,
+    SAY_REFTALK,
+    SAY_REFCHAT,
+    SAY_SADMCHAT,
+    SAY_HADMCHAT,
+    SAY_CLANTALK,
+    SAY_CLANCHAT,
+    SAY_TELL_SELF,
+    SAY_CALLADMCHAT
+} chatMode_t;
 
 typedef struct {
     int     isValid;

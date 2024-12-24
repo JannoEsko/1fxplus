@@ -1,34 +1,6 @@
-/*
-===========================================================================
-Copyright (C) 2000 - 2013, Raven Software, Inc.
-Copyright (C) 2001 - 2013, Activision, Inc.
-Copyright (C) 2003 - 2007, ROCmod contributors
-Copyright (C) 2015 - 2020, Ane-Jouke Schat (Boe!Man)
-Copyright (C) 2015 - 2020, Jordi Epema (Henkie)
 
-This file is part of the 1fx. Mod source code.
+#include "../../g_local.h"
 
-This program is free software; you can redistribute it and/or modify it
-under the terms of the GNU General Public License version 2 as
-published by the Free Software Foundation.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with this program; if not, see <http://www.gnu.org/licenses/>.
-===========================================================================
-*/
-// rocmod_functions.c - Functions specific for ROCmod.
-// https://github.com/1fx/1fxmod/blob/master/trunk/game/rocmod_functions.c
-//==================================================================
-
-
-#include "../../game/g_local.h"
-#include "../../game/1fx/1fxFunctions.h"
-#include "rocmod.h"
 
 /*
 =============
@@ -51,8 +23,10 @@ void ROCmod_verifyClient(gentity_t* ent, int clientNum)
         return;
 
 
+    Com_DPrintf("ROCmod 2.1c verified on client #%d\n", clientNum);
+
     ent->client->sess.clientMod = CL_ROCMOD;
-    strncpy(ent->client->sess.clientModVersion, "2.1c", sizeof(ent->client->sess.clientModVersion));
+    Q_strncpyz(ent->client->sess.clientVersion, "2.1c", sizeof(ent->client->sess.clientVersion));
 }
 
 /*
@@ -68,10 +42,10 @@ void ROCmod_clientUpdate(gentity_t* ent, int clientNum)
         return;
 
     trap_Argv(1, buffer, sizeof(buffer));
-    ent->client->sess.rocmodExtraFeatures = atoi(buffer);
+    ent->client->sess.rocExtraFeatures = atoi(buffer);
 
-    trap_SendServerCommand(ent - g_entities, va("efack %i", ent->client->sess.rocmodExtraFeatures));
-    if (ent->client->sess.rocmodExtraFeatures & ROC_TEAMINFO)
+    trap_SendServerCommand(ent - g_entities, va("efack %i", ent->client->sess.rocExtraFeatures));
+    if (ent->client->sess.rocExtraFeatures & ROC_TEAMINFO)
     {
         ROCmod_sendExtraTeamInfo(ent);
     }
@@ -97,7 +71,7 @@ void ROCmod_sendExtraTeamInfo(gentity_t* ent)
     gentity_t* loc;
 
     // Don't update them if they don't want it
-    if (ent && !(ent->client->sess.rocmodExtraFeatures & ROC_TEAMINFO))
+    if (ent && !(ent->client->sess.rocExtraFeatures & ROC_TEAMINFO))
         return;
 
     // send the latest information on all clients
@@ -119,7 +93,7 @@ void ROCmod_sendExtraTeamInfo(gentity_t* ent)
         entrylength = strlen(entry);
 
         // Get location.
-        loc = Team_GetLocation(&g_entities[level.sortedClients[i]]);
+        loc = Team_GetLocation(&g_entities[level.sortedClients[i]], qfalse);
 
         // Add all extra information from the client.
         Com_sprintf(entry + entrylength, sizeof(entry) - entrylength, "h%i a%i w%i l%i g%i",
@@ -167,7 +141,11 @@ void ROCmod_sendExtraTeamInfo(gentity_t* ent)
             if (cl->pers.connected != CON_CONNECTED)
                 continue;
 
-            if (cl->sess.rocmodExtraFeatures & ROC_TEAMINFO) {
+            if (!cl->sess.legacyProtocol || cl->sess.clientMod != CL_ROCMOD) {
+                continue;
+            }
+
+            if (cl->sess.rocExtraFeatures & ROC_TEAMINFO) {
                 if (cl->sess.team == TEAM_RED && redcount)
                     trap_SendServerCommand(level.sortedClients[i], va("eti2 %i%s", redcount, red));
                 else if (cl->sess.team == TEAM_BLUE && bluecount)
@@ -209,7 +187,7 @@ void ROCmod_sendBestPlayerStats(void)
 
     int             i, v;
     gentity_t* ent;
-    statinfo_t* stat;
+    statInfo_t* stat;
 
     // Initialize the array properly.
     for (i = 0; i < 11; i++) {
@@ -230,7 +208,7 @@ void ROCmod_sendBestPlayerStats(void)
             continue;
         }
 
-        stat = &ent->client->pers.statinfo;
+        stat = &ent->client->pers.statInfo;
 
         if (stat->kills > bestKills) {
             bestKills = stat->kills;
@@ -307,9 +285,14 @@ void ROCmod_sendBestPlayerStats(void)
         if (ent->r.svFlags & SVF_BOT)
             continue;
 
+        if (ent->client->sess.legacyProtocol) {
+            continue;
+        }
+
         if (ent->client->sess.clientMod == CL_ROCMOD) {
             DeathmatchScoreboardMessage(ent);
             trap_SendServerCommand(ent - g_entities, va("playerstats %d %d %d %d %d %d %d %d %d %d %d", bestScores[0], bestScores[1], bestScores[2], bestScores[3], bestScores[4], bestScores[5], bestScores[6], bestScores[7], bestScores[8], bestScores[9], bestScores[10]));
         }
     }
+    
 }

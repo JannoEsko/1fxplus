@@ -36,7 +36,9 @@
 /*
 #define BOT_CTF_DEBUG   1
 */
-
+#ifdef MAX_PATH
+#undef MAX_PATH
+#endif
 #define MAX_PATH        144
 
 #define BOT_THINK_TIME  0

@@ -33,7 +33,7 @@ along with this program; if not, see <http://www.gnu.org/licenses/>.
 //
 
 #define GAMETYPE_NAME               "H&Z"
-#define GAMETYPE_NAME_FULL          "Humans & Zombies"
+#define GAMETYPE_NAME_FULL          "Humans and Zombies"
 
 #define ITEM_BRIEFCASE              100
 #define TRIGGER_EXTRACTION          200
