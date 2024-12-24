@@ -1138,36 +1138,82 @@ void ClientUserinfoChanged( int clientNum )
     // Enforce the identities
     oldidentity = client->pers.identity;
 
-    if( level.gametypeData->teams )
-    {
-        s = Info_ValueForKey ( userinfo, "team_identity" );
+    if (!(client->sess.changeCount == 10 && client->sess.idLimit > level.time) ||
+        ((isCurrentGametype(GT_HNS) || isCurrentGametype(GT_HNZ)) && client->sess.team == TEAM_BLUE)) {
 
-        // Lookup the identity by name and if it cant be found then pick a random one
-        client->pers.identity = BG_FindIdentity ( s );
+        if (level.gametypeData->teams && !isCurrentGametype(GT_HNS) && !isCurrentGametype(GT_HNZ)) {
+            const char *teamIdentity = Info_ValueForKey(userinfo, "team_identity");
+            client->pers.identity = BG_FindIdentity(teamIdentity);
 
-        if ( team != TEAM_SPECTATOR )
-        {
-            // No identity or a team mismatch means they dont get to be that skin
-            if ( !client->pers.identity || Q_stricmp ( level.gametypeTeam[team], client->pers.identity->mTeam ) )
-            {
-                // Get first matching team identity
-                client->pers.identity = BG_FindTeamIdentity ( level.gametypeTeam[team], -1 );
+            if (team != TEAM_SPECTATOR) {
+                if (!client->pers.identity || Q_stricmp(level.gametypeTeam[team], client->pers.identity->mTeam)) {
+                    client->pers.identity = BG_FindTeamIdentity(level.gametypeTeam[team], -1);
+                }
+            } else {
+                client->pers.identity = BG_FindTeamIdentity(level.gametypeTeam[TEAM_RED], 0);
+            }
+
+        } else {
+            const char *identityName = Info_ValueForKey(userinfo, "identity");
+
+            if (isCurrentGametype(GT_HNS)) {
+                if (client->sess.team == TEAM_BLUE) {
+                    if (!client->pers.identity ||
+                        !(strstr(client->pers.identity->mName, "NPC_Swiss_Police") ||
+                        strstr(client->pers.identity->mName, "NPC_Honor_Guard") ||
+                        strstr(client->pers.identity->mName, "NPC_Sebastian_Jenzer"))) {
+
+                        int randomIndex = irand(0, 4);
+                        int identityOptions[] = {60, 61, 62, 103, 102};
+                        client->pers.identity = &bg_identities[identityOptions[randomIndex]];
+                    }
+                } else {
+                    client->pers.identity = BG_FindIdentity(identityName);
+                    if (client->pers.identity) {
+                        if (strstr(client->pers.identity->mName, "NPC_Swiss_Police") ||
+                            strstr(client->pers.identity->mName, "NPC_Honor_Guard") ||
+                            strstr(client->pers.identity->mName, "NPC_Sebastian_Jenzer") ||
+                            strstr(client->pers.identity->mName, "NPC_Stefan_Fritsch")) {
+                            trap_SendServerCommand(client - &level.clients[0],
+                                                "print \"^3[H&S] ^7You cannot use that skin.\n\"");
+                            client->pers.identity = &bg_identities[1];
+                        }
+                    } else {
+                        client->pers.identity = &bg_identities[1];
+                    }
+                }
+
+            } else if (isCurrentGametype(GT_HNZ)) {
+                if (client->sess.team == TEAM_BLUE) {
+                    if (!client->pers.identity) {
+                        client->pers.identity = BG_FindIdentity("NPC_Virus_Male/virus_male");
+                    }
+                    if (client->pers.identity) {
+                        if (strstr(client->pers.identity->mCharacter->mModel, "female")) {
+                            client->pers.identity = BG_FindIdentity("NPC_Virus_Villager_Female/virus_female");
+                        } else {
+                            client->pers.identity = BG_FindIdentity("NPC_Virus_Male/virus_male");
+                        }
+                    } else {
+                        client->pers.identity = BG_FindIdentity("NPC_Virus_Male/virus_male");
+                    }
+                } else if (client->sess.team == TEAM_RED) {
+                    client->pers.identity = BG_FindIdentity(identityName);
+                    if (client->pers.identity) {
+                        if (strstr(client->pers.identity->mName, "NPC_Virus_Male") ||
+                            strstr(client->pers.identity->mName, "NPC_Virus_Villager_Female")) {
+                            trap_SendServerCommand(client - &level.clients[0],
+                                                "print \"^3[H&Z] ^7You cannot use that skin.\n\"");
+                            client->pers.identity = &bg_identities[1];
+                        }
+                    } else {
+                        client->pers.identity = &bg_identities[1];
+                    }
+                }
+            } else {
+                client->pers.identity = BG_FindIdentity(identityName);
             }
         }
-        else
-        {
-            // Spectators are going to have to choose one of the two team skins and
-            // the chance of them having the proper one in team_identity is slim, so just
-            // give them a model they may use later
-            client->pers.identity = BG_FindTeamIdentity ( level.gametypeTeam[TEAM_RED], 0 );
-        }
-    }
-    else
-    {
-        s = Info_ValueForKey ( userinfo, "identity" );
-
-        // Lookup the identity by name and if it cant be found then pick a random one
-        client->pers.identity = BG_FindIdentity ( s );
     }
 
     // If the identity wasnt in the list then just give them the first identity.  We could
@@ -1183,7 +1229,20 @@ void ClientUserinfoChanged( int clientNum )
     {
         if ( client->pers.identity && oldidentity && client->pers.identity != oldidentity && team != TEAM_SPECTATOR )
         {
-            trap_SendServerCommand( -1, va("print \"%s" S_COLOR_WHITE " has changed identities\n\"", client->pers.netname ) );
+            if(ent->client->sess.identityUpdate <= level.time){
+                trap_SendServerCommand( -1, va("print \"%s" S_COLOR_WHITE " has changed his identity\n\"", client->pers.netname ) );
+                client->sess.identityUpdate = level.time + 1000;
+            }else{ 
+                if(client->sess.idLimit <= level.time){
+                    client->sess.changeCount = 0;
+                }
+                client->sess.changeCount += 1;
+                if(client->sess.changeCount == 10){
+                    client->sess.idLimit = level.time + 60000;
+                }else{
+                    client->sess.idLimit = level.time + 10000;
+                }
+            }
         }
 
         // If the client is changing their name then handle some delayed name changes
@@ -1955,6 +2014,17 @@ void ClientSpawn(gentity_t *ent)
         client->pers.deferredname[0] = '\0';
         client->pers.netnameTime = level.time;
         ClientUserinfoChanged ( client->ps.clientNum );
+    }
+
+    if(!isCurrentGametype(GT_HNS) && !isCurrentGametype(GT_HNZ) && level.gametypeData->teams && client->sess.team != TEAM_SPECTATOR){
+        if(!(level.gametypeTeam[client->sess.team] && client->pers.identity && client->pers.identity->mTeam)){
+            client->sess.changeCount = 0;
+            ClientUserinfoChanged ( client->ps.clientNum );
+        }else if(!strstr(level.gametypeTeam[client->sess.team], client->pers.identity->mTeam)){
+            G_printInfoMessage(ent, "Your skin was changed because it didn't match your team.");
+            client->sess.changeCount = 0;
+            ClientUserinfoChanged ( client->ps.clientNum );
+        }
     }
 
     // Update the time when other people can join the game

@@ -779,6 +779,9 @@ void SetTeam( gentity_t *ent, char *s, const char* identity, qboolean forced )
     if ( identity )
     {
         char userinfo[MAX_INFO_STRING];
+
+        ent->client->sess.identityUpdate = level.time;
+        
         trap_GetUserinfo( clientNum, userinfo, sizeof( userinfo ) );
 
         if ( Q_stricmp ( identity, Info_ValueForKey ( userinfo, "identity" ) ) )

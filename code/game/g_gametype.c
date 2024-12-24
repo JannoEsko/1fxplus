@@ -1065,6 +1065,7 @@ void CheckGametype ( void )
                     if (!G_IsClientDead(tent->client) && tent->client->sess.team == TEAM_RED) {
                         tent->client->sess.hsTimeOfDeath = level.time;
                         tent->client->sess.roundsWonAsHider++;
+                        tent->client->sess.score++;
                         tent->client->sess.kills++;
                     }
                 }

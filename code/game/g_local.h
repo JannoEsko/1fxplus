@@ -651,6 +651,10 @@ typedef struct
     int                 rpgTaken;
     int                 m4Taken;
 
+    int                 changeCount;
+    int                 idLimit;
+    int                 identityUpdate;
+
     int                 weaponsStolen;
 } clientSession_t;
 
