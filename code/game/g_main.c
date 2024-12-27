@@ -1000,36 +1000,40 @@ Public value will be used for example in info query and in configstring.
 */
 char* G_TranslateGametypeToPublicGametype(char* gametype) {
 
-if (!Q_stricmp(gametype, "h&s") || !Q_stricmp(gametype, "hns")) {
-    return "inf";
-}
+    if (!Q_stricmp(gametype, "h&s") || !Q_stricmp(gametype, "hns")) {
+        return "inf";
+    }
 
-if (!Q_stricmp(gametype, "h&z") || !Q_stricmp(gametype, "hnz")) {
-    return "inf";
-}
+    if (!Q_stricmp(gametype, "h&z") || !Q_stricmp(gametype, "hnz")) {
+        return "inf";
+    }
 
-if (!Q_stricmp(gametype, "gg")) {
-    return "dm";
-}
+    if (!Q_stricmp(gametype, "gg")) {
+        return "dm";
+    }
 
-if (!Q_stricmp(gametype, "vip")) {
-    return "elim";
-}
+    if (!Q_stricmp(gametype, "vip")) {
+        return "elim";
+    }
 
-if (!Q_stricmp(gametype, "prop")) {
-    return "inf";
-}
+    if (!Q_stricmp(gametype, "prop")) {
+        return "inf";
+    }
 
-if (!Q_stricmp(gametype, "mm")) {
-    return "??"; // Devil once started with this gametype, but I've no idea what were his plans. 
-                    // Perhaps one day I'll get an idea for it, so far adding it just as a placeholder value.
-}
+    if (!Q_stricmp(gametype, "mm")) {
+        return "??"; // Devil once started with this gametype, but I've no idea what were his plans. 
+                        // Perhaps one day I'll get an idea for it, so far adding it just as a placeholder value.
+    }
 
-if (!Q_stricmp(gametype, "csinf")) {
-    return "inf";
-}
+    if (!Q_stricmp(gametype, "dem")) {
+        return "inf";
+    }
 
-return gametype;
+    if (!Q_stricmp(gametype, "csinf")) {
+        return "inf";
+    }
+
+    return gametype;
 }
 
  /*

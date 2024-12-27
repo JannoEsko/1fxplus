@@ -4060,10 +4060,7 @@ void PmoveSingle (pmove_t *pmove) {
     PM_Weapon();
 
     // Use
-    // Disabled due to multiprotocol.
-    if (0) {
-        PM_Use( );
-    }
+    PM_Use( );
     
 
     // torso animation
