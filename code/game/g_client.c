@@ -1145,8 +1145,14 @@ void ClientUserinfoChanged( int clientNum )
     if( level.gametypeData->teams )
     {
 
-        s = Info_ValueForKey(userinfo, "team_identity");
+        if (isCurrentGametypeInList((gameTypes_t[]) { GT_HNS, GT_HNZ, GT_MAX })) {
+            s = Info_ValueForKey(userinfo, "identity");
+        }
+        else {
+            s = Info_ValueForKey(userinfo, "team_identity");
+        }
 
+        
         if (level.time > client->sess.lastIdentityChange + 5000 && client->sess.identityChangeCount <= 10) {
 
             // Lookup the identity by name and if it cant be found then pick a random one
@@ -1183,7 +1189,7 @@ void ClientUserinfoChanged( int clientNum )
                 client->pers.identity = BG_FindTeamIdentity(level.gametypeTeam[TEAM_RED], 0);
             }
         }
-        else if (Q_stricmp(s, client->pers.identity->mName)) {
+        else if (client->pers.connected == CON_CONNECTED && client->pers.identity && Q_stricmp(s, client->pers.identity->mName)) {
             G_printInfoMessage(ent, "You need to wait before you can pick a next identity.");
         }
     }
