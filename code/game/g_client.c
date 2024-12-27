@@ -1153,7 +1153,7 @@ void ClientUserinfoChanged( int clientNum )
         }
 
         
-        if (level.time > client->sess.lastIdentityChange + 5000 && client->sess.identityChangeCount <= 10) {
+        if (client->sess.identityChangeCount <= 10) {
 
             // Lookup the identity by name and if it cant be found then pick a random one
             client->pers.identity = BG_FindIdentity(s);
@@ -1172,7 +1172,7 @@ void ClientUserinfoChanged( int clientNum )
                     }
 
                 }
-                else if (!client->pers.identity || Q_stricmp(level.gametypeTeam[team], client->pers.identity->mTeam))
+                else if (!client->pers.identity || (Q_stricmp(level.gametypeTeam[team], client->pers.identity->mTeam) && !isCurrentGametypeInList((gameTypes_t[]) { GT_HNS, GT_HNZ, GT_MAX })))
                 {
                     // Get first matching team identity
                     client->pers.identity = BG_FindTeamIdentity(level.gametypeTeam[team], -1);

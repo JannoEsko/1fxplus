@@ -1637,6 +1637,11 @@ static void G_SayTo( gentity_t *ent, gentity_t *other, int mode, const char *nam
     else if (ent->client->sess.team == TEAM_RED) {
         teamPrefix = "^7[^1r^7] ";
     }
+    
+    if (mode == SAY_TELL) {
+        teamPrefix = "^7[^1PM^7] ";
+    }
+
     getChatAdminPrefixByMode(ent, mode, adminPrefix, sizeof(adminPrefix));
     char* starPrefixSuffix = "";
 
@@ -1783,11 +1788,9 @@ void G_GetChatPrefix ( gentity_t* ent, gentity_t* target, int mode, char* name, 
                  target->client->sess.team == ent->client->sess.team  &&
                  Team_GetLocationMsg(ent, location, sizeof(location))    )
             {
-                Com_sprintf ( name, nameSize, "%s[%s%s] %s(%s): ",
-                              namecolor,
-                              ent->client->pers.netname,
-                              namecolor,
-                              S_COLOR_WHITE, location );
+                Com_sprintf ( name, nameSize, "(%s to %s): ",
+                              ent->client->pers.cleanName,
+                              target->client->pers.cleanName);
             }
             else
             {
@@ -1917,11 +1920,53 @@ static void Cmd_Say_f( gentity_t *ent, int mode ) { // JANFIXME - the purpose of
 
         mode = getChatModeFromCommand(ent, admCmd, mode, adminCommand);
 
+        gentity_t* target = NULL;
+
+        if (mode == SAY_PM) {
+            mode = SAY_TELL;
+
+            int idNum = G_ClientNumFromArg(ent, argc == 2 ? 1 : 2, "private message", qfalse, qtrue, qtrue, argc == 2 ? qtrue : qfalse);
+            if (idNum >= 0) {
+                target = &g_entities[idNum];
+                target->client->sess.lastPM = ent - g_entities;
+                target->client->sess.privateMessageActive = qtrue;
+                ent->client->sess.lastPM = idNum;
+                ent->client->sess.privateMessageActive = qtrue;
+                p = concatArgs(argc == 2 ? 2 : 3, argc == 2 ? qtrue : qfalse, qtrue);
+            }
+            else {
+                return;
+            }
+
+        }
+        else if (mode == SAY_RE) {
+            mode = SAY_TELL;
+
+            if (ent->client->sess.privateMessageActive) {
+                target = &g_entities[ent->client->sess.lastPM];
+
+                if (!target || !target->client || target->client->pers.connected != CON_CONNECTED) {
+                    G_printInfoMessage(ent, "You cannot respond to the client as they are not connected.");
+
+                    return;
+                }
+
+                p = concatArgs(argc == 2 ? 1 : 2, argc == 2 ? qtrue : qfalse, qtrue);
+
+            }
+            else {
+                G_printInfoMessage(ent, "You cannot respond to anyone as nobody has PM'd you.");
+
+                return;
+            }
+
+        }
+
         // Run all of the tokens.
         char tokenizedBuffer[MAX_SAY_TEXT];
         parseChatTokens(ent, mode, p, tokenizedBuffer, sizeof(tokenizedBuffer));
 
-        G_Say(ent, NULL, mode, tokenizedBuffer);
+        G_Say(ent, target, mode, tokenizedBuffer);
     }
 }
 

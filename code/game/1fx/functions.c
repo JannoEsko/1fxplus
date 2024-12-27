@@ -2501,6 +2501,14 @@ int getChatModeFromCommand(gentity_t* ent, const char* cmd, chatMode_t mode, int
                 return SAY_HADMCHAT;
             }
 
+            if (!Q_stricmp(cmd, "!pm")) {
+                return SAY_PM;
+            }
+
+            if (!Q_stricmp(cmd, "!re")) {
+                return SAY_RE;
+            }
+
         }
 
         // Wasn't a command, are we in compmode?

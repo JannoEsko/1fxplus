@@ -655,6 +655,8 @@ typedef struct
 
     int                 lastIdentityChange;
     int                 identityChangeCount;
+    int                 lastPM;
+    qboolean            privateMessageActive;
 } clientSession_t;
 
 //

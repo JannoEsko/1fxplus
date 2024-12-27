@@ -1338,7 +1338,9 @@ typedef enum chatMode_s {
     SAY_CLANTALK,
     SAY_CLANCHAT,
     SAY_TELL_SELF,
-    SAY_CALLADMCHAT
+    SAY_CALLADMCHAT,
+    SAY_PM,
+    SAY_RE
 } chatMode_t;
 
 typedef struct {
