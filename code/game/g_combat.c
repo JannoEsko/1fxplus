@@ -73,7 +73,7 @@ void TossClientItems( gentity_t *self )
             G_DropWeapon(self, WP_M4_ASSAULT_RIFLE, 0);
         }
     }
-    else {
+    else if (!isCurrentGametype(GT_GUNGAME)) {
 
         if (weapon > WP_KNIFE && weapon < WP_NUM_WEAPONS &&
             (self->client->ps.ammo[weaponData[weapon].attack[ATTACK_NORMAL].ammoIndex] + self->client->ps.clip[weapon]))
@@ -325,6 +325,27 @@ void player_die(
             }
         }
 
+    }
+    else if (isCurrentGametype(GT_GUNGAME)) {
+        if (self && self->client && attacker && attacker->client && attacker != self) {
+            attacker->client->pers.gg.level++;
+
+            if (attacker->client->pers.gg.level >= 25) {
+                gentity_t* tent;
+                tent = G_TempEntity(vec3_origin, EV_GAME_OVER);
+                tent->s.eventParm = GAME_OVER_SCORELIMIT;
+                tent->r.svFlags = SVF_BROADCAST;
+                tent->s.otherEntityNum = attacker->client->ps.clientNum;
+
+                G_GlobalSound(G_SoundIndex("sound/ctf_win.mp3"));
+                G_Broadcast(BROADCAST_AWARDS, NULL, qfalse, "%s\nhas \\won the game!", attacker->client->pers.netname);
+
+                LogExit(va("%s won!", attacker->client->pers.netname));
+            }
+            else {
+                gungame_giveGuns(attacker);
+            }
+        }
     }
 
     //Ryan april 22 2003

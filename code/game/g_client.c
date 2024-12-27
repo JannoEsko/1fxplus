@@ -1829,7 +1829,7 @@ void ClientSpawn(gentity_t *ent)
     if ( level.pickupsDisabled )
     {
 
-        if (isCurrentGametypeInList((gameTypes_t[]) { GT_HNS, GT_HNZ, GT_MAX })) {
+        if (isCurrentGametypeInList((gameTypes_t[]) { GT_HNS, GT_HNZ, GT_GUNGAME, GT_MAX })) {
 
             giveWeaponToClient(ent, WP_KNIFE, qtrue);
 
@@ -2057,6 +2057,11 @@ void ClientSpawn(gentity_t *ent)
         ent->client->ps.stats[STAT_WEAPONS] |= (1 << WP_KNIFE);
         giveWeaponToClient(ent, WP_USSOCOM_PISTOL, qfalse);
         ent->client->pers.csinf.resetGuns = qfalse;
+    }
+    
+    if (isCurrentGametype(GT_GUNGAME)) {
+        client->pers.gg.level--;
+        gungame_giveGuns(ent);
     }
 
 }

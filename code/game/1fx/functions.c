@@ -5067,3 +5067,39 @@ void resetCSInfStruct(gentity_t* ent) {
     }
 
 }
+
+void gungame_giveGuns(gentity_t* ent) {
+    
+    int guns[] = {
+        WP_RPG7_LAUNCHER
+        , WP_MM1_GRENADE_LAUNCHER
+        , WP_M60_MACHINEGUN
+        , WP_MSG90A1
+        , WP_AK74_ASSAULT_RIFLE
+        , WP_M4_ASSAULT_RIFLE
+        , WP_USAS_12_SHOTGUN
+        , WP_M3A1_SUBMACHINEGUN
+        , WP_MICRO_UZI_SUBMACHINEGUN
+        , WP_M590_SHOTGUN
+        , WP_USSOCOM_PISTOL
+        , WP_M1911A1_PISTOL
+        , WP_KNIFE
+    };
+
+    int gunsArraySize = sizeof(guns) / sizeof(guns[0]);
+
+    if (ent->client->pers.gg.level < 0) {
+        ent->client->pers.gg.level = 0;
+    }
+
+    int gunDivision = Com_Clamp(0, gunsArraySize - 1, ent->client->pers.gg.level / 2);
+
+    if (guns[gunDivision] != ent->client->pers.gg.currentGun) {
+        removeWeaponFromClient(ent, ent->client->pers.gg.currentGun, qfalse, WP_KNIFE);
+    }
+
+    ent->client->pers.gg.currentGun = guns[gunDivision];
+
+    giveWeaponToClient(ent, ent->client->pers.gg.currentGun, qtrue);
+
+}

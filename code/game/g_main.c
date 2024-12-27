@@ -1047,7 +1047,7 @@ void G_SetCurrentGametypeValue(char* gametype) {
     } else if (!Q_stricmp(gametype, "h&z") || !Q_stricmp(gametype, "hnz")) {
         trap_Cvar_Set("current_gametype", va("%d", GT_HNZ));
     } else if (!Q_stricmp(gametype, "gg")) {
-        trap_Cvar_Set("current_gametype", va("%d", GT_DM));
+        trap_Cvar_Set("current_gametype", va("%d", GT_GUNGAME));
     } else if (!Q_stricmp(gametype, "vip")) {
         trap_Cvar_Set("current_gametype", va("%d", GT_VIP));
     } else if (!Q_stricmp(gametype, "prop")) {

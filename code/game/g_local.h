@@ -544,6 +544,11 @@ typedef struct csInfSpecifics_s {
     qboolean resetGuns;
 } csInfSpecifics_t;
 
+typedef struct ggSpecifics_s {
+    int level;
+    int currentGun;
+} ggSpecifics_t;
+
 // client data that stays across multiple levels or map restarts
 // this is achieved by writing all the data to cvar strings at game shutdown
 // time and reading them back at connection time.  Anything added here
@@ -720,6 +725,7 @@ typedef struct
     int                 killsAsSeekCurrentRound;
 
     csInfSpecifics_t    csinf;
+    ggSpecifics_t       gg;
 
 } clientPersistant_t;
 
@@ -2243,6 +2249,7 @@ void sendRoxLastSpec(int recipient, int lastSpec);
 void csinf_buyMenu(gentity_t* ent);
 void resetCSInfStruct(gentity_t* ent);
 void csinf_handleCash(gentity_t* ent, int cash, char* reason, qboolean printChat);
+void gungame_giveGuns(gentity_t* ent);
 
 typedef enum
 {
