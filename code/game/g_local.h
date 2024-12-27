@@ -652,6 +652,9 @@ typedef struct
     int                 m4Taken;
 
     int                 weaponsStolen;
+
+    int                 lastIdentityChange;
+    int                 identityChangeCount;
 } clientSession_t;
 
 //
@@ -2200,6 +2203,8 @@ gentity_t* findClosestEnemyPlayer(gentity_t* ent, qboolean bot);
 void dbWriteHnsBestPlayersIntoHnsStruct(void);
 void dbWriteHnsStats(void);
 void fillHnsStats(void);
+void setIdentityTeamForCustomGametype(TIdentity* ident);
+TIdentity* getRandomCustomTeamIdentity(team_t team);
 
 typedef struct
 {

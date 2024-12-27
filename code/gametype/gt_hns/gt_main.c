@@ -203,7 +203,7 @@ int GT_Event ( int cmd, int time, int arg0, int arg1, int arg2, int arg3, int ar
         case GTEV_TIME_EXPIRED:
             trap_Cmd_Broadcast(-1, va("%s ^7won!", gt_hiderTeamColored.string), qfalse);
             trap_Cmd_ConsoleTextMessage(-1, GAMETYPE_NAME, "Hiders won the match.");
-            trap_Cmd_AddTeamScore(TEAM_BLUE, 1);
+            trap_Cmd_AddTeamScore(TEAM_RED, 1);
             trap_Cmd_StartGlobalSound(gametype.caseCaptureSound);
             trap_Cmd_Restart(5);
             break;

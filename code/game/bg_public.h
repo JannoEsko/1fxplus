@@ -965,6 +965,7 @@ typedef struct SIdentity
     TCharacterTemplate  *mCharacter;
     TSkinTemplate       *mSkin;
     qhandle_t           mIcon;
+    team_t              customGametypeTeam;
 
 } TIdentity;
 

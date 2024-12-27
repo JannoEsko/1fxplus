@@ -1138,28 +1138,53 @@ void ClientUserinfoChanged( int clientNum )
     // Enforce the identities
     oldidentity = client->pers.identity;
 
+    if (level.time > client->sess.lastIdentityChange + 60000) {
+        client->sess.identityChangeCount = 0; // After a minute we reset the counter.
+    }
+
     if( level.gametypeData->teams )
     {
-        s = Info_ValueForKey ( userinfo, "team_identity" );
 
-        // Lookup the identity by name and if it cant be found then pick a random one
-        client->pers.identity = BG_FindIdentity ( s );
+        s = Info_ValueForKey(userinfo, "team_identity");
 
-        if ( team != TEAM_SPECTATOR )
-        {
-            // No identity or a team mismatch means they dont get to be that skin
-            if ( !client->pers.identity || Q_stricmp ( level.gametypeTeam[team], client->pers.identity->mTeam ) )
+        if (level.time > client->sess.lastIdentityChange + 5000 && client->sess.identityChangeCount <= 10) {
+
+            // Lookup the identity by name and if it cant be found then pick a random one
+            client->pers.identity = BG_FindIdentity(s);
+
+            if (team != TEAM_SPECTATOR)
             {
-                // Get first matching team identity
-                client->pers.identity = BG_FindTeamIdentity ( level.gametypeTeam[team], -1 );
+
+                // No identity or a team mismatch means they dont get to be that skin
+
+                if (isCurrentGametypeInList((gameTypes_t[]) { GT_HNS, GT_HNZ, GT_MAX })) {
+                    // Check that the identity is allowed for current team.
+
+                    if (client->pers.identity->customGametypeTeam != team) {
+                        client->pers.identity = getRandomCustomTeamIdentity(team);
+                        G_printInfoMessage(ent, "Your skin was changed as it didn't match your team.");
+                    }
+
+                }
+                else if (!client->pers.identity || Q_stricmp(level.gametypeTeam[team], client->pers.identity->mTeam))
+                {
+                    // Get first matching team identity
+                    client->pers.identity = BG_FindTeamIdentity(level.gametypeTeam[team], -1);
+                }
+
+
+
+            }
+            else
+            {
+                // Spectators are going to have to choose one of the two team skins and
+                // the chance of them having the proper one in team_identity is slim, so just
+                // give them a model they may use later
+                client->pers.identity = BG_FindTeamIdentity(level.gametypeTeam[TEAM_RED], 0);
             }
         }
-        else
-        {
-            // Spectators are going to have to choose one of the two team skins and
-            // the chance of them having the proper one in team_identity is slim, so just
-            // give them a model they may use later
-            client->pers.identity = BG_FindTeamIdentity ( level.gametypeTeam[TEAM_RED], 0 );
+        else if (Q_stricmp(s, client->pers.identity->mName)) {
+            G_printInfoMessage(ent, "You need to wait before you can pick a next identity.");
         }
     }
     else
@@ -1184,6 +1209,8 @@ void ClientUserinfoChanged( int clientNum )
         if ( client->pers.identity && oldidentity && client->pers.identity != oldidentity && team != TEAM_SPECTATOR )
         {
             trap_SendServerCommand( -1, va("print \"%s" S_COLOR_WHITE " has changed identities\n\"", client->pers.netname ) );
+            client->sess.identityChangeCount++;
+            client->sess.lastIdentityChange = level.time;
         }
 
         // If the client is changing their name then handle some delayed name changes

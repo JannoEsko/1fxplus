@@ -66,21 +66,36 @@ int Pickup_Weapon (gentity_t *ent, gentity_t *other, qboolean* autoswitch )
         // Henk 26/01/10 -> Notification if people pickup special weapons
         if (other) {
             if (weaponNum == WP_M4_ASSAULT_RIFLE) {
-                G_FreeEntity(&g_entities[level.hns.M4Flare]);
+
+                if (level.hns.M4Flare) {
+                    G_FreeEntity(&g_entities[level.hns.M4Flare]);
+                }
+
+                level.hns.M4Flare = -1;
                 level.hns.M4ent = -1;
                 level.hns.runM4Flare = qfalse;
                 G_printGametypeMessageToAll("%s has taken the M4.", other->client->pers.cleanName);
                 Q_strncpyz(level.hns.M4loc, other->client->pers.netname, sizeof(level.hns.M4loc));
             }
             else if (weaponNum == WP_RPG7_LAUNCHER) {
-                G_FreeEntity(&g_entities[level.hns.RPGFlare]);
+
+                if (level.hns.RPGFlare) {
+                    G_FreeEntity(&g_entities[level.hns.RPGFlare]);
+                }
+                
+                level.hns.RPGFlare = -1;
                 level.hns.RPGent = -1;
                 level.hns.runRPGFlare = qfalse;
                 G_printGametypeMessageToAll("%s has taken the RPG.", other->client->pers.cleanName);
                 Q_strncpyz(level.hns.RPGloc, other->client->pers.netname, sizeof(level.hns.RPGloc));
             }
             else if (weaponNum == WP_MM1_GRENADE_LAUNCHER) {
-                G_FreeEntity(&g_entities[level.hns.MM1Flare]);
+
+                if (level.hns.MM1Flare) {
+                    G_FreeEntity(&g_entities[level.hns.MM1Flare]);
+                }
+
+                level.hns.MM1Flare = -1;
                 level.hns.MM1ent = -1;
                 level.hns.runMM1Flare = qfalse;
                 G_printGametypeMessageToAll("%s has taken the MM1.", other->client->pers.cleanName);
@@ -767,7 +782,7 @@ gentity_t* G_DropWeapon ( gentity_t* ent, weapon_t weapon, int pickupDelay )
     // let them pick it up immediately
     else if ( pickupDelay )
     {
-        dropped->nextthink = level.time + 3000;
+        dropped->nextthink = level.time + pickupDelay;
         dropped->s.eFlags |= EF_NOPICKUP;
         dropped->think = G_EnablePickup;
     }

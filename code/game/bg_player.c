@@ -315,6 +315,9 @@ TSkinTemplate *BG_ParseSkins( TCharacterTemplate* character, TGPGroup group )
                 {
                     identity->mTeam = "";
                 }
+
+                setIdentityTeamForCustomGametype(identity);
+
             }
         }
 

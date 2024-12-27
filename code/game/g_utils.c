@@ -505,6 +505,18 @@ Marks the entity as free
 */
 void G_FreeEntity( gentity_t *ed )
 {
+
+#ifdef _DEBUG
+    // If we're about to free a player-entity, then trigger a crash to find out where the freeing was called from.
+    if ((ed - g_entities) >= 0 && (ed - g_entities) < 64 && ed && !ed->neverFree) {
+        logSystem(LOGLEVEL_WARN, "About to free a player-gentity. %d => %s, %s", ed - g_entities, ed->classname, ed->client ? "isclient" : "isnotclient");
+
+        volatile int *tst = NULL;
+        *tst = 11;
+    }
+
+#endif
+
     trap_UnlinkEntity (ed);
 
     if ( ed->neverFree )

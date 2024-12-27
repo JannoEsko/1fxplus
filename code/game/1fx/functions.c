@@ -4232,17 +4232,37 @@ void hnsRunFrame() {
         return;
     }
 
-    if (level.hns.MM1ent && g_entities[level.hns.MM1ent].s.pos.trType == TR_STATIONARY && level.hns.runMM1Flare && level.gametypeStartTime >= 5000) {
-        level.hns.MM1Flare = spawnEffect(g_entities[level.hns.MM1ent].r.currentOrigin, "flare_blue");
-        level.hns.runMM1Flare = qfalse;
+    if (level.hns.MM1ent && g_entities[level.hns.MM1ent].s.pos.trType == TR_STATIONARY && level.hns.runMM1Flare) {
+
+        int tmp = spawnEffect(g_entities[level.hns.MM1ent].r.currentOrigin, "flare_blue");
+
+        if (tmp) {
+            level.hns.MM1Flare = tmp;
+            level.hns.runMM1Flare = qfalse;
+        }
+
+        
     }
-    if (level.hns.M4ent && g_entities[level.hns.M4ent].s.pos.trType == TR_STATIONARY && level.hns.runM4Flare && level.gametypeStartTime >= 5000) {
-        level.hns.M4Flare = spawnEffect(g_entities[level.hns.M4ent].r.currentOrigin, "flare_red");
-        level.hns.runM4Flare = qfalse;
+    if (level.hns.M4ent && g_entities[level.hns.M4ent].s.pos.trType == TR_STATIONARY && level.hns.runM4Flare) {
+
+       int tmp  = spawnEffect(g_entities[level.hns.M4ent].r.currentOrigin, "flare_red");
+
+       if (tmp) {
+           level.hns.M4Flare = tmp;
+           level.hns.runM4Flare = qfalse;
+       }
+     
+
     }
-    if (level.hns.RPGent && g_entities[level.hns.RPGent].s.pos.trType == TR_STATIONARY && level.hns.runRPGFlare && level.gametypeStartTime >= 5000) {
-        level.hns.RPGFlare = spawnEffect(g_entities[level.hns.RPGent].r.currentOrigin, "flare_red");
-        level.hns.runRPGFlare = 0;
+    if (level.hns.RPGent && g_entities[level.hns.RPGent].s.pos.trType == TR_STATIONARY && level.hns.runRPGFlare) {
+
+        int tmp = spawnEffect(g_entities[level.hns.RPGent].r.currentOrigin, "flare_red");
+
+        if (tmp) {
+            level.hns.RPGFlare = tmp;
+            level.hns.runRPGFlare = 0;
+        }
+
     }
 
     if (level.time > level.gametypeStartTime + 20000 && !level.hns.cagefight && !level.hns.secondBatchCustomWeaponsDistributed) {
@@ -4726,5 +4746,54 @@ void fillHnsStats() {
             seekers->playerScore = 0;
         }
     }
+
+}
+
+void setIdentityTeamForCustomGametype(TIdentity* ident) {
+
+    if (isCurrentGametype(GT_HNS)) {
+        if (!Q_stricmp(ident->mCharacter->mName, "NPC_Swiss_Police") ||
+            !Q_stricmp(ident->mCharacter->mName, "NPC_Honor_Guard") ||
+            !Q_stricmp(ident->mCharacter->mName, "NPC_Sebastian_Jenzer") ||
+            !Q_stricmp(ident->mCharacter->mName, "NPC_Stefan_Fritsch")
+            ) {
+            ident->customGametypeTeam = TEAM_BLUE;
+        }
+        else {
+            ident->customGametypeTeam = TEAM_RED;
+        }
+    }
+    else if (isCurrentGametype(GT_HNZ)) {
+
+        if (!Q_stricmp(ident->mCharacter->mName, "NPC_Virus_Male") ||
+            !Q_stricmp(ident->mCharacter->mName, "NPC_Virus_Villager_Female")) {
+            ident->customGametypeTeam = TEAM_BLUE;
+        }
+        else {
+            ident->customGametypeTeam = TEAM_RED;
+        }
+    }
+    else {
+        ident->customGametypeTeam = TEAM_FREE;
+    }
+
+}
+
+TIdentity* getRandomCustomTeamIdentity(team_t team) {
+    TIdentity* idents[MAX_IDENTITIES];
+    int identCount = 0;
+
+    for (int i = 0; i < bg_identityCount; i++) {
+        TIdentity* tmp = &bg_identities[i];
+
+        if (tmp->customGametypeTeam == team) {
+            idents[identCount++] = tmp;
+        }
+
+    }
+
+    // Pick a random ident and throw it back.
+
+    return idents[rand() % identCount];
 
 }

@@ -577,7 +577,12 @@ void G_ResetGametype ( qboolean fullRestart, qboolean cagefight )
         level.hns.secondBatchCustomWeaponsDistributed = qfalse;
         level.hns.roundOver = qfalse;
         level.hns.cagefight = qfalse;
-
+        level.hns.RPGent = -1;
+        level.hns.M4ent = -1;
+        level.hns.MM1ent = -1;
+        level.hns.RPGFlare = -1;
+        level.hns.M4Flare = -1;
+        level.hns.MM1Flare = -1;
         // Boe!Man 6/29/11: Also set the appropriate message if the weapon's been disabled.
         if (hideSeek_Weapons.string[HSWPN_M4] == '0') { // M4
             Com_sprintf(level.hns.M4loc, sizeof(level.hns.M4loc), "%s", "Disabled");
@@ -1066,6 +1071,7 @@ void CheckGametype ( void )
                         tent->client->sess.hsTimeOfDeath = level.time;
                         tent->client->sess.roundsWonAsHider++;
                         tent->client->sess.kills++;
+                        tent->client->sess.score++;
                     }
                 }
 
