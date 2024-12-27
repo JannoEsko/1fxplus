@@ -151,6 +151,8 @@ vmCvar_t    a_anticamp;
 vmCvar_t    a_pop;
 vmCvar_t    a_uppercut;
 
+vmCvar_t    a_followEnemy;
+
 vmCvar_t    g_leanType;
 
 vmCvar_t    g_serverColors;
@@ -264,6 +266,7 @@ vmCvar_t    g_noHighFps;
 vmCvar_t    g_hnsStatAging;
 
 vmCvar_t    sv_useLegacyNades;
+
 
 static cvarTable_t gameCvarTable[] =
 {
@@ -462,6 +465,8 @@ static cvarTable_t gameCvarTable[] =
     { &a_anticamp,    "a_anticamp",     "2",        CVAR_ARCHIVE,   0.0f,   0.0f,   0,  qfalse },
     { &a_pop,    "a_pop",     "1",        CVAR_ARCHIVE,   0.0f,   0.0f,   0,  qfalse },
     { &a_uppercut,    "a_uppercut",     "2",        CVAR_ARCHIVE,   0.0f,   0.0f,   0,  qfalse },
+
+    { &a_followEnemy,    "a_followEnemy",     "3",        CVAR_ARCHIVE,   0.0f,   0.0f,   0,  qfalse },
 
 
     { &g_leanType,    "g_leanType",     "0",        CVAR_ARCHIVE,   0.0f,   0.0f,   0,  qfalse }, // 0 = gold, 1 = silver, 2 = serve based on client

@@ -1569,6 +1569,7 @@ extern vmCvar_t    a_toggleweapon;
 extern vmCvar_t    a_anticamp;
 extern vmCvar_t    a_pop;
 extern vmCvar_t    a_uppercut;
+extern  vmCvar_t    a_followEnemy;
 
 extern  vmCvar_t    g_serverColors;
 extern  vmCvar_t    g_maxAliases;

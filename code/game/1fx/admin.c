@@ -94,7 +94,7 @@ admCmd_t adminCommands[] = {
 	{"!psl",    "punishlist",       &a_pop.integer,             &adm_punishList,                "Show punished players",            "",                 NULL},
 	{"!mcl",    "mapcyclelist",     &a_mapswitch.integer,       &adm_mapCycleList,              "Shows the current mapcycle",       "",                 NULL},
 	{"!stm",    "skiptomap",        &a_mapswitch.integer,       &adm_skipToMap,                 "Skips to the specified map index", "<map num>",        NULL },
-	{"!fe",    "followenemy",        &minimumAdminLevel,       &adm_followEnemy,                 "Toggles followenemy", "",        NULL },
+	{"!fe",    "followenemy",        &a_followEnemy.integer,       &adm_followEnemy,                 "Toggles followenemy", "",        NULL },
 };
 
 int adminCommandsSize = sizeof(adminCommands) / sizeof(adminCommands[0]);
