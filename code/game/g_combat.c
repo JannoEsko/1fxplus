@@ -227,7 +227,7 @@ void player_die(
     self->client->pers.statInfo.deaths++;
     // JANFIXME - Boe had a differentiation of deaths when in H&S + cagefight. 
 
-    if (isCurrentGametype(GT_HNS)) {
+    if (isCurrentGametype(GT_CSINF)) {
 
         self->client->pers.csinf.resetGuns = qtrue;
 
