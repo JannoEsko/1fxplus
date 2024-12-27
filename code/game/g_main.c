@@ -792,14 +792,19 @@ void G_SetDisabledWeapons(void) {
     for (int i = WP_KNIFE; i < WP_NUM_WEAPONS; i++) {
         gitem_t* item = BG_FindWeaponItem(i);
 
-        if (g_availableWeapons.string[i - 1] == '0') {
+        if (isCurrentGametypeInList((gameTypes_t[]) { GT_GUNGAME, GT_CSINF, GT_PROP, GT_MAX })) {
             trap_Cvar_Set(va("disable_%s", item->classname), "1");
         }
-        else if (g_availableWeapons.string[i - 1] == '2') {
-            trap_Cvar_Set(va("disable_%s", item->classname), "0");
-        }
         else {
-            trap_Cvar_Set(va("disable_%s", item->classname), "2");
+            if (g_availableWeapons.string[i - 1] == '0') {
+                trap_Cvar_Set(va("disable_%s", item->classname), "1");
+            }
+            else if (g_availableWeapons.string[i - 1] == '2') {
+                trap_Cvar_Set(va("disable_%s", item->classname), "0");
+            }
+            else {
+                trap_Cvar_Set(va("disable_%s", item->classname), "2");
+            }
         }
     }
 

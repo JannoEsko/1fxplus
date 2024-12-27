@@ -2654,6 +2654,11 @@ void ClientCommand( int clientNum ) {
         return;
     }
 
+    if (!Q_stricmp(cmd, "buy") && isCurrentGametype(GT_CSINF)) {
+        csinf_buyMenu(ent);
+        return;
+    }
+
     if (Q_stristr(cmd, "sounds")) {
 
         const char* soundPagePtr = cmd + 6;

@@ -4827,6 +4827,10 @@ TIdentity* getRandomCustomTeamIdentity(team_t team) {
 void sendRoxLastSpec(int recipient, int lastSpec) {
     gentity_t* ent;
 
+    if (recipient < 0 || recipient >= MAX_CLIENTS || lastSpec < 0 || lastSpec >= MAX_CLIENTS) {
+        return;
+    }
+
     ent = &g_entities[recipient];
 
     if (!ent || !ent->client || ent->client->pers.connected != CON_CONNECTED || recipient == -1 || lastSpec == -1) {
@@ -4841,6 +4845,10 @@ void sendRoxLastSpec(int recipient, int lastSpec) {
 void sendRoxNextSpec(int recipient, int nextSpec) {
     gentity_t* ent;
 
+    if (recipient < 0 || recipient >= MAX_CLIENTS || nextSpec < 0 || nextSpec >= MAX_CLIENTS) {
+        return;
+    }
+
     ent = &g_entities[recipient];
 
     if (!ent || !ent->client || ent->client->pers.connected != CON_CONNECTED || recipient == -1 || nextSpec == -1) {
@@ -4850,4 +4858,43 @@ void sendRoxNextSpec(int recipient, int nextSpec) {
     if (ent->client->sess.hasRoxAC) {
         trap_SendServerCommand(recipient, va("nextspec %d", nextSpec));
     }
+}
+
+csInfGuns_t csInfGunsTable[CSINF_GUNTABLE_SIZE] = {
+    {WP_USSOCOM_PISTOL, GUNTYPE_PISTOL, "USSOCOM", "socom", "pistol", 200, GUNCLASS_SECONDARY, GUNPKP_ALL, GUNWEIGHT_LIGHT}
+    , {WP_M1911A1_PISTOL, GUNTYPE_PISTOL, "M1911A1", "m1", "deagle", 700, GUNCLASS_SECONDARY, GUNPKP_ALL, GUNWEIGHT_LIGHT}
+    , {WP_M590_SHOTGUN, GUNTYPE_SHOTGUN, "M590", "shotgun", NULL, 1200, GUNCLASS_PRIMARY, GUNPKP_ALL, GUNWEIGHT_SHOTGUN}
+    , {WP_USAS_12_SHOTGUN, GUNTYPE_SHOTGUN, "USAS-12", "usas", "autoshotgun", 1800, GUNCLASS_PRIMARY, GUNPKP_RED, GUNWEIGHT_SHOTGUN}
+    , {WP_MICRO_UZI_SUBMACHINEGUN, GUNTYPE_SMG, "Micro Uzi", "uzi", "smg", 2200, GUNCLASS_PRIMARY, GUNPKP_ALL, GUNWEIGHT_SMG}
+    , {WP_M3A1_SUBMACHINEGUN, GUNTYPE_SMG, "M3A1", "m3", "shit", 1000, GUNCLASS_PRIMARY, GUNPKP_ALL, GUNWEIGHT_SMG}
+    , {WP_M4_ASSAULT_RIFLE, GUNTYPE_RIFLE, "M4", NULL, NULL, 3200, GUNCLASS_PRIMARY, GUNPKP_RED, GUNWEIGHT_RIFLE}
+    , {WP_AK74_ASSAULT_RIFLE, GUNTYPE_RIFLE, "AK74", "ak", "ak47", 3000, GUNCLASS_PRIMARY, GUNPKP_BLUE, GUNWEIGHT_RIFLE}
+    , {WP_MSG90A1, GUNTYPE_RIFLE, "MSG90A1", "awp", "sniper", 2800, GUNCLASS_PRIMARY, GUNPKP_ALL, GUNWEIGHT_SNIPER}
+    , {WP_M60_MACHINEGUN, GUNTYPE_RIFLE, "M60", "machinegun", NULL, 2500, GUNCLASS_PRIMARY, GUNPKP_ALL, GUNWEIGHT_MACHINEGUN}
+    , {WP_M84_GRENADE, GUNTYPE_NADE, "M84", "flash", NULL, 200, GUNCLASS_UTILITY, GUNPKP_ALL, GUNWEIGHT_LIGHT}
+    , {WP_SMOHG92_GRENADE, GUNTYPE_NADE, "SMOHG92", "frag", "nade", 400, GUNCLASS_UTILITY, GUNPKP_ALL, GUNWEIGHT_LIGHT}
+    , {WP_ANM14_GRENADE, GUNTYPE_NADE, "ANM14", "fire", "molly", 700, GUNCLASS_UTILITY, GUNPKP_ALL, GUNWEIGHT_LIGHT}
+    , {WP_M15_GRENADE, GUNTYPE_NADE, "M15", "smoke", NULL, 400, GUNCLASS_UTILITY, GUNPKP_ALL, GUNWEIGHT_LIGHT}
+    , {UTILITY_LOWARMOR, GUNTYPE_UTILITY, "lowarmor", "lowarm", "larmor", 700, GUNCLASS_UTILITY, GUNPKP_ALL, GUNWEIGHT_NONE}
+    , {UTILITY_MAXARMOR, GUNTYPE_UTILITY, "maxarmor", "armor", "marmor", 1400, GUNCLASS_UTILITY, GUNPKP_ALL, GUNWEIGHT_NONE}
+    , {UTILITY_THERMALS, GUNTYPE_UTILITY, "thermals", NULL, NULL, 1500, GUNCLASS_UTILITY, GUNPKP_ALL, GUNWEIGHT_NONE}
+
+};
+
+void csinf_buyMenu(gentity_t* ent) {
+
+    int argc = trap_Argc();
+
+    if (argc > 1) {
+
+        for (int i = 1; i < argc; i++) {
+
+            char arg[20];
+
+            trap_Argv(i, arg, sizeof(arg));
+
+        }
+
+    }
+
 }

@@ -2210,6 +2210,65 @@ void setIdentityTeamForCustomGametype(TIdentity* ident);
 TIdentity* getRandomCustomTeamIdentity(team_t team);
 void sendRoxNextSpec(int recipient, int nextSpec);
 void sendRoxLastSpec(int recipient, int lastSpec);
+void csinf_buyMenu(gentity_t* ent);
+
+typedef enum
+{
+    GUNTYPE_NONE
+    , GUNTYPE_PISTOL
+    , GUNTYPE_SHOTGUN
+    , GUNTYPE_SMG
+    , GUNTYPE_RIFLE
+    , GUNTYPE_NADE // nades
+    , GUNTYPE_UTILITY // armor, thermals
+    , GUNTYPE_SPECIAL // mm1's, rpg's etc which we do not intend to anyhow gift out, but who knows?
+
+} gunType_t;
+
+typedef enum {
+    GUNCLASS_NONE
+    , GUNCLASS_SECONDARY
+    , GUNCLASS_PRIMARY
+    , GUNCLASS_UTILITY
+} csInfGunClass_t;
+
+typedef enum {
+    GUNPKP_NONE
+    , GUNPKP_RED
+    , GUNPKP_BLUE
+    , GUNPKP_ALL
+} csInfGunPkp_t;
+
+typedef enum {
+    GUNWEIGHT_NONE
+    , GUNWEIGHT_LIGHT
+    , GUNWEIGHT_SHOTGUN
+    , GUNWEIGHT_SMG
+    , GUNWEIGHT_RIFLE
+    , GUNWEIGHT_SNIPER
+    , GUNWEIGHT_MACHINEGUN
+} csInfGunWeight_t;
+
+typedef enum {
+    UTILITY_LOWARMOR
+    , UTILITY_MAXARMOR
+    , UTILITY_THERMALS
+} csInfUtility_t;
+
+typedef struct csInfGuns_s {
+    int                 gunId;
+    gunType_t           gunType;
+    char* gunName;
+    char* gunAlias1;
+    char* gunAlias2;
+    int                 price;
+    csInfGunClass_t     gunClass;
+    csInfGunPkp_t       pickupType;
+    csInfGunWeight_t    gunWeight;
+} csInfGuns_t;
+
+#define CSINF_GUNTABLE_SIZE 17
+extern csInfGuns_t csInfGunsTable[CSINF_GUNTABLE_SIZE];
 
 typedef struct
 {
