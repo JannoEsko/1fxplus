@@ -1925,25 +1925,43 @@ void parseChatTokens(gentity_t* ent, chatMode_t chatMode, const char* input, cha
             
             if (chatParse.shouldSoundPlay) {
                 // JANFIXME - add playability based on sound modes + being alive/dead!
-                if (chatParse.isCustomSound) {
 
-                    for (int i = 0; i < level.numConnectedClients; i++) {
-                        gentity_t* tent = &g_entities[level.sortedClients[i]];
+                // Check whether we've spammed enough sounds within the last minute.
 
-                        if (tent->client->sess.legacyProtocol && !tent->client->sess.hasRoxAC) {
-                            G_printInfoMessage(tent, "Custom sound omitted. Please download Rox Anticheat from https://ac.roxmod.net to get easy access to custom sounds.");
+                if (ent->client->sess.voiceFloodTimer < level.time) {
+                    ent->client->sess.voiceFloodCount = 0;
+                }
+
+                if (ent->client->sess.voiceFloodCount >= 10 && ent->client->sess.voiceFloodTimer > level.time) {
+                    G_printInfoMessage(ent, "You're prevented from using voice chat for the next %d seconds.", (ent->client->sess.voiceFloodTimer - level.time) / 1000);
+                }
+                else if (!G_IsClientDead(ent->client) && !G_IsClientSpectating(ent->client)) {
+
+                    ent->client->sess.voiceFloodCount++;
+                    ent->client->sess.voiceFloodTimer = level.time + 60000;
+
+                    if (chatParse.isCustomSound) {
+
+                        for (int i = 0; i < level.numConnectedClients; i++) {
+                            gentity_t* tent = &g_entities[level.sortedClients[i]];
+
+                            if (tent->client->sess.legacyProtocol && !tent->client->sess.hasRoxAC) {
+                                G_printInfoMessage(tent, "Custom sound omitted. Please download Rox Anticheat from https://ac.roxmod.net to get easy access to custom sounds.");
+                            }
+                            else {
+                                G_ClientSound(tent, chatParse.soundIndex);
+                            }
                         }
-                        else {
-                            G_ClientSound(tent, chatParse.soundIndex);
-                        }
+
+
+                    }
+                    else {
+                        G_GlobalSound(chatParse.soundIndex);
                     }
 
-                    
-                }
-                else {
-                    G_GlobalSound(chatParse.soundIndex);
                 }
 
+                
                 if (!chatParse.displayNoText && chatParse.text) {
                     int len = strlen(chatParse.text);
                     if (outIndex + len < sizeOfOutput - 1) {
