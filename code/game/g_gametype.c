@@ -493,6 +493,18 @@ void G_ResetGametype ( qboolean fullRestart, qboolean cagefight )
             ent->s.eFlags &= ~EF_HSBOX;
         }
     }
+    else if (isCurrentGametype(GT_CSINF)) {
+
+        for (int i = 0; i < level.numConnectedClients; i++) {
+            gentity_t* ent = &g_entities[level.sortedClients[i]];
+
+            for (int j = 0; j < CSINF_MAX_NADES; j++) {
+                ent->client->pers.csinf.boughtUtility[j] = qfalse;
+            }
+
+        }
+
+    }
 
     // Reset the gametype itself
     G_ResetGametypeEntities ( );
@@ -1408,6 +1420,34 @@ intptr_t G_GametypeCommand(int command, intptr_t arg0, intptr_t arg1, intptr_t a
 
         case GT_REPORT_TEAMNAMES:
             writeGametypeTeamNames((const char*)arg0, (const char*)arg1);
+            break;
+
+        case GT_CSINF_ADDCASHTOCLIENT:
+
+            if (arg0 < 0 || arg0 >= MAX_CLIENTS) {
+                logSystem(LOGLEVEL_FATAL, "GT_CSINF_ADDCASHTOCLIENT arg0 = %d", arg0);
+            }
+
+            gentity_t* ent = &g_entities[arg0];
+
+            if (ent && ent->client) {
+                csinf_handleCash(ent, arg1, arg2, qtrue);
+            }
+
+            break;
+
+        case GT_CSINF_ADDCASHTOTEAM:
+
+            for (int i = 0; i < level.numConnectedClients; i++) {
+                gentity_t* ent = &g_entities[level.sortedClients[i]];
+
+                if (ent->client->sess.team == arg0) {
+                    if ((arg3 && !G_IsClientDead(ent)) || (arg4 && G_IsClientDead(ent))) { // arg3 = toAlivePlayers, arg4 = toDeadPlayers
+                        csinf_handleCash(ent, arg1, arg2, qtrue);
+                    }
+                }
+            }
+
             break;
 
         default:

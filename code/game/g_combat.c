@@ -229,6 +229,58 @@ void player_die(
 
     if (isCurrentGametype(GT_HNS)) {
 
+        self->client->pers.csinf.resetGuns = qtrue;
+
+        if (attacker && attacker->client && self != attacker) {
+
+            if (attacker->client->sess.team == self->client->sess.team) {
+                csinf_handleCash(attacker, csinf_friendlyKill.integer, "killing a teammate", qtrue);
+            }
+            else {
+
+                if (meansOfDeath == MOD_KNIFE) {
+                    csinf_handleCash(attacker, csinf_killBonus.integer * 6, "killing an enemy with a knife", qtrue);
+                }
+                else {
+
+                    qboolean cashGiven = qfalse;
+
+                    for (int i = 0; i < CSINF_GUNTABLE_SIZE; i++) {
+                        csInfGuns_t* gun = &csInfGunsTable[i];
+
+                        if (gun->gunId == meansOfDeath) {
+
+                            cashGiven = qtrue;
+
+                            if (gun->gunType == GUNTYPE_SMG) {
+                                csinf_handleCash(attacker, csinf_killBonus.integer * 4, "killing an enemy with a SMG", qtrue);
+                            }
+                            else if (gun->gunType == GUNTYPE_SHOTGUN) {
+                                csinf_handleCash(attacker, csinf_killBonus.integer * 3, "killing an enemy with a shotgun", qtrue);
+                            }
+                            else {
+                                csinf_handleCash(attacker, csinf_killBonus.integer, "killing an enemy", qtrue);
+                            }
+
+                            break;
+                        }
+                    }
+
+                    if (!cashGiven) {
+                        csinf_handleCash(attacker, csinf_killBonus.integer, "killing an enemy", qtrue);
+                    }
+                }
+
+            }
+
+        }
+        else {
+            csinf_handleCash(self, csinf_suicidePenalty.integer, "suicide", qtrue);
+        }
+
+    }
+    else if (isCurrentGametype(GT_HNS)) {
+
         if (self->client->sess.transformedEntity) {
             if (self->client->pers.movingModel) {
                 freeProphuntProps(self);

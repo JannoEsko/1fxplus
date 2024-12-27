@@ -529,6 +529,21 @@ typedef enum {
     NAMECHANGEBLOCK_RENAME
 } nameChangeBlock_t ;
 
+typedef enum csInfNades_s {
+    CSINFNADE_FLASH = 17,
+    CSINFNADE_FRAG,
+    CSINFNADE_FIRE,
+    CSINFNADE_SMOKE
+} csInfNades_t ;
+
+#define CSINF_MAX_NADES 4
+
+typedef struct csInfSpecifics_s {
+    int cash;
+    qboolean boughtUtility[CSINF_MAX_NADES];
+    qboolean resetGuns;
+} csInfSpecifics_t;
+
 // client data that stays across multiple levels or map restarts
 // this is achieved by writing all the data to cvar strings at game shutdown
 // time and reading them back at connection time.  Anything added here
@@ -703,6 +718,8 @@ typedef struct
     qboolean            isVip;
     qboolean            knifeBox;
     int                 killsAsSeekCurrentRound;
+
+    csInfSpecifics_t    csinf;
 
 } clientPersistant_t;
 
@@ -898,6 +915,11 @@ typedef struct hnsLvl_s {
     hnsBestPlayers_t    bestSeekers[3];
     hnsBestPlayers_t    extendedStats[HNSEXTSTAT_MAX];
 } hnsLvl_t;
+
+typedef struct csinfLvl_s {
+    int losingStreak;
+    team_t losingStreakTeam;
+} csinfLvl_t;
 
 typedef struct
 {
@@ -1660,6 +1682,14 @@ extern	vmCvar_t    g_noHighFps;
 extern  vmCvar_t    sv_useLegacyNades;
 extern  vmCvar_t    g_hnsStatAging;
 
+extern  vmCvar_t    csinf_suicidePenalty;
+extern  vmCvar_t    csinf_maxCash;
+extern  vmCvar_t    csinf_minCash;
+extern  vmCvar_t    csinf_friendlyKill;
+
+extern  vmCvar_t    csinf_killBonus;
+extern  vmCvar_t    csinf_startingCash;
+
 //extern vmCvar_t     g_leanType;
 
 void    trap_Print( const char *text );
@@ -2211,6 +2241,8 @@ TIdentity* getRandomCustomTeamIdentity(team_t team);
 void sendRoxNextSpec(int recipient, int nextSpec);
 void sendRoxLastSpec(int recipient, int lastSpec);
 void csinf_buyMenu(gentity_t* ent);
+void resetCSInfStruct(gentity_t* ent);
+void csinf_handleCash(gentity_t* ent, int cash, char* reason, qboolean printChat);
 
 typedef enum
 {

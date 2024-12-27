@@ -194,3 +194,11 @@ void trap_Cmd_Broadcast(int client, const char* message, qboolean playSound)
 void trap_Cmd_ConsoleTextMessage(int client, const char* gametype, const char* message) {
     syscall(GT_CONSOLETEXTMESSAGE, client, gametype, message);
 }
+
+void trap_Cmd_AddCashToClient(int client, int cash, const char* reason) {
+    syscall(GT_CSINF_ADDCASHTOCLIENT, client, cash, reason);
+}
+
+void trap_Cmd_AddCashToTeam(team_t team, int cash, const char* reason, qboolean toAlivePlayers, qboolean toDeadPlayers) {
+    syscall(GT_CSINF_ADDCASHTOTEAM, team, cash, reason, toAlivePlayers, toDeadPlayers);
+}

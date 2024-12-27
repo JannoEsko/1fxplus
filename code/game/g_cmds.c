@@ -1045,6 +1045,10 @@ void SetTeam( gentity_t *ent, char *s, const char* identity, qboolean forced )
             ghost = qtrue;
         }
     }
+
+    if (isCurrentGametype(GT_CSINF)) {
+        resetCSInfStruct(ent);
+    }
     
     //Ryan
     //Ryan june 15 2003

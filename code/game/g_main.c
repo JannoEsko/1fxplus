@@ -267,6 +267,17 @@ vmCvar_t    g_hnsStatAging;
 
 vmCvar_t    sv_useLegacyNades;
 
+// CSInf cvars.
+
+vmCvar_t    csinf_suicidePenalty;
+vmCvar_t    csinf_maxCash;
+vmCvar_t    csinf_minCash;
+vmCvar_t    csinf_friendlyKill;
+
+vmCvar_t    csinf_killBonus;
+vmCvar_t    csinf_startingCash;
+
+
 
 static cvarTable_t gameCvarTable[] =
 {
@@ -553,6 +564,14 @@ static cvarTable_t gameCvarTable[] =
     { &g_fireSpeedTime,         "g_fireSpeedTime",          "1500", CVAR_ARCHIVE | CVAR_LATCH | CVAR_LOCK_RANGE,                    0.0,    8000.0,  0, qfalse },
     { &g_hnsStatAging,         "g_hnsStatAging",          "15", CVAR_ARCHIVE,                    0.0,    8000.0,  0, qfalse },
     { &sv_useLegacyNades,      "sv_useLegacyNades",         "",     0, 0, 0, 0, qfalse },
+
+    
+    { &csinf_suicidePenalty, "csinf_suicidePenalty", "-500", CVAR_ARCHIVE | CVAR_LATCH | CVAR_LOCK_RANGE, -1000, 0.0, 0, qfalse },
+    { &csinf_maxCash, "csinf_maxCash", "12000", CVAR_ARCHIVE | CVAR_LATCH | CVAR_LOCK_RANGE, 8000.0, 16000.0, 0, qfalse },
+    { &csinf_minCash, "csinf_minCash", "0", CVAR_ARCHIVE | CVAR_LATCH | CVAR_LOCK_RANGE, -1000.0, 1000.0, 0, qfalse },
+    { &csinf_friendlyKill, "csinf_friendlyKill", "-1000", CVAR_ARCHIVE | CVAR_LATCH | CVAR_LOCK_RANGE, -2000.0, 0.0, 0, qfalse },
+    { &csinf_killBonus, "csinf_killBonus", "150", CVAR_ARCHIVE | CVAR_LATCH | CVAR_LOCK_RANGE, 100.0, 500.0, 0, qfalse },
+    { &csinf_startingCash, "csinf_startingCash", "800", CVAR_ARCHIVE | CVAR_LATCH | CVAR_LOCK_RANGE, 0.0, 1800.0, 0, qfalse },
 
 };
 

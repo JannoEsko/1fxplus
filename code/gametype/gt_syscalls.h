@@ -55,3 +55,5 @@ int         trap_Cmd_GetClientList          ( team_t team, int* clients, int cli
 void		trap_Cmd_Teamnames				( const char* redTeam, const char* blueTeam );
 void		trap_Cmd_Broadcast				( int client, const char* message, qboolean playSound );
 void		trap_Cmd_ConsoleTextMessage(int client, const char* gametype, const char* message);
+void        trap_Cmd_AddCashToClient(int client, int cash, const char* reason);
+void        trap_Cmd_AddCashToTeam(team_t team, int cash, const char* reason, qboolean toAlivePlayers, qboolean toDeadPlayers);

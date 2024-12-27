@@ -49,6 +49,9 @@ typedef struct {
     int     caseTakenSound;
     int     caseCaptureSound;
     int     caseReturnSound;
+
+    int     losingStreak;
+    team_t  losingTeam;
 } gametypeLocals_t;
 
 //=============================================

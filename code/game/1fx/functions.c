@@ -4884,17 +4884,186 @@ csInfGuns_t csInfGunsTable[CSINF_GUNTABLE_SIZE] = {
 void csinf_buyMenu(gentity_t* ent) {
 
     int argc = trap_Argc();
+    char arg[20];
+    qboolean printHelp = qfalse;
+    int validBoughtItems = 0;
 
-    if (argc > 1) {
+    Com_Memset(arg, 0, sizeof(arg));
 
-        for (int i = 1; i < argc; i++) {
+    trap_SendServerCommand(ent - g_entities, va("print \"^3CS Infiltration buy menu\n^7[^3Wallet^7]: ^1%d\n\n\"", ent->client->pers.csinf.cash));
 
-            char arg[20];
+    if (!G_IsClientDead(ent->client) && ent->client->sess.team != TEAM_SPECTATOR &&
+        (level.gametypeStartTime +
+#ifdef _DEVEL
+            20000000
+#else 
+            20000
+#endif
 
-            trap_Argv(i, arg, sizeof(arg));
+            ) >= level.time) {
+
+        if (argc > 1) {
+
+            for (int i = 1; i < argc; i++) {
+
+                trap_Argv(i, arg, sizeof(arg));
+
+                if (strlen(arg) && strstr(arg, "help") == NULL && strstr(arg, "?") == NULL) {
+
+                    for (int j = 0; j < CSINF_GUNTABLE_SIZE; j++) {
+                        csInfGuns_t* gun = &csInfGunsTable[j];
+
+                        if (!Q_stricmp(arg, gun->gunName) || !Q_stricmp(arg, gun->gunAlias1) || !Q_stricmp(arg, gun->gunAlias2)) {
+
+                            if (gun->price > ent->client->pers.csinf.cash) {
+                                G_printGametypeMessage(ent, "You cannot buy %s as you do not have enough cash (you got: %d, cost: %d, diff: %d)", gun->gunName, ent->client->pers.csinf.cash, gun->price, gun->price - ent->client->pers.csinf.cash);
+                                continue;
+                            }
+
+                            if (gun->gunType != GUNTYPE_UTILITY && ent->client->ps.stats[STAT_WEAPONS] & (1 << gun->gunId)) {
+                                G_printGametypeMessage(ent, "You cannot buy %s because you already have it. Drop it in order to buy it again.", gun->gunName);
+                                continue;
+                            }
+
+                            if (gun->pickupType != GUNPKP_ALL && gun->pickupType != ent->client->sess.team) {
+                                G_printGametypeMessage(ent, "You cannot buy %s as it is not designated for your team.", gun->gunName);
+                                continue;
+                            }
+
+                            if (gun->gunType == GUNTYPE_NADE && ent->client->pers.csinf.boughtUtility[gun->gunId - CSINFNADE_FLASH]) {
+                                G_printGametypeMessage(ent, "You cannot buy %s as you already bought it this round.", gun->gunName);
+                                continue;
+                            }
+
+                            // We run one more cycle to check whether they already got the same type gun.
+                            qboolean playerHasSameTypeGun = qfalse;
+
+                            for (int k = 0; k < CSINF_GUNTABLE_SIZE; k++) {
+
+                                csInfGuns_t* tmpGun = &csInfGunsTable[k];
+
+                                if (tmpGun == gun) {
+                                    continue;
+                                }
+
+                                if (tmpGun->gunClass == GUNCLASS_UTILITY) {
+                                    continue;
+                                }
+
+                                if (tmpGun->gunClass == gun->gunClass && ent->client->ps.stats[STAT_WEAPONS] & (1 << tmpGun->gunId)) {
+                                    playerHasSameTypeGun = qtrue;
+                                    break;
+                                }
+
+                            }
+
+                            if (playerHasSameTypeGun) {
+                                G_printGametypeMessage(ent, "You cannot buy %s as you already have a gun in the same category.", gun->gunName);
+                                continue;
+                            }
+
+                            if (gun->gunType == GUNTYPE_UTILITY) {
+
+                                if (gun->gunId == UTILITY_LOWARMOR) {
+                                    if (ent->client->ps.stats[STAT_ARMOR] >= MAX_ARMOR) {
+                                        G_printGametypeMessage(ent, "You cannot buy %s as you already have max armor.", gun->gunName);
+                                        continue;
+                                    }
+                                    else {
+                                        ent->client->ps.stats[STAT_ARMOR] = Com_Clamp(0, MAX_ARMOR, ent->client->ps.stats[STAT_ARMOR] + (MAX_ARMOR / 2));
+                                    }
+                                }
+                                else if (gun->gunId == UTILITY_MAXARMOR) {
+                                    if (ent->client->ps.stats[STAT_ARMOR] >= MAX_ARMOR) {
+                                        G_printGametypeMessage(ent, "You cannot buy %s as you already have max armor.", gun->gunName);
+                                        continue;
+                                    }
+                                    else {
+                                        ent->client->ps.stats[STAT_ARMOR] = MAX_ARMOR;
+                                    }
+                                }
+                                else if (gun->gunId == UTILITY_THERMALS) {
+                                    if (ent->client->ps.stats[STAT_GOGGLES] == GOGGLES_INFRARED) {
+                                        G_printGametypeMessage(ent, "You cannot buy %s as you already have goggles.", gun->gunName);
+                                        continue;
+                                    }
+                                    else {
+                                        ent->client->ps.stats[STAT_GOGGLES] = GOGGLES_INFRARED;
+                                    }
+                                }
+
+                            }
+                            else {
+
+                                if (gun->gunType == GUNTYPE_NADE) {
+                                    ent->client->pers.csinf.boughtUtility[gun->gunId - CSINFNADE_FLASH] = qtrue;
+                                }
+
+                                giveWeaponToClient(ent, gun->gunId, qtrue);
+                            }
+
+                            char cashReason[MAX_QPATH];
+                            Q_strncpyz(cashReason, va("buying %s", gun->gunName), sizeof(cashReason)); // Avoid nested varargs
+
+                            csinf_handleCash(ent, -gun->price, cashReason, qfalse); 
+                            validBoughtItems++;
+                        }
+                    }
+
+                }
+            }
 
         }
 
+        if (argc > 1 && !validBoughtItems) {
+            trap_SendServerCommand(ent - g_entities, "print \"No valid guns found in the request.\n\"");
+        }
+
+        if (argc == 1 || !validBoughtItems || !strlen(arg) || !Q_stricmp(arg, "help") || !Q_stricmp(arg, "?")) {
+
+            trap_SendServerCommand(ent - g_entities, "print \"^3You can buy the following weapons:\n\"");
+            trap_SendServerCommand(ent - g_entities, va("print \"^7%-12s %-12s %-12s %-3s %-4s %-6s %-12s\n\"", "Gun", "Alias 1", "Alias 2", "Cat", "Team", "Price", "Kill reward"));
+            trap_SendServerCommand(ent - g_entities, "print \"------------------------------------------------------------------\n");
+            for (int i = 0; i < CSINF_GUNTABLE_SIZE; i++) {
+
+                csInfGuns_t* gun = &csInfGunsTable[i];
+
+                if (gun->price > ent->client->pers.csinf.cash) {
+                    continue;
+                }
+
+                trap_SendServerCommand(ent - g_entities, va("print \"^7%-12s %-12s %-12s %-3s %-4s %4d %12.d\n\"", gun->gunName, gun->gunAlias1 ? gun->gunAlias1 : "", gun->gunAlias2 ? gun->gunAlias2 : "", gun->gunClass == GUNCLASS_PRIMARY ? "PRI" : (gun->gunClass == GUNCLASS_SECONDARY ? "SEC" : "UTI"), gun->pickupType == GUNPKP_ALL ? "All" : (gun->pickupType == GUNPKP_BLUE ? "Blue" : (gun->pickupType == GUNPKP_RED ? "Red" : "N/A")), gun->price, gun->gunType == GUNTYPE_SMG ? csinf_killBonus.integer * 4 : (gun->gunType == GUNTYPE_SHOTGUN ? csinf_killBonus.integer * 3 : csinf_killBonus.integer)));
+            }
+
+        }
+    }
+    else {
+        G_printGametypeMessage(ent, "You can only buy guns if you are alive, on a team, and less than 20 seconds have elapsed since the round started.");
+    }
+
+}
+
+void csinf_handleCash(gentity_t* ent, int cash, char* reason, qboolean printChat) {
+
+    ent->client->pers.csinf.cash = Com_Clamp(csinf_minCash.integer, csinf_maxCash.integer, ent->client->pers.csinf.cash + cash);
+
+    if (reason && *reason) {
+
+        if (printChat) {
+            G_printChatInfoMessage(ent, "^%s%s%d^7 for %s. Wallet: %d", cash < 0 ? "1" : "K", cash < 0 ? "" : "+", cash, reason, ent->client->pers.csinf.cash);
+        }
+
+        G_printGametypeMessage(ent, "^%s%s%d^7 for %s. Wallet: %d", cash < 0 ? "1" : "K", cash < 0 ? "" : "+", cash, reason, ent->client->pers.csinf.cash);
+    }
+
+}
+
+void resetCSInfStruct(gentity_t* ent) {
+
+    ent->client->pers.csinf.cash = csinf_startingCash.integer;
+
+    for (int i = 0; i < CSINF_MAX_NADES; i++) {
+        ent->client->pers.csinf.boughtUtility[i] = qfalse;
     }
 
 }

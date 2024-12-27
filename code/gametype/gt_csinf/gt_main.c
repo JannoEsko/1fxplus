@@ -30,12 +30,24 @@ vmCvar_t            gt_simpleScoring;
 vmCvar_t            gt_redTeamColored;
 vmCvar_t            gt_blueTeamColored;
 
+vmCvar_t            csinf_roundWinByCaptureCash;
+vmCvar_t            csinf_roundLoseBase;
+vmCvar_t            csinf_roundWinCash;
+vmCvar_t            csinf_roundLoseBonus;
+vmCvar_t            csinf_briefcaseCapBonus;
+vmCvar_t            csinf_roundLoseWhileSurviving;
+
 static cvarTable_t gametypeCvarTable[] =
 {
     { &gt_simpleScoring,    "gt_simpleScoring",     "0",  CVAR_ARCHIVE, 0.0f, 0.0f, 0, qfalse },
     { &gt_blueTeamColored,  "gt_blueTeamColored",   "^yB^Il^fu^+e ^7Team", CVAR_ARCHIVE, 0.0f, 0.0f, 0, qfalse },
     { &gt_redTeamColored, "gt_redTeamColored", "^$R^Te^Hd ^7Team", CVAR_ARCHIVE, 0.0, 0.0, 0,  qfalse },
-
+    { &csinf_roundWinByCaptureCash, "csinf_roundWinByCaptureCash", "3500", CVAR_ARCHIVE | CVAR_LATCH | CVAR_LOCK_RANGE, 1000, 4000, 0, qfalse },
+    { &csinf_roundLoseBase, "csinf_roundLoseBase", "1400", CVAR_ARCHIVE | CVAR_LATCH | CVAR_LOCK_RANGE, 0.0, 2000, 0, qfalse },
+    { &csinf_roundWinCash, "csinf_roundWinCash", "3200", CVAR_ARCHIVE | CVAR_LATCH | CVAR_LOCK_RANGE, 1000, 4000, 0, qfalse },
+    { &csinf_roundLoseBonus, "csinf_roundLoseBonus", "500", CVAR_ARCHIVE | CVAR_LATCH | CVAR_LOCK_RANGE, 0.0, 1000, 0, qfalse },
+    { &csinf_briefcaseCapBonus, "csinf_briefcaseCapBonus", "500", CVAR_ARCHIVE | CVAR_LATCH | CVAR_LOCK_RANGE, 0.0, 800.0, 0, qfalse },
+    { &csinf_roundLoseWhileSurviving, "csinf_roundLoseWhileSurviving", "0", CVAR_ARCHIVE | CVAR_LATCH | CVAR_LOCK_RANGE, -1000.0, 500.0, 0, qfalse },
     { NULL, NULL, NULL, 0, 0.0f, 0.0f, 0, qfalse },
 };
 
@@ -110,8 +122,6 @@ void GT_UpdateCvars( void )
 
             if ( cv->modificationCount != cv->vmCvar->modificationCount )
             {
-                Com_Printf("VAR CHANGED???????\n");
-                Com_Printf("Var: %s, val: %s\n", cv->cvarName, cv->vmCvar->string);
                 cv->modificationCount = cv->vmCvar->modificationCount;
             }
         }
@@ -201,12 +211,36 @@ int GT_Event ( int cmd, int time, int arg0, int arg1, int arg2, int arg3, int ar
                     trap_Cmd_TextMessage ( -1, va("%s^7 team \\eliminated!", gt_redTeamColored.string) );
                     trap_Cmd_AddTeamScore ( TEAM_BLUE, 1 );
                     trap_Cmd_Restart ( 5 );
+
+                    if (gametype.losingTeam == TEAM_RED) {
+                        gametype.losingStreak = Com_Clamp(0, 4, ++gametype.losingStreak);
+                    }
+                    else {
+                        gametype.losingTeam = TEAM_RED;
+                        gametype.losingStreak = 0;
+                    }
+
+                    trap_Cmd_AddCashToTeam(TEAM_RED, csinf_roundLoseBase.integer + csinf_roundLoseBonus.integer * gametype.losingStreak, "losing the round", qtrue, qtrue);
+                    trap_Cmd_AddCashToTeam(TEAM_BLUE, csinf_roundWinCash.integer, "winning the round", qtrue, qtrue);
+
                     break;
 
                 case TEAM_BLUE:
                     trap_Cmd_TextMessage ( -1, va("%s^7 team \\eliminated!", gt_blueTeamColored.string) );
                     trap_Cmd_AddTeamScore ( TEAM_RED, 1 );
                     trap_Cmd_Restart ( 5 );
+
+                    if (gametype.losingTeam == TEAM_BLUE) {
+                        gametype.losingStreak = Com_Clamp(0, 4, ++gametype.losingStreak);
+                    }
+                    else {
+                        gametype.losingTeam = TEAM_BLUE;
+                        gametype.losingStreak = 0;
+                    }
+
+                    trap_Cmd_AddCashToTeam(TEAM_BLUE, csinf_roundLoseBase.integer + csinf_roundLoseBonus.integer * gametype.losingStreak, "losing the round", qtrue, qtrue);
+                    trap_Cmd_AddCashToTeam(TEAM_RED, csinf_roundWinCash.integer, "winning the round", qtrue, qtrue);
+
                     break;
             }
             break;
@@ -215,6 +249,19 @@ int GT_Event ( int cmd, int time, int arg0, int arg1, int arg2, int arg3, int ar
             trap_Cmd_TextMessage ( -1, va("%s^7 team has \\defended the briefcase!", gt_redTeamColored.string) );
             trap_Cmd_AddTeamScore ( TEAM_RED, 1 );
             trap_Cmd_Restart ( 5 );
+
+            if (gametype.losingTeam == TEAM_BLUE) {
+                gametype.losingStreak = Com_Clamp(0, 4, ++gametype.losingStreak);
+            }
+            else {
+                gametype.losingTeam = TEAM_BLUE;
+                gametype.losingStreak = 0;
+            }
+
+            trap_Cmd_AddCashToTeam(TEAM_BLUE, csinf_roundLoseBase.integer + csinf_roundLoseBonus.integer * gametype.losingStreak, "losing the round", qfalse, qtrue);
+            trap_Cmd_AddCashToTeam(TEAM_BLUE, csinf_roundLoseWhileSurviving.integer, "losing the round while surviving", qtrue, qfalse);
+            trap_Cmd_AddCashToTeam(TEAM_RED, csinf_roundWinCash.integer, "winning the round", qtrue, qtrue);
+
             break;
 
         case GTEV_ITEM_DROPPED:
@@ -264,6 +311,19 @@ int GT_Event ( int cmd, int time, int arg0, int arg1, int arg2, int arg3, int ar
                         }
 
                         trap_Cmd_Restart ( 5 );
+
+                        if (gametype.losingTeam == TEAM_RED) {
+                            gametype.losingStreak = Com_Clamp(0, 4, ++gametype.losingStreak);
+                        }
+                        else {
+                            gametype.losingTeam = TEAM_RED;
+                            gametype.losingStreak = 0;
+                        }
+
+                        trap_Cmd_AddCashToTeam(TEAM_RED, csinf_roundLoseBase.integer + csinf_roundLoseBonus.integer * gametype.losingStreak, "losing the round", qtrue, qtrue);
+                        trap_Cmd_AddCashToTeam(TEAM_BLUE, csinf_roundWinByCaptureCash.integer, "winning the round", qtrue, qtrue);
+                        trap_Cmd_AddCashToClient(arg1, csinf_briefcaseCapBonus.integer, "capturing the briefcase");
+
                     }
                     break;
             }

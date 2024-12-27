@@ -1166,7 +1166,7 @@ void ClientUserinfoChanged( int clientNum )
                 if (isCurrentGametypeInList((gameTypes_t[]) { GT_HNS, GT_HNZ, GT_MAX })) {
                     // Check that the identity is allowed for current team.
 
-                    if (client->pers.identity->customGametypeTeam != team) {
+                    if (!client->pers.identity || client->pers.identity->customGametypeTeam != team) {
                         client->pers.identity = getRandomCustomTeamIdentity(team);
                         G_printInfoMessage(ent, "Your skin was changed as it didn't match your team.");
                     }
@@ -1608,6 +1608,11 @@ void ClientBegin( int clientNum )
         client->sess.checkClientAdditions = 1;
         client->sess.clientAdditionCheckTime = level.time + 2500; // Check after 2.5 second to avoid flooding the client.
     }
+
+    if (isCurrentGametype(GT_CSINF)) {
+        resetCSInfStruct(ent);
+    }
+
 }
 
 /*
@@ -1747,12 +1752,31 @@ void ClientSpawn(gentity_t *ent)
     }
     eventSequence = client->ps.eventSequence;
 
+    int currWeapons = client->ps.stats[STAT_WEAPONS];
+    int currGoggles = client->ps.stats[STAT_GOGGLES];
+    int currArmor = client->ps.stats[STAT_ARMOR];
+
     memset (client, 0, sizeof(*client));
 
     client->pers = saved;
     client->sess = savedSess;
     client->ps.ping = savedPing;
     client->lastkilled_client = -1;
+
+    if (isCurrentGametype(GT_CSINF) && !ent->client->pers.csinf.resetGuns) {
+
+        client->ps.stats[STAT_GOGGLES] = currGoggles;
+        client->ps.stats[STAT_ARMOR] = currArmor;
+
+        for (int csinfWpn = 0; csinfWpn < CSINF_GUNTABLE_SIZE; csinfWpn++) {
+            csInfGuns_t* gun = &csInfGunsTable[csinfWpn];
+
+            if (gun->gunType != GUNTYPE_UTILITY && currWeapons & (1 << gun->gunId)) {
+                giveWeaponToClient(ent, gun->gunId, qtrue);
+            }
+        }
+
+    }
 
     for ( i = 0 ; i < MAX_PERSISTANT ; i++ )
     {
@@ -1794,7 +1818,10 @@ void ClientSpawn(gentity_t *ent)
     memcpy ( client->ps.firemode, client->pers.firemode, sizeof(client->ps.firemode) );
 
     //give default weapons
-    client->ps.stats[STAT_WEAPONS] = ( 1 << WP_NONE );
+
+    if (!isCurrentGametype(GT_CSINF) || ent->client->pers.csinf.resetGuns) {
+        client->ps.stats[STAT_WEAPONS] = (1 << WP_NONE);
+    }
 
     client->noOutfittingChange = qfalse;
 
@@ -2025,6 +2052,13 @@ void ClientSpawn(gentity_t *ent)
         client->pers.seekerAway = qfalse;
         client->pers.seekerAwayEnt = -1;
     }
+
+    if (isCurrentGametype(GT_CSINF)) {
+        ent->client->ps.stats[STAT_WEAPONS] |= (1 << WP_KNIFE);
+        giveWeaponToClient(ent, WP_USSOCOM_PISTOL, qfalse);
+        ent->client->pers.csinf.resetGuns = qfalse;
+    }
+
 }
 
 

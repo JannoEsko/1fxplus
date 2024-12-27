@@ -408,7 +408,7 @@ void Touch_Item (gentity_t *ent, gentity_t *other, trace_t *trace)
             // Disabled weapons cannot be picked up. This might happen if a weapon
             // that was previously enabled with the weapon Admin command has been
             // dropped somewhere.
-            if (!BG_IsWeaponAvailableForOutfitting(ent->item->giTag, 2) && level.pickupsDisabled && !isCurrentGametypeInList((gameTypes_t[]) { GT_HNS, GT_HNZ, GT_MAX })) {
+            if (!BG_IsWeaponAvailableForOutfitting(ent->item->giTag, 2) && level.pickupsDisabled && !isCurrentGametypeInList((gameTypes_t[]) { GT_HNS, GT_HNZ, GT_CSINF, GT_MAX })) {
                 return;
             }
 
