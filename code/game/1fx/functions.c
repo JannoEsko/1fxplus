@@ -4805,3 +4805,31 @@ TIdentity* getRandomCustomTeamIdentity(team_t team) {
     return idents[rand() % identCount];
 
 }
+
+void sendRoxLastSpec(int recipient, int lastSpec) {
+    gentity_t* ent;
+
+    ent = &g_entities[recipient];
+
+    if (!ent || !ent->client || ent->client->pers.connected != CON_CONNECTED || recipient == -1 || lastSpec == -1) {
+        return;
+    }
+
+    if (ent->client->sess.hasRoxAC) {
+        trap_SendServerCommand(recipient, va("lastspec %d", lastSpec));
+    }
+}
+
+void sendRoxNextSpec(int recipient, int nextSpec) {
+    gentity_t* ent;
+
+    ent = &g_entities[recipient];
+
+    if (!ent || !ent->client || ent->client->pers.connected != CON_CONNECTED || recipient == -1 || nextSpec == -1) {
+        return;
+    }
+
+    if (ent->client->sess.hasRoxAC) {
+        trap_SendServerCommand(recipient, va("nextspec %d", nextSpec));
+    }
+}

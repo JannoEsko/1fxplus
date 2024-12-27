@@ -2207,6 +2207,8 @@ void dbWriteHnsStats(void);
 void fillHnsStats(void);
 void setIdentityTeamForCustomGametype(TIdentity* ident);
 TIdentity* getRandomCustomTeamIdentity(team_t team);
+void sendRoxNextSpec(int recipient, int nextSpec);
+void sendRoxLastSpec(int recipient, int lastSpec);
 
 typedef struct
 {

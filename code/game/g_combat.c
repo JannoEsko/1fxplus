@@ -485,6 +485,7 @@ void player_die(
 
         if ( client->sess.spectatorClient == self->s.number )
         {
+            sendRoxLastSpec(self->s.number, ent->s.number);
             Cmd_Score_f( g_entities + i );
         }
     }

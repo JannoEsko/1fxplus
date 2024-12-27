@@ -2259,7 +2259,7 @@ void CheckExitRules(void)
     }
 
     // check for sudden death
-    if (g_suddenDeath.integer && ScoreIsTied())
+    if (g_suddenDeath.integer && ScoreIsTied() && !isCurrentGametypeInList((gameTypes_t[]){GT_HNS, GT_HNZ, GT_MAX})) // Don't check suddenDeath in HNS and HNZ, as there it has no meaning.
     {
         // always wait for sudden death
         return;
@@ -2843,6 +2843,8 @@ void G_RunFrame( int levelTime )
                         ent->client->sess.coaster--;
                         if (ent->client->sess.coaster == 0) {
                             ent->client->sess.nextCoasterTime = 0;
+                            ent->client->sess.spinView = qfalse;
+                            ent->client->sess.spinViewState = SPINVIEW_NONE;
                         }
                         else if (ent->client->sess.spinView) {
                             ent->client->sess.nextCoasterTime += 50;
@@ -2855,6 +2857,12 @@ void G_RunFrame( int levelTime )
 
                     if (ent->client->sess.spinView) {
                         spinView(ent);
+
+                        if (level.time > ent->client->sess.lastSpin) {
+                            ent->client->sess.spinView = qfalse;
+                            ent->client->sess.spinViewState = SPINVIEW_NONE;
+                        }
+
                     }
 
                 }

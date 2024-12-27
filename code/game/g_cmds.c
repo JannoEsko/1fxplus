@@ -1240,6 +1240,11 @@ call
 */
 void G_StopGhosting ( gentity_t* ent )
 {
+
+    if (ent->client->ps.pm_flags & PMF_FOLLOW) {
+        sendRoxLastSpec(ent->client->sess.spectatorClient, ent->s.number);
+    }
+
     // Dont stop someone who isnt ghosting in the first place
     if ( !ent->client->sess.ghost )
     {
@@ -1311,6 +1316,8 @@ void G_StopFollowing( gentity_t *ent )
         ent->client->ps.movementDir = 0;
 
         BG_PlayerStateToEntityState( &ent->client->ps, &ent->s, qtrue );
+
+        sendRoxLastSpec(ent->client->sess.spectatorClient, ent->s.number);
     }
 
     // Ghots dont really become spectators, just psuedo spectators
@@ -1443,9 +1450,10 @@ void Cmd_Follow_f( gentity_t *ent )
     {
         SetTeam( ent, "spectator", NULL, qfalse );
     }
-
+    sendRoxLastSpec(ent->client->sess.spectatorClient, ent->s.number);
     ent->client->sess.spectatorState = SPECTATOR_FOLLOW;
     ent->client->sess.spectatorClient = i;
+    sendRoxNextSpec(i, ent->s.number);
 }
 
 /*
@@ -1526,8 +1534,10 @@ void Cmd_FollowCycle_f( gentity_t *ent, int dir )
         }
 
         // this is good, we can use it
+        sendRoxLastSpec(ent->client->sess.spectatorClient, ent->s.number);
         ent->client->sess.spectatorClient = clientnum;
         ent->client->sess.spectatorState = SPECTATOR_FOLLOW;
+        sendRoxNextSpec(ent->client->sess.spectatorClient, ent->s.number);
         return;
 
     } while ( clientnum != original );
@@ -1536,8 +1546,10 @@ void Cmd_FollowCycle_f( gentity_t *ent, int dir )
     if ( deadclient != -1 && g_forceFollow.integer )
     {
         // this is good, we can use it
+        sendRoxLastSpec(ent->client->sess.spectatorClient, ent->s.number);
         ent->client->sess.spectatorClient = deadclient;
         ent->client->sess.spectatorState = SPECTATOR_FOLLOW;
+        sendRoxNextSpec(ent->client->sess.spectatorClient, ent->s.number);
         return;
     }
 
