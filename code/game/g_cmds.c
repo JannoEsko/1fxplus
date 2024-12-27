@@ -1838,6 +1838,7 @@ void G_Say ( gentity_t *ent, gentity_t *target, int mode, const char *chatText )
 
     if ( target )
     {
+        G_SayTo(ent, ent, mode, name, text); // Send to self as well.
         G_SayTo( ent, target, mode, name, text );
         return;
     }
@@ -2590,7 +2591,8 @@ void ClientCommand( int clientNum ) {
 
     if (Q_stricmp (cmd, "tell") == 0)
     {
-        Cmd_Tell_f ( ent );
+        Cmd_Say_f(ent, SAY_PM);
+        //Cmd_Tell_f ( ent );
 
         return;
     }
