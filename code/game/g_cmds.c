@@ -713,6 +713,11 @@ void Cmd_Kill_f( gentity_t *ent )
         return;
     }
 
+    if (isCurrentGametype(GT_HNZ) && ent->client->pers.hnz.nextsuicide > level.time + 10000) {
+        G_printGametypeMessage(ent, "You must wait before you can suicide as you just recently died.");
+        return;
+    }
+
     ent->flags &= ~FL_GODMODE;
     ent->client->ps.stats[STAT_HEALTH] = ent->health = -999;
     player_die (ent, ent, ent, 100000, MOD_SUICIDE, HL_NONE, vec3_origin );
@@ -731,21 +736,25 @@ void BroadcastTeamChange( gclient_t *client, int oldTeam )
     {
         case TEAM_RED:
             G_Broadcast(BROADCAST_CMD, NULL, qfalse, "%s\njoined the %s", client->pers.netname, g_customRedName.string);
+            G_printGametypeMessageToAll("%s has joined the %s.", client->pers.cleanName, g_customRedName.string);
             break;
 
         case TEAM_BLUE:
             G_Broadcast(BROADCAST_CMD, NULL, qfalse, "%s\njoined the %s", client->pers.netname, g_customBlueName.string);
+            G_printGametypeMessageToAll("%s has joined the %s.", client->pers.cleanName, g_customBlueName.string);
             break;
 
         case TEAM_SPECTATOR:
             if ( oldTeam != TEAM_SPECTATOR )
             {
                 G_Broadcast(BROADCAST_CMD, NULL, qfalse, "%s\njoined the \\spectators", client->pers.netname);
+                G_printGametypeMessageToAll("%s has joined the spectators.", client->pers.cleanName);
             }
             break;
 
         case TEAM_FREE:
             G_Broadcast(BROADCAST_CMD, NULL, qfalse, "%s\njoined the \\battle", client->pers.netname);
+            G_printGametypeMessageToAll("%s has joined the battle", client->pers.cleanName);
             break;
     }
 }
@@ -898,7 +907,7 @@ void SetTeam( gentity_t *ent, char *s, const char* identity, qboolean forced )
                     return;
                 }
             }
-            else if (isCurrentGametype(GT_HNZ)) {
+            else if (isCurrentGametype(GT_HNZ) && level.customGameWeaponsDistributed) {
                 if (client->sess.team != TEAM_BLUE) {
                     trap_SendServerCommand(client - &level.clients[0], "print\"^3[H&Z] ^7Round already started, forcing you to the zombie team.\n\"");
                 }
@@ -1183,6 +1192,20 @@ void SetTeam( gentity_t *ent, char *s, const char* identity, qboolean forced )
             ent->client->ps.eFlags &= ~EF_HSBOX;
         }
     }
+    else if (isCurrentGametype(GT_HNZ)) {
+        if (client->sess.lastTeam != team && client->sess.lastTeam != TEAM_SPECTATOR) {
+            if (team == TEAM_BLUE) {
+                client->pers.hnz.killsAsHuman = client->sess.kills;
+                client->sess.kills = client->pers.hnz.killsAsZombie;
+                client->sess.score = client->pers.hnz.killsAsZombie;
+            }
+            else {
+                client->pers.hnz.killsAsZombie = client->sess.kills;
+                client->sess.kills = client->pers.hnz.killsAsHuman;
+                client->sess.score = client->pers.hnz.killsAsHuman;
+            }
+        }
+    }
 
     // Boe!Man 6/3/12: Reset noroof data when setting team.
     ent->client->sess.isOnRoof = qfalse;
@@ -1382,9 +1405,18 @@ void Cmd_Team_f( gentity_t *ent )
     }
 
     trap_Argv( 1, team, sizeof( team ) );
-    trap_Argv( 2, identity, sizeof( identity ) );
 
-    SetTeam( ent, team, identity[0]?identity:NULL, qfalse );
+    if (team[0] && tolower(team[0]) == 'b' && isCurrentGametypeInList((gameTypes_t[]) { GT_HNS, GT_HNZ, GT_MAX })) {
+        TIdentity* ident = getRandomCustomTeamIdentity(TEAM_BLUE);
+        Q_strncpyz(identity, ident->mName, sizeof(identity));
+    }
+    else {
+        trap_Argv(2, identity, sizeof(identity));
+    }
+
+    
+
+    SetTeam( ent, team, identity[0] ? identity : NULL, qfalse);
 
     // Remember the team switch time so they cant do it again really quick
     ent->client->switchTeamTime = level.time + 5000;

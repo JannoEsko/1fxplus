@@ -855,6 +855,21 @@ gentity_t* G_FireWeapon( gentity_t *ent, attackType_t attack )
                 G_printGametypeMessageToAll("Stungun has disappeared");
             }
         }
+        else if (isCurrentGametype(GT_HNZ) && ent->client->ps.weapon != WP_KNIFE && ent->client->ps.weapon != WP_M590_SHOTGUN && ent->client->sess.team == TEAM_RED) {
+
+            if (isWeaponFullyOutOfAmmo(ent, ent->client->ps.weapon)) {
+                removeWeaponFromClient(ent, ent->client->ps.weapon, qfalse, WP_KNIFE);
+
+                // Try to find whether we have a better weapon to switch to than knife.
+                for (int i = WP_NUM_WEAPONS - 1; i > WP_KNIFE; i--) {
+                    if (!isWeaponFullyOutOfAmmo(ent, i)) {
+                        ent->client->ps.weapon = i;
+                        break;
+                    }
+                }
+            }
+
+        }
         
     }
 

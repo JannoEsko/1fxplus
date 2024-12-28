@@ -1093,6 +1093,7 @@ int adm_shuffleTeams(int argNum, gentity_t* adm, qboolean shortCmd) {
 	return -1;
 }
 
+// ADMJANFIXME
 int adm_noNades(int argNum, gentity_t* adm, qboolean shortCmd) {
 	return -1;
 }
@@ -1448,7 +1449,6 @@ int adm_clanList(int argNum, gentity_t* adm, qboolean shortCmd) {
 	return -1;
 }
 
-/* Build together with rest of the compmode logic */
 int adm_compMode(int argNum, gentity_t* adm, qboolean shortCmd) {
 
 	if (cm_state.integer == COMPMODE_NONE) {
@@ -2110,10 +2110,12 @@ int adm_mapCycle(int argNum, gentity_t* adm, qboolean shortCmd) {
 	return -1;
 }
 
+// ADMJANFIXME
 int adm_passVote(int argNum, gentity_t* adm, qboolean shortCmd) {
 	return -1;
 }
 
+// ADMJANFIXME
 int adm_cancelVote(int argNum, gentity_t* adm, qboolean shortCmd) {
 	return -1;
 }
@@ -2330,6 +2332,7 @@ int adm_Third(int argNum, gentity_t* adm, qboolean shortCmd) {
 	return -1;
 }
 
+// ADMJANFIXME - I've only seen this function to be in use with abuse stuff, almost never in a real environment - maybe remove altogether?
 int adm_toggleWeapon(int argNum, gentity_t* adm, qboolean shortCmd) {
 	return -1;
 }
@@ -2342,16 +2345,18 @@ int adm_Anticamp(int argNum, gentity_t* adm, qboolean shortCmd) {
 
 	for (int i = 0; i < level.numConnectedClients; i++) {
 		gentity_t* ent = &g_entities[level.sortedClients[i]];
-		clearCamptingInformation(ent);
+		clearCampingInformation(ent);
 	}
 
 	return -1;
 }
 
+// ADMJANFIXME
 int adm_endMap(int argNum, gentity_t* adm, qboolean shortCmd) {
 	return -1;
 }
 
+// ADMJANFIXME
 int adm_mapList(int argNum, gentity_t* adm, qboolean shortCmd) {
 	return -1;
 }
@@ -2376,6 +2381,7 @@ int adm_matchIsBestOf(int argNum, gentity_t* adm, qboolean shortCmd) {
 	return -1;
 }
 
+// ADMJANFIXME
 int adm_profanityList(int argNum, gentity_t* adm, qboolean shortCmd) {
 	return -1;
 }
@@ -2425,18 +2431,22 @@ int adm_Uppercut(int argNum, gentity_t* adm, qboolean shortCmd) {
 	return idNum;
 }
 
+// ADMJANFIXME
 int adm_Punish(int argNum, gentity_t* adm, qboolean shortCmd) {
 	return -1;
 }
 
+// ADMJANFIXME
 int adm_punishList(int argNum, gentity_t* adm, qboolean shortCmd) {
 	return -1;
 }
 
+// ADMJANFIXME
 int adm_mapCycleList(int argNum, gentity_t* adm, qboolean shortCmd) {
 	return -1;
 }
 
+// ADMJANFIXME
 int adm_skipToMap(int argNum, gentity_t* adm, qboolean shortCmd) {
 	return -1;
 }

@@ -347,6 +347,16 @@ void player_die(
             }
         }
     }
+    else if (isCurrentGametype(GT_HNZ)) {
+        if (self && self->client && attacker && attacker->client && self->client->sess.team == TEAM_BLUE && attacker->client->sess.team == TEAM_RED) {
+            hnz_dropRandomWeapon(self->r.currentOrigin);
+        }
+
+        if (self->client->sess.team == TEAM_RED && mod != MOD_TEAMCHANGE) {
+            SetTeam(self, "blue", NULL, qtrue);
+            respawn(self);
+        }
+    }
 
     //Ryan april 22 2003
     //If they are planted unplant them before we kill them
@@ -408,15 +418,16 @@ void player_die(
         gentity_t* missile;
         missile = G_FireWeapon( self, ATTACK_NORMAL );
 
-        if ( attacker && attacker->client && attacker->client->sess.team != self->client->sess.team )
-        {
-            missile->dflags |= DAMAGE_NO_TEAMKILL;
+        if (missile) { // ensure that we always have a valid missile pointer - this fixes a crash where there's no missile but we're setting a flag to it.
+
+            if (attacker && attacker->client && attacker->client->sess.team != self->client->sess.team)
+            {
+                missile->dflags |= DAMAGE_NO_TEAMKILL;
+            }
+
+            VectorClear(missile->s.pos.trDelta);
         }
 
-        if ( missile )
-        {
-            VectorClear ( missile->s.pos.trDelta );
-        }
     }
 
     G_LogPrintf("Kill: %i %i %i: %s killed %s by %s\n",
@@ -761,9 +772,11 @@ void player_die(
     // the location that was hit
     if ( hitLocation & HL_DISMEMBERBIT )
     {
-        CopyToBodyQue (self, hitLocation & (~HL_DISMEMBERBIT), hitDir );
+        if (!isCurrentGametype(GT_HNZ) || (isCurrentGametype(GT_HNZ) && mod != MOD_TEAMCHANGE)) {
+            CopyToBodyQue(self, hitLocation & (~HL_DISMEMBERBIT), hitDir);
+        }
     }
-    else
+    else if(!isCurrentGametype(GT_HNZ) || (isCurrentGametype(GT_HNZ) && mod != MOD_TEAMCHANGE))
     {
         CopyToBodyQue (self, HL_NONE, hitDir );
     }
@@ -1299,6 +1312,25 @@ int G_Damage (
                 }
             }
             
+        }
+
+    }
+    else if (isCurrentGametype(GT_HNZ) && attacker && targ && attacker->client && targ->client) {
+
+        if (attacker->client->sess.team == TEAM_BLUE && targ->client->sess.team == TEAM_RED && mod == MOD_KNIFE) {
+            G_Damage(targ, NULL, NULL, NULL, NULL, 10000, 0, MOD_TEAMCHANGE, HL_HEAD);
+            cloneBody(attacker, targ->s.number);
+            damage = 0;
+
+            attacker->client->sess.score++;
+            attacker->client->sess.kills++;
+            G_printGametypeMessageToAll("%s was zombified by %s.", targ->client->pers.cleanName, attacker->client->pers.cleanName);
+        }
+        else if (attacker->client->sess.team == TEAM_RED && targ->client->sess.team == TEAM_BLUE) {
+            // 1fxmod modified knife dmg here, we don't.
+            // Expectation is that the weapon file is built correctly for HNZ.
+            targ->client->pers.hnz.nextsuicide = level.time + 10000;
+            targ->client->pers.hnz.healthRegen = level.time + 2000;
         }
 
     }
@@ -2046,9 +2078,14 @@ qboolean G_RadiusDamage (
         }
     }
 
-    //JANFIXME H&Z SPECIFICS
+    if (isCurrentGametype(GT_HNZ)) {
 
-    if (isCurrentGametype(GT_HNS)) {
+        if (mod == MOD_M67_GRENADE || mod == altAttack(MOD_M67_GRENADE) || mod == MOD_L2A2_GRENADE || mod == altAttack(MOD_L2A2_GRENADE)) {
+            G_CreateDamageArea(origin, attacker, 0.0, mod == MOD_L2A2_GRENADE || mod == altAttack(MOD_L2A2_GRENADE) ? 500 : radius, 20000, mod);
+        }
+
+    }
+    else if (isCurrentGametype(GT_HNS)) {
         if (mod == altAttack(MOD_M4_ASSAULT_RIFLE)) {
             ammoIdx = weaponData[WP_M4_ASSAULT_RIFLE].attack[ATTACK_ALTERNATE].ammoIndex;
             int normAmmoIdx = weaponData[WP_M4_ASSAULT_RIFLE].attack[ATTACK_NORMAL].ammoIndex;

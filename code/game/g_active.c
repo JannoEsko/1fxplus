@@ -1316,6 +1316,52 @@ void ClientThink_real( gentity_t *ent )
         }
 
     }
+    else if (isCurrentGametype(GT_HNZ)) {
+        if (TeamCount(-1, TEAM_BLUE, NULL) == 1 && ent->client->sess.team == TEAM_BLUE) {
+            client->ps.speed += 70;
+            client->ps.stats[STAT_ARMOR] = Com_Clamp(0, 100, TeamCount(-1, TEAM_RED, NULL) * 10);
+            if (level.time > client->sess.speedAnimation) {
+                if (ent->r.currentOrigin[1] != client->sess.oldvelocity[1] || ent->r.currentOrigin[2] != client->sess.oldvelocity[2]) {
+                    G_PlayEffect(G_EffectIndex("arm2smallsmoke"), client->ps.origin, ent->pos1);
+                    client->sess.speedAnimation = level.time + 10;
+                    VectorCopy(ent->r.currentOrigin, client->sess.oldvelocity);
+                }
+            }
+        }
+    }
+    else if (isCurrentGametype(GT_CSINF)) {
+        // CSINF guns slow down players.
+
+        static const int gunWeightToSpeedDecrement[] = {
+            [GUNWEIGHT_NONE] = 0,
+            [GUNWEIGHT_LIGHT] = 5,
+            [GUNWEIGHT_SHOTGUN] = 10,
+            [GUNWEIGHT_SMG] = 8,
+            [GUNWEIGHT_RIFLE] = 12,
+            [GUNWEIGHT_SNIPER] = 15,
+            [GUNWEIGHT_MACHINEGUN] = 20
+        };
+
+        int speedDecrement = gunWeightToSpeedDecrement[GUNWEIGHT_MACHINEGUN];
+
+        if (ent->client->ps.weapon > WP_KNIFE) {
+            speedDecrement = 20; // Assume max decrement until a weapon is found.
+
+            for (int i = 0; i < CSINF_GUNTABLE_SIZE; i++) {
+                csInfGuns_t* gun = &csInfGunsTable[i];
+
+                if (gun->gunType != GUNTYPE_UTILITY && gun->gunId == ent->client->ps.weapon) {
+                    speedDecrement = gunWeightToSpeedDecrement[gun->gunWeight];
+                    break;
+                }
+            }
+
+            if (speedDecrement > 0) {
+                ent->client->ps.speed *= (1.0 - ((float)speedDecrement / 100.0));
+            }
+
+        }
+    }
 
     if (client->sess.acceleratorCooldown) {
         if (client->sess.acceleratorCooldown > level.time) {

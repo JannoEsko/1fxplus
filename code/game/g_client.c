@@ -1138,14 +1138,10 @@ void ClientUserinfoChanged( int clientNum )
     // Enforce the identities
     oldidentity = client->pers.identity;
 
-    if (level.time > client->sess.lastIdentityChange + 60000) {
-        client->sess.identityChangeCount = 0; // After a minute we reset the counter.
-    }
-
     if( level.gametypeData->teams )
     {
 
-        if (isCurrentGametypeInList((gameTypes_t[]) { GT_HNS, GT_HNZ, GT_MAX })) {
+        if (isCurrentGametypeInList((gameTypes_t[]) { GT_HNS, GT_HNZ, GT_MAX }) && team != TEAM_BLUE) {
             s = Info_ValueForKey(userinfo, "identity");
         }
         else {
@@ -1153,7 +1149,7 @@ void ClientUserinfoChanged( int clientNum )
         }
 
         
-        if (client->sess.identityChangeCount <= 10) {
+        if (client->sess.lastIdentityChange + 3000 < level.time) {
 
             // Lookup the identity by name and if it cant be found then pick a random one
             client->pers.identity = BG_FindIdentity(s);
@@ -1165,10 +1161,12 @@ void ClientUserinfoChanged( int clientNum )
 
                 if (isCurrentGametypeInList((gameTypes_t[]) { GT_HNS, GT_HNZ, GT_MAX })) {
                     // Check that the identity is allowed for current team.
-
                     if (!client->pers.identity || client->pers.identity->customGametypeTeam != team) {
                         client->pers.identity = getRandomCustomTeamIdentity(team);
-                        G_printInfoMessage(ent, "Your skin was changed as it didn't match your team.");
+                        
+                        if (client->sess.lastIdentityChange + 1000 < level.time) {
+                            G_printInfoMessage(ent, "Your skin was changed as it didn't match your team.");
+                        }
                     }
 
                 }
@@ -1212,11 +1210,12 @@ void ClientUserinfoChanged( int clientNum )
     // Report the identity change
     if ( client->pers.connected == CON_CONNECTED )
     {
-        if ( client->pers.identity && oldidentity && client->pers.identity != oldidentity && team != TEAM_SPECTATOR )
+        if ( client->pers.identity && oldidentity && client->pers.identity != oldidentity && team != TEAM_SPECTATOR && level.time > ent->client->sess.lastIdentityChange + 1000 )
         {
             trap_SendServerCommand( -1, va("print \"%s" S_COLOR_WHITE " has changed identities\n\"", client->pers.netname ) );
             client->sess.identityChangeCount++;
             client->sess.lastIdentityChange = level.time;
+            
         }
 
         // If the client is changing their name then handle some delayed name changes

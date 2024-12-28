@@ -505,6 +505,17 @@ void G_ResetGametype ( qboolean fullRestart, qboolean cagefight )
         }
 
     }
+    else if (isCurrentGametype(GT_HNZ)) {
+
+        for (int i = 0; i < level.numConnectedClients; i++) {
+            gentity_t* ent = &g_entities[level.sortedClients[i]];
+
+            if (ent->client->sess.team != TEAM_SPECTATOR) {
+                ent->client->pers.hnz.zombieBody = -1;
+                SetTeam(ent, "red", NULL, qtrue);
+            }
+        }
+    }
 
     // Reset the gametype itself
     G_ResetGametypeEntities ( );
@@ -536,7 +547,7 @@ void G_ResetGametype ( qboolean fullRestart, qboolean cagefight )
                     level.gametypeRoundTime = level.time + g_roundtimelimit.integer * 60000;
                 }
             }
-            else {
+            else if (!isCurrentGametypeInList((gameTypes_t[]) { GT_HNZ, GT_PROP, GT_MAX })) {
                 level.gametypeDelayTime = level.time + g_roundstartdelay.integer * 1000;
                 level.gametypeRoundTime = level.time + (g_roundtimelimit.integer * 60000) + g_roundstartdelay.integer * 1000;
 
@@ -624,6 +635,10 @@ void G_ResetGametype ( qboolean fullRestart, qboolean cagefight )
             level.lastalive[1] = -1;
         }
         */
+    }
+    else if (isCurrentGametype(GT_HNZ)) {
+        level.customGameStarted = qfalse;
+        level.customGameWeaponsDistributed = qfalse;
     }
 
     if ( fullRestart )
@@ -1096,6 +1111,9 @@ void CheckGametype ( void )
                     if (g_entities[level.sortedClients[i]].client->sess.team == TEAM_RED && !G_IsClientDead(g_entities[level.sortedClients[i]].client)) {
                         g_entities[level.sortedClients[i]].client->sess.score += 5;
                         g_entities[level.sortedClients[i]].client->sess.kills += 5;
+
+                        // We also set the zombified timers so that they're counted towards claymore and eventeams.
+                        g_entities[level.sortedClients[i]].client->pers.hnz.zombifiedTime = level.time;
                     }
                 }
             }

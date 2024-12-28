@@ -582,6 +582,11 @@ void G_Broadcast(int broadcastLevel, gentity_t* to, qboolean playSound, char* br
         }
     }
     else if (broadcastLevel >= to->client->sess.lastMessagePriority || level.time > (to->client->sess.lastMessage + 4000)) {
+
+        if (playSound) {
+            G_ClientSound(to, level.actionSoundIndex);
+        }
+
         trap_SendServerCommand(to - g_entities, va("cp \"@%s\n\"", newBroadcast));
         to->client->sess.lastMessagePriority = broadcastLevel;
         to->client->sess.lastMessage = level.time;
@@ -833,7 +838,7 @@ int evenTeams(qboolean autoEven) {
         return TEAMACTION_INCOMPATIBLE_GAMETYPE;
     }
 
-    if (level.numPlayingClients < 3) {
+    if (level.numPlayingClients < 2) {
         return TEAMACTION_NOT_ENOUGH_PLAYERS;
     }
 
@@ -949,6 +954,61 @@ int evenTeams(qboolean autoEven) {
             trap_UnlinkEntity(lastConnected);
             ClientSpawn(lastConnected);
         }
+    }
+    else if (isCurrentGametypeInList((gameTypes_t[]){ GT_HNZ, GT_PROP, GT_MAX })) {
+        
+        int lowestDeathTime = 0;
+        gentity_t* lowestDeathClient = NULL;
+        int clientIndexes[MAX_CLIENTS] = { 0 };
+        int numClients = 0;
+
+        for (int i = 0; i < level.numConnectedClients; i++) {
+            gentity_t* ent = &g_entities[level.sortedClients[i]];
+
+            if (ent->client->sess.team != TEAM_SPECTATOR) {
+                if (ent->client->pers.hnz.zombifiedTime < lowestDeathTime && ent->client->pers.hnz.zombifiedTime > 0) {
+                    lowestDeathTime = ent->client->pers.hnz.zombifiedTime;
+                    lowestDeathClient = ent;
+                }
+
+                // We also save the gentity index just in case if we do not get a good match to force to zombies.
+                clientIndexes[numClients++] = level.sortedClients[i];
+            }
+        }
+
+        if (!lowestDeathClient || lowestDeathTime == 0) {
+            // We need to force a random client.
+            lowestDeathClient = &g_entities[clientIndexes[irand(0, numClients - 1)]];
+            
+        }
+
+        for (int i = 0; i < level.numConnectedClients; i++) {
+            gentity_t* ent = &g_entities[level.sortedClients[i]];
+
+            if (ent == lowestDeathClient) {
+                ent->client->sess.team = TEAM_BLUE;
+            }
+            else {
+                ent->client->sess.team = TEAM_RED;
+            }
+
+            if (!G_IsClientDead(ent->client)) {
+                TossClientItems(ent); 
+            }
+
+            ent->client->ps.stats[STAT_WEAPONS] = 0;
+            G_StartGhosting(ent);
+            ent->client->pers.identity = NULL;
+            ClientUserinfoChanged(ent->s.number);
+            CalculateRanks();
+
+            G_StopFollowing(ent);
+            G_StopGhosting(ent);
+            trap_UnlinkEntity(ent);
+            ClientSpawn(ent);
+
+        }
+
     }
     else {
 
@@ -2545,7 +2605,7 @@ char* getChatAdminPrefixByMode(gentity_t* ent, chatMode_t mode, char* output, in
     Com_Memset(output, 0, outputSize);
 
     if (ent && ent->client) {
-        if (mode <= SAY_ADMTALK) {
+        if (mode <= SAY_ADMTALK && mode != SAY_TELL) {
             Q_strncpyz(output, getAdminNameByAdminLevel(ent->client->sess.adminLevel), outputSize);
         }
         else if (mode == SAY_ADMCHAT) {
@@ -5136,7 +5196,7 @@ void checkAnticamp(gentity_t* ent) {
 
                         if ((ent->client->pers.campStartTime + (g_anticampTime.integer * 1000)) < level.time) {
                             popPlayer(ent, POPACTION_CAMP);
-                            clearCamptingInformation(ent);
+                            clearCampingInformation(ent);
                         }
                         else if ((ent->client->pers.campStartTime + (g_anticampTime.integer * 1000) - 5000) < level.time && !ent->client->pers.camperWarned) {
                             ent->client->pers.camperWarned = qtrue;
@@ -5158,7 +5218,7 @@ void checkAnticamp(gentity_t* ent) {
             }
 
             if (!clientWithinBoxFound && ent->client->pers.currentCampType == CAMPTYPE_EXTENTS) {
-                clearCamptingInformation(ent);
+                clearCampingInformation(ent);
             }
 
         }
@@ -5179,7 +5239,7 @@ void checkAnticamp(gentity_t* ent) {
                 
                 if (ent->client->pers.campStartTime + (1000 * g_anticampTime.integer) < level.time) {
                     popPlayer(ent, POPACTION_CAMP);
-                    clearCamptingInformation(ent);
+                    clearCampingInformation(ent);
                 }
                 else if ((ent->client->pers.campStartTime + (g_anticampTime.integer * 1000) - 5000) < level.time && !ent->client->pers.camperWarned) {
                     ent->client->pers.camperWarned = qtrue;
@@ -5187,7 +5247,7 @@ void checkAnticamp(gentity_t* ent) {
                 }
             }
             else {
-                clearCamptingInformation(ent);
+                clearCampingInformation(ent);
             }
         }
 
@@ -5205,4 +5265,424 @@ void clearCampingInformation(gentity_t* ent) {
     ent->client->pers.camperWarned = qfalse;
     VectorClear(ent->client->pers.campOrigin);
 
+}
+
+void hnzRunFrame() {
+
+    // Don't continue if we are in intermission.
+    if (level.intermissionQueued || level.intermissiontime || level.paused || level.changemap) {
+        return;
+    }
+
+    // There's no gametype delay on h&z - we use customGameWeaponsDistributed instead of customGameStarted.
+    if (!level.customGameStarted) {
+        level.customGameStarted = qtrue;
+    }
+
+    if (level.time > level.gametypeStartTime + 5000 && !level.customGameWeaponsDistributed) {
+
+        level.customGameWeaponsDistributed = qtrue;
+
+        G_Broadcast(BROADCAST_GAME, NULL, qtrue, "Shotguns \\distributed!");
+
+        gentity_t* longestSurvivor = NULL;
+        int longestSurvivorTime = 0;
+
+        for (int i = 0; i < level.numConnectedClients; i++) {
+            gentity_t* ent = &g_entities[level.sortedClients[i]];
+
+            if (ent->client->sess.team == TEAM_RED) {
+
+                if (ent->client->pers.hnz.zombifiedTime > longestSurvivorTime) {
+
+                    longestSurvivor = ent;
+                    longestSurvivorTime = ent->client->pers.hnz.zombifiedTime;
+
+                }
+
+                giveWeaponToClient(ent, WP_M590_SHOTGUN, qtrue);
+
+            }
+
+        }
+
+        if (longestSurvivorTime > 0 && longestSurvivor && longestSurvivor->client) {
+            // Give them the forcefield grenade.
+            giveWeaponToClient(longestSurvivor, WP_M67_GRENADE, qfalse);
+            G_printGametypeMessageToAll("Forcefield given to %s.", longestSurvivor->client->pers.cleanName);
+        }
+
+    }
+}
+
+/*
+weaponDropOdds as-is from 1fxmod.
+*/
+static int weaponDropOdds[6][6] =
+{
+    { 80, 20, 0, 0, 0, 0 },         // 1-2 zombies
+    { 35, 50, 15, 0, 0, 0 },        // 3-4 zombies
+    { 5, 5, 50, 20, 20, 0 },        // 5-6 zombies
+    { 5, 5, 25, 35, 20, 10 },       // 7-9 zombies
+    { 5, 5, 15, 20, 40, 15 },       // 10-14 zombies
+    { 5, 5, 5, 15, 40, 30 },        // >= 15 zombies
+};
+
+/*
+weaponGroups as-is from 1fxmod.
+*/
+static int weaponGroups[6][3] =
+{//  weapon1                       weapon2 (optional)       weapon3 (optional)
+    { WP_M1911A1_PISTOL,            WP_USSOCOM_PISTOL,      0               , },   //group 1
+    { WP_MICRO_UZI_SUBMACHINEGUN,   WP_M3A1_SUBMACHINEGUN,  0               , },   //group 2
+    { WP_MSG90A1,                   WP_M60_MACHINEGUN,      0               , },   //group 3
+    { WP_M4_ASSAULT_RIFLE,          WP_AK74_ASSAULT_RIFLE,  0               , },   //group 4
+    { WP_USAS_12_SHOTGUN,           WP_SMOHG92_GRENADE,     0               , },   //group 5
+    { WP_MM1_GRENADE_LAUNCHER,      WP_RPG7_LAUNCHER,       WP_L2A2_GRENADE , },   //group 6
+};
+
+gentity_t* hnz_dropRandomWeapon(vec3_t origin) {
+
+    int dropGroup = 0;
+    int zombies = TeamCount(-1, TEAM_BLUE, NULL);
+
+    if (zombies >= 3 && zombies <= 4) {
+        dropGroup = 1;
+    }
+    else if (zombies >= 5 && zombies <= 6) {
+        dropGroup = 2;
+    }
+    else if (zombies >= 7 && zombies <= 9) {
+        dropGroup = 3;
+    }
+    else if (zombies >= 10 && zombies <= 14) {
+        dropGroup = 4;
+    }
+    else if (zombies >= 15) {
+        dropGroup = 5;
+    }
+    
+    int randomGroup = irand(0, 100);
+
+    int cumulativeOdds = 0;
+    int wpnGroup = 0;
+    for (wpnGroup = 0; wpnGroup < 6; wpnGroup++) {
+
+        cumulativeOdds += weaponDropOdds[dropGroup][wpnGroup];
+
+        if (randomGroup <= cumulativeOdds) {
+            break;
+        }
+
+    }
+
+    int availableWpns[3] = {0}, availableCount = 0;
+
+    for (int i = 0; i < 3; i++) {
+        if (weaponGroups[wpnGroup][i] > 0) {
+            availableWpns[availableCount++] = weaponGroups[wpnGroup][i];
+        }
+    }
+
+    weapon_t randomWeapon = availableWpns[irand(0, availableCount - 1)];
+    gentity_t* dropped = G_DropItemAtLocation(origin, vec3_origin, BG_FindWeaponItem(randomWeapon));
+
+    int clip = weaponData[randomWeapon].attack[ATTACK_NORMAL].clipSize;
+    int ammo = weaponData[randomWeapon].attack[ATTACK_NORMAL].extraClips * clip;
+    int altclip = weaponData[randomWeapon].attack[ATTACK_ALTERNATE].clipSize;
+    int altammo = weaponData[randomWeapon].attack[ATTACK_ALTERNATE].extraClips * altclip;
+
+    dropped->count = clip & 0xFF;
+    dropped->count += (ammo << 8) & 0xFF00;
+    dropped->count += (altclip << 16) & 0xFF0000;
+    dropped->count += (altammo << 24) & 0xFF000000;
+
+    return dropped;
+}
+
+/*
+Mostly as-is from 1fxmod.
+*/
+void cloneBody(gentity_t* ent, int number)
+{
+    gentity_t* body;
+    int         contents;
+    int         parm;
+    vec3_t      velo;
+
+    int hitLocation = HL_NONE;
+    vec3_t  direction;
+
+    // Boe!Man 10/21/14: Turn off any kind of zooming when zombifying.
+    if (ent->client->ps.pm_flags & PMF_ZOOMED)
+    {
+        ent->client->ps.zoomFov = 0;
+        ent->client->ps.zoomTime = pm->ps->commandTime;
+        ent->client->ps.pm_flags &= ~(PMF_ZOOM_FLAGS);
+    }
+
+    //VectorCopy(ent->client->ps.viewangles, ent->client->sess.tempangles);
+
+    G_CloseSound(ent->r.currentOrigin, G_SoundIndex("sound/enemy/dog/bark03.mp3"));
+    G_CloseSound(ent->r.currentOrigin, G_SoundIndex("sound/enemy/dog/attack01.mp3"));
+
+    // Boe!Man 1/8/12: Fix crash issues in DLL and possibily QVM by processing uninitialised vector.
+    //VectorCopy(direction, vec3_origin);
+    VectorCopy(vec3_origin, direction);
+    trap_UnlinkEntity(ent);
+
+    // if client is in a nodrop area, don't leave the body
+    contents = trap_PointContents(ent->r.currentOrigin, -1);
+    if (contents & CONTENTS_NODROP)
+    {
+        return;
+    }
+
+    // grab a body que and cycle to the next one
+    body = level.bodyQue[level.bodyQueIndex];
+
+    level.bodyQueIndex = (level.bodyQueIndex + 1) % level.bodyQueSize;
+
+    trap_UnlinkEntity(body);
+
+    body->s = ent->s;
+    body->s.eType = ET_BODY;
+    body->s.eFlags = EF_DEAD;
+    body->s.gametypeitems = 0;
+    body->s.loopSound = 0;
+    body->s.number = body - g_entities;
+    body->timestamp = level.time;
+    body->physicsObject = qtrue;
+    body->physicsBounce = 0;
+    body->s.otherEntityNum = ent->s.clientNum;
+    g_entities[number].client->pers.hnz.zombifiedTime = level.time;
+    g_entities[number].client->pers.hnz.zombieBody = body->s.number;
+
+    //if ( body->s.groundEntityNum == ENTITYNUM_NONE )
+    VectorCopy(ent->client->ps.velocity, velo);
+    AngleVectors(ent->client->ps.viewangles, velo, NULL, NULL);
+    VectorScale(velo, 600, velo);
+    body->s.pos.trType = TR_GRAVITY;
+    body->s.pos.trTime = level.time;
+    velo[2] = 200;
+    VectorCopy(velo, body->s.pos.trDelta);
+
+    body->s.event = 0;
+
+    parm = (DirToByte(direction) & 0xFF);
+    parm += (hitLocation << 8);
+
+    G_AddEvent(body, EV_BODY_QUEUE_COPY, parm);
+
+    body->r.svFlags = ent->r.svFlags | SVF_BROADCAST;
+    VectorCopy(ent->r.mins, body->r.mins);
+    VectorCopy(ent->r.maxs, body->r.maxs);
+    VectorCopy(ent->r.absmin, body->r.absmin);
+    VectorCopy(ent->r.absmax, body->r.absmax);
+
+    body->s.torsoAnim = 45;
+
+    body->clipmask = MASK_SHOT;
+    body->r.contents = 0; // CONTENTS_CORPSE;
+    body->r.ownerNum = ent->s.number;
+
+    body->nextthink = level.time + 10000;
+    body->think = G_FreeEntity;
+
+    body->s.time2 = 0;
+
+    body->die = body_die;
+    body->takedamage = qtrue;
+
+    body->s.apos.trBase[PITCH] = 0;
+
+    body->s.pos.trBase[2] = ent->client->ps.origin[2];
+
+    VectorCopy(body->s.pos.trBase, body->r.currentOrigin);
+
+    trap_LinkEntity(body);
+
+}
+
+void think_forcefield(gentity_t* ent) {
+    vec3_t mins, maxs;
+    for (int i = 0; i < 3; i++) {
+        mins[i] = ent->r.currentOrigin[i] - ent->splashRadius;
+        maxs[i] = ent->r.currentOrigin[i] + ent->splashRadius;
+    }
+
+    int entityList[MAX_GENTITIES];
+    int numListedEntities = trap_EntitiesInBox(mins, maxs, entityList, MAX_GENTITIES);
+
+    for (int e = 0; e < numListedEntities; e++) {
+        gentity_t* target = &g_entities[entityList[e]];
+        if (!target || !target->client || target->client->sess.team != TEAM_BLUE) {
+            continue;
+        }
+
+        if (level.time < target->client->pers.hnz.lastForcefieldPush) {
+            continue;
+        }
+
+        vec3_t fireAngles, diff, rotatedDiff, moveDir, dir, transpose[3], matrix[3];
+        VectorCopy(target->r.currentAngles, fireAngles);
+        G_CreateRotationMatrix(fireAngles, transpose);
+        G_TransposeMatrix(transpose, matrix);
+
+        VectorSubtract(target->r.currentOrigin, ent->r.currentOrigin, diff);
+        VectorCopy(diff, rotatedDiff);
+        G_RotatePoint(rotatedDiff, matrix);
+        VectorSubtract(rotatedDiff, diff, moveDir);
+        AngleVectors(moveDir, dir, NULL, NULL);
+
+        VectorNormalize(dir);
+
+        for (int i = 0; i < 2; i++) {
+            if (ent->r.currentOrigin[i] > target->r.currentOrigin[i]) {
+                dir[i] = -fabs(dir[i]);
+            }
+        }
+
+        G_ApplyKnockback(target, dir, 200);
+
+        vec3_t effectOrigin;
+        VectorCopy(target->r.currentOrigin, effectOrigin);
+        effectOrigin[2] += 45;
+        G_PlayEffect(G_EffectIndex("levels/kam_train_sparks"), effectOrigin, vec3_origin);
+
+        target->client->pers.hnz.lastForcefieldPush = level.time + 500;
+    }
+
+    if (--ent->s.time2 <= 0) {
+        G_FreeEntity(ent);
+        return;
+    }
+
+    vec3_t effectOrigin;
+    VectorCopy(ent->r.currentOrigin, effectOrigin);
+    effectOrigin[2] += 45;
+    AddSpawnField("classname", "1fx_play_effect");
+    AddSpawnField("effect", "jon_sam_trail");
+    AddSpawnField("origin", va("%.0f %.0f %.0f", effectOrigin[0], effectOrigin[1], effectOrigin[2]));
+    AddSpawnField("count", "1");
+    AddSpawnField("wait", "3");
+    G_SpawnGEntityFromSpawnVars(qtrue);
+
+    ent->nextthink = level.time + 500;
+    trap_LinkEntity(ent);
+}
+
+/*
+================
+HZ_clayMore
+
+Claymore think.
+================
+*/
+
+void HZ_Claymore(gentity_t* ent)
+{
+    vec3_t          mins, maxs;
+    gentity_t* tent;
+    int             entityList[MAX_GENTITIES];
+    int             clientsClose[MAX_CLIENTS];
+    int             numListedEntities, i, distance;
+    int             closestClient = 500, count = 0;
+
+    // Set the boundary of the claymore.
+    // Zombies within this boundary can hear the beep of this specific claymore.
+    VectorCopy(ent->r.currentOrigin, mins);
+    VectorCopy(ent->r.currentOrigin, maxs);
+    for (i = 0; i < 3; i++) {
+        mins[i] -= 300;
+        maxs[i] += 300;
+    }
+
+    numListedEntities = trap_EntitiesInBox(mins, maxs, entityList, MAX_GENTITIES);
+    // Loop through all entities caught in the radius.
+    for (i = 0; i < numListedEntities; i++) {
+        tent = &g_entities[entityList[i]];
+
+        // Make sure the client coming near is a zombie.
+        if (tent && tent->client && tent->client->sess.team == TEAM_BLUE) {
+            distance = (int)(DistanceSquared(ent->r.currentOrigin, tent->r.currentOrigin) / 100);
+
+            // Keep track of the closest client.
+            if (distance < closestClient) {
+                closestClient = distance;
+            }
+            clientsClose[count++] = tent->s.number;
+        }
+    }
+
+    if (closestClient < 100) {
+        // Explode when a zombie gets too near.
+        HZ_claymoreExplode(ent);
+    }
+    else {
+        // Check if we need to let zombies hear the grenade, and let all players see the flashing red dot.
+        if (level.time >= ent->speed || (closestClient + closestClient / 2 < ent->up)) {
+            VectorCopy(ent->r.currentOrigin, mins);
+            mins[2] += 5;
+
+            // Play the effect.
+            G_PlayEffect(G_EffectIndex("red_dot"), mins, ent->r.currentAngles);
+            ent->speed = level.time + closestClient; // When the next effect/sound check is.
+            ent->up = closestClient; // We register the previous closest distance this way.
+
+            // Broadcast the sound to players.
+            for (i = 0; i < count; i++) {
+                G_ClientSound(&g_entities[clientsClose[i]], G_SoundIndex("sound/misc/events/micro_ding.mp3"));
+            }
+        }
+
+        ent->nextthink = level.time + (closestClient < 200) ? closestClient : 200;
+    }
+}
+
+/*
+================
+HZ_ClaymoreShoot
+
+Function that gets called when the grenade takes damage.
+================
+*/
+
+void HZ_ClaymoreShoot(gentity_t* self, gentity_t* inflictor, gentity_t* attacker, int damage, int mod, int hitLocation, vec3_t hitDir)
+{
+    // When someone shoots the grenade, or it's caught in a grende radius, it's safe to blow up.
+    if (inflictor && inflictor->s.weapon == WP_L2A2_GRENADE) {
+        // Just don't blow up if we're throwing a L2A2 on another L2A2..
+        return;
+    }
+
+    HZ_claymoreExplode(self);
+}
+
+/*
+================
+HZ_ClaymoreShoot
+
+Explode routine.
+================
+*/
+
+void HZ_claymoreExplode(gentity_t* ent)
+{
+    vec3_t      dir = { 0, 0, 1 };
+
+    // Toggle the take damage flag, there's no need to inflict further damage on the pickup.
+    ent->takedamage = qfalse;
+
+    // Toggle the flags, and make sure the claymore represents the proper grenade.
+    ent->s.eFlags |= EF_EXPLODE;
+    ent->s.weapon = WP_L2A2_GRENADE;
+
+    // Do the damage.
+    G_RadiusDamage(ent->r.currentOrigin, ent->parent, ent->splashDamage, ent->splashRadius, ent->parent, 1, DAMAGE_RADIUS, ent->splashMethodOfDeath);
+    G_AddEvent(ent, EV_MISSILE_MISS, (DirToByte(dir) << MATERIAL_BITS) | MATERIAL_NONE);
+
+    // And free it after 250msec (and thus after the blast).
+    ent->think = G_FreeEntity;
+    ent->nextthink = level.time + 250;
 }

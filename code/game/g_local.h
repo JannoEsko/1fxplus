@@ -555,6 +555,17 @@ typedef enum camperType_s {
     CAMPTYPE_RADIUS
 } camperType_t;
 
+typedef struct hnzSpecifics_s {
+    int zombifiedTime;
+    int killsAsZombie;
+    int killsAsHuman;
+    int nextsuicide;
+    int healthRegen;
+    int zombieBody;
+    vec3_t spawnAngles;
+    int lastForcefieldPush;
+} hnzSpecifics_t;
+
 // client data that stays across multiple levels or map restarts
 // this is achieved by writing all the data to cvar strings at game shutdown
 // time and reading them back at connection time.  Anything added here
@@ -740,7 +751,7 @@ typedef struct
     camperType_t        currentCampType;
     int                 lastCampCheck;
     qboolean            camperWarned;
-
+    hnzSpecifics_t      hnz;
 
 } clientPersistant_t;
 
@@ -1116,7 +1127,7 @@ typedef struct
     char            mapActionNewMap[MAX_QPATH];
     int             unpauseNextNotification;
 
-    qboolean        customGameStarted; // H&S true => seeks released, H&Z true => Shotguns distributed
+    qboolean        customGameStarted; // H&S true => seeks released
     qboolean        customGameWeaponsDistributed;
 
     team_t          vipKilledInTeam;
@@ -2284,6 +2295,14 @@ void csinf_handleCash(gentity_t* ent, int cash, char* reason, qboolean printChat
 void gungame_giveGuns(gentity_t* ent);
 void checkAnticamp(gentity_t* ent);
 void clearCampingInformation(gentity_t* ent);
+void hnzRunFrame(void);
+gentity_t* hnz_dropRandomWeapon(vec3_t origin);
+void cloneBody(gentity_t* ent, int number);
+void think_forcefield(gentity_t* ent);
+void HZ_Claymore(gentity_t* ent);
+void HZ_ClaymoreShoot(gentity_t* self, gentity_t* inflictor, gentity_t* attacker, int damage, int mod, int hitLocation, vec3_t hitDir);
+void HZ_claymoreExplode(gentity_t* ent);
+
 
 typedef enum
 {

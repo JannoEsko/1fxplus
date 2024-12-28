@@ -2941,6 +2941,70 @@ void G_RunFrame( int levelTime )
                     }
 
                 }
+                else if (isCurrentGametype(GT_HNZ)) {
+                    if (ent->client->pers.hnz.zombieBody >= MAX_CLIENTS && ent->client->sess.team == TEAM_RED) {
+
+                        gentity_t* zombieBody = &g_entities[ent->client->pers.hnz.zombieBody];
+
+                        if (!zombieBody || zombieBody->s.pos.trType == TR_STATIONARY || level.time > zombieBody->timestamp + 5000) {
+
+                            SetTeam(ent, "blue", NULL, qtrue);
+                            G_StopFollowing(ent);
+                            ent->client->ps.pm_flags &= ~PMF_GHOST;
+                            ent->client->ps.pm_type = PM_NORMAL;
+                            ent->client->sess.ghost = qfalse;
+                            trap_UnlinkEntity(ent);
+                            ClientSpawn(ent);
+
+                            // Boe!Man 11/16/15: Only teleport if their new location was stationary.
+                            if (zombieBody->s.pos.trType == TR_STATIONARY) {
+                                TeleportPlayer(ent, zombieBody->r.currentOrigin, ent->client->pers.hnz.spawnAngles, qtrue);
+                                SetClientViewAngle(ent, ent->client->pers.hnz.spawnAngles);
+                            }
+
+                            zombieBody->nextthink = level.time + 1000;
+                            zombieBody->think = G_FreeEntity;
+                            ent->client->pers.hnz.zombieBody = -1;
+
+                        }
+
+
+
+                    }
+
+                    int teamCountBlue = TeamCount(-1, TEAM_BLUE, NULL);
+
+                    if (G_IsClientDead(ent->client)) {
+                        if (ent->client->sess.team == TEAM_BLUE || (teamCountBlue == 0 && ent->client->sess.team == TEAM_RED)) {
+                            if (ent->client->sess.ghost) {
+                                // Clean up any following monkey business
+                                G_StopFollowing(ent);
+
+                                // Disable being a ghost
+                                ent->client->ps.pm_flags &= ~PMF_GHOST;
+                                ent->client->ps.pm_type = PM_NORMAL;
+                                ent->client->sess.ghost = qfalse;
+                            }
+
+                            ent->client->sess.noTeamChange = qtrue;
+
+                            trap_UnlinkEntity(ent);
+                            ClientSpawn(ent);
+                        }
+                    }
+                    else if (ent->client->pers.hnz.healthRegen && ent->client->sess.team == TEAM_BLUE && level.time >= ent->client->pers.hnz.healthRegen) {
+                        ent->client->ps.stats[STAT_HEALTH]++;
+                        ent->health++;
+
+                        if (ent->client->ps.stats[STAT_HEALTH] >= MAX_HEALTH) {
+                            ent->client->pers.hnz.healthRegen = 0;
+                        }
+                        else {
+                            ent->client->pers.hnz.healthRegen = level.time + 50 + (150 / level.numPlayingClients * teamCountBlue);
+                        }
+                    }
+
+                }
 
             }
 
@@ -2967,10 +3031,13 @@ void G_RunFrame( int levelTime )
     if (isCurrentGametype(GT_HNS)) {
         hnsRunFrame();
     }
+    else if (isCurrentGametype(GT_HNZ)) {
+        hnzRunFrame();
+    }
 
     // Check warmup rules
     CheckWarmup();
-
+ 
     // see if it is time to end the level
     CheckExitRules();
 

@@ -162,7 +162,7 @@ int Pickup_Weapon (gentity_t *ent, gentity_t *other, qboolean* autoswitch )
 
     // Call add ammo with 0 ammo to force it to cap it at max
     Add_Ammo( other, weaponData[weaponNum].attack[ATTACK_NORMAL].ammoIndex, 0 );
-
+    
     if ( hasAltAmmo )
     {
         Add_Ammo( other, weaponData[weaponNum].attack[ATTACK_ALTERNATE].ammoIndex, 0 );
@@ -376,6 +376,11 @@ void Touch_Item (gentity_t *ent, gentity_t *other, trace_t *trace)
             return;
         }
     }
+    else if (isCurrentGametype(GT_HNZ)) {
+        if (other->client->sess.team == TEAM_BLUE) {
+            return;
+        }
+    }
 
     // If its a gametype item the gametype handles it
     if ( ent->item->giType == IT_GAMETYPE )
@@ -387,7 +392,7 @@ void Touch_Item (gentity_t *ent, gentity_t *other, trace_t *trace)
         }
     }
     // the same pickup rules are used for client side and server side
-    else if ( !BG_CanItemBeGrabbed( level.gametype, &ent->s, &other->client->ps ) )
+    else if ( !BG_CanItemBeGrabbed( level.gametype, &ent->s, &other->client->ps ) && !isCurrentGametype(GT_HNZ) )
     {
         return;
     }
