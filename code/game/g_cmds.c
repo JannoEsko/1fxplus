@@ -2683,6 +2683,7 @@ void ClientCommand( int clientNum ) {
         if (cmd[0]) {
             Q_strncpyz(ent->client->sess.clientVersion, cmd, sizeof(ent->client->sess.clientVersion));
         }
+        return;
     }
 
     if (!Q_stricmp(cmd, "findsound")) {
