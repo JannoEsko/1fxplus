@@ -2126,13 +2126,16 @@ void dbWriteHnsStats() {
     // After inserts, we're gonna trim it down to top 3 on both categories.
     // As we insert it all into the table and clear out by ageing variable,
     // We now run a query where we retain only top 3 in the mix.
-    query = "DELETE FROM hnsbestplayers WHERE "
-        // hider part
-        "ROWID NOT IN (SELECT ROWID from hnsbestplayers WHERE type = 0 ORDER BY STATPOINTS DESC, dt DESC LIMIT 3) "
-        // seeker part
-        "AND ROWID NOT IN (SELECT ROWID from hnsbestplayers WHERE type = 1 ORDER BY statpoints DESC, dt DESC LIMIT 3)"
-        
-        ;
+    
+    // Previous query removed as that only kept top3 hiders of ALL maps and top3 seekers of ALL maps.
+    query = "DELETE FROM hnsbestplayers "
+        "WHERE ROWID NOT IN ( "
+            "SELECT ROWID FROM ( "
+                "SELECT ROWID, map, type, "
+                "RANK() OVER(PARTITION BY map, type ORDER BY statpoints DESC, dt DESC, ROWID DESC) as rank "
+                "FROM hnsbestplayers "
+            ") WHERE rank <= 3"
+        ")";
 
     rc = sqlite3_prepare(db, query, -1, &stmt, 0);
 
