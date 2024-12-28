@@ -629,7 +629,7 @@ Q_EXPORT intptr_t vmMain( int command, intptr_t arg0, intptr_t arg1, intptr_t ar
             ClientDisconnect( arg0 );
             return 0;
         case GAME_CLIENT_BEGIN:
-            ClientBegin( arg0 );
+            ClientBegin( arg0, qtrue );
             return 0;
         case GAME_CLIENT_COMMAND:
             ClientCommand( arg0 );

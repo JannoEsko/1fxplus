@@ -1504,7 +1504,7 @@ to be placed into the level.  This will happen every level load,
 and on transition between teams, but doesn't happen on respawns
 ============
 */
-void ClientBegin( int clientNum )
+void ClientBegin( int clientNum, qboolean setTime)
 {
     gentity_t   *ent;
     gclient_t   *client;
@@ -1533,7 +1533,11 @@ void ClientBegin( int clientNum )
     ent->client = client;
 
     client->pers.connected = CON_CONNECTED;
-    client->pers.enterTime = level.time;
+
+    if (setTime) {
+        client->pers.enterTime = level.time;
+    }
+
     client->pers.teamState.state = TEAM_BEGIN;
 
     // save eflags around this, because changing teams will

@@ -1215,7 +1215,7 @@ void SetTeam( gentity_t *ent, char *s, const char* identity, qboolean forced )
     CalculateRanks();
 
     // Begin the clients new life on the their new team
-    ClientBegin( clientNum );
+    ClientBegin( clientNum, qfalse );
 }
 
 /*

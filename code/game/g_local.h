@@ -1422,7 +1422,7 @@ void LogExit(const char* string);
 char*       ClientConnect                       ( int clientNum, qboolean firstTime, qboolean isBot );
 void        ClientUserinfoChanged               ( int clientNum );
 void        ClientDisconnect                    ( int clientNum );
-void        ClientBegin                         ( int clientNum );
+void        ClientBegin                         ( int clientNum, qboolean setTime );
 void        ClientCommand                       ( int clientNum );
 gspawn_t*   G_SelectRandomSpawnPoint            ( team_t team );
 intptr_t    G_GametypeCommand                   ( int command, intptr_t arg0, intptr_t arg1, intptr_t arg2, intptr_t arg3, intptr_t arg4 );
