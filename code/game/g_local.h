@@ -1317,6 +1317,9 @@ void        G_ResetGlass        ( void );
 void SP_func_door_rotating(gentity_t* ent);
 void Touch_2WayRotDoorTrigger(gentity_t* ent, gentity_t* other, trace_t* trace);
 void Think_Spawn2WayRotDoorTrigger(gentity_t* ent);
+void G_RotatePoint(vec3_t point, vec3_t matrix[3]);
+void G_TransposeMatrix(vec3_t matrix[3], vec3_t transpose[3]);
+void G_CreateRotationMatrix(vec3_t angles, vec3_t matrix[3]);
 
 
 //
