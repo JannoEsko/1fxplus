@@ -223,7 +223,7 @@ void noroof(gentity_t* ent);
 void nomiddle(gentity_t* ent);
 void nowhole(gentity_t* ent);
 void SP_seekers(gentity_t* ent);
-
+void SP_Anticamp(gentity_t* ent);
 
 spawn_t spawns[] =
 {
@@ -340,6 +340,8 @@ spawn_t spawns[] =
     { "hideseek_cageplayer",        SP_hideseek_cageplayer },
 
     { "hideseek_cageextra",         hideseek_cageextra },
+
+    { "anticamp",                   SP_Anticamp },              
 
     {0, 0}
 };
@@ -1593,4 +1595,18 @@ void SP_seekers(gentity_t* ent)
             level.hns.customETHiderAmount[i - 1] = tempInt;
         }
     }
+}
+
+void SP_Anticamp(gentity_t* ent) {
+
+    if (level.anticamp.extentsCount >= MAX_ANTICAMP_ZONES - 1) {
+        logSystem(LOGLEVEL_WARN, "SP_Anticamp: Too many extents. Rest ignored.");
+        return;
+    }
+
+    G_SpawnVector("mins", "0 0 0", level.anticamp.extentsMins[level.anticamp.extentsCount]);
+    G_SpawnVector("maxs", "0 0 0", level.anticamp.extentsMaxs[level.anticamp.extentsCount]);
+
+    level.anticamp.extentsCount++;
+
 }

@@ -2335,6 +2335,16 @@ int adm_toggleWeapon(int argNum, gentity_t* adm, qboolean shortCmd) {
 }
 
 int adm_Anticamp(int argNum, gentity_t* adm, qboolean shortCmd) {
+
+	adm_toggleCVAR(argNum, adm, shortCmd, qtrue, "Anticamp", &g_anticamp, qfalse, NULL, NULL);
+
+	// If we're toggling it, we need to ensure that the anticamp information is removed from clients. Otherwise we will pop them as soon as anticamp is activated.
+
+	for (int i = 0; i < level.numConnectedClients; i++) {
+		gentity_t* ent = &g_entities[level.sortedClients[i]];
+		clearCamptingInformation(ent);
+	}
+
 	return -1;
 }
 

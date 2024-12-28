@@ -5103,3 +5103,106 @@ void gungame_giveGuns(gentity_t* ent) {
     giveWeaponToClient(ent, ent->client->pers.gg.currentGun, qtrue);
 
 }
+
+static qboolean isClientWithinABox(gentity_t* ent, vec3_t mins, vec3_t maxs) {
+
+    if (
+        ent->client->ps.origin[0] >= mins[0] && ent->client->ps.origin[0] <= maxs[0] &&
+        ent->client->ps.origin[1] >= mins[1] && ent->client->ps.origin[1] <= maxs[1] &&
+        ent->client->ps.origin[2] >= mins[2] && ent->client->ps.origin[2] <= maxs[2]
+
+        ) {
+        return qtrue;
+    }
+
+    return qfalse;
+}
+
+void checkAnticamp(gentity_t* ent) {
+
+    if (g_anticamp.integer && ent && ent->client && ent->client->pers.connected == CON_CONNECTED && ent->client->sess.team != TEAM_SPECTATOR && !G_IsClientDead(ent->client) && !isCurrentGametypeInList((gameTypes_t[]){GT_HNS, GT_HNZ, GT_PROP, GT_MAX}) && ent->client->pers.lastCampCheck + 500 < level.time) {
+
+        // We have now 2 points to consider here.
+        // If the anticamp type is set to 1, we use a hybrid version of anticamp.
+        // if it's 0, we use the extents through entity if they're given, or if none are, then the radius logic.
+
+        // We always consider entity based extents.
+        if (level.anticamp.extentsCount) {
+            qboolean clientWithinBoxFound = qfalse;
+            for (int i = 0; i < level.anticamp.extentsCount; i++) {
+                if (isClientWithinABox(ent, level.anticamp.extentsMins[i], level.anticamp.extentsMaxs[i])) {
+                    clientWithinBoxFound = qtrue;
+                    if (ent->client->pers.isCamping && ent->client->pers.campZone == i && ent->client->pers.currentCampType == CAMPTYPE_EXTENTS) {
+
+                        if ((ent->client->pers.campStartTime + (g_anticampTime.integer * 1000)) < level.time) {
+                            popPlayer(ent, POPACTION_CAMP);
+                            clearCamptingInformation(ent);
+                        }
+                        else if ((ent->client->pers.campStartTime + (g_anticampTime.integer * 1000) - 5000) < level.time && !ent->client->pers.camperWarned) {
+                            ent->client->pers.camperWarned = qtrue;
+                            G_Broadcast(BROADCAST_GAME, ent, qfalse, "^1Move,^7 or you will be \\punished\nin 5 seconds for camping.");
+                        }
+
+                    }
+                    else if (ent->client->pers.currentCampType == CAMPTYPE_NONE) {
+                        ent->client->pers.isCamping = qtrue;
+                        ent->client->pers.campStartTime = level.time;
+                        VectorCopy(ent->client->ps.origin, ent->client->pers.campOrigin);
+                        ent->client->pers.campZone = i;
+                        ent->client->pers.currentCampType = CAMPTYPE_EXTENTS;
+                        ent->client->pers.camperWarned = qfalse;
+                    }
+
+                    break;
+                } 
+            }
+
+            if (!clientWithinBoxFound && ent->client->pers.currentCampType == CAMPTYPE_EXTENTS) {
+                clearCamptingInformation(ent);
+            }
+
+        }
+
+        // If we are already in an extents zone, we do not run a radius check.
+        if (ent->client->pers.currentCampType != CAMPTYPE_EXTENTS && (g_anticampType.integer || !level.anticamp.extentsCount)) {
+
+            if (!ent->client->pers.isCamping) {
+                // Set current origin as the camp origin.
+                VectorCopy(ent->client->ps.origin, ent->client->pers.campOrigin);
+                ent->client->pers.isCamping = qtrue;
+                ent->client->pers.currentCampType = CAMPTYPE_RADIUS;
+                ent->client->pers.campStartTime = level.time;
+            }
+
+            float distance = Distance(ent->client->ps.origin, ent->client->pers.campOrigin);
+            if (distance <= g_anticampRadius.integer) {
+                
+                if (ent->client->pers.campStartTime + (1000 * g_anticampTime.integer) < level.time) {
+                    popPlayer(ent, POPACTION_CAMP);
+                    clearCamptingInformation(ent);
+                }
+                else if ((ent->client->pers.campStartTime + (g_anticampTime.integer * 1000) - 5000) < level.time && !ent->client->pers.camperWarned) {
+                    ent->client->pers.camperWarned = qtrue;
+                    G_Broadcast(BROADCAST_GAME, ent, qfalse, "^1Move,^7 or you will be \\punished\nin 5 seconds for camping.");
+                }
+            }
+            else {
+                clearCamptingInformation(ent);
+            }
+        }
+
+
+        ent->client->pers.lastCampCheck = level.time;
+    }
+
+}
+
+void clearCampingInformation(gentity_t* ent) {
+
+    ent->client->pers.currentCampType = CAMPTYPE_NONE;
+    ent->client->pers.isCamping = qfalse;
+    ent->client->pers.campZone = -1;
+    ent->client->pers.camperWarned = qfalse;
+    VectorClear(ent->client->pers.campOrigin);
+
+}

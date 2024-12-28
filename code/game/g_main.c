@@ -277,7 +277,10 @@ vmCvar_t    csinf_friendlyKill;
 vmCvar_t    csinf_killBonus;
 vmCvar_t    csinf_startingCash;
 
-
+vmCvar_t    g_anticampType;
+vmCvar_t    g_anticamp;
+vmCvar_t    g_anticampRadius;
+vmCvar_t    g_anticampTime;
 
 static cvarTable_t gameCvarTable[] =
 {
@@ -572,7 +575,10 @@ static cvarTable_t gameCvarTable[] =
     { &csinf_friendlyKill, "csinf_friendlyKill", "-1000", CVAR_ARCHIVE | CVAR_LATCH | CVAR_LOCK_RANGE, -2000.0, 0.0, 0, qfalse },
     { &csinf_killBonus, "csinf_killBonus", "150", CVAR_ARCHIVE | CVAR_LATCH | CVAR_LOCK_RANGE, 100.0, 500.0, 0, qfalse },
     { &csinf_startingCash, "csinf_startingCash", "800", CVAR_ARCHIVE | CVAR_LATCH | CVAR_LOCK_RANGE, 0.0, 1800.0, 0, qfalse },
-
+    { &g_anticampType, "g_anticampType", "1", CVAR_ARCHIVE | CVAR_LATCH, 0.0f, 0.0f, 0, qfalse }, // If anticampType = 1 => we use a hybrid version of extents + radius based. If 0, we use extents from ent if we get it or only radius based.
+    { &g_anticamp, "g_anticamp", "0", CVAR_ARCHIVE, 0.0f, 0.0f, 0, qfalse },
+    { &g_anticampRadius, "g_anticampRadius", "300", CVAR_ARCHIVE, 0.0f, 0.0f, 0, qfalse },
+    { &g_anticampTime, "g_anticampTime", "30", CVAR_ARCHIVE, 0.0f, 0.0f, 0, qfalse },
 };
 
 // bk001129 - made static to avoid aliasing
@@ -2833,6 +2839,9 @@ void G_RunFrame( int levelTime )
         if (ent && ent->inuse && ent->client) {
             
             if (ent->client->pers.connected == CON_CONNECTED) {
+
+                // Run an anticamp check. The function checks the cvars, gametypes etc by itself.
+                checkAnticamp(ent);
 
                 // ROX verification.
                 // NB - this is the simplified version - do NOT enable GUID based admins with this.

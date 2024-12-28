@@ -549,6 +549,12 @@ typedef struct ggSpecifics_s {
     int currentGun;
 } ggSpecifics_t;
 
+typedef enum camperType_s {
+    CAMPTYPE_NONE,
+    CAMPTYPE_EXTENTS,
+    CAMPTYPE_RADIUS
+} camperType_t;
+
 // client data that stays across multiple levels or map restarts
 // this is achieved by writing all the data to cvar strings at game shutdown
 // time and reading them back at connection time.  Anything added here
@@ -726,6 +732,15 @@ typedef struct
 
     csInfSpecifics_t    csinf;
     ggSpecifics_t       gg;
+
+    int                 campStartTime;
+    vec3_t              campOrigin;
+    qboolean            isCamping;
+    int                 campZone;
+    camperType_t        currentCampType;
+    int                 lastCampCheck;
+    qboolean            camperWarned;
+
 
 } clientPersistant_t;
 
@@ -927,6 +942,16 @@ typedef struct csinfLvl_s {
     team_t losingStreakTeam;
 } csinfLvl_t;
 
+#define MAX_ANTICAMP_ZONES 128
+
+typedef struct anticampInfo_s {
+
+    int extentsCount;
+    vec3_t extentsMins[MAX_ANTICAMP_ZONES];
+    vec3_t extentsMaxs[MAX_ANTICAMP_ZONES];
+
+} anticampInfo_t;
+
 typedef struct
 {
     struct gclient_s    *clients;       // [maxclients]
@@ -1101,6 +1126,8 @@ typedef struct
     qboolean        autoEvenTeamsDone;
 
     hnsLvl_t        hns;                // Level defines for Hide&Seek gametype.
+
+    anticampInfo_t  anticamp;
 
 } level_locals_t;
 
@@ -1696,6 +1723,11 @@ extern  vmCvar_t    csinf_friendlyKill;
 extern  vmCvar_t    csinf_killBonus;
 extern  vmCvar_t    csinf_startingCash;
 
+extern  vmCvar_t    g_anticampType;
+extern  vmCvar_t    g_anticamp;
+extern  vmCvar_t    g_anticampRadius;
+extern  vmCvar_t    g_anticampTime;
+
 //extern vmCvar_t     g_leanType;
 
 void    trap_Print( const char *text );
@@ -2250,6 +2282,8 @@ void csinf_buyMenu(gentity_t* ent);
 void resetCSInfStruct(gentity_t* ent);
 void csinf_handleCash(gentity_t* ent, int cash, char* reason, qboolean printChat);
 void gungame_giveGuns(gentity_t* ent);
+void checkAnticamp(gentity_t* ent);
+void clearCampingInformation(gentity_t* ent);
 
 typedef enum
 {
