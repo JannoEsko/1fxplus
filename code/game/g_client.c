@@ -979,6 +979,10 @@ void G_UpdateOutfitting ( int clientNum )
         client->ps.ammo[weaponData[WP_KNIFE].attack[ATTACK_ALTERNATE].ammoIndex] = 0;
     }
     client->ps.stats[STAT_OUTFIT_GRENADE] = bg_itemlist[bg_outfittingGroups[OUTFITTING_GROUP_GRENADE][client->pers.outfitting.items[OUTFITTING_GROUP_GRENADE]]].giTag;
+
+    if (isCurrentGametype(GT_VIP) && client->pers.isVip) {
+        client->ps.stats[STAT_ARMOR] = 200;
+    }
 }
 
 /*

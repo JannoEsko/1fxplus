@@ -2216,6 +2216,8 @@ void QDECL G_printCustomMessageToAll(const char* prefix, const char* msg, ...) _
 void QDECL G_printCustomMessage(gentity_t* ent, const char* prefix, const char* msg, ...) __attribute__((format(printf, 3, 4)));
 void QDECL G_printCustomChatMessage(gentity_t* ent, const char* prefix, const char* msg, ...) __attribute__((format(printf, 3, 4)));
 void QDECL G_printCustomChatMessageToAll(const char* prefix, const char* msg, ...) __attribute__((format(printf, 2, 3)));
+void QDECL G_printChatInfoMessageToTeam(team_t team, const char* msg, ...) __attribute__((format(printf, 2, 3)));
+
 void getSubnet(char* ip, char* output, int outputSize);
 int swapTeams(qboolean autoSwap);
 int evenTeams(qboolean autoEven);

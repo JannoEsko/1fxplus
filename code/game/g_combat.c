@@ -362,6 +362,12 @@ void player_die(
             freeProphuntProps(self);
         }
     }
+    else if (isCurrentGametype(GT_VIP)) {
+        if (self && self->client && self->client->pers.isVip) {
+            // Killing the VIP means the round ends.
+            trap_GT_SendEvent(GTEV_VIP_DIED, level.time, self->client->sess.team, attacker && attacker->client ? attacker->s.number : -1, 0, 0, 0);
+        }
+    }
 
     //Ryan april 22 2003
     //If they are planted unplant them before we kill them

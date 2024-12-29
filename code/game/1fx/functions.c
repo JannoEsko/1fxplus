@@ -751,6 +751,24 @@ void QDECL G_printGametypeMessageToAll(const char* msg, ...)
     va_end(argptr);
 }
 
+void QDECL G_printChatInfoMessageToTeam(team_t team, const char* msg, ...) {
+
+    va_list     argptr;
+
+    va_start(argptr, msg);
+
+    for (int i = 0; i < level.numConnectedClients; i++) {
+        gentity_t* ent = &g_entities[level.sortedClients[i]];
+
+        if (ent->client->sess.team == team) {
+            G_printMessage(qtrue, qfalse, ent, "\\Info", msg, argptr);
+        }
+    }
+
+    va_end(argptr);
+
+}
+
 void getSubnet(char* ip, char* output, int outputSize) {
 
     char origIp[MAX_IP], subnetIp[MAX_IP];

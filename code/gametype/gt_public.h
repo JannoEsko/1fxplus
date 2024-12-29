@@ -96,6 +96,7 @@ typedef enum
     GTEV_ITEM_CANBEUSED,        // int  ( int itemID, int clientID, int clientTeam );
     GTEV_ITEM_USED,             // int  ( int itemID, int clientID, int clientTeam );
     GTEV_PAUSE,
+    GTEV_VIP_DIED,
 
     GTEV_MAX
 

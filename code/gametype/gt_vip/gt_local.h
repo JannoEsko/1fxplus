@@ -42,6 +42,7 @@ along with this program; if not, see <http://www.gnu.org/licenses/>.
 
 typedef struct {
     int     time;
+    int     roundEndSound;
 } gametypeLocals_t;
 
 //=============================================

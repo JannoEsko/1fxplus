@@ -132,6 +132,8 @@ void GT_Init ( void )
     // Register all cvars for this gametype
     GT_RegisterCvars ( );
 
+    gametype.roundEndSound = trap_Cmd_RegisterSound("sound/ctf_win.mp3");
+
     // Report back the used team names to the game module.
     trap_Cmd_Teamnames(gt_redTeamColored.string, gt_blueTeamColored.string);
 }
@@ -167,12 +169,14 @@ int GT_Event ( int cmd, int time, int arg0, int arg1, int arg2, int arg3, int ar
                 case TEAM_RED:
                     trap_Cmd_TextMessage ( -1, va("%s team \\eliminated!", gt_redTeamColored.string) );
                     trap_Cmd_AddTeamScore ( TEAM_BLUE, 1 );
+                    trap_Cmd_StartGlobalSound(gametype.roundEndSound);
                     trap_Cmd_Restart ( 5 );
                     break;
 
                 case TEAM_BLUE:
                     trap_Cmd_TextMessage ( -1, va("%s team \\eliminated!", gt_blueTeamColored.string) );
                     trap_Cmd_AddTeamScore ( TEAM_RED, 1 );
+                    trap_Cmd_StartGlobalSound(gametype.roundEndSound);
                     trap_Cmd_Restart ( 5 );
                     break;
             }
@@ -181,6 +185,36 @@ int GT_Event ( int cmd, int time, int arg0, int arg1, int arg2, int arg3, int ar
         case GTEV_TIME_EXPIRED:
             trap_Cmd_TextMessage ( -1, "Round \\Draw!" );
             trap_Cmd_Restart ( 5 );
+            break;
+
+        case GTEV_VIP_DIED:
+
+            switch (arg0)
+            {
+            case TEAM_RED:
+                trap_Cmd_TextMessage(-1, va("%s VIP \\killed!", gt_redTeamColored.string));
+                trap_Cmd_AddTeamScore(TEAM_BLUE, 1);
+
+                if (arg1 >= 0 && arg1 < MAX_CLIENTS) {
+                    trap_Cmd_AddClientScore(arg1, 5);
+                }
+
+                trap_Cmd_StartGlobalSound(gametype.roundEndSound);
+                trap_Cmd_Restart(5);
+                break;
+
+            case TEAM_BLUE:
+                trap_Cmd_TextMessage(-1, va("%s VIP \\killed!", gt_blueTeamColored.string));
+                trap_Cmd_AddTeamScore(TEAM_RED, 1);
+
+                if (arg1 >= 0 && arg1 < MAX_CLIENTS) {
+                    trap_Cmd_AddClientScore(arg1, 5);
+                }
+
+                trap_Cmd_StartGlobalSound(gametype.roundEndSound);
+                trap_Cmd_Restart(5);
+                break;
+            }
             break;
     }
 

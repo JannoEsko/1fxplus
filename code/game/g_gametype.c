@@ -592,6 +592,59 @@ void G_ResetGametype ( qboolean fullRestart, qboolean cagefight )
     G_RespawnClients ( qtrue, TEAM_RED, fullRestart );
     G_RespawnClients ( qtrue, TEAM_BLUE, fullRestart );
 
+    if (isCurrentGametype(GT_VIP)) { // We do this here because this section is after eventeams.
+
+        int shuffledClients[MAX_CLIENTS] = { 0 }, numClients = 0;
+
+        for (int i = 0; i < level.numConnectedClients; i++) {
+            gentity_t* ent = &g_entities[level.sortedClients[i]];
+
+            if (ent->team != TEAM_SPECTATOR) {
+                shuffledClients[numClients++] = level.sortedClients[i];
+
+                // Clear previous VIP info.
+                ent->client->pers.isVip = qfalse;
+            }
+        }
+
+        if (level.numPlayingClients >= 2) {
+            qboolean gotRedPlayer = qfalse, gotBluePlayer = qfalse;
+
+            shuffleIntArray(shuffledClients, numClients);
+
+            for (int i = 0; i < numClients; i++) {
+                gentity_t* ent = &g_entities[shuffledClients[i]];
+
+                if (ent->client->sess.team == TEAM_RED && !gotRedPlayer) {
+                    gotRedPlayer = qtrue;
+                    ent->client->pers.isVip = qtrue;
+                    ent->client->ps.stats[STAT_HEALTH] = 200;
+                    ent->client->ps.stats[STAT_ARMOR] = 200;
+                    ent->health = 200;
+                    G_printChatInfoMessageToTeam(TEAM_RED, "%s^7 is the VIP of your team.", ent->client->pers.netname);
+                    G_printChatInfoMessageToTeam(TEAM_RED, "Protect the VIP, if the VIP dies, the round ends.");
+                } 
+
+                if (ent->client->sess.team == TEAM_BLUE && !gotBluePlayer) {
+                    gotBluePlayer = qtrue;
+                    ent->client->pers.isVip = qtrue;
+                    ent->client->ps.stats[STAT_HEALTH] = 200;
+                    ent->client->ps.stats[STAT_ARMOR] = 200;
+                    ent->health = 200;
+                    G_printChatInfoMessageToTeam(TEAM_BLUE, "%s^7 is the VIP of your team.", ent->client->pers.netname);
+                    G_printChatInfoMessageToTeam(TEAM_BLUE, "Protect the VIP, if the VIP dies, the round ends.");
+                }
+
+                if (gotRedPlayer && gotBluePlayer) {
+                    break;
+                }
+            }
+        }
+
+
+
+    }
+
     level.gametypeStartTime = level.time;
     level.gametypeResetTime = 0;
 
