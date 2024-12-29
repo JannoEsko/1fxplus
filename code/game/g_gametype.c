@@ -557,6 +557,9 @@ void G_ResetGametype ( qboolean fullRestart, qboolean cagefight )
                 }
 
             }
+            else {
+                level.gametypeRoundTime = level.time + (g_roundtimelimit.integer * 60000);
+            }
 
             trap_SetConfigstring ( CS_GAMETYPE_TIMER, va("%i", level.gametypeRoundTime) );
             if (!isCurrentGametype(GT_HNS)) {

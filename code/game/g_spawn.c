@@ -640,6 +640,9 @@ int G_SpawnGEntityFromSpawnVars( qboolean inSubBSP )
         G_FreeEntity( ent );
     }
 
+    level.numSpawnVars = 0;
+    level.numSpawnVarChars = 0;
+
     return ent->s.number;
 }
 
@@ -1212,10 +1215,7 @@ void SP_worldspawn( void )
         trap_SetConfigstring( CS_GAMETYPE_BLUETEAM, level.gametypeTeam[TEAM_BLUE] );
     }
 
-    G_SpawnString( "message", "", &text );
-    trap_SetConfigstring( CS_MESSAGE, text );               // map specific message
-
-    //trap_SetConfigstring( CS_MOTD, g_motd.string );     // message of the day
+    trap_SetConfigstring( CS_MOTD, g_motd.string );     // message of the day
 
     G_SpawnString( "gravity", va("%d", g_gravity.integer), &text );
     trap_Cvar_Set( "g_gravity", text );

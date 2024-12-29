@@ -963,6 +963,14 @@ typedef struct anticampInfo_s {
 
 } anticampInfo_t;
 
+typedef struct hnzLvl_s {
+
+    qboolean nextZombiePicked;
+    int zombifyTime;
+    int nextZombie;
+
+} hnzLvl_t;
+
 typedef struct
 {
     struct gclient_s    *clients;       // [maxclients]
@@ -1139,6 +1147,8 @@ typedef struct
     hnsLvl_t        hns;                // Level defines for Hide&Seek gametype.
 
     anticampInfo_t  anticamp;
+
+    hnzLvl_t        hnz;
 
 } level_locals_t;
 

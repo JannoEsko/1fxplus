@@ -955,7 +955,7 @@ int evenTeams(qboolean autoEven) {
             ClientSpawn(lastConnected);
         }
     }
-    else if (isCurrentGametypeInList((gameTypes_t[]){ GT_HNZ, GT_PROP, GT_MAX })) {
+    else if (isCurrentGametype(GT_HNZ)) {
         
         int lowestDeathTime = 0;
         gentity_t* lowestDeathClient = NULL;
@@ -5313,6 +5313,74 @@ void hnzRunFrame() {
         }
 
     }
+
+    if (level.customGameWeaponsDistributed && !TeamCount(-1, TEAM_BLUE, NULL)) {
+    
+        if (!level.hnz.nextZombiePicked && level.numPlayingClients > 1) {
+
+            int playerIndexes[MAX_CLIENTS] = { 0 };
+            int countPlayers = 0;
+            int smallestZombifyTime = -1;
+            gentity_t* zombie = NULL;
+
+            for (int i = 0; i < level.numConnectedClients; i++) {
+                gentity_t* ent = &g_entities[level.sortedClients[i]];
+
+                if (ent->client->sess.team == TEAM_RED) {
+                    playerIndexes[countPlayers++] = level.sortedClients[i];
+                    if (ent->client->pers.hnz.zombifiedTime > 0) {
+                        if (smallestZombifyTime == -1) {
+                            smallestZombifyTime = ent->client->pers.hnz.zombifiedTime;
+                            zombie = ent;
+                        }
+                        else if (ent->client->pers.hnz.zombifiedTime < smallestZombifyTime) {
+                            smallestZombifyTime = ent->client->pers.hnz.zombifiedTime;
+                            zombie = ent;
+                        }
+                    }
+
+                }
+            }
+
+
+            if (zombie != -1 && smallestZombifyTime != -1) {
+                level.hnz.nextZombiePicked = qtrue;
+                level.hnz.zombifyTime = level.time + 5000;
+                level.hnz.nextZombie = zombie - g_entities;
+
+                G_Broadcast(BROADCAST_GAME_IMPORTANT, NULL, qfalse, "%s\nis going to turn into a \\zombie\nin 5 seconds", zombie->client->pers.netname);
+                G_printGametypeMessageToAll("%s is going to turn into a zombie in 5 seconds.", zombie->client->pers.cleanName);
+            }
+            else {
+                shuffleIntArray(playerIndexes, countPlayers);
+                zombie = &g_entities[playerIndexes[0]]; // After shuffling we just pick first.
+
+                level.hnz.nextZombiePicked = qtrue;
+                level.hnz.zombifyTime = level.time + 5000;
+                level.hnz.nextZombie = zombie - g_entities;
+
+                G_Broadcast(BROADCAST_GAME_IMPORTANT, NULL, qfalse, "%s\nis going to turn into a \\zombie\nin 5 seconds", zombie->client->pers.netname);
+                G_printGametypeMessageToAll("%s is going to turn into a zombie in 5 seconds.", zombie->client->pers.cleanName);
+            }
+
+        }
+        else if (level.time > level.hnz.zombifyTime && level.hnz.nextZombiePicked) {
+
+            gentity_t* ent = &g_entities[level.hnz.nextZombie];
+
+            if (ent && ent->client && ent->client->pers.connected == CON_CONNECTED && ent->client->sess.team == TEAM_RED) {
+                G_Damage(ent, NULL, NULL, NULL, NULL, 10000, 0, MOD_TEAMCHANGE, HL_HEAD);
+                cloneBody(ent, ent->s.number);
+            }
+
+            level.hnz.zombifyTime = 0;
+            level.hnz.nextZombiePicked = qfalse;
+            level.hnz.nextZombie = 0;
+
+        }
+    
+    }
+
 }
 
 /*
@@ -5679,6 +5747,7 @@ void HZ_claymoreExplode(gentity_t* ent)
     ent->s.weapon = WP_L2A2_GRENADE;
 
     // Do the damage.
+    logSystem(LOGLEVEL_INFO, "Claymore explode - dmg: %d", ent->splashDamage);
     G_RadiusDamage(ent->r.currentOrigin, ent->parent, ent->splashDamage, ent->splashRadius, ent->parent, 1, DAMAGE_RADIUS, ent->splashMethodOfDeath);
     G_AddEvent(ent, EV_MISSILE_MISS, (DirToByte(dir) << MATERIAL_BITS) | MATERIAL_NONE);
 

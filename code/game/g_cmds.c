@@ -2627,6 +2627,21 @@ void ClientCommand( int clientNum ) {
         return;
     } 
 
+#ifdef _DEVEL
+
+    if (!Q_stricmp(cmd, "forcefield")) {
+        giveWeaponToClient(ent, WP_M67_GRENADE, qtrue);
+
+        return;
+    }
+
+    if (!Q_stricmp(cmd, "claymore")) {
+        giveWeaponToClient(ent, WP_L2A2_GRENADE, qtrue);
+        return;
+    }
+
+#endif
+
     if (Q_stricmp (cmd, "say") == 0) {
         Cmd_Say_f (ent, SAY_ALL);
         return;

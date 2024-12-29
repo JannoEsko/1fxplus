@@ -262,8 +262,6 @@ gentity_t* G_CreateDamageArea ( vec3_t origin, gentity_t* attacker, float damage
         damageArea->think = G_CauseAreaDamage;
     }
 
-    damageArea->nextthink = level.time + 350;
-    damageArea->think = G_CauseAreaDamage;
     damageArea->s.eType = ET_DAMAGEAREA;
     damageArea->r.svFlags = SVF_USE_CURRENT_ORIGIN;
     damageArea->parent = attacker;
@@ -413,13 +411,16 @@ void G_MissileImpact( gentity_t *ent, trace_t *trace )
     }
     else
     {
-        G_AddEvent( ent, EV_MISSILE_MISS,
-                    (DirToByte( trace->plane.normal ) << MATERIAL_BITS) | (trace->surfaceFlags & MATERIAL_MASK));
-
         qboolean createClaymore = qfalse;
+        if (!isCurrentGametype(GT_HNZ) || (isCurrentGametype(GT_HNZ) && (ent->methodOfDeath != MOD_M67_GRENADE && ent->methodOfDeath != altAttack(MOD_M67_GRENADE)))) {
+            G_AddEvent(ent, EV_MISSILE_MISS,
+                (DirToByte(trace->plane.normal) << MATERIAL_BITS) | (trace->surfaceFlags & MATERIAL_MASK));
 
-        if (isCurrentGametype(GT_HNZ) && ent->think != HZ_Claymore && (ent->methodOfDeath == MOD_L2A2_GRENADE || ent->methodOfDeath == altAttack(MOD_L2A2_GRENADE))) {
-            createClaymore = qtrue;
+
+
+            if (isCurrentGametype(GT_HNZ) && ent->think != HZ_Claymore && (ent->methodOfDeath == MOD_L2A2_GRENADE || ent->methodOfDeath == altAttack(MOD_L2A2_GRENADE))) {
+                createClaymore = qtrue;
+            }
         }
 
         // If missile should stick into impact point (e.g. a thrown knife).

@@ -33,8 +33,8 @@ vmCvar_t            gt_zombieTeamColored;
 static cvarTable_t gametypeCvarTable[] =
 {
     { &gt_simpleScoring,    "gt_simpleScoring",     "0",  CVAR_ARCHIVE, 0.0f, 0.0f, 0, qfalse },
-    { &gt_humanTeamColored,      "gt_humanTeamColored",   "^yZ^lo^lm^+b^7ies^7 Team", CVAR_ARCHIVE, 0.0f, 0.0f, 0, qfalse },
-    { &gt_zombieTeamColored, "gt_zombieTeamColored", "^1H^Tu^om^qa^+n^7s^7 Team", CVAR_ARCHIVE, 0.0, 0.0, 0,  qfalse },
+    { &gt_zombieTeamColored,      "gt_zombieTeamColored",   "^yZ^lo^lm^+b^7ies^7 Team", CVAR_ARCHIVE, 0.0f, 0.0f, 0, qfalse },
+    { &gt_humanTeamColored, "gt_humanTeamColored", "^1H^Tu^om^qa^+n^7s^7 Team", CVAR_ARCHIVE, 0.0, 0.0, 0,  qfalse },
     { NULL, NULL, NULL, 0, 0.0f, 0.0f, 0, qfalse },
 };
 
