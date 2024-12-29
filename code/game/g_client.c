@@ -2117,6 +2117,10 @@ void ClientDisconnect( int clientNum )
         tent = G_TempEntity( ent->client->ps.origin, EV_PLAYER_TELEPORT_OUT );
         tent->s.clientNum = ent->s.clientNum;
 
+        if (isCurrentGametype(GT_PROP) && ent->client->pers.prop.isMovingModel) {
+            freeProphuntProps(ent);
+        }
+
         // Dont drop weapons
         if (!isCurrentGametypeInList((gameTypes_t[]) { GT_HNZ, GT_HNZ, GT_MAX })) {
             ent->client->ps.stats[STAT_WEAPONS] = 0;

@@ -125,8 +125,6 @@ preparing them
 */
 void GT_Init ( void )
 {
-    gtItemDef_t     itemDef;
-    gtTriggerDef_t  triggerDef;
 
     GT_Printf("----- Gametype Initialization -----\n");
     GT_Printf("gametype: %s (%s)\n", GAMETYPE_NAME, GAMETYPE_NAME_FULL);
@@ -140,14 +138,6 @@ void GT_Init ( void )
     gametype.caseTakenSound   = trap_Cmd_RegisterSound ( "sound/ctf_flag.mp3" );
     gametype.caseCaptureSound = trap_Cmd_RegisterSound ( "sound/ctf_win.mp3" );
     gametype.caseReturnSound  = trap_Cmd_RegisterSound ( "sound/ctf_return.mp3" );
-
-    // Register the items
-    memset ( &itemDef, 0, sizeof(itemDef) );
-    trap_Cmd_RegisterItem ( ITEM_BRIEFCASE,  "briefcase", &itemDef );
-
-    // Register the triggers
-    memset ( &triggerDef, 0, sizeof(triggerDef) );
-    trap_Cmd_RegisterTrigger ( TRIGGER_EXTRACTION, "briefcase_destination", &triggerDef );
 
     // Report back the used team names to the game module.
     trap_Cmd_Teamnames(gt_propTeamColored.string, gt_hunterTeamColored.string);
@@ -178,31 +168,12 @@ int GT_Event(int cmd, int time, int arg0, int arg1, int arg2, int arg3, int arg4
 {
     switch (cmd)
     {
-    case GTEV_ITEM_DEFEND:
-        if (!gt_simpleScoring.integer)
-        {
-            trap_Cmd_AddClientScore(arg1, 5);
-        }
-        return 0;
-
-    case GTEV_ITEM_STUCK:
-        trap_Cmd_ResetItem(ITEM_BRIEFCASE);
-        trap_Cmd_TextMessage(-1, "The Briefcase has \\returned!");
-        trap_Cmd_StartGlobalSound(gametype.caseReturnSound);
-        return 1;
-
     case GTEV_TEAM_ELIMINATED:
         switch (arg0)
         {
         case TEAM_RED:
             trap_Cmd_TextMessage(-1, va("%s team \\eliminated!", gt_propTeamColored.string));
             trap_Cmd_AddTeamScore(TEAM_BLUE, 1);
-            trap_Cmd_Restart(5);
-            break;
-
-        case TEAM_BLUE:
-            trap_Cmd_TextMessage(-1, va("%s team \\eliminated!", gt_hunterTeamColored.string));
-            trap_Cmd_AddTeamScore(TEAM_RED, 1);
             trap_Cmd_Restart(5);
             break;
         }
@@ -214,37 +185,6 @@ int GT_Event(int cmd, int time, int arg0, int arg1, int arg2, int arg3, int arg4
         trap_Cmd_Restart(5);
         break;
 
-    case GTEV_ITEM_DROPPED:
-    {
-        char clientname[MAX_QPATH];
-        trap_Cmd_GetClientName(arg1, clientname, MAX_QPATH, qfalse);
-        trap_Cmd_TextMessage(-1, va("%s has \\dropped the briefcase!", clientname));
-        break;
-    }
-
-    case GTEV_ITEM_TOUCHED:
-
-        switch (arg0)
-        {
-        case ITEM_BRIEFCASE:
-            if (arg2 == TEAM_BLUE)
-            {
-                char clientname[MAX_QPATH];
-                trap_Cmd_GetClientName(arg1, clientname, MAX_QPATH, qfalse);
-                trap_Cmd_TextMessage(-1, va("%s has \\taken the briefcase!", clientname));
-                trap_Cmd_StartGlobalSound(gametype.caseTakenSound);
-                trap_Cmd_RadioMessage(arg1, "got_it");
-
-                return 1;
-            }
-            break;
-        }
-
-        return 0;
-
-    case GTEV_TRIGGER_TOUCHED:
-
-        return 0;
     }
 
     return 0;

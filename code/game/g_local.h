@@ -566,6 +566,14 @@ typedef struct hnzSpecifics_s {
     int lastForcefieldPush;
 } hnzSpecifics_t;
 
+typedef struct propSpecifics_s {
+    qboolean            isMovingModel;
+    qboolean            isModelStatic;
+    int                 modelObject;
+    int                 nextModelState;
+    int                 stateCooldownMessage;
+} propSpecifics_t;
+
 // client data that stays across multiple levels or map restarts
 // this is achieved by writing all the data to cvar strings at game shutdown
 // time and reading them back at connection time.  Anything added here
@@ -730,12 +738,6 @@ typedef struct
     int                 seekerAwayEnt;
     int                 lastpickup;
     int                 deathTime;
-    
-
-
-    qboolean            movingModel;
-    qboolean            movingModelStatic;
-    int                 movingModelObject;
 
     qboolean            isVip;
     qboolean            knifeBox;
@@ -752,7 +754,7 @@ typedef struct
     int                 lastCampCheck;
     qboolean            camperWarned;
     hnzSpecifics_t      hnz;
-
+    propSpecifics_t     prop;
 } clientPersistant_t;
 
 #define MAX_SERVER_FPS      40
@@ -2315,6 +2317,7 @@ void think_forcefield(gentity_t* ent);
 void HZ_Claymore(gentity_t* ent);
 void HZ_ClaymoreShoot(gentity_t* self, gentity_t* inflictor, gentity_t* attacker, int damage, int mod, int hitLocation, vec3_t hitDir);
 void HZ_claymoreExplode(gentity_t* ent);
+void propRunFrame(void);
 
 
 typedef enum
@@ -2389,7 +2392,6 @@ extern prophuntObject_t propHuntModels[TOTAL_PROPHUNT_MODELS];
 
 void freeProphuntProps(gentity_t* player);
 void transformPlayerToObject(gentity_t* ent);
-void chooseProp(gentity_t* ent, int prop);
 void prop_pickRandomProps(int* result);
 void transformPlayerToProp(gentity_t* ent, int propId, qboolean thinkSingle);
 void    prop_ThinkMovingModelSingle(gentity_t* ent);

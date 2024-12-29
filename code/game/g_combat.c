@@ -282,7 +282,7 @@ void player_die(
     else if (isCurrentGametype(GT_HNS)) {
 
         if (self->client->sess.transformedEntity) {
-            if (self->client->pers.movingModel) {
+            if (self->client->pers.prop.isMovingModel) {
                 freeProphuntProps(self);
 
             }
@@ -355,6 +355,11 @@ void player_die(
         if (self->client->sess.team == TEAM_RED && mod != MOD_TEAMCHANGE) {
             SetTeam(self, "blue", NULL, qtrue);
             respawn(self);
+        }
+    }
+    else if (isCurrentGametype(GT_PROP)) {
+        if (self && self->client && self->client->pers.prop.isMovingModel) {
+            freeProphuntProps(self);
         }
     }
 
@@ -1321,7 +1326,7 @@ int G_Damage (
             G_Damage(targ, NULL, NULL, NULL, NULL, 10000, 0, MOD_TEAMCHANGE, HL_HEAD);
             cloneBody(attacker, targ->s.number);
             damage = 0;
-
+            targ->client->pers.hnz.zombifiedTime = level.time;
             attacker->client->sess.score++;
             attacker->client->sess.kills++;
             G_printGametypeMessageToAll("%s was zombified by %s.", targ->client->pers.cleanName, attacker->client->pers.cleanName);
@@ -1333,6 +1338,9 @@ int G_Damage (
             targ->client->pers.hnz.healthRegen = level.time + 2000;
         }
 
+    }
+    else if (isCurrentGametype(GT_PROP) && client && client->sess.team == TEAM_BLUE) {
+        damage = 0;
     }
 
     // check for completely getting out of the damage

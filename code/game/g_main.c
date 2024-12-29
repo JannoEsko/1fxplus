@@ -817,7 +817,7 @@ void G_SetDisabledWeapons(void) {
     for (int i = WP_KNIFE; i < WP_NUM_WEAPONS; i++) {
         gitem_t* item = BG_FindWeaponItem(i);
 
-        if (isCurrentGametypeInList((gameTypes_t[]) { GT_GUNGAME, GT_CSINF, GT_PROP, GT_MAX })) {
+        if (isCurrentGametypeInList((gameTypes_t[]) { GT_GUNGAME, GT_CSINF, GT_PROP, GT_HNZ, GT_MAX })) {
             trap_Cvar_Set(va("disable_%s", item->classname), "1");
         }
         else {
@@ -1509,6 +1509,17 @@ void G_ShutdownGame( int restart )
         G_LogPrintf("ShutdownGame:\n" );
         G_LogPrintf("------------------------------------------------------------\n" );
         trap_FS_FCloseFile( level.logFile );
+    }
+
+    if (isCurrentGametype(GT_PROP)) {
+
+        for (int i = 0; i < level.numConnectedClients; i++) {
+            gentity_t* ent = &g_entities[level.sortedClients[i]];
+
+            if (ent->client->sess.team == TEAM_BLUE) {
+                ent->client->sess.team = TEAM_RED;
+            }
+        }
     }
 
     // write all the client session data so we can get it back
@@ -3005,6 +3016,24 @@ void G_RunFrame( int levelTime )
                     }
 
                 }
+                else if (isCurrentGametype(GT_PROP)) {
+
+                    if (G_IsClientDead(ent->client) && level.customGameStarted) {
+                        freeProphuntProps(ent);
+
+                        if (ent->client->sess.team == TEAM_RED) {
+                            SetTeam(ent, "blue", NULL, qtrue);
+                        }
+
+                        G_StopFollowing(ent);
+                        ent->client->ps.pm_flags &= ~PMF_GHOST;
+                        ent->client->ps.pm_type = PM_NORMAL;
+                        ent->client->sess.ghost = qfalse;
+                        trap_UnlinkEntity(ent);
+                        ClientSpawn(ent);
+                    }
+
+                }
 
             }
 
@@ -3033,6 +3062,9 @@ void G_RunFrame( int levelTime )
     }
     else if (isCurrentGametype(GT_HNZ)) {
         hnzRunFrame();
+    }
+    else if (isCurrentGametype(GT_PROP)) {
+        propRunFrame();
     }
 
     // Check warmup rules

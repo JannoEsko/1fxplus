@@ -1068,7 +1068,59 @@ void ClientThink_real( gentity_t *ent )
         return;
     }
 
-    if (client->sess.transformed && !(client->pers.cmd.buttons & BUTTON_RELOAD)) {
+    if (isCurrentGametype(GT_PROP)) {
+
+        if (client->pers.cmd.buttons & BUTTON_RELOAD) {
+            if (client->pers.prop.isMovingModel && client->pers.prop.nextModelState < level.time) {
+                if (client->pers.prop.isModelStatic) {
+                    client->pers.prop.isModelStatic = qfalse;
+                    G_printChatInfoMessage(ent, "You can move again. Press Reload to make yourself static again (5 sec cooldown).");
+                    client->pers.prop.stateCooldownMessage = level.time + 1000;
+#ifndef _DEVEL
+                    client->pers.prop.nextModelState = level.time + 5000;
+#else 
+                    client->pers.prop.nextModelState = level.time + 500;
+#endif
+                    client->inactivityTime = level.time + g_inactivity.integer * 1000;
+                }
+                else if (client->ps.pm_flags & PMF_JUMPING || client->ps.velocity[2] < 0 || client->ps.groundEntityNum == ENTITYNUM_NONE) {
+
+                    if (level.time > client->pers.prop.stateCooldownMessage) {
+                        client->pers.prop.stateCooldownMessage = level.time + 3000;
+                        G_printChatInfoMessage(ent, "You cannot be jumping while trying to freeze.");
+                    }
+                }
+                else {
+                    client->pers.prop.isModelStatic = qtrue;
+                    G_printChatInfoMessage(ent, "You're now static. Your model will not move. Press Reload to move again (5 sec cooldown)");
+                    client->pers.prop.stateCooldownMessage = level.time + 1000;
+#ifndef _DEVEL
+                    client->pers.prop.nextModelState = level.time + 5000;
+#else 
+                    client->pers.prop.nextModelState = level.time + 500;
+#endif
+                }
+            }
+            else if (client->pers.prop.isMovingModel && client->pers.prop.stateCooldownMessage < level.time) {
+                G_printChatInfoMessage(ent, "You must wait until you can %s again.", client->pers.prop.isModelStatic ? "unfreeze" : "freeze");
+                client->pers.prop.stateCooldownMessage = level.time + 1000;
+            }
+        }
+
+    }
+
+    if (ent->client->pers.prop.isMovingModel && isCurrentGametypeInList((gameTypes_t[]) { GT_HNS, GT_PROP, GT_MAX })) {
+
+        if (G_IsClientDead(ent->client)) {
+            freeProphuntProps(ent);
+        }
+        else {
+            prop_ThinkMovingModelSingle(&g_entities[ent->client->sess.transformedEntity]);
+        }
+
+    }
+
+    if ((client->sess.transformed || client->pers.prop.isModelStatic) && !(client->pers.cmd.buttons & BUTTON_RELOAD)) {
         client->ps.pm_type = PM_FREEZE;
         Com_Memset(&pm, 0, sizeof(pm));
         pm.ps = &client->ps;
@@ -1360,6 +1412,11 @@ void ClientThink_real( gentity_t *ent )
                 ent->client->ps.speed *= (1.0 - ((float)speedDecrement / 100.0));
             }
 
+        }
+    }
+    else if (isCurrentGametype(GT_PROP)) {
+        if (client->sess.team == TEAM_BLUE) {
+            client->ps.speed += 35;
         }
     }
 

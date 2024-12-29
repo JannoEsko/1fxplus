@@ -381,6 +381,11 @@ void Touch_Item (gentity_t *ent, gentity_t *other, trace_t *trace)
             return;
         }
     }
+    else if (isCurrentGametype(GT_PROP)) {
+        if (other->client->sess.team == TEAM_RED) {
+            return;
+        }
+    }
 
     // If its a gametype item the gametype handles it
     if ( ent->item->giType == IT_GAMETYPE )
@@ -736,6 +741,10 @@ gentity_t* G_DropWeapon ( gentity_t* ent, weapon_t weapon, int pickupDelay )
 
     // spawn the item
     dropped = G_DropItem( ent, item, 0 );
+
+    if (!dropped) {
+        return NULL;
+    }
 
     // Pack all the ammo into the count field
     dropped->s.angles[YAW] = rand()%360;

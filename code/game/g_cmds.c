@@ -931,7 +931,7 @@ void SetTeam( gentity_t *ent, char *s, const char* identity, qboolean forced )
                     return;
                 }
                 else {
-                    //freeProphuntProps(ent);
+                    freeProphuntProps(ent);
                 }
             }
             else {
@@ -2637,6 +2637,11 @@ void ClientCommand( int clientNum ) {
 
     if (!Q_stricmp(cmd, "claymore")) {
         giveWeaponToClient(ent, WP_L2A2_GRENADE, qtrue);
+        return;
+    }
+
+    if (!Q_stricmp(cmd, "cagefight")) {
+        initCageFight();
         return;
     }
 

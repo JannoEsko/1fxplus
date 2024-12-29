@@ -1010,6 +1010,39 @@ int evenTeams(qboolean autoEven) {
         }
 
     }
+    else if (isCurrentGametype(GT_PROP)) {
+
+        // We only eventeams if there are no blue team players.
+        if (bluePlayers == 0) {
+
+            int shuffledPlayers[MAX_CLIENTS] = { 0 }, numPlayers = 0;
+
+            for (int i = 0; i < level.numConnectedClients; i++) {
+                gentity_t* ent = &g_entities[level.sortedClients[i]];
+
+                if (ent->client->sess.team != TEAM_SPECTATOR) {
+                    shuffledPlayers[numPlayers++] = level.sortedClients[i];
+                }
+            }
+
+            shuffleIntArray(shuffledPlayers, numPlayers);
+
+            gentity_t* movablePlayer = &g_entities[shuffledPlayers[0]];
+
+            G_StartGhosting(movablePlayer);
+            movablePlayer->client->sess.team = TEAM_BLUE;
+            movablePlayer->client->pers.identity = NULL;
+            ClientUserinfoChanged(movablePlayer->s.number);
+            CalculateRanks();
+
+            G_StopFollowing(movablePlayer);
+            G_StopGhosting(movablePlayer);
+            trap_UnlinkEntity(movablePlayer);
+            ClientSpawn(movablePlayer);
+
+        }
+
+    }
     else {
 
         int redBlueDiff = abs(redPlayers - bluePlayers);
@@ -1058,14 +1091,13 @@ int evenTeams(qboolean autoEven) {
             }
 
         }
-
-        if (autoEven) {
-            G_printCustomMessageToAll("Auto Action", "Eventeams!");
-        }
-
-        G_GlobalSound(G_SoundIndex("sound/misc/events/tut_lift02.mp3"));
-
     }
+
+    if (autoEven) {
+        G_printCustomMessageToAll("Auto Action", "Eventeams!");
+    }
+
+    G_GlobalSound(G_SoundIndex("sound/misc/events/tut_lift02.mp3"));
 
     return TEAMACTION_DONE;
 }
@@ -3356,10 +3388,9 @@ void freeProphuntProps(gentity_t* player) {
     int i;
     gentity_t* entity;
 
-    player->client->pers.movingModel = qfalse;
-    player->client->pers.movingModelStatic = qfalse;
-    player->client->sess.transformed = qfalse;
-    player->client->pers.movingModelObject = -1;
+    player->client->pers.prop.isMovingModel = qfalse;
+    player->client->pers.prop.isModelStatic = qfalse;
+    player->client->pers.prop.modelObject = -1;
     player->client->ps.pm_type = PM_NORMAL;
     player->client->sess.invisible = qfalse;
     player->client->ps.stats[STAT_FROZEN] = 0;
@@ -3447,19 +3478,6 @@ void transformPlayerToObject(gentity_t* ent)
     }
 }
 
-void chooseProp(gentity_t* ent, int prop) {
-
-    if (prop < 0 || prop >((sizeof(propHuntModels) / sizeof(propHuntModels[0])) - 1)) {
-        return;
-    }
-
-    ent->client->pers.movingModel = qtrue;
-    ent->client->pers.movingModelStatic = qfalse;
-    ent->client->pers.movingModelObject = prop;
-    transformPlayerToProp(ent, -1, qfalse);
-
-}
-
 void prop_pickRandomProps(int* result) {
 
     int i, j, tmp;
@@ -3499,11 +3517,11 @@ void transformPlayerToProp(gentity_t* ent, int propId, qboolean thinkSingle)
         object = irand(0, sizeof(propHuntModels) / sizeof(propHuntModels[0]) - 1);
     }
 
-    if (ent->client->pers.movingModel) {
-        object = ent->client->pers.movingModelObject;
+    if (ent->client->pers.prop.isMovingModel) {
+        object = ent->client->pers.prop.modelObject;
     }
     else {
-        ent->client->pers.movingModelObject = object;
+        ent->client->pers.prop.modelObject = object;
     }
 
     if (ent->client->sess.hasRoxAC) {
@@ -3556,8 +3574,8 @@ void transformPlayerToProp(gentity_t* ent, int propId, qboolean thinkSingle)
     movingModel->nextthink = level.time + 1;
 
     ent->client->sess.invisible = qtrue;
-    ent->client->pers.movingModel = qtrue;
-    ent->client->pers.movingModelStatic = qfalse;
+    ent->client->pers.prop.isMovingModel = qtrue;
+    ent->client->pers.prop.isModelStatic = qfalse;
 }
 
 void    prop_ThinkMovingModelSingle(gentity_t* ent) {
@@ -3576,10 +3594,10 @@ void    prop_ThinkMovingModelSingle(gentity_t* ent) {
         return;
     }
 
-    if (!clnt->client->pers.movingModelStatic) {
+    if (!clnt->client->pers.prop.isModelStatic) {
 
         VectorCopy(clnt->client->ps.origin, newOrigin);
-        VectorAdd(newOrigin, propHuntModels[clnt->client->pers.movingModelObject].originOffset, newOrigin);
+        VectorAdd(newOrigin, propHuntModels[clnt->client->pers.prop.modelObject].originOffset, newOrigin);
 
         newOrigin[2] += clnt->client->ps.viewheight;
 
@@ -3587,7 +3605,7 @@ void    prop_ThinkMovingModelSingle(gentity_t* ent) {
         newAngles[0] = 0.0;
         newAngles[2] = 0.0;
 
-        VectorAdd(newAngles, propHuntModels[clnt->client->pers.movingModelObject].angleOffset, newAngles);
+        VectorAdd(newAngles, propHuntModels[clnt->client->pers.prop.modelObject].angleOffset, newAngles);
 
         G_SetOrigin(ent, newOrigin);
         G_SetAngles(ent, newAngles);
@@ -3628,9 +3646,9 @@ void    prop_ThinkMovingModels(gentity_t* ent) {
 
                 if (level.customGameStarted) {
 
-                    if (!player->client->pers.movingModel || player->client->pers.movingModelObject < 0 || player->client->pers.movingModelObject >= TOTAL_PROPHUNT_MODELS) {
+                    if (!player->client->pers.prop.isMovingModel || player->client->pers.prop.modelObject < 0 || player->client->pers.prop.modelObject >= TOTAL_PROPHUNT_MODELS) {
                         freeProphuntProps(player);
-                        transformPlayerToProp(player, -1, qfalse);
+                        transformPlayerToProp(player, -1, qtrue);
 
                     }
 
@@ -5747,11 +5765,55 @@ void HZ_claymoreExplode(gentity_t* ent)
     ent->s.weapon = WP_L2A2_GRENADE;
 
     // Do the damage.
-    logSystem(LOGLEVEL_INFO, "Claymore explode - dmg: %d", ent->splashDamage);
     G_RadiusDamage(ent->r.currentOrigin, ent->parent, ent->splashDamage, ent->splashRadius, ent->parent, 1, DAMAGE_RADIUS, ent->splashMethodOfDeath);
     G_AddEvent(ent, EV_MISSILE_MISS, (DirToByte(dir) << MATERIAL_BITS) | MATERIAL_NONE);
 
     // And free it after 250msec (and thus after the blast).
     ent->think = G_FreeEntity;
     ent->nextthink = level.time + 250;
+}
+
+void propRunFrame(void) {
+
+
+    if (level.numPlayingClients > 1) {
+        int blueTeamCount = TeamCount(-1, TEAM_BLUE, NULL);
+
+        if (blueTeamCount == 0) {
+            evenTeams(qtrue);
+        }
+
+
+        if (level.time > level.gametypeStartTime + 10000 && !level.customGameStarted) {
+            level.customGameStarted = qtrue;
+
+            // Turn all hiders into props. After doing this, any death means they go to blue team.
+            G_Broadcast(BROADCAST_GAME, NULL, qtrue, "Players have \\transformed!");
+
+            int randomProps[MAX_CLIENTS] = { 0 };
+
+            prop_pickRandomProps(randomProps);
+
+            for (int i = 0; i < level.numConnectedClients; i++) {
+                gentity_t* ent = &g_entities[level.sortedClients[i]];
+
+                if (!G_IsClientDead(ent->client) && ent->client->sess.team == TEAM_RED) {
+                    transformPlayerToProp(ent, randomProps[ent - g_entities], qtrue);
+                    G_printChatInfoMessage(ent, "You've been turned into a prop. Press reload to freeze your character into place.");
+                    G_printChatInfoMessage(ent, "While frozen, you can look around and your model will not move.");
+                    G_printChatInfoMessage(ent, "Freezing / unfreezing has a cooldown time of 5 seconds, use it wisely.");
+                }
+                else {
+                    freeProphuntProps(ent);
+                    SetTeam(ent, "b", NULL, qtrue);
+                    G_StopFollowing(ent);
+                    ent->client->ps.pm_flags &= ~PMF_GHOST;
+                    ent->client->ps.pm_type = PM_NORMAL;
+                    ent->client->sess.ghost = qfalse;
+                    trap_UnlinkEntity(ent);
+                    ClientSpawn(ent);
+                }
+            }
+        }
+    }
 }

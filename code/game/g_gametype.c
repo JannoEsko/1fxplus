@@ -516,6 +516,18 @@ void G_ResetGametype ( qboolean fullRestart, qboolean cagefight )
             }
         }
     }
+    else if (isCurrentGametype(GT_PROP)) {
+
+        for (int i = 0; i < level.numConnectedClients; i++) {
+            gentity_t* ent = &g_entities[level.sortedClients[i]];
+
+            if (ent->client->sess.team != TEAM_SPECTATOR) {
+                freeProphuntProps(ent);
+                SetTeam(ent, "red", NULL, qtrue);
+            }
+        }
+
+    }
 
     // Reset the gametype itself
     G_ResetGametypeEntities ( );
@@ -642,6 +654,9 @@ void G_ResetGametype ( qboolean fullRestart, qboolean cagefight )
     else if (isCurrentGametype(GT_HNZ)) {
         level.customGameStarted = qfalse;
         level.customGameWeaponsDistributed = qfalse;
+    }
+    else if (isCurrentGametype(GT_PROP)) {
+        level.customGameStarted = qfalse;
     }
 
     if ( fullRestart )
@@ -984,7 +999,7 @@ void CheckGametype ( void )
                     (!isCurrentGametype(GT_HNS) || level.customGameStarted)
                     ) ||
                 (
-                    isCurrentGametype(GT_HNZ) &&
+                    isCurrentGametypeInList((gameTypes_t[]) { GT_HNZ, GT_PROP, GT_MAX }) &&
                     players[TEAM_BLUE] > 1
                     )
                 )
