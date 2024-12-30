@@ -447,9 +447,9 @@ static cvarTable_t gameCvarTable[] =
     { &g_hadminPrefix,    "g_hadminPrefix",     "^CH^b-^kA^+d^7min",        CVAR_ARCHIVE,   0.0f,   0.0f,   0,  qfalse },
     { &g_rconPrefix,    "g_rconPrefix",     "^CS^be^kr^+v^7er",        CVAR_ARCHIVE,   0.0f,   0.0f,   0,  qfalse },
 
-    { &g_inviewFile,    "g_inviewFile",     "wpndata/SOF2.inview",        CVAR_ARCHIVE | CVAR_LATCH,   0.0f,   0.0f,   0,  qfalse },
+    { &g_inviewFile,    "g_inviewFile",     "ext_data/SOF2.inview",        CVAR_ARCHIVE | CVAR_LATCH,   0.0f,   0.0f,   0,  qfalse },
 
-    { &g_weaponFile,    "g_weaponFile",     "wpndata/SOF2.wpn",        CVAR_ARCHIVE | CVAR_LATCH,   0.0f,   0.0f,   0,  qfalse },
+    { &g_weaponFile,    "g_weaponFile",     "ext_data/SOF2.wpn",        CVAR_ARCHIVE | CVAR_LATCH,   0.0f,   0.0f,   0,  qfalse },
 
     // Admin cvars
     { &a_adminlist,    "a_adminlist",     "2",        CVAR_ARCHIVE,   0.0f,   0.0f,   0,  qfalse },

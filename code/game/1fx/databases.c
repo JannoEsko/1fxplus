@@ -2235,7 +2235,7 @@ int dbAddProfanity(char* profanity) {
     int rc = sqlite3_prepare(db, query, -1, &stmt, 0);
     if (rc != SQLITE_OK) {
         logSystem(LOGLEVEL_WARN, "sqlite3_prepare failed on gameDb profanity insert. Error: %s", sqlite3_errmsg(db));
-        return;
+        return 0;
     }
 
     sqlBindTextOrNull(stmt, 1, profanity);
@@ -2265,7 +2265,7 @@ int dbRemoveProfanity(char* profanity) {
     int rc = sqlite3_prepare(db, query, -1, &stmt, 0);
     if (rc != SQLITE_OK) {
         logSystem(LOGLEVEL_WARN, "sqlite3_prepare failed on gameDb profanity delete. Error: %s", sqlite3_errmsg(db));
-        return;
+        return 0;
     }
 
     sqlBindTextOrNull(stmt, 1, profanity);
