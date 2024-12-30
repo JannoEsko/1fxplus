@@ -1009,6 +1009,8 @@ void ClientThink_real( gentity_t *ent )
             }
             else {
                 client->sess.clientAdditionCheckTime = level.time + 2500;
+                G_Broadcast(BROADCAST_AWARDS, ent, qfalse, "This server requires ^11fx. Client\n^7Turn on autodownload to get it\ncl_allowdownload 1");
+                G_printInfoMessage(ent, "This server requires ^11fx. Client Additions.^7 Turn on autodownload to get it: cl_allowdownload 1");
                 
             }
 
