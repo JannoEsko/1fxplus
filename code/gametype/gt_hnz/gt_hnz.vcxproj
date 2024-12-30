@@ -85,7 +85,7 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <TargetName>gt_hnzx86_64</TargetName>
-    <OutDir>..\..\..\..\..\..\..\..\Games\sof2plus\1fx</OutDir>
+    <OutDir>..\..\..\..\..\..\..\..\Games\sof2plus\1fx\</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <TargetName>gt_hnzx86_64</TargetName>

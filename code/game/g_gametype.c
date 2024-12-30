@@ -599,7 +599,7 @@ void G_ResetGametype ( qboolean fullRestart, qboolean cagefight )
         for (int i = 0; i < level.numConnectedClients; i++) {
             gentity_t* ent = &g_entities[level.sortedClients[i]];
 
-            if (ent->team != TEAM_SPECTATOR) {
+            if (ent->client->sess.team != TEAM_SPECTATOR) {
                 shuffledClients[numClients++] = level.sortedClients[i];
 
                 // Clear previous VIP info.

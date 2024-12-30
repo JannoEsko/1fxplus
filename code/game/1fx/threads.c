@@ -1,6 +1,14 @@
 #include "../g_local.h"
 #include "../../ext/jsmn/jsmn.h"
 
+#ifdef _WIN32
+#include <winsock2.h>
+#elif defined __linux__
+#include <sys/socket.h>
+#include <arpa/inet.h>
+#endif
+
+
 queueNode* outboundHead;
 queueNode* outboundTail;
 queueNode* inboundHead;
@@ -8,6 +16,12 @@ queueNode* inboundTail;
 
 int killThread;
 CURL* curl;
+int sockhandle;
+struct sockaddr_in svaddr;
+
+qboolean socketStatus = qfalse;
+int socketRetries = 0;
+int nextRetry = 0;
 
 static void cleanupQueue(queueNode** head) {
 	queueNode* current = *head;
@@ -80,6 +94,12 @@ void closeThread() {
 
 		pthread_mutex_destroy(&inboundMutex);
 		pthread_mutex_destroy(&outboundMutex);
+
+		if (socketStatus) {
+			shutdown(sockhandle, SHUT_WR);
+			close(sockhandle);
+		}
+
 	}
 }
 
@@ -122,7 +142,10 @@ void startThread() {
 	outboundHead = outboundTail = NULL;
 	inboundHead = inboundTail = NULL;
 	initMutex();
-	thread = (HANDLE)_beginthreadex(0, 0, &runThread, 0, 0, 0);
+	WSADATA wsaData;
+	if (!WSAStartup(MAKEWORD(2, 2), &wsaData)) {
+		thread = (HANDLE)_beginthreadex(0, 0, &runThread, 0, 0, 0);
+	}
 }
 
 void closeThread() {
@@ -143,6 +166,13 @@ void closeThread() {
 		CloseHandle(inboundMutex);
 		CloseHandle(outboundMutex);
 		CloseHandle(thread);
+
+		if (socketStatus) {
+			shutdown(sockhandle, SD_SEND);
+			closesocket(sockhandle);
+		}
+
+		WSACleanup();
 	}
 }
 
@@ -161,7 +191,7 @@ int enqueueInbound(int action, int playerId, char* message, int sizeOfMessage) {
 		// the call failed hard.
 		return THREADRESPONSE_ENQUEUE_COULDNT_MALLOC;
 	}
-
+	sizeOfMessage++;
 	tmp->message = (char*)malloc(sizeOfMessage);
 
 	if (!tmp->message) {
@@ -200,7 +230,7 @@ int enqueueOutbound(int action, int playerId, char* message, int sizeOfMessage) 
 		// the call failed hard.
 		return THREADRESPONSE_ENQUEUE_COULDNT_MALLOC;
 	}
-
+	sizeOfMessage++;
 	tmp->message = (char*)malloc(sizeOfMessage);
 
 	if (!tmp->message) {
@@ -321,6 +351,7 @@ runThread(void* data) {
 
 	struct curl_slist* iphubCustomHeaders = NULL;
 
+
 	while (!killThread) {
 		int response = dequeueOutbound(&action, &playerId, message, sizeof(message));
 
@@ -371,6 +402,45 @@ runThread(void* data) {
 						}
 					}
 				}
+			}
+			else if (action == THREADACTION_LOG_VIA_SOCKET && g_logThroughSocket.integer) {
+				if (!socketStatus && level.time >= nextRetry || !nextRetry) {
+					nextRetry = level.time + 3000;
+					if (socketRetries <= 20) {
+						socketRetries++;
+
+#ifdef _WIN32
+						sockhandle = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+#elif defined __linux__
+						sockhandle = socket(AF_INET, SOCK_STREAM, 0);
+#endif
+						if (sockhandle >= 0) {
+							// Valid handle. Connect to it.
+							Com_Memset(&svaddr, 0, sizeof(svaddr));
+							svaddr.sin_family = AF_INET;
+							svaddr.sin_port = htons(g_sockPort.integer);
+							inet_pton(AF_INET, g_sockIp.string, &svaddr.sin_addr);
+							if (connect(sockhandle, (struct sockaddr*)&svaddr, sizeof(svaddr)) >= 0) {
+								socketStatus = qtrue;
+							}
+						}
+					}
+
+				}
+
+				if (socketStatus) {
+					if (send(sockhandle, message, strlen(message), 0) < 0) {
+#ifdef _WIN32
+						shutdown(sockhandle, SD_SEND);
+						closesocket(sockhandle);
+#elif defined __linux__
+						shutdown(sockhandle, SHUT_WR);
+						close(sockhandle);
+#endif
+						socketStatus = qfalse;
+					}
+				}
+
 			}
 		}
 #ifdef __linux__

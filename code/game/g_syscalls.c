@@ -1043,3 +1043,11 @@ int trap_TranslateGoldWeaponToSilverWeapon(int weapon) {
 int trap_ValidateMapName(const char* mapName, char* output, int outputSize) {
     return (int)syscall(G_VALIDATE_MAP_NAME, mapName, output, outputSize);
 }
+
+int trap_MapcycleList(char* output, int sizeofOutput) {
+    return (int)syscall(G_GET_MAPCYCLE_LIST, output, sizeofOutput);
+}
+
+void trap_SkipToMap(int skipTo) {
+    syscall(G_SKIP_TO_MAP, skipTo);
+}

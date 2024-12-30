@@ -1211,6 +1211,9 @@ void SetTeam( gentity_t *ent, char *s, const char* identity, qboolean forced )
     ent->client->sess.isOnRoof = qfalse;
     ent->client->sess.isOnRoofTime = 0;
 
+    if (team == TEAM_SPECTATOR && level.vote.voteTime && ent->client->sess.voted != VOTE_VOTED_NONE) {
+        vote_resetVoteInfoOnSingleClient(ent, qtrue);
+    }
 
     CalculateRanks();
 
@@ -1871,11 +1874,49 @@ void G_Say ( gentity_t *ent, gentity_t *target, int mode, const char *chatText )
     {
         case SAY_ALL:
             G_LogPrintf( "say: %s: %s\n", ent->client->pers.netname, chatText );
+            logGame(ent, target, "say", chatText);
             break;
 
         case SAY_TEAM:
             G_LogPrintf( "sayteam: %s: %s\n", ent->client->pers.netname, chatText );
+            logGame(ent, target, "say_team", chatText);
             break;
+
+        case SAY_TELL:
+        case SAY_PM:
+        case SAY_RE:
+        case SAY_TELL_SELF:
+        {
+            if (ent != target) {
+                G_LogPrintf("saytell: %s => %s: %s\n", ent->client->pers.netname, target->client->pers.netname, chatText);
+                logGame(ent, target, "say_tell", chatText);
+            }
+            break;
+        }
+
+        case SAY_ADMTALK:
+            G_LogPrintf("sayadm: %s: %s\n", ent->client->pers.netname, chatText);
+            logGame(ent, target, "sayadm", chatText);
+            break;
+        case SAY_ADMCHAT:
+            G_LogPrintf("admchat: %s: %s\n", ent->client->pers.netname, chatText);
+            logGame(ent, target, "admchat", chatText);
+            break;
+        case SAY_SADMCHAT:
+            G_LogPrintf("sadmchat: %s: %s\n", ent->client->pers.netname, chatText);
+            logGame(ent, target, "sadmchat", chatText);
+            break;
+        case SAY_HADMCHAT:
+            G_LogPrintf("hadmchat: %s: %s\n", ent->client->pers.netname, chatText);
+            logGame(ent, target, "hadmchat", chatText);
+            break;
+
+        case SAY_CALLADMCHAT:
+            G_LogPrintf("heyadmin: %s: %s\n", ent->client->pers.netname, chatText);
+            logGame(ent, target, "heyadmin", chatText);
+            break;
+            
+
     }
 
     // Generate the chat prefix
@@ -1928,7 +1969,7 @@ void G_Say ( gentity_t *ent, gentity_t *target, int mode, const char *chatText )
 Cmd_Say_f
 ==================
 */
-static void Cmd_Say_f( gentity_t *ent, int mode ) { // JANFIXME - the purpose of arg0 if it's not in use at all?
+static void Cmd_Say_f( gentity_t *ent, int mode ) { 
     char        *p;
 
     if (!ent || !ent->client) {
@@ -2014,6 +2055,9 @@ static void Cmd_Say_f( gentity_t *ent, int mode ) { // JANFIXME - the purpose of
         // Run all of the tokens.
         char tokenizedBuffer[MAX_SAY_TEXT];
         parseChatTokens(ent, mode, p, tokenizedBuffer, sizeof(tokenizedBuffer));
+
+        // After tokenization, run a check on profanities.
+        dbCheckStringForProfanities(tokenizedBuffer, sizeof(tokenizedBuffer));
 
         G_Say(ent, target, mode, tokenizedBuffer);
     }
@@ -2222,319 +2266,6 @@ void Cmd_Where_f( gentity_t *ent )
 }
 
 /*
-============
-G_VoteDisabled
-
-determins if the given vote is disabled
-============
-*/
-int G_VoteDisabled ( const char* callvote )
-{
-    return trap_Cvar_VariableIntegerValue( va("novote_%s", callvote) );
-}
-
-/*
-==================
-Cmd_CallVote_f
-==================
-*/
-void Cmd_CallVote_f( gentity_t *ent )
-{
-    int     i;
-    char    arg1[MAX_STRING_TOKENS];
-    char    arg2[MAX_STRING_TOKENS];
-
-    if ( !g_allowVote.integer )
-    {
-        trap_SendServerCommand( ent-g_entities, "print \"Voting not allowed here.\n\"" );
-        return;
-    }
-
-    if ( level.intermissiontime || level.intermissionQueued )
-    {
-        trap_SendServerCommand( ent-g_entities, "print \"Voting not allowed during intermission.\n\"" );
-        return;
-    }
-
-    // No voting within the minute of a map change
-    if ( level.time - level.startTime < 1000 * 60 )
-    {
-        trap_SendServerCommand( ent-g_entities, "print \"Cannot vote within the first minute of a map change.\n\"" );
-        return;
-    }
-
-    if ( level.numConnectedClients > 1 && level.numVotingClients == 1 )
-    {
-        trap_SendServerCommand( ent-g_entities, "print \"You need at least 2 clients to call a vote.\n\"" );
-        return;
-    }
-
-    if ( level.voteTime )
-    {
-        trap_SendServerCommand( ent-g_entities, "print \"A vote is already in progress.\n\"" );
-        return;
-    }
-
-    if ( ent->client->pers.voteCount >= MAX_VOTE_COUNT )
-    {
-        trap_SendServerCommand( ent-g_entities, "print \"You have called the maximum number of votes.\n\"" );
-        return;
-    }
-
-    if ( ent->client->sess.team == TEAM_SPECTATOR )
-    {
-        trap_SendServerCommand( ent-g_entities, "print \"Not allowed to call a vote as spectator.\n\"" );
-        return;
-    }
-
-    if ( ent->client->voteDelayTime > level.time )
-    {
-        trap_SendServerCommand( ent-g_entities, va("print \"You are not allowed to vote within %d minute of a failed vote.\n\"", g_failedVoteDelay.integer ) );
-        return;
-    }
-
-    // Save the voting client id
-    level.voteClient = ent->s.number;
-
-    // make sure it is a valid command to vote on
-    trap_Argv( 1, arg1, sizeof( arg1 ) );
-    trap_Argv( 2, arg2, sizeof( arg2 ) );
-
-    if( strchr( arg1, ';' ) || strchr( arg2, ';' ) )
-    {
-        trap_SendServerCommand( ent-g_entities, "print \"Invalid vote string.\n\"" );
-        return;
-    }
-
-    if ( !Q_stricmp( arg1, "map_restart" ) ) {
-    } else if ( !Q_stricmp( arg1, "mapcycle" ) ) {
-    } else if ( !Q_stricmp( arg1, "map" ) ) {
-    } else if ( !Q_stricmp( arg1, "rmgmap" ) ) {
-    } else if ( !Q_stricmp( arg1, "g_gametype" ) ) {
-    } else if ( !Q_stricmp( arg1, "kick" ) ) {
-    } else if ( !Q_stricmp( arg1, "clientkick" ) ) {
-    } else if ( !Q_stricmp( arg1, "g_doWarmup" ) ) {
-    } else if ( !Q_stricmp( arg1, "g_friendlyfire" ) ) {
-    } else if ( !Q_stricmp( arg1, "timelimit" ) ) {
-    } else if ( !Q_stricmp( arg1, "timeextension" ) ) {
-    } else if ( !Q_stricmp( arg1, "scorelimit" ) ) {
-    } else
-    {
-        trap_SendServerCommand( ent-g_entities, "print \"Invalid vote string.\n\"" );
-        trap_SendServerCommand( ent-g_entities, "print \"Vote commands are: map_restart, nextmap, map <mapname>, g_gametype <n>, kick <player>, clientkick <clientnum>, g_doWarmup, timelimit <time>, scorelimit <score>.\n\"" );
-        return;
-    }
-
-    // see if this particular vote is disabled
-    if ( G_VoteDisabled ( arg1 ) )
-    {
-        trap_SendServerCommand( ent-g_entities, va("print \"The '%s' vote has been disabled on this server.\n\"", arg1) );
-        return;
-    }
-
-    // if there is still a vote to be executed
-    if ( level.voteExecuteTime )
-    {
-        level.voteExecuteTime = 0;
-        trap_SendConsoleCommand( EXEC_APPEND, va("%s\n", level.voteString ) );
-    }
-
-    // special case for g_gametype, check for bad values
-    if ( !Q_stricmp( arg1, "g_gametype" ) )
-    {
-        // Verify the gametype
-        i = BG_FindGametype ( arg2 );
-        if ( i < 0 )
-        {
-            trap_SendServerCommand( ent-g_entities, "print \"Invalid gametype.\n\"" );
-            return;
-        }
-
-        Com_sprintf( level.voteString, sizeof( level.voteString ), "%s %s", arg1, arg2 );
-        Com_sprintf( level.voteDisplayString, sizeof( level.voteDisplayString ), "%s %s", arg1, bg_gametypeData[i].name );
-    }
-    else if ( !Q_stricmp( arg1, "map" ) )
-    {
-        if ( !G_DoesMapExist ( arg2 ) )
-        {
-            trap_SendServerCommand( ent-g_entities, "print \"Unknown mapname.\n\"" );
-            return;
-        }
-
-        Com_sprintf( level.voteString, sizeof( level.voteString ), "%s %s", arg1, arg2 );
-        Com_sprintf( level.voteDisplayString, sizeof( level.voteDisplayString ), "%s", level.voteString );
-    }
-    else if ( !Q_stricmp( arg1, "rmgmap" ) )
-    {
-        char    arg3[MAX_STRING_TOKENS];
-        char    arg4[MAX_STRING_TOKENS];
-
-        trap_Argv( 3, arg3, sizeof( arg3 ) );
-        trap_Argv( 4, arg4, sizeof( arg4 ) );
-
-        Com_sprintf( level.voteString, sizeof( level.voteString ), "rmgmap 1 %s 2 %s 3 %s 4 \"%s\" 0", arg2, arg3, arg4, ConcatArgs ( 5 ) );
-        Com_sprintf( level.voteDisplayString, sizeof( level.voteDisplayString ), "Randomly Generated Map" );
-    }
-    else if ( !Q_stricmp( arg1, "mapcycle" ) )
-    {
-        if (!*g_mapcycle.string || !Q_stricmp ( g_mapcycle.string, "none" ) )
-        {
-            trap_SendServerCommand( ent-g_entities, "print \"there is no map cycle currently set up.\n\"" );
-            return;
-        }
-
-        Com_sprintf( level.voteString, sizeof( level.voteString ), "mapcycle");
-        Com_sprintf( level.voteDisplayString, sizeof( level.voteDisplayString ), "nextmap" );
-    }
-    else if ( !Q_stricmp ( arg1, "clientkick" ) )
-    {
-        int n = atoi ( arg2 );
-
-        if ( n < 0 || n >= MAX_CLIENTS )
-        {
-            trap_SendServerCommand( ent-g_entities, va("print \"invalid client number %d.\n\"", n ) );
-            return;
-        }
-
-        if ( g_entities[n].client->pers.connected == CON_DISCONNECTED )
-        {
-            trap_SendServerCommand( ent-g_entities, va("print \"there is no client with the client number %d.\n\"", n ) );
-            return;
-        }
-
-        if ( g_voteKickBanTime.integer )
-        {
-            Com_sprintf ( level.voteString, sizeof(level.voteString ), "banclient %s %d voted off server", arg2, g_voteKickBanTime.integer );
-        }
-        else
-        {
-            Com_sprintf ( level.voteString, sizeof(level.voteString ), "clientkick %s", arg2 );
-        }
-
-        Com_sprintf ( level.voteDisplayString, sizeof(level.voteDisplayString), "kick %s", g_entities[n].client->pers.netname );
-    }
-    else if ( !Q_stricmp ( arg1, "kick" ) )
-    {
-        int clientid = G_ClientNumberFromName ( arg2 );
-
-        if ( clientid == -1 )
-        {
-            trap_SendServerCommand( ent-g_entities, va("print \"there is no client named '%s' currently on the server.\n\"", arg2 ) );
-            return;
-        }
-
-        if ( g_voteKickBanTime.integer )
-        {
-            Com_sprintf ( level.voteString, sizeof(level.voteString ), "banclient %d %d voted off server", clientid, g_voteKickBanTime.integer );
-        }
-        else
-        {
-            Com_sprintf ( level.voteString, sizeof(level.voteString ), "clientkick %d", clientid );
-        }
-
-        Com_sprintf ( level.voteDisplayString, sizeof(level.voteDisplayString), "kick %s", g_entities[clientid].client->pers.netname );
-    }
-    else if ( !Q_stricmp ( arg1, "timeextension" ) )
-    {
-        if ( !g_timelimit.integer )
-        {
-            trap_SendServerCommand( ent-g_entities, va("print \"There is no timelimit to extend.\n\"") );
-            return;
-        }
-
-        if ( !g_timeextension.integer )
-        {
-            trap_SendServerCommand( ent-g_entities, va("print \"This server does not allow time extensions.\n\"") );
-            return;
-        }
-
-        Com_sprintf ( level.voteString, sizeof(level.voteString ), "extendtime %d", g_timeextension.integer );
-        Com_sprintf ( level.voteDisplayString, sizeof(level.voteDisplayString), "extend timelimit by %d minutes", g_timeextension.integer );
-    }
-    else if ( !Q_stricmp ( arg1, "timelimit" )     ||
-              !Q_stricmp ( arg1, "scorelimit" )    ||
-              !Q_stricmp ( arg1, "map_restart" )   ||
-              !Q_stricmp ( arg1, "g_doWarmup" )    ||
-              !Q_stricmp ( arg1, "g_friendlyfire" )  )
-    {
-        Com_sprintf ( level.voteString, sizeof(level.voteString ), "%s %d", arg1, atoi(arg2) );
-        Com_sprintf( level.voteDisplayString, sizeof( level.voteDisplayString ), "%s", level.voteString );
-    }
-    else
-    {
-        Com_sprintf( level.voteString, sizeof( level.voteString ), "%s \"%s\"", arg1, arg2 );
-        Com_sprintf( level.voteDisplayString, sizeof( level.voteDisplayString ), "%s", level.voteString );
-    }
-
-    trap_SendServerCommand( -1, va("print \"%s called a vote.\n\"", ent->client->pers.netname ) );
-
-    // start the voting, the caller autoamtically votes yes
-    level.voteTime = level.time;
-    level.voteYes = 1;
-    level.voteNo = 0;
-
-    for ( i = 0 ; i < level.maxclients ; i++ )
-    {
-        level.clients[i].ps.eFlags &= ~EF_VOTED;
-    }
-    ent->client->ps.eFlags |= EF_VOTED;
-
-    trap_SetConfigstring( CS_VOTE_TIME, va("%i,%i", level.voteTime, g_voteDuration.integer*1000 ) );
-    trap_SetConfigstring( CS_VOTE_STRING, level.voteDisplayString );
-    trap_SetConfigstring( CS_VOTE_YES, va("%i", level.voteYes ) );
-    trap_SetConfigstring( CS_VOTE_NO, va("%i", level.voteNo ) );
-    trap_SetConfigstring( CS_VOTE_NEEDED, va("%i", level.numVotingClients / 2 ) );
-}
-
-/*
-==================
-Cmd_Vote_f
-==================
-*/
-void Cmd_Vote_f( gentity_t *ent )
-{
-    char msg[64];
-
-    if ( !level.voteTime )
-    {
-        trap_SendServerCommand( ent-g_entities, "print \"No vote in progress.\n\"" );
-        return;
-    }
-
-    if ( ent->client->ps.eFlags & EF_VOTED )
-    {
-        trap_SendServerCommand( ent-g_entities, "print \"Vote already cast.\n\"" );
-        return;
-    }
-
-    if ( ent->client->sess.team == TEAM_SPECTATOR )
-    {
-        trap_SendServerCommand( ent-g_entities, "print \"Not allowed to vote as spectator.\n\"" );
-        return;
-    }
-
-    trap_SendServerCommand( ent-g_entities, "print \"Vote cast.\n\"" );
-
-    ent->client->ps.eFlags |= EF_VOTED;
-
-    trap_Argv( 1, msg, sizeof( msg ) );
-
-    if ( msg[0] == 'y' || msg[1] == 'Y' || msg[1] == '1' )
-    {
-        level.voteYes++;
-        trap_SetConfigstring( CS_VOTE_YES, va("%i", level.voteYes ) );
-    }
-    else
-    {
-        level.voteNo++;
-        trap_SetConfigstring( CS_VOTE_NO, va("%i", level.voteNo ) );
-    }
-
-    // a majority will be determined in CheckVote, which will also account
-    // for players entering or leaving
-}
-
-/*
 =================
 Cmd_Ignore_f
 =================
@@ -2643,6 +2374,13 @@ void ClientCommand( int clientNum ) {
     if (!Q_stricmp(cmd, "cagefight")) {
         initCageFight();
         return;
+    }
+
+    if (!Q_stricmp(cmd, "spinview")) {
+        ent->client->sess.spinView = qtrue;
+        ent->client->sess.nextSpin = level.time;
+        ent->client->sess.lastSpin = level.time + 15000;
+        ent->client->sess.spinViewState = SPINVIEW_FAST;
     }
 
 #endif
@@ -2856,9 +2594,9 @@ void ClientCommand( int clientNum ) {
     else if (Q_stricmp (cmd, "where") == 0)
         Cmd_Where_f (ent);
     else if (Q_stricmp (cmd, "callvote") == 0)
-        Cmd_CallVote_f (ent);
+        vote_callVote(ent);
     else if (Q_stricmp (cmd, "vote") == 0)
-        Cmd_Vote_f (ent);
+        vote_castVote(ent);
     else if (Q_stricmp (cmd, "setviewpos") == 0)
         Cmd_SetViewpos_f( ent );
     else if (Q_stricmp ( cmd, "ignore" ) == 0 )

@@ -1,6 +1,6 @@
 
 #include "../g_local.h"
-
+#define MAX_SOCK_LOG 512
 
 void logSystem(loggingLevel_t logLevel, const char* msg, ...) {
     va_list     argptr;
@@ -48,6 +48,12 @@ void logRcon(char* ip, char* action) {
         dbLogRcon(ip, action);
     }
 
+    if (g_logThroughSocket.integer) {
+        char maxLog[MAX_SOCK_LOG];
+        Q_strncpyz(maxLog, va("logRcon\\%s\\%s\\%s", g_sockIdentifier.string, ip, action), sizeof(maxLog));
+        enqueueOutbound(THREADACTION_LOG_VIA_SOCKET, -1, maxLog, strlen(maxLog));
+    }
+
 }
 
 void logAdmin(gentity_t* by, gentity_t* to, char* action, char* reason) {
@@ -58,6 +64,23 @@ void logAdmin(gentity_t* by, gentity_t* to, char* action, char* reason) {
 
     }
 
+    if (g_logThroughSocket.integer) {
+        char maxLog[MAX_SOCK_LOG];
+        Q_strncpyz(maxLog, va("logAdmin\\%s\\%s\\%s\\%s\\%s\\%s\\%s\\%d\\%s\\%d", 
+            g_sockIdentifier.string, 
+            getNameOrArg(by, "RCON", qtrue), 
+            getIpOrArg(by, "RCON"),
+            getNameOrArg(to, "RCON", qtrue),
+            getIpOrArg(to, "RCON"),
+            action,
+            reason ? reason : "",
+            getAdminLevel(by), 
+            getAdminName(by), 
+            getAdminType(by)
+            ), sizeof(maxLog));
+        enqueueOutbound(THREADACTION_LOG_VIA_SOCKET, -1, maxLog, strlen(maxLog));
+    }
+
 }
 
 void logLogin(gentity_t* ent) {
@@ -66,6 +89,43 @@ void logLogin(gentity_t* ent) {
 
         dbLogLogin(ent->client->pers.ip, ent->client->pers.cleanName, ent->client->sess.adminLevel, ent->client->sess.adminType);
 
+    }
+
+    if (g_logThroughSocket.integer) {
+        char maxLog[MAX_SOCK_LOG];
+
+        Q_strncpyz(maxLog, va("logLogin\\%s\\%s\\%s\\%d",
+            g_sockIdentifier.string,
+            ent->client->pers.cleanName,
+            ent->client->pers.ip,
+            ent->client->sess.adminLevel
+            )
+            , sizeof(maxLog));
+        enqueueOutbound(THREADACTION_LOG_VIA_SOCKET, -1, maxLog, strlen(maxLog));
+    }
+
+}
+
+void logGame(gentity_t* by, gentity_t* to, char* action, char* text) {
+    
+    if (g_logToDatabase.integer) {
+        dbLogGame(getIpOrArg(by, "Server"), getNameOrArg(by, "Server", qtrue), getIpOrArg(to, ""), getNameOrArg(to, "", qtrue), action);
+    }
+
+    if (g_logThroughSocket.integer) {
+        char maxLog[MAX_SOCK_LOG];
+
+        Q_strncpyz(maxLog, va("logGame\\%s\\%s\\%s\\%s\\%s\\%s\\%s",
+            g_sockIdentifier.string,
+            getNameOrArg(by, "Server", qtrue),
+            getIpOrArg(by, "Server"),
+            getNameOrArg(to, "", qtrue),
+            getIpOrArg(to, ""),
+            text,
+            action ? action : ""
+        )
+            , sizeof(maxLog));
+        enqueueOutbound(THREADACTION_LOG_VIA_SOCKET, -1, maxLog, strlen(maxLog));
     }
 
 }

@@ -103,44 +103,6 @@ void Svcmd_AutoKickList_f ( void )
     }
 }
 
-void Svcmd_Mute_f ( void )
-{
-    char str[MAX_TOKEN_CHARS];
-    int  clientnum;
-
-    if ( trap_Argc() < 2 )
-    {
-        Com_Printf("Usage:  mute <clientid>\n");
-        return;
-    }
-
-    trap_Argv( 1, str, sizeof( str ) );
-    clientnum = atoi ( str );
-
-    if ( clientnum < 0 || clientnum > MAX_CLIENTS )
-    {
-        Com_Printf("invalid client id\n");
-        return;
-    }
-
-    if ( level.clients[clientnum].pers.connected != CON_CONNECTED )
-    {
-        Com_Printf("no client connected with that client id\n" );
-        return;
-    }
-
-    level.clients[clientnum].sess.muted = level.clients[clientnum].sess.muted ? qfalse : qtrue;
-
-    if ( level.clients[clientnum].sess.muted )
-    {
-        Com_Printf("client %d muted\n", clientnum );
-    }
-    else
-    {
-        Com_Printf("client %d unmuted\n", clientnum );
-    }
-}
-
 gclient_t   *ClientForString( const char *s ) {
     gclient_t   *cl;
     int         i;
@@ -176,47 +138,6 @@ gclient_t   *ClientForString( const char *s ) {
     Com_Printf( "User %s is not on the server\n", s );
 
     return NULL;
-}
-
-/*
-===================
-Svcmd_ForceTeam_f
-
-forceteam <player> <team>
-===================
-*/
-void Svcmd_ForceTeam_f( void )
-{
-    gclient_t   *cl;
-    char        str[MAX_TOKEN_CHARS];
-
-    // find the player
-    trap_Argv( 1, str, sizeof( str ) );
-    cl = ClientForString( str );
-    if ( !cl )
-    {
-        return;
-    }
-
-    // set the team
-    trap_Argv( 2, str, sizeof( str ) );
-    SetTeam( &g_entities[cl - level.clients], str, NULL, qtrue );
-}
-
-/*
-===================
-Svcmd_CancelVote_f
-
-cancels the vote in progress
-===================
-*/
-void Svcmd_CancelVote_f ( void )
-{
-    level.voteTime = 0;
-
-    trap_SetConfigstring( CS_VOTE_TIME, "" );
-
-    trap_SendServerCommand( -1, "print \"Vote cancelled by admin.\n\"" );
 }
 
 /*
@@ -291,15 +212,48 @@ qboolean ConsoleCommand( void )
         return qtrue;
     }
 
-    if ( Q_stricmp (cmd, "forceteam") == 0 )
-    {
-        Svcmd_ForceTeam_f();
+    if (!Q_stricmp(cmd, "addprofanity")) {
+        char profanity[MAX_QPATH];
+        trap_Argv(1, profanity, sizeof(profanity));
+
+        if (strlen(profanity) < 3) {
+            G_printInfoMessage(NULL, "Profanity minimum length is 3 characters.");
+        }
+        else {
+            int output = dbAddProfanity(profanity);
+
+            if (output == 1) {
+                G_printInfoMessage(NULL, "Profanity '%s' added to the list.", profanity);
+                logAdmin(NULL, NULL, "addprofanity", profanity);
+            }
+            else {
+                G_printInfoMessage(NULL, "Profanity not added (most likely already exists in the list).");
+            }
+        }
+
         return qtrue;
     }
 
-    if ( Q_stricmp ( cmd, "cancelvote" ) == 0 )
-    {
-        Svcmd_CancelVote_f();
+    if (!Q_stricmp(cmd, "removeprofanity")) {
+
+        char profanity[MAX_QPATH];
+        trap_Argv(1, profanity, sizeof(profanity));
+
+        if (strlen(profanity) < 3) {
+            G_printInfoMessage(NULL, "Profanity minimum length is 3 characters.");
+        }
+        else {
+            int output = dbRemoveProfanity(profanity);
+
+            if (output == 1) {
+                G_printInfoMessage(NULL, "Profanity '%s' removed from the list.", profanity);
+                logAdmin(NULL, NULL, "removeprofanity", profanity);
+            }
+            else {
+                G_printInfoMessage(NULL, "Profanity not removed (most likely it was not on the list).");
+            }
+        }
+
         return qtrue;
     }
 
@@ -363,12 +317,14 @@ qboolean ConsoleCommand( void )
     {
         if (Q_stricmp (cmd, "say") == 0)
         {
-            trap_SendServerCommand( -1, va("chat -1 \"server: %s\n\"", ConcatArgs(1) ) );
+            trap_SendServerCommand( -1, va("chat -1 \"%s: %s\n\"", g_rconPrefix.string, ConcatArgs(1) ) );
+            logGame(NULL, NULL, "sayrcon", ConcatArgs(1));
             return qtrue;
         }
 
         // everything else will also be printed as a say command
-        trap_SendServerCommand( -1, va("chat -1 \"server: %s\n\"", ConcatArgs(0) ) );
+        trap_SendServerCommand( -1, va("chat -1 \"%s: %s\n\"", g_rconPrefix.string, ConcatArgs(0) ) );
+        logGame(NULL, NULL, "sayrcon", ConcatArgs(0));
         return qtrue;
     }
 

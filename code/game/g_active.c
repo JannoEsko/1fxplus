@@ -1420,6 +1420,151 @@ void ClientThink_real( gentity_t *ent )
         }
     }
 
+    if (client->sess.punishment && client->sess.team != TEAM_SPECTATOR && !G_IsClientDead(client)) {
+        if (level.time > ent->client->sess.nextPunishmentTime) {
+            int newPunishment = ent->client->sess.currentPunishment;
+
+            ent->client->sess.nextPunishmentTime = level.time + 15000;
+
+            while (newPunishment == ent->client->sess.currentPunishment) {
+                newPunishment = irand(PUNISH_NONE + 1, PUNISH_MAX - 1);
+
+                if (newPunishment == PUNISH_TELEENEMY) {
+                    // only use teleenemy in specific conditions.
+
+                    if (!isCurrentGametypeInList((gameTypes_t[]) { GT_HNZ, GT_HNS, GT_PROP, GT_MAX })) {
+                        newPunishment = ent->client->sess.currentPunishment;
+                        continue;
+                    }
+
+                    if (ent->client->sess.team != TEAM_RED) {
+                        newPunishment = ent->client->sess.currentPunishment;
+                        continue;
+                    }
+
+                }
+
+            }
+
+            ent->client->sess.currentPunishment = newPunishment;
+            ent->client->sess.currentPunishmentCycleTime = level.time;
+            ent->client->sess.spinView = qfalse;
+
+            if (ent->client->pers.twisted) {
+                SetClientViewAngle(ent, (vec3_t) { 0, 0, 0 });
+            }
+
+            ent->client->pers.twisted = qfalse;
+            ent->client->pers.gocrazy = qfalse;
+
+        }
+
+        if (level.time > ent->client->sess.nextPunishmentMessage) {
+            char* currentPunishment;
+            ent->client->sess.nextPunishmentMessage = level.time + 1500;
+
+            currentPunishment = getPunishmentAsText(ent);
+
+            G_Broadcast(BROADCAST_GAME, ent, qfalse, "You're being \\punished.\nReason: %s\nCurrent punishment: \\%s\nEnjoy!", ent->client->sess.punishmentReason, currentPunishment);
+        }
+
+        if (level.time > ent->client->sess.currentPunishmentCycleTime) {
+            int idle = 0;
+            int randomEnemy;
+            gentity_t* tent;
+            int i = 0;
+            switch (ent->client->sess.currentPunishment) {
+            case PUNISH_CROUCH:
+                ent->client->ps.pm_flags = PMF_DUCKED;
+
+                ucmd->upmove = 128;
+                break;
+            case PUNISH_DEGRADINGHEALTH:
+
+                if (ent->client->sess.currentPunishmentCycleTime < level.time) {
+                    ent->client->sess.currentPunishmentCycleTime = level.time + 333;
+                    ent->health--;
+                    ent->client->ps.stats[STAT_HEALTH]--;
+
+                    if (ent->health <= 0 || ent->client->ps.stats[STAT_HEALTH] <= 0) {
+                        player_die(ent, ent, ent, 99999, MOD_DUGUP, HL_NONE, vec3_origin);
+                    }
+                }
+                break;
+            case PUNISH_HARDGRAVITY:
+                ent->client->ps.gravity += 400;
+                break;
+
+            case PUNISH_LOCKVIEW:
+                SetClientViewAngle(ent, (vec3_t) { 90, 0, 0 });
+                break;
+
+            case PUNISH_LOWSPEED:
+                ent->client->ps.speed -= 100;
+                break;
+
+            case PUNISH_SPIN:
+                ent->client->sess.spinView = qtrue;
+                ent->client->sess.nextSpin = level.time;
+                ent->client->sess.lastSpin = level.time + 15000;
+                ent->client->sess.spinViewState = SPINVIEW_FAST;
+                ent->client->sess.currentPunishmentCycleTime = ent->client->sess.nextPunishmentTime;
+                break;
+
+            case PUNISH_TWIST:
+                ent->client->pers.twisted = qtrue;
+                SetClientViewAngle(ent, (vec3_t) { 100, 0, 130 });
+                ent->client->sess.currentPunishmentCycleTime = ent->client->sess.nextPunishmentTime;
+                break;
+
+
+            case PUNISH_USERCMD:
+                ent->client->pers.gocrazy = qtrue;
+                ent->client->sess.currentPunishmentCycleTime = ent->client->sess.nextPunishmentTime;
+                break;
+
+            case PUNISH_RANDOMMOVE:
+
+                ucmd->forwardmove = 127;  
+                ucmd->rightmove = 127;   
+                ucmd->upmove = 127;        
+                SetClientViewAngle(ent, (vec3_t) { -90, 0, 0 });
+
+                break;
+
+            case PUNISH_STRIP:
+                stripClient(ent, qtrue);
+                break;
+
+            case PUNISH_TELEENEMY:
+
+
+                while (i < 200) {
+
+                    randomEnemy = irand(0, level.numConnectedClients);
+
+                    tent = &g_entities[randomEnemy];
+
+                    if (tent && tent->client && tent->client->sess.team != ent->client->sess.team && tent->client->sess.team != TEAM_SPECTATOR) {
+
+                        TeleportPlayerNoKillbox(tent, ent->r.currentOrigin, ent->client->ps.viewangles, qtrue);
+                        ent->client->sess.currentPunishmentCycleTime = level.time + 1000;
+                        break;
+                    }
+
+                    i++;
+                }
+                i = 0;
+                break;
+
+            default:
+                break;
+
+            }
+
+        }
+    }
+
     if (client->sess.acceleratorCooldown) {
         if (client->sess.acceleratorCooldown > level.time) {
             client->ps.speed += (g_speed.integer / 5000) * (client->sess.acceleratorCooldown - level.time);
@@ -1435,13 +1580,17 @@ void ClientThink_real( gentity_t *ent )
         }
     }
 
-    if (client->sess.spinView && client->sess.nextSpin <= level.time) {
-        vec3_t spin;
-        VectorCopy(ent->client->ps.viewangles, spin);
-        spin[0] = (float)Q_irand(0, 360);
-        spin[1] = fmod(spin[1] + 20, 360.0);
-        SetClientViewAngle(ent, spin);
-        ent->client->sess.nextSpin = level.time + 50;
+    if (client->sess.spinView) {
+        spinView(ent);
+    }
+
+    if (client->pers.gocrazy) {
+        ucmd->upmove *= -1;
+        ucmd->forwardmove *= -1;
+        ucmd->rightmove *= -1;
+        ucmd->angles[0] *= -1;
+        ucmd->angles[1] *= -1;
+        ucmd->angles[2] *= -1;
     }
 
     // set up for pmove
@@ -1657,6 +1806,7 @@ void G_CheckClientTeamkill ( gentity_t* ent )
     value = Info_ValueForKey (userinfo, "ip");
 
     G_LogPrintf( "ClientKick: %i %s - auto kick for teamkilling\n", ent->s.number, value );
+    logGame(NULL, ent, "autokick", "teamkill");
 
     ent->client->sess.teamkillDamage      = 0;
     ent->client->sess.teamkillForgiveTime = 0;

@@ -454,7 +454,7 @@ void G_MissileImpact( gentity_t *ent, trace_t *trace )
                     pickupEnt->think = G_FreeEntity;
                     pickupEnt->nextthink = level.time + 30000;  // Stick around for 30 seconds
                 }
-                else {
+                else if (isCurrentGametype(GT_HNZ) && createClaymore) {
 
                     // Boe!Man 12/13/14: Claymore specifics.
                     // Make sure it doesn't get picked up.

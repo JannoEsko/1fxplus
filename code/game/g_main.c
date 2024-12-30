@@ -282,6 +282,23 @@ vmCvar_t    g_anticamp;
 vmCvar_t    g_anticampRadius;
 vmCvar_t    g_anticampTime;
 
+// Vote cvars. These control the allowed votes in the server. The integer value defines the admin level required to call this vote (0 being allowed by everyone, 5 being allowed by noone)
+vmCvar_t    vote_map;
+vmCvar_t    vote_kick;
+vmCvar_t    vote_timelimit;
+vmCvar_t    vote_scorelimit;
+vmCvar_t    vote_teams;
+vmCvar_t    vote_mute;
+vmCvar_t    vote_poll;
+
+vmCvar_t    vote_successThreshold; // value defines what percentage of votes do we need to call the vote a success.
+
+
+vmCvar_t    g_sockIp;
+vmCvar_t    g_sockPort;
+vmCvar_t    g_sockIdentifier;
+vmCvar_t    g_logThroughSocket;
+
 static cvarTable_t gameCvarTable[] =
 {
     // don't override the cheat state set by the system
@@ -579,6 +596,19 @@ static cvarTable_t gameCvarTable[] =
     { &g_anticamp, "g_anticamp", "0", CVAR_ARCHIVE, 0.0f, 0.0f, 0, qfalse },
     { &g_anticampRadius, "g_anticampRadius", "300", CVAR_ARCHIVE, 0.0f, 0.0f, 0, qfalse },
     { &g_anticampTime, "g_anticampTime", "30", CVAR_ARCHIVE, 0.0f, 0.0f, 0, qfalse },
+    { &vote_map, "vote_map", "3", CVAR_ARCHIVE, 0.0f, 0.0f, 0, qfalse },
+    { &vote_kick, "vote_kick", "2", CVAR_ARCHIVE, 0.0f, 0.0f, 0, qfalse },
+    { &vote_timelimit, "vote_timelimit", "2", CVAR_ARCHIVE, 0.0f, 0.0f, 0, qfalse },
+    { &vote_scorelimit, "vote_scorelimit", "2", CVAR_ARCHIVE, 0.0f, 0.0f, 0, qfalse },
+    { &vote_teams, "vote_teams", "3", CVAR_ARCHIVE, 0.0f, 0.0f, 0, qfalse },
+    { &vote_mute, "vote_mute", "2", CVAR_ARCHIVE, 0.0f, 0.0f, 0, qfalse },
+    { &vote_poll, "vote_poll", "1", CVAR_ARCHIVE, 0.0f, 0.0f, 0, qfalse },
+    
+    { &vote_successThreshold, "vote_successThreshold", "55", CVAR_ARCHIVE | CVAR_LOCK_RANGE, 51.0f, 100.0f, 0, qfalse },
+    { &g_sockIp, "g_sockIp", "127.0.0.1", CVAR_ARCHIVE | CVAR_LATCH, 0.0f, 0.0f, 0, qfalse },
+    { &g_sockPort, "g_sockPort", "10000", CVAR_ARCHIVE | CVAR_LATCH, 0.0f, 0.0f, 0, qfalse },
+    { &g_sockIdentifier, "g_sockIdentifier", "", CVAR_ARCHIVE | CVAR_LATCH, 0.0f, 0.0f, 0, qfalse },
+    { &g_logThroughSocket, "g_logThroughSocket", "0", CVAR_ARCHIVE | CVAR_LATCH, 0.0f, 0.0f, 0, qfalse },
 };
 
 // bk001129 - made static to avoid aliasing
@@ -795,7 +825,8 @@ void G_UpdateCvars( void )
 
                 if ( cv->trackChange )
                 {
-                    trap_SendServerCommand( -1, va("print \"Server: %s changed to %s\n\"", cv->cvarName, cv->vmCvar->string ) );
+                    trap_SendServerCommand( -1, va("print \"^7[^3RCON Action^7]: %s changed to %s\n\"", cv->cvarName, cv->vmCvar->string ) );
+                    logGame(NULL, NULL, cv->cvarName, va("Cvar value changed to %s", cv->vmCvar->string));
                 }
 
                 if (cv->teamShader)
@@ -1452,7 +1483,12 @@ void G_InitGame( int levelTime, int randomSeed, int restart )
 
     Com_Printf("Starting threads...\n");
     startThread();
-
+    
+    if (g_logThroughSocket.integer) {
+        char heartbeat[MAX_QPATH];
+        Q_strncpyz(heartbeat, va("heartbeat\\%s", g_sockIdentifier.string), sizeof(heartbeat));
+        enqueueOutbound(THREADACTION_LOG_VIA_SOCKET, -1, heartbeat, strlen(heartbeat));
+    }
 
     if (cm_state.integer) {
 
@@ -1503,7 +1539,7 @@ G_ShutdownGame
 void G_ShutdownGame( int restart )
 {
     Com_Printf ("==== ShutdownGame ====\n");
-
+    logGame(NULL, NULL, "ShutdownGame", "");
     if ( level.logFile )
     {
         G_LogPrintf("ShutdownGame:\n" );
@@ -1977,7 +2013,7 @@ void BeginIntermission( void )
     }
 
     // Kill any votes
-    level.voteTime = 0;
+    level.vote.voteTime = 0;
     trap_SetConfigstring( CS_VOTE_TIME, "" );
 
     level.intermissiontime  = level.time;
@@ -2134,6 +2170,7 @@ void LogExit( const char *string )
     gclient_t       *cl;
 
     G_LogPrintf( "Exit: %s\n", string );
+    logGame(NULL, NULL, "exit", string);
 
     level.intermissionQueued = level.time;
 
@@ -2525,57 +2562,6 @@ void CheckWarmup ( void )
 
 /*
 ==================
-CheckVote
-==================
-*/
-void CheckVote( void )
-{
-    if ( level.voteExecuteTime && level.voteExecuteTime < level.time )
-    {
-        level.voteExecuteTime = 0;
-        trap_SendConsoleCommand( EXEC_APPEND, va("%s\n", level.voteString ) );
-    }
-
-    if ( !level.voteTime )
-    {
-        return;
-    }
-
-    // Update the needed clients
-    trap_SetConfigstring ( CS_VOTE_NEEDED, va("%i", (level.numVotingClients / 2) + 1 ) );
-
-    if ( level.time - level.voteTime >= g_voteDuration.integer*1000 )
-    {
-        trap_SendServerCommand( -1, "print \"Vote failed.\n\"" );
-        level.clients[level.voteClient].voteDelayTime = level.time + g_failedVoteDelay.integer * 60000;
-    }
-    else
-    {
-        if ( level.voteYes > level.numVotingClients/2 )
-        {
-            // execute the command, then remove the vote
-            trap_SendServerCommand( -1, "print \"Vote passed.\n\"" );
-            level.voteExecuteTime = level.time + 3000;
-        }
-        else if ( level.voteNo >= level.numVotingClients/2 )
-        {
-            // same behavior as a timeout
-            trap_SendServerCommand( -1, "print \"Vote failed.\n\"" );
-            level.clients[level.voteClient].voteDelayTime = level.time + g_failedVoteDelay.integer * 60000;
-        }
-        else
-        {
-            // still waiting for a majority
-            return;
-        }
-    }
-
-    level.voteTime = 0;
-    trap_SetConfigstring( CS_VOTE_TIME, "" );
-}
-
-/*
-==================
 PrintTeam
 ==================
 */
@@ -2756,6 +2742,8 @@ void G_RunFrame( int levelTime )
             G_GlobalSound(G_SoundIndex("sound/misc/events/buzz02.wav"));
             level.paused = qfalse;
             trap_GT_SendEvent(GTEV_PAUSE, level.time, 0, 0, 0, 0, 0);
+        } else if (level.mapAction == MAPACTION_SKIPTOMAP) {
+            trap_SkipToMap(level.mapActionSkipTo);
         } else {
             trap_SendConsoleCommand(EXEC_APPEND, "map_restart 0");
         }
@@ -3067,6 +3055,8 @@ void G_RunFrame( int levelTime )
         propRunFrame();
     }
 
+    vote_runFrame();
+
     // Check warmup rules
     CheckWarmup();
  
@@ -3077,9 +3067,6 @@ void G_RunFrame( int levelTime )
     CheckGametype ();
 
     trap_GT_RunFrame ( level.time );
-
-    // cancel vote if timed out
-    CheckVote();
 
     // for tracking changes
     CheckCvars();

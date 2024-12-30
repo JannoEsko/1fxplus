@@ -157,6 +157,19 @@ static void migrateGameDatabase(sqlite3* db, int gameMigrationLevel) {
             return;
         }
     }
+
+    if (gameMigrationLevel < 6) {
+        // Profanity filters.
+        char* migration = "CREATE TABLE IF NOT EXISTS profanitylist (profanity VARCHAR(64) COLLATE NOCASE UNIQUE, dt TIMESTAMP DEFAULT CURRENT_TIMESTAMP);" 
+            "DELETE FROM migrationlevel;"
+            "INSERT INTO migrationlevel (migrationlevel) VALUES (6);";
+
+        if (sqlite3_exec(db, migration, 0, 0, 0) != SQLITE_OK) {
+            sqlite3_close(db);
+            logSystem(LOGLEVEL_FATAL_DB, "Game dropped due to failing to migrate the game database to level 6 (starting level: %d).\nSQLite error: %s\nCode: %d", gameMigrationLevel, sqlite3_errmsg(db), sqlite3_errcode(db));
+            return;
+        }
+    }
 }
 
 static void migrateLogsDatabase(sqlite3* db, int logsMigrationLevel) {
@@ -769,6 +782,7 @@ void dbRunTruncate(char* table) {
         sqlite3_exec(db, "DELETE FROM aliases", NULL, NULL, NULL);
         sqlite3_exec(db, "DELETE FROM banlist", NULL, NULL, NULL);
         sqlite3_exec(db, "DELETE FROM subnetbanlist", NULL, NULL, NULL);
+        sqlite3_exec(db, "DELETE FROM profanitylist", NULL, NULL, NULL);
 
         logSystem(LOGLEVEL_INFO, "All tables truncated.");
         backupInMemoryDatabases();
@@ -791,6 +805,9 @@ void dbRunTruncate(char* table) {
     }
     else if (!Q_stricmp("subnetbanlist", table)) {
         sqlite3_exec(db, "DELETE FROM subnetbanlist", NULL, NULL, NULL);
+    }
+    else if (!Q_stricmp("profanitylist", table)) {
+        sqlite3_exec(db, "DELETE FROM profanitylist", NULL, NULL, NULL);
     }
     else {
         logSystem(LOGLEVEL_INFO, "No table \"%s\" found.", table);
@@ -2205,4 +2222,159 @@ void dbWriteHnsBestPlayersIntoHnsStruct() {
 
 
     sqlite3_finalize(stmt);
+}
+
+int dbAddProfanity(char* profanity) {
+    sqlite3* db = gameDb;
+    sqlite3_stmt* stmt;
+
+    // CREATE TABLE IF NOT EXISTS profanitylist (profanity VARCHAR(64) COLLATE NOCASE UNIQUE, addedby VARCHAR(64), dt TIMESTAMP DEFAULT CURRENT_TIMESTAMP)
+
+    char* query = "INSERT OR IGNORE INTO profanitylist (profanity) VALUES (?)";
+
+    int rc = sqlite3_prepare(db, query, -1, &stmt, 0);
+    if (rc != SQLITE_OK) {
+        logSystem(LOGLEVEL_WARN, "sqlite3_prepare failed on gameDb profanity insert. Error: %s", sqlite3_errmsg(db));
+        return;
+    }
+
+    sqlBindTextOrNull(stmt, 1, profanity);
+
+    rc = sqlite3_step(stmt);
+    int rowsAffected = 0;
+    if (rc != SQLITE_DONE) {
+        logSystem(LOGLEVEL_WARN, "writing profanity error: %s", sqlite3_errmsg(db));
+    }
+    else {
+        rowsAffected = sqlite3_changes(db);
+    }
+
+    sqlite3_finalize(stmt);
+
+    return rowsAffected;
+}
+
+int dbRemoveProfanity(char* profanity) {
+    sqlite3* db = gameDb;
+    sqlite3_stmt* stmt;
+
+    // CREATE TABLE IF NOT EXISTS profanitylist (profanity VARCHAR(64) COLLATE NOCASE UNIQUE, addedby VARCHAR(64), dt TIMESTAMP DEFAULT CURRENT_TIMESTAMP)
+
+    char* query = "DELETE FROM profanitylist WHERE profanity = ?";
+
+    int rc = sqlite3_prepare(db, query, -1, &stmt, 0);
+    if (rc != SQLITE_OK) {
+        logSystem(LOGLEVEL_WARN, "sqlite3_prepare failed on gameDb profanity delete. Error: %s", sqlite3_errmsg(db));
+        return;
+    }
+
+    sqlBindTextOrNull(stmt, 1, profanity);
+
+    rc = sqlite3_step(stmt);
+    int rowsAffected = 0;
+    if (rc != SQLITE_DONE) {
+        logSystem(LOGLEVEL_WARN, "delete profanity error: %s", sqlite3_errmsg(db));
+    }
+    else {
+        rowsAffected = sqlite3_changes(db);
+    }
+
+    sqlite3_finalize(stmt);
+
+    return rowsAffected;
+}
+
+void dbPrintProfanitylist(gentity_t* ent) {
+    sqlite3* db = gameDb;
+    sqlite3_stmt* stmt;
+    char buf[MAX_PACKET_BUF];
+    qboolean isRcon = ent && ent->client ? qfalse : qtrue;
+
+    Com_Memset(buf, 0, sizeof(buf));
+    char* query = "SELECT profanity, dt FROM profanitylist";
+    int rc = sqlite3_prepare(db, query, -1, &stmt, 0);
+    if (rc != SQLITE_OK) {
+        logSystem(LOGLEVEL_WARN, "sqlite3_prepare failed on gameDb. Error: %s", sqlite3_errmsg(db));
+        return;
+    }
+
+    if (isRcon) {
+        Com_Printf("\n^3%-65.65s%-11.11s\n", "Profanity", "Date");
+        Com_Printf("^7-----------------------------------------------------------------------------\n");
+
+
+    }
+    else {
+        Q_strcat(buf, sizeof(buf), va("\n\n^3%-65.65s%-11.11s\n^7-----------------------------------------------------------------------------\n", "Profanity", "Date"));
+
+    }
+
+    while ((rc = sqlite3_step(stmt)) != SQLITE_DONE) {
+        if (rc == SQLITE_ROW) {
+            char* profanity = sqlite3_column_text(stmt, 0);
+            char* addedWhen = sqlite3_column_text(stmt, 1);
+
+            if (isRcon) {
+                Com_Printf("%-65.65s%-11.11s\n", profanity, addedWhen);
+            }
+            else {
+
+                if (strlen(buf) + strlen(va("%-65.65s%-11.11s\n", profanity, addedWhen)) >= sizeof(buf) - 5) {
+                    trap_SendServerCommand(ent - g_entities, va("print \"%s\"", buf));
+                    Com_Memset(buf, 0, sizeof(buf));
+                }
+
+                Q_strcat(buf, sizeof(buf), va("%-65.65s%-11.11s\n", profanity, addedWhen));
+            }
+        }
+    }
+
+    if (!isRcon) {
+
+        trap_SendServerCommand(ent - g_entities, va("print \"%s\"", buf));
+        trap_SendServerCommand(ent - g_entities, "print \"\nUse [^3Page Up^7] and [^3Page Down^7] to scroll\n\"");
+    }
+    else {
+        Com_Printf("\nUse [^3Page Up^7] and [^3Page Down^7] to scroll\n");
+    }
+
+    sqlite3_finalize(stmt);
+
+}
+
+void dbCheckStringForProfanities(char* input, int sizeofInput) {
+
+    sqlite3* db = gameDb;
+    sqlite3_stmt* stmt;
+
+    char* query = "SELECT profanity FROM profanitylist";
+
+    int rc = sqlite3_prepare(db, query, -1, &stmt, 0);
+    if (rc != SQLITE_OK) {
+        logSystem(LOGLEVEL_WARN, "sqlite3_prepare failed on gameDb. Error: %s", sqlite3_errmsg(db));
+        return;
+    }
+
+    qboolean replaced = qfalse;
+    char localBuffer[MAX_SAY_TEXT];
+    Q_strncpyz(localBuffer, input, sizeof(localBuffer));
+    Q_CleanStr(localBuffer);
+
+    while (sqlite3_step(stmt) == SQLITE_ROW) {
+        char* profanity = sqlite3_column_text(stmt, 0);
+        if (profanity != NULL) {
+            qboolean output = replaceProfanityWithAsterisks(localBuffer, profanity);
+
+            if (output) {
+                replaced = qtrue;
+            }
+        }
+    }
+
+    sqlite3_finalize(stmt);
+
+    if (replaced) {
+        Q_strncpyz(input, localBuffer, sizeofInput);
+    }
+
 }

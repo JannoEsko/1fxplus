@@ -72,7 +72,7 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <TargetName>sof2mp_gamex86_64</TargetName>
-    <OutDir>..\..\..\..\..\..\..\Games\sof2plus\1fx</OutDir>
+    <OutDir>..\..\..\..\..\..\..\Games\sof2plus\1fx\</OutDir>
     <IncludePath>C:\vcpkg\installed\x64-windows-static\include;$(IncludePath)</IncludePath>
     <LibraryPath>C:\vcpkg\installed\x64-windows-static\lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
@@ -172,6 +172,7 @@
     <ClCompile Include="1fx\logging.c" />
     <ClCompile Include="1fx\mvchat.c" />
     <ClCompile Include="1fx\threads.c" />
+    <ClCompile Include="1fx\vote.c" />
     <ClCompile Include="ai_main.c" />
     <ClCompile Include="ai_util.c" />
     <ClCompile Include="ai_wpnav.c" />

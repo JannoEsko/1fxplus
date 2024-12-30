@@ -444,6 +444,7 @@ void player_die(
     G_LogPrintf("Kill: %i %i %i: %s killed %s by %s\n",
         killer, self->s.number, meansOfDeath, killerName,
         self->client->pers.netname, obit );
+    logGame(attacker, self, "kill", va("killed by %s", obit));
 
     // broadcast the death event to everyone
     ent = G_TempEntity( self->r.currentOrigin, EV_OBITUARY );
@@ -1429,6 +1430,7 @@ int G_Damage (
                           targ->client->pers.netname,
                           location,
                           (int)((float)take) );
+        logGame(attacker, targ, "hit", va("%i", (int)((float)take)));
     }
 
     if ( g_debugDamage.integer )

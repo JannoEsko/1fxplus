@@ -199,7 +199,8 @@ typedef enum {
     MAPACTION_PENDING_MAPCHANGE,
     MAPACTION_PENDING_MAPGTCHANGE,
     MAPACTION_PENDING_MAPCYCLE,
-    MAPACTION_UNPAUSE
+    MAPACTION_UNPAUSE,
+    MAPACTION_SKIPTOMAP
 } mapAction_t;
 
 typedef struct statInfo_s {
@@ -574,6 +575,28 @@ typedef struct propSpecifics_s {
     int                 stateCooldownMessage;
 } propSpecifics_t;
 
+typedef enum vote_voted_s {
+    VOTE_VOTED_NONE,
+    VOTE_VOTED_NO,
+    VOTE_VOTED_YES
+} vote_voted_t;
+
+typedef enum clientPunishments_s {
+    PUNISH_NONE
+    , PUNISH_SPIN
+    , PUNISH_CROUCH
+    , PUNISH_HARDGRAVITY
+    , PUNISH_LOWSPEED
+    , PUNISH_TWIST
+    , PUNISH_USERCMD
+    , PUNISH_DEGRADINGHEALTH
+    , PUNISH_LOCKVIEW
+    , PUNISH_RANDOMMOVE
+    , PUNISH_TELEENEMY
+    , PUNISH_STRIP
+    , PUNISH_MAX
+} clientPunishments_t;
+
 // client data that stays across multiple levels or map restarts
 // this is achieved by writing all the data to cvar strings at game shutdown
 // time and reading them back at connection time.  Anything added here
@@ -702,6 +725,15 @@ typedef struct
     int                 identityChangeCount;
     int                 lastPM;
     qboolean            privateMessageActive;
+    vote_voted_t        voted;
+
+    qboolean            punishment;
+    char                punishmentReason[MAX_SAY_TEXT];
+    int                 totalPunishments;
+    int                 nextPunishmentTime;
+    clientPunishments_t currentPunishment;
+    int                 currentPunishmentCycleTime;
+    int                 nextPunishmentMessage;
 } clientSession_t;
 
 //
@@ -755,6 +787,8 @@ typedef struct
     qboolean            camperWarned;
     hnzSpecifics_t      hnz;
     propSpecifics_t     prop;
+    qboolean            twisted;
+    qboolean            gocrazy;
 } clientPersistant_t;
 
 #define MAX_SERVER_FPS      40
@@ -973,6 +1007,51 @@ typedef struct hnzLvl_s {
 
 } hnzLvl_t;
 
+typedef enum voteAction_s {
+    VOTEACTION_NONE,
+    VOTEACTION_MAPRESTART,
+    VOTEACTION_MAPCYCLE,
+    VOTEACTION_MAP,
+    VOTEACTION_ENDMAP,
+    VOTEACTION_GAMETYPE,
+    VOTEACTION_KICK,
+    VOTEACTION_TIMELIMIT,
+    VOTEACTION_EXTENDTIMELIMIT,
+    VOTEACTION_SCORELIMIT,
+    VOTEACTION_SHUFFLE,
+    VOTEACTION_SWAP,
+    VOTEACTION_CLANVSALL,
+    VOTEACTION_MUTE,
+    VOTEACTION_POLL
+} voteAction_t;
+
+typedef struct vote_s {
+    // voting state
+    char            voteDisplayString[MAX_STRING_CHARS];
+    int             voteTime;               // level.time vote was called
+    int             voteExecuteTime;        // time the vote is executed
+    int             voteYes;
+    int             voteNo;
+    int             voteClient;             // client who initiated vote
+    voteAction_t    voteAction;
+
+    union {
+        int intVal;
+        char charVal[MAX_SAY_TEXT];
+    } voteArg1;
+
+    union {
+        int intVal;
+        char charVal[10];
+    } voteArg2;
+
+    int votingClients;
+    int neededVotes;
+    int nextPollDisplay;
+    int lastPollDisplay;
+
+} vote_t;
+
 typedef struct
 {
     struct gclient_s    *clients;       // [maxclients]
@@ -1020,15 +1099,8 @@ typedef struct
 
     int         warmupModificationCount;    // for detecting if g_warmup is changed
 
-    // voting state
-    char        voteString[MAX_STRING_CHARS];
-    char        voteDisplayString[MAX_STRING_CHARS];
-    int         voteTime;               // level.time vote was called
-    int         voteExecuteTime;        // time the vote is executed
-    int         voteYes;
-    int         voteNo;
-    int         voteClient;             // client who initiated vote
     int         numVotingClients;       // set by CalculateRanks
+    vote_t      vote;
 
     // spawn variables
     qboolean    spawning;               // the G_Spawn*() functions are valid
@@ -1135,6 +1207,7 @@ typedef struct
     int             runMapAction;
     char            mapActionNewGametype[12];
     char            mapActionNewMap[MAX_QPATH];
+    int             mapActionSkipTo;
     int             unpauseNextNotification;
 
     qboolean        customGameStarted; // H&S true => seeks released
@@ -1754,6 +1827,21 @@ extern  vmCvar_t    g_anticamp;
 extern  vmCvar_t    g_anticampRadius;
 extern  vmCvar_t    g_anticampTime;
 
+extern  vmCvar_t    vote_map;
+extern  vmCvar_t    vote_kick;
+extern  vmCvar_t    vote_timelimit;
+extern  vmCvar_t    vote_scorelimit;
+extern  vmCvar_t    vote_teams;
+extern  vmCvar_t    vote_mute;
+extern  vmCvar_t    vote_poll;
+
+extern  vmCvar_t    vote_successThreshold;
+
+extern  vmCvar_t    g_sockIp;
+extern  vmCvar_t    g_sockPort;
+extern  vmCvar_t    g_sockIdentifier;
+extern  vmCvar_t    g_logThroughSocket;
+
 //extern vmCvar_t     g_leanType;
 
 void    trap_Print( const char *text );
@@ -1983,6 +2071,8 @@ qboolean trap_IsClientLegacy(int clientNum);
 int trap_TranslateSilverWeaponToGoldWeapon(int weapon);
 int trap_TranslateGoldWeaponToSilverWeapon(int weapon);
 int trap_ValidateMapName(const char* mapName, char* output, int outputSize);
+int trap_MapcycleList(char* output, int sizeofOutput);
+void trap_SkipToMap(int skipTo);
 
 void G_UpdateClientAntiLag  ( gentity_t* ent );
 void G_UndoAntiLag          ( void );
@@ -2008,7 +2098,7 @@ void        mvchat_printHelp(gentity_t* ent);
 void mvchat_findSounds(gentity_t* ent);
 
 
-#define SQL_GAME_MIGRATION_LEVEL 5
+#define SQL_GAME_MIGRATION_LEVEL 6
 #define SQL_LOG_MIGRATION_LEVEL 1
 #define SQL_COUNTRY_MIGRATION_LEVEL 1
 #define MAX_SQL_TEMP_NAME 16
@@ -2069,11 +2159,16 @@ void dbRemoveSessionDataById(int clientNum);
 void dbReadSessionMutesBackIntoMuteInfo(void);
 void dbWriteMuteIntoSession(mute_t* muteInfo);
 void dbClearSessionMutes(void);
+int dbAddProfanity(char* profanity);
+int dbRemoveProfanity(char* profanity);
+void dbPrintProfanitylist(gentity_t* ent);
+void dbCheckStringForProfanities(char* input, int sizeofInput);
 
 void logSystem(loggingLevel_t logLevel, const char* msg, ...) __attribute__((format(printf, 2, 3)));
 void logRcon(char* ip, char* action);
 void logAdmin(gentity_t* by, gentity_t* to, char* action, char* reason);
 void logLogin(gentity_t* ent);
+void logGame(gentity_t* by, gentity_t* to, char* action, char* text);
 
 const char* getAdminNameByAdminLevel(admLevel_t adminLevel);
 void getCleanAdminNameByAdminLevel(admLevel_t adminLevel, char* output, int sizeOfOutput);
@@ -2320,6 +2415,17 @@ void HZ_Claymore(gentity_t* ent);
 void HZ_ClaymoreShoot(gentity_t* self, gentity_t* inflictor, gentity_t* attacker, int damage, int mod, int hitLocation, vec3_t hitDir);
 void HZ_claymoreExplode(gentity_t* ent);
 void propRunFrame(void);
+void clanVsAll(void);
+qboolean replaceProfanityWithAsterisks(char* input, char* profanity);
+void sendMessageToConsole(gentity_t* ent, const char* text);
+char* getPunishmentAsText(gentity_t* ent);
+
+void vote_callVote(gentity_t* ent);
+void vote_castVote(gentity_t* ent);
+void vote_runFrame(void);
+void vote_resetVoteInfoOnSingleClient(gentity_t* ent, qboolean removeFromLevelStruct);
+void vote_forceResult(gentity_t* ent, qboolean result);
+void vote_updateConfigString(qboolean onlyTime);
 
 
 typedef enum
@@ -2422,7 +2528,8 @@ typedef enum {
 typedef enum {
     THREADACTION_IPHUB_DATA_REQUEST,
     THREADACTION_IPHUB_DATA_RESPONSE,
-    THREADACTION_RUN_PRINTF
+    THREADACTION_RUN_PRINTF,
+    THREADACTION_LOG_VIA_SOCKET
 } threadAction;
 
 struct curlProgressData {

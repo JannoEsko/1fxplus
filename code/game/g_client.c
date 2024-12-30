@@ -804,6 +804,9 @@ void G_ClientCleanName ( const char *in, char *out, int outSize, qboolean colors
     {
         Q_strncpyz( p, "UnnamedPlayer", outSize );
     }
+
+    // Run a check for profanities.
+    dbCheckStringForProfanities(p, outSize);
 }
 
 /*
@@ -1232,10 +1235,18 @@ void ClientUserinfoChanged( int clientNum )
                 strcpy ( client->pers.netname, oldname );
             }
             // voting clients cannot change their names
-            else if ( (level.voteTime || level.voteExecuteTime) && strstr ( level.voteDisplayString, oldname ) )
+            else if ( (level.vote.voteTime || level.vote.voteExecuteTime))
             {
-                trap_SendServerCommand ( client - &level.clients[0], "print \"You are not allowed to change your name while there is an active vote against you.\n\"" );
-                strcpy ( client->pers.netname, oldname );
+                if (level.vote.voteClient == clientNum) {
+                    trap_SendServerCommand(client - &level.clients[0], "print \"You are not allowed to change your name while your vote is still in progress.\n\"");
+                    strcpy(client->pers.netname, oldname);
+                }
+                else if ((level.vote.voteAction == VOTEACTION_MUTE || level.vote.voteAction == VOTEACTION_KICK) && clientNum == level.vote.voteArg1.intVal) {
+                    trap_SendServerCommand(client - &level.clients[0], "print \"You are not allowed to change your name while there's a vote affecting you.\n\"");
+                    strcpy(client->pers.netname, oldname);
+                }
+
+                
             }
             // If they are a ghost or spectating in an inf game their name is deferred
             else if ( level.gametypeData->respawnType == RT_NONE && (client->sess.ghost || G_IsClientDead ( client ) ) )
@@ -1496,6 +1507,8 @@ char *ClientConnect( int clientNum, qboolean firstTime, qboolean isBot )
     ent->client->pers.statInfo.lastKillerHealth = -1;
     ent->client->pers.statInfo.lastKillerArmor = -1;
 
+    logGame(ent, NULL, "connect", va("ID %i", clientNum));
+
     return NULL;
 }
 
@@ -1568,7 +1581,7 @@ void ClientBegin( int clientNum, qboolean setTime)
     }
 
     G_LogPrintf( "ClientBegin: %i\n", clientNum );
-
+    logGame(ent, NULL, "clientbegin", va("ID %i", clientNum));
     // See if we should spawn as a ghost
     if ( client->sess.team != TEAM_SPECTATOR && level.gametypeData->respawnType == RT_NONE )
     {
@@ -2150,8 +2163,13 @@ void ClientDisconnect( int clientNum )
         TossClientItems( ent );
     }
 
-    G_LogPrintf( "ClientDisconnect: %i\n", clientNum );
+    // If there was a vote in progress, make sure their vote is discarded.
+    if (level.vote.voteTime && ent->client->sess.voted != VOTE_VOTED_NONE) {
+        vote_resetVoteInfoOnSingleClient(ent, qtrue);
+    }
 
+    G_LogPrintf( "ClientDisconnect: %i\n", clientNum );
+    logGame(ent, NULL, "disconnect", va("ID %i", clientNum));
     trap_UnlinkEntity (ent);
     ent->s.modelindex = 0;
     ent->inuse = qfalse;

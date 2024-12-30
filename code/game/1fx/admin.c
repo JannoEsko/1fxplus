@@ -38,7 +38,6 @@ admCmd_t adminCommands[] = {
 	{"!nm",     "nomiddle",         &a_nosection.integer,       &adm_noMiddle,                  "Enable/Disable Nomiddle",          "",                 NULL},
 	{"!nw",     "nowhole",          &a_nosection.integer,       &adm_noWhole,                   "Enable/Disable Nowhole",           "",                 NULL},
 	{"!sh",     "shuffleteams",     &a_shuffleteams.integer,    &adm_shuffleTeams,              "Mix the teams at random",          "",                 NULL},
-	{"!nn",     "nonades",          &a_nades.integer,           &adm_noNades,                   "Enable or disable nades",          "",                 NULL},
 	{"!ri",     "respawninterval",  &a_respawninterval.integer,              &adm_respawnInterval,           "Change the respawn interval",      "<time>",           NULL},
 	{"!rd",     "realdamage",       &a_damage.integer,          &adm_realDamage,                "Toggle Real damage",               "",                 NULL},
 	{"!nd",     "normaldamage",     &a_damage.integer,          &adm_normalDamage,              "Toggle Normal damage",             "",                 NULL},
@@ -80,10 +79,8 @@ admCmd_t adminCommands[] = {
 	{"!swi",    "switch",           &a_forceteam.integer,       &adm_Switch,                    "Switch one to the opposite team",  "<i/n>",            "ed"},
 	{"!3rd",    "3rd",              &a_3rd.integer,             &adm_Third,                     "Toggles Thirdperson on or off",    "",                 NULL},
 	{"!third",  "third",            &a_3rd.integer,             &adm_Third,                     "Toggles Thirdperson on or off",    "",                 NULL},
-	{"!wp",     "weapon",           &a_toggleweapon.integer,    &adm_toggleWeapon,              "Toggles weapon on or off",         "",                 NULL},
 	{"!aca",    "anticamp",         &a_anticamp.integer,        &adm_Anticamp,                  "Toggles anticamp on or off",       "",                 NULL},
 	{"!em",     "endmap",           &a_mapswitch.integer,          &adm_endMap,                    "Requests map to end",              "",                 NULL},
-	{"!ml",     "maplist",          &a_mapswitch.integer,       &adm_mapList,                   "Lists all available maps",         "",                 NULL},
 
 	{"!bo",     "bestof",           &a_compmode.integer,     			&adm_matchIsBestOf,             "Toggles Best-of system",  	   		"",        	NULL},
 	{"!pfl",    "profanitylist",	&minimumAdminLevel,     		&adm_profanityList,             "Show profanity list",  	   		"",        	NULL},
@@ -1093,11 +1090,6 @@ int adm_shuffleTeams(int argNum, gentity_t* adm, qboolean shortCmd) {
 	return -1;
 }
 
-// ADMJANFIXME
-int adm_noNades(int argNum, gentity_t* adm, qboolean shortCmd) {
-	return -1;
-}
-
 int adm_respawnInterval(int argNum, gentity_t* adm, qboolean shortCmd) {
 	adm_toggleCVAR(argNum, adm, shortCmd, qfalse, "g_respawnInterval", &g_respawnInterval, qfalse, NULL, NULL);
 	return -1;
@@ -1745,77 +1737,7 @@ int adm_clanVsAll(int argNum, gentity_t* adm, qboolean shortCmd) {
 	} else if (isCurrentGametypeInList((gameTypes_t[]) { GT_HNS, GT_HNZ, GT_PROP, GT_MAX })) {
 		G_printInfoMessage(adm, "Gametype is not supported.");
 	} else {
-		level.redLocked = qfalse;
-		level.blueLocked = qfalse;
-		// First find out which team has the most players => move the clan members there.
-		team_t moveToTeam = TEAM_BLUE;
-		int blueTeamClanPlayers = 0;
-		int redTeamClanPlayers = 0;
-
-		for (int i = 0; i < level.numConnectedClients; i++) {
-			gentity_t* ent = &g_entities[level.sortedClients[i]];
-
-			if (ent->client->sess.team == TEAM_BLUE && ent->client->sess.clanMember) {
-				blueTeamClanPlayers++;
-			}
-			else if (ent->client->sess.team == TEAM_RED && ent->client->sess.clanMember) {
-				redTeamClanPlayers++;
-			}
-		}
-
-		if (blueTeamClanPlayers < redTeamClanPlayers) {
-			moveToTeam = TEAM_RED;
-			level.redLocked = qtrue;
-		}
-		else {
-			level.blueLocked = qtrue;
-		}
-
-		for (int i = 0; i < level.numConnectedClients; i++) {
-
-			gentity_t* ent = &g_entities[level.sortedClients[i]];
-
-			if (ent->client->sess.team == TEAM_SPECTATOR) {
-				continue;
-			}
-
-			if (ent->client->sess.team == moveToTeam && ent->client->sess.clanMember) {
-				continue;
-			}
-
-			// This is a client we need to move.
-			team_t newTeam = TEAM_RED;
-
-			if (!ent->client->sess.clanMember) {
-				if (moveToTeam == TEAM_RED) {
-					newTeam = TEAM_BLUE;
-				}
-			}
-			else {
-				newTeam = moveToTeam;
-			}
-
-			if (ent->s.gametypeitems > 0) {
-				G_DropGametypeItems(ent, 0);
-			}
-
-
-			ent->client->ps.stats[STAT_WEAPONS] = 0;
-			TossClientItems(ent);
-			G_StartGhosting(ent);
-
-			ent->client->sess.team = newTeam;
-
-			ent->client->pers.identity = NULL;
-			ClientUserinfoChanged(ent->s.number);
-			CalculateRanks();
-
-			G_StopFollowing(ent);
-			G_StopGhosting(ent);
-			trap_UnlinkEntity(ent);
-			ClientSpawn(ent);
-
-		}
+		clanVsAll();
 
 		G_Broadcast(BROADCAST_CMD, NULL, qfalse, "\\Clan vs all");
 		G_printCustomMessageToAll("Admin Action", "Clan vs All by %s", getNameOrArg(adm, "RCON", qtrue));
@@ -2110,13 +2032,37 @@ int adm_mapCycle(int argNum, gentity_t* adm, qboolean shortCmd) {
 	return -1;
 }
 
-// ADMJANFIXME
 int adm_passVote(int argNum, gentity_t* adm, qboolean shortCmd) {
+
+	if (!level.vote.voteTime) {
+		G_printInfoMessage(adm, "There's no vote to pass.");
+	}
+	else {
+		level.vote.voteTime = 0;
+		level.vote.voteExecuteTime = level.time + 3000;
+		vote_updateConfigString(qtrue);
+		logAdmin(adm, NULL, "passvote", NULL);
+		G_Broadcast(BROADCAST_CMD, NULL, qtrue, "Vote result forced\nby %s", getNameOrArg(adm, "\\RCON", qfalse));
+		G_printCustomMessageToAll("Admin Action", "Vote result forced by %s", getNameOrArg(adm, "RCON", qtrue));
+	}
+
 	return -1;
 }
 
-// ADMJANFIXME
 int adm_cancelVote(int argNum, gentity_t* adm, qboolean shortCmd) {
+
+	if (!level.vote.voteTime) {
+		G_printInfoMessage(adm, "There's no vote to cancel.");
+	}
+	else {
+		level.vote.voteTime = 0;
+		level.vote.voteExecuteTime = 0;
+		vote_updateConfigString(qtrue);
+		logAdmin(adm, NULL, "cancelvote", NULL);
+		G_Broadcast(BROADCAST_CMD, NULL, qtrue, "Vote result forced\nby %s", getNameOrArg(adm, "\\RCON", qfalse));
+		G_printCustomMessageToAll("Admin Action", "Vote result forced by %s", getNameOrArg(adm, "RCON", qtrue));
+	}
+
 	return -1;
 }
 
@@ -2332,11 +2278,6 @@ int adm_Third(int argNum, gentity_t* adm, qboolean shortCmd) {
 	return -1;
 }
 
-// ADMJANFIXME - I've only seen this function to be in use with abuse stuff, almost never in a real environment - maybe remove altogether?
-int adm_toggleWeapon(int argNum, gentity_t* adm, qboolean shortCmd) {
-	return -1;
-}
-
 int adm_Anticamp(int argNum, gentity_t* adm, qboolean shortCmd) {
 
 	adm_toggleCVAR(argNum, adm, shortCmd, qtrue, "Anticamp", &g_anticamp, qfalse, NULL, NULL);
@@ -2351,13 +2292,14 @@ int adm_Anticamp(int argNum, gentity_t* adm, qboolean shortCmd) {
 	return -1;
 }
 
-// ADMJANFIXME
 int adm_endMap(int argNum, gentity_t* adm, qboolean shortCmd) {
-	return -1;
-}
 
-// ADMJANFIXME
-int adm_mapList(int argNum, gentity_t* adm, qboolean shortCmd) {
+	G_Broadcast(BROADCAST_CMD, NULL, qtrue, "\\End the map\nby %s", getNameOrArg(adm, "\\RCON", qfalse));
+	G_printCustomMessageToAll("Admin Action", "End the map called by %s", getNameOrArg(adm, "RCON", qtrue));
+	logAdmin(adm, NULL, "endmap", NULL);
+	level.mapAction = MAPACTION_ENDING;
+	LogExit("Admin endmap");
+
 	return -1;
 }
 
@@ -2381,8 +2323,8 @@ int adm_matchIsBestOf(int argNum, gentity_t* adm, qboolean shortCmd) {
 	return -1;
 }
 
-// ADMJANFIXME
 int adm_profanityList(int argNum, gentity_t* adm, qboolean shortCmd) {
+	dbPrintProfanitylist(adm);
 	return -1;
 }
 
@@ -2431,23 +2373,143 @@ int adm_Uppercut(int argNum, gentity_t* adm, qboolean shortCmd) {
 	return idNum;
 }
 
-// ADMJANFIXME
 int adm_Punish(int argNum, gentity_t* adm, qboolean shortCmd) {
-	return -1;
+
+	int idNum = G_ClientNumFromArg(adm, argNum, "punish", qfalse, qtrue, qfalse, shortCmd);
+
+	if (idNum >= 0) {
+		gentity_t* ent = &g_entities[idNum];
+
+		if (ent->client->sess.punishment) {
+			ent->client->sess.punishment = qfalse;
+			G_Broadcast(BROADCAST_CMD, NULL, qtrue, "%s\nhas had his fair share of punishments.", ent->client->pers.netname);
+			ent->client->sess.spinView = qfalse;
+			ent->client->pers.twisted = qfalse;
+			ent->client->pers.gocrazy = qfalse;
+			SetClientViewAngle(ent, (vec3_t) { 0, 0, 0 });
+			return -1;
+		}
+		else {
+			char punishmentReason[MAX_SAY_TEXT];
+			Q_strncpyz(punishmentReason, concatArgs(argNum + 1, shortCmd, qfalse), sizeof(punishmentReason));
+
+			if (!strlen(punishmentReason)) {
+
+				G_printInfoMessage(adm, "You need to specify a reason if you want to punish someone.");
+				return -1;
+			}
+			else {
+				Q_strncpyz(ent->client->sess.punishmentReason, punishmentReason, sizeof(ent->client->sess.punishmentReason));
+				ent->client->sess.punishment = qtrue;
+				ent->client->sess.nextPunishmentTime = level.time + 5000;
+			}
+		}
+	}
+
+	return idNum;
 }
 
-// ADMJANFIXME
 int adm_punishList(int argNum, gentity_t* adm, qboolean shortCmd) {
+
+	sendMessageToConsole(adm, va("\n^3[Punished players]\n^3 %-6s %-22s%-24sReason\n^7------------------------------------------------------------------------\n", "#", "Name", "Current punishment"));
+	for (int i = 0; i < level.numConnectedClients; i++) {
+		gentity_t* ent = &g_entities[level.sortedClients[i]];
+
+		if (ent && ent->client && ent->client->sess.punishment) {
+			sendMessageToConsole(adm, va("^7 [^3%3d^7]  %-22s%-24s%s\n\n", ent->client->ps.clientNum, ent->client->pers.cleanName, getPunishmentAsText(ent), ent->client->sess.punishmentReason));
+		}
+	}
 	return -1;
 }
 
-// ADMJANFIXME
+#define MAPCYCLE_FILE_BIGBUF 65535
+static char mapcycleList[MAPCYCLE_FILE_BIGBUF];
+static qboolean mapcycleListParsed = qfalse;
+static char previousMapcycleCvar[MAX_QPATH];
+
 int adm_mapCycleList(int argNum, gentity_t* adm, qboolean shortCmd) {
+
+	if (!strlen(g_mapcycle.string)) {
+		G_printInfoMessage(adm, "Server is not running a mapcycle.");
+		return -1;
+	}
+	else {
+
+		if (Q_stricmp(g_mapcycle.string, previousMapcycleCvar)) {
+			mapcycleListParsed = qfalse;
+		}
+
+		if (!mapcycleListParsed) {
+			int mclistResponse = trap_MapcycleList(mapcycleList, sizeof(mapcycleList));
+
+			if (!mclistResponse) {
+				G_printInfoMessage(adm, "Something went wrong with mapcycle list parsing, please try again or contact the server owner.");
+				return -1;
+			}
+			else {
+				mapcycleListParsed = qtrue;
+				Q_strncpyz(previousMapcycleCvar, g_mapcycle.string, sizeof(previousMapcycleCvar));
+			}
+		}
+
+		// We send the list back line by line, we do not buffer a packet together.
+		sendMessageToConsole(adm, va("\n^7[^3Mapcycle list^7]\n\n^3%s %-6.6s%-20.20s%-9.9s%-4.4s%-4.4s%-4.4s\n^7-----------------------------------------------------------------------------\n", " ", "ID", "Map name", "Gametype", "M", "A", "D"));
+
+		char* currentLine = mapcycleList;
+
+		while (*currentLine) {
+			char* nextLine = strchr(currentLine, '\n');
+
+			if (nextLine) {
+
+				char lineBuf[MAX_QPATH];
+				int lineLength = nextLine - currentLine;
+				memcpy(lineBuf, currentLine, lineLength);
+				lineBuf[lineLength] = '\0';  // Null-terminate the line
+
+				sendMessageToConsole(adm, va("%s\n", lineBuf));
+				currentLine = nextLine + 1;
+			}
+			else {
+				sendMessageToConsole(adm, va("%s\n", currentLine));
+				break;
+			}
+		}
+
+		sendMessageToConsole(adm, "\n\n[^3M^7] => Map, [^3A^7] = Altmap, [^3D^7] = Devmap\nUse [^3Page Up^7] and [^3Page Down^7] to scroll.\n\n");
+
+	}
+
+	
+
 	return -1;
 }
 
-// ADMJANFIXME
 int adm_skipToMap(int argNum, gentity_t* adm, qboolean shortCmd) {
+
+	// We're not validating the context (apart from some odd cases)
+	//  - if they do e.g. !skiptomap 55, then the engine will just take care of it. We take the map ID, write it into the lastMapGroup and let the engine do its *magic*
+	// If that map doesn't exist, it'll just proceed to map0 instead.
+
+	char* arg = G_GetArg(argNum, shortCmd, qfalse);
+
+	if (arg && *arg) {
+		int skipTo = atoi(arg);
+
+		if (skipTo < 0 || skipTo > 100) {
+			G_printInfoMessage(adm, "Pretty sure such a map ID cannot exist... :)");
+			return -1;
+		}
+
+		G_Broadcast(BROADCAST_GAME, NULL, qtrue, "Skip to map ID %d\nby %s", skipTo, getNameOrArg(adm, "\\RCON", qfalse));
+		G_printCustomMessageToAll("Admin Action", "Skip to map ID %d by %s", skipTo, getNameOrArg(adm, "RCON", qtrue));
+		logAdmin(adm, NULL, va("skiptomap %d", skipTo), NULL);
+
+		level.mapAction = MAPACTION_SKIPTOMAP;
+		level.mapActionSkipTo = skipTo;
+		level.runMapAction = level.time + 3000;
+	}
+
 	return -1;
 }
 

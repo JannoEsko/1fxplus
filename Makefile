@@ -798,6 +798,7 @@ SOF2GOBJ_ = \
   $(B)/game/1fx/databases.o \
   $(B)/game/1fx/functions.o \
   $(B)/game/1fx/logging.o \
+  $(B)/game/1fx/vote.o \
   $(B)/game/1fx/threads.o \
   $(B)/game/1fx/mvchat.o \
   \

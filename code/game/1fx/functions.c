@@ -1380,7 +1380,11 @@ Kicks player from the server. Includes who did it and the reason.
 */
 
 void kickPlayer(gentity_t* to, gentity_t* by, char* action, char* reason) {
-    trap_DropClient(to - g_entities, va("You got %s.\nBy: %s\nReason: %s", action, getNameOrArg(by, "RCON", qtrue), reason));
+
+    char kickText[MAX_SAY_TEXT];
+    Q_strncpyz(kickText, va("You got %s.\nBy: %s\nReason: %s", action, getNameOrArg(by, "RCON", qtrue), reason), sizeof(kickText));
+
+    trap_DropClient(to - g_entities, kickText);
 }
 
 char* getClanTypeAsText(clanType_t clanType) {
@@ -3403,7 +3407,6 @@ static transformObject_t transformableObjects[] =
 };
 
 void freeProphuntProps(gentity_t* player) {
-    int i;
     gentity_t* entity;
 
     player->client->pers.prop.isMovingModel = qfalse;
@@ -3521,7 +3524,7 @@ void prop_pickRandomProps(int* result) {
 
 void transformPlayerToProp(gentity_t* ent, int propId, qboolean thinkSingle)
 {
-    int object, i;
+    int object;
     vec3_t newOrigin;
     vec3_t newAngles;
     gentity_t* movingModel;
@@ -4780,42 +4783,42 @@ void fillHnsStats() {
 
         if (ent->client->sess.team == TEAM_RED) {
 
-            if (ent->client->sess.roundsWonAsHider > rounds->playerScore) {
+            if (ent->client->sess.roundsWonAsHider > rounds->playerScore && ent->client->sess.roundsWonAsHider > 0) {
                 rounds->playerScore = ent->client->sess.roundsWonAsHider;
                 Q_strncpyz(rounds->playerName, ent->client->pers.cleanName, sizeof(rounds->playerName));
             }
 
-            if (ent->client->sess.MM1HitsTaken > mm1hits->playerScore) {
+            if (ent->client->sess.MM1HitsTaken > mm1hits->playerScore && ent->client->sess.MM1HitsTaken > 0) {
                 mm1hits->playerScore = ent->client->sess.MM1HitsTaken;
                 Q_strncpyz(mm1hits->playerName, ent->client->pers.cleanName, sizeof(mm1hits->playerName));
             }
 
-            if (ent->client->sess.rpgBoosts > rpgboosts->playerScore) {
+            if (ent->client->sess.rpgBoosts > rpgboosts->playerScore && ent->client->sess.rpgBoosts > 0) {
                 rpgboosts->playerScore = ent->client->sess.rpgBoosts;
                 Q_strncpyz(rpgboosts->playerName, ent->client->pers.cleanName, sizeof(rpgboosts->playerName));
             }
 
-            if (ent->client->sess.rpgTaken > rpgtaken->playerScore) {
+            if (ent->client->sess.rpgTaken > rpgtaken->playerScore && ent->client->sess.rpgTaken > 0) {
                 rpgtaken->playerScore = ent->client->sess.rpgTaken;
                 Q_strncpyz(rpgtaken->playerName, ent->client->pers.cleanName, sizeof(rpgtaken->playerName));
             }
 
-            if (ent->client->sess.m4Taken > m4taken->playerScore) {
+            if (ent->client->sess.m4Taken > m4taken->playerScore && ent->client->sess.m4Taken > 0) {
                 m4taken->playerScore = ent->client->sess.m4Taken;
                 Q_strncpyz(m4taken->playerName, ent->client->pers.cleanName, sizeof(m4taken->playerName));
             }
 
-            if (ent->client->sess.stunAttacks > stuns->playerScore) {
+            if (ent->client->sess.stunAttacks > stuns->playerScore && ent->client->sess.stunAttacks > 0) {
                 stuns->playerScore = ent->client->sess.stunAttacks;
                 Q_strncpyz(stuns->playerName, ent->client->pers.cleanName, sizeof(stuns->playerName));
             }
 
-            if (ent->client->sess.seekersCaged > seekscaged->playerScore) {
+            if (ent->client->sess.seekersCaged > seekscaged->playerScore && ent->client->sess.seekersCaged > 0) {
                 seekscaged->playerScore = ent->client->sess.seekersCaged;
                 Q_strncpyz(seekscaged->playerName, ent->client->pers.cleanName, sizeof(seekscaged->playerName));
             }
 
-            if (ent->client->sess.weaponsStolen > stolen->playerScore) {
+            if (ent->client->sess.weaponsStolen > stolen->playerScore && ent->client->sess.weaponsStolen > 0) {
                 stolen->playerScore = ent->client->sess.weaponsStolen;
                 Q_strncpyz(stolen->playerName, ent->client->pers.cleanName, sizeof(stolen->playerName));
             }
@@ -4823,22 +4826,22 @@ void fillHnsStats() {
         }
         else if (ent->client->sess.team == TEAM_BLUE) {
 
-            if (ent->client->sess.score > points->playerScore) {
+            if (ent->client->sess.score > points->playerScore && ent->client->sess.score > 0) {
                 points->playerScore = ent->client->sess.score;
                 Q_strncpyz(points->playerName, ent->client->pers.cleanName, sizeof(points->playerName));
             }
 
-            if (ent->client->sess.takenMM1 > mm1taken->playerScore) {
+            if (ent->client->sess.takenMM1 > mm1taken->playerScore && ent->client->sess.takenMM1 > 0) {
                 mm1taken->playerScore = ent->client->sess.takenMM1;
                 Q_strncpyz(mm1taken->playerName, ent->client->pers.cleanName, sizeof(mm1taken->playerName));
             }
 
-            if (ent->client->sess.gotStunned > stunned->playerScore) {
+            if (ent->client->sess.gotStunned > stunned->playerScore && ent->client->sess.gotStunned > 0) {
                 stunned->playerScore = ent->client->sess.gotStunned;
                 Q_strncpyz(stunned->playerName, ent->client->pers.cleanName, sizeof(stunned->playerName));
             }
 
-            if (ent->client->sess.trappedInCage > trapped->playerScore) {
+            if (ent->client->sess.trappedInCage > trapped->playerScore && ent->client->sess.trappedInCage > 0) {
                 trapped->playerScore = ent->client->sess.trappedInCage;
                 Q_strncpyz(trapped->playerName, ent->client->pers.cleanName, sizeof(trapped->playerName));
             }
@@ -5218,6 +5221,16 @@ void checkAnticamp(gentity_t* ent) {
 
     if (g_anticamp.integer && ent && ent->client && ent->client->pers.connected == CON_CONNECTED && ent->client->sess.team != TEAM_SPECTATOR && !G_IsClientDead(ent->client) && !isCurrentGametypeInList((gameTypes_t[]){GT_HNS, GT_HNZ, GT_PROP, GT_MAX}) && ent->client->pers.lastCampCheck + 500 < level.time) {
 
+        // First part - if the client holds a gametype item, we don't pop them.
+
+        if (ent->client->ps.stats[STAT_GAMETYPE_ITEMS]) {
+            if (ent->client->pers.isCamping) {
+                clearCampingInformation(ent);
+            }
+
+            return;
+        }
+
         // We have now 2 points to consider here.
         // If the anticamp type is set to 1, we use a hybrid version of anticamp.
         // if it's 0, we use the extents through entity if they're given, or if none are, then the radius logic.
@@ -5379,7 +5392,7 @@ void hnzRunFrame() {
             }
 
 
-            if (zombie != -1 && smallestZombifyTime != -1) {
+            if (zombie && zombie->client && smallestZombifyTime != -1) {
                 level.hnz.nextZombiePicked = qtrue;
                 level.hnz.zombifyTime = level.time + 5000;
                 level.hnz.nextZombie = zombie - g_entities;
@@ -5834,4 +5847,140 @@ void propRunFrame(void) {
             }
         }
     }
+}
+
+void clanVsAll(void) {
+    level.redLocked = qfalse;
+    level.blueLocked = qfalse;
+    // First find out which team has the most players => move the clan members there.
+    team_t moveToTeam = TEAM_BLUE;
+    int blueTeamClanPlayers = 0;
+    int redTeamClanPlayers = 0;
+
+    for (int i = 0; i < level.numConnectedClients; i++) {
+        gentity_t* ent = &g_entities[level.sortedClients[i]];
+
+        if (ent->client->sess.team == TEAM_BLUE && ent->client->sess.clanMember) {
+            blueTeamClanPlayers++;
+        }
+        else if (ent->client->sess.team == TEAM_RED && ent->client->sess.clanMember) {
+            redTeamClanPlayers++;
+        }
+    }
+
+    if (blueTeamClanPlayers < redTeamClanPlayers) {
+        moveToTeam = TEAM_RED;
+        level.redLocked = qtrue;
+    }
+    else {
+        level.blueLocked = qtrue;
+    }
+
+    for (int i = 0; i < level.numConnectedClients; i++) {
+
+        gentity_t* ent = &g_entities[level.sortedClients[i]];
+
+        if (ent->client->sess.team == TEAM_SPECTATOR) {
+            continue;
+        }
+
+        if (ent->client->sess.team == moveToTeam && ent->client->sess.clanMember) {
+            continue;
+        }
+
+        // This is a client we need to move.
+        team_t newTeam = TEAM_RED;
+
+        if (!ent->client->sess.clanMember) {
+            if (moveToTeam == TEAM_RED) {
+                newTeam = TEAM_BLUE;
+            }
+        }
+        else {
+            newTeam = moveToTeam;
+        }
+
+        if (ent->s.gametypeitems > 0) {
+            G_DropGametypeItems(ent, 0);
+        }
+
+
+        ent->client->ps.stats[STAT_WEAPONS] = 0;
+        TossClientItems(ent);
+        G_StartGhosting(ent);
+
+        ent->client->sess.team = newTeam;
+
+        ent->client->pers.identity = NULL;
+        ClientUserinfoChanged(ent->s.number);
+        CalculateRanks();
+
+        G_StopFollowing(ent);
+        G_StopGhosting(ent);
+        trap_UnlinkEntity(ent);
+        ClientSpawn(ent);
+
+    }
+}
+
+qboolean replaceProfanityWithAsterisks(char* input, char* profanity) {
+
+    char* curpos = input;
+    int profanityLength = strlen(profanity);
+
+    qboolean returnable = qfalse;
+
+    while ((curpos = strstr(curpos, profanity)) != NULL) {
+        Com_Memset(curpos, '*', profanityLength);
+        curpos += profanityLength;
+        returnable = qtrue;
+    }
+
+
+    return returnable;
+}
+
+void sendMessageToConsole(gentity_t* ent, const char* text) {
+
+    char localBuffer[MAX_STRING_TOKENS];
+
+    Q_strncpyz(localBuffer, text, sizeof(localBuffer));
+
+    if (ent && ent->client) {
+        trap_SendServerCommand(ent - g_entities, va("print \"%s\"", text));
+    }
+    else {
+        Com_Printf("%s", text);
+    }
+
+}
+
+char* getPunishmentAsText(gentity_t* ent) {
+    switch (ent->client->sess.currentPunishment) {
+    case PUNISH_CROUCH:
+        return "Only crouch";
+    case PUNISH_DEGRADINGHEALTH:
+        return "Deteriorating health";
+    case PUNISH_HARDGRAVITY:
+        return "Jupiter gravity";
+    case PUNISH_LOCKVIEW:
+        return "Locked view";
+    case PUNISH_LOWSPEED:
+        return "Slow boy";
+    case PUNISH_SPIN:
+        return "Spinner";
+    case PUNISH_TWIST:
+        return "Twist";
+    case PUNISH_USERCMD:
+        return "Crazy movement";
+    case PUNISH_RANDOMMOVE:
+        return "Random movement";
+    case PUNISH_TELEENEMY:
+        return "Enemies appear near you";
+    case PUNISH_STRIP:
+        return "You lose all guns";
+    default:
+        return "";
+    }
+
 }
