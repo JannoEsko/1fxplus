@@ -16,7 +16,7 @@
 
 #define MODNAME "1fxplus"
 #define MODNAME_COLORED "^71fx^1plus.^7"
-#define MODVERSION "0.01alpha"
+#define MODVERSION "0.99beta"
 #define MOD_MOTD_INFO "Inspired by 1fx. Mod by ^GBoe!Man ^7& ^6Henkie\n^7Running on SoF2Plus, which is a fork of ioquake3\nMade compatible with SoF2 by ^GBoe!Man\n^71fx^1plus^7 Multiprotocol by 1fx^1.^K # ^7Janno\nhttps://github.com/sof2plus\nhttps://github.com/JannoEsko/1fxplus\n\n"
 
 #define BODY_QUEUE_SIZE_MAX         MAX_CLIENTS
