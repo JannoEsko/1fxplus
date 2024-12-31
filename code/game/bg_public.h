@@ -12,6 +12,7 @@
 #include "inv.h"
 
 #define GAME_VERSION        "sof2mp-1.03"
+#define GAME_VERSION_LEGACY "sof2mp-1.00"
 
 #define DEFAULT_GRAVITY     800
 #define ARMOR_PROTECTION    0.55
@@ -385,6 +386,8 @@ typedef struct {
     int         weaponAnimIdx;
     char        weaponAnim[MAX_QPATH];
     char        weaponEndAnim[MAX_QPATH];
+
+    qboolean    legacyProtocol;
 } pmove_t;
 
 extern  pmove_t     *pm;
@@ -480,6 +483,7 @@ typedef enum
 
 #define EF_DUCKED               0x00100000      // ducked?
 #define EF_INVULNERABLE         0x00200000      // cant be shot
+#define EF_HSBOX                0x00400000      // hide client when in a model.
 
 // entityState_t->event values
 // entity events are for effects that take place reletive
@@ -594,6 +598,7 @@ typedef enum
 {
     GAME_OVER_TIMELIMIT,
     GAME_OVER_SCORELIMIT,
+    LEEG,
 
 } game_over_t;
 
@@ -659,14 +664,22 @@ typedef struct gitem_s
 } gitem_t;
 
 // included in both the game dll and the client
-extern  gitem_t bg_itemlist[];
-extern  int     bg_numItems;
+extern  gitem_t goldbg_itemlist[];
+extern  int     goldbg_numItems;
+
+extern  gitem_t silverbg_itemlist[];
+extern  int     silverbg_numItems;
+
+extern gitem_t bg_itemlist[];
+extern int bg_numItems;
 
 gitem_t*    BG_FindItem             ( const char *pickupName );
 gitem_t*    BG_FindClassnameItem    ( const char *classname );
 gitem_t*    BG_FindWeaponItem       ( weapon_t weapon );
 gitem_t*    BG_FindGametypeItem     ( int index );
 gitem_t*    BG_FindGametypeItemByID ( int itemid );
+
+qboolean BG_InitWeaponStats(qboolean pickupsDisabled, qboolean fallback, qboolean useCustom, char* customName);
 
 
 #define ITEM_INDEX(x) ((x)-bg_itemlist)
@@ -952,6 +965,7 @@ typedef struct SIdentity
     TCharacterTemplate  *mCharacter;
     TSkinTemplate       *mSkin;
     qhandle_t           mIcon;
+    team_t              customGametypeTeam;
 
 } TIdentity;
 
@@ -962,8 +976,8 @@ extern int                  bg_identityCount;
 extern goutfitting_t        bg_outfittings[];
 extern int                  bg_outfittingCount;
 extern int                  bg_outfittingGroups[][MAX_OUTFITTING_GROUPITEM];
-extern char                 *bg_weaponNames[WP_MAX_WEAPONS];
-extern char                 *bg_enumWeaponNames[WP_MAX_WEAPONS];
+extern int                  legacy_bg_outfittingGroups[][MAX_OUTFITTING_GROUPITEM];
+extern char                 *bg_weaponNames[WP_NUM_WEAPONS];
 extern stringID_table_t     bg_animTable [MAX_ANIMATIONS+1];
 
 TIdentity*          BG_FindIdentity                     ( const char *identityName );
@@ -975,12 +989,11 @@ int                 BG_ParseSkin                        ( const char* filename, 
 
 qboolean            BG_IsWeaponAvailableForOutfitting   ( weapon_t weapon, int level );
 void                BG_SetAvailableOutfitting           ( const char* available );
-void                BG_DecompressOutfitting             ( const char* compressed, goutfitting_t* outfitting );
+void                BG_DecompressOutfitting             ( const char* compressed, goutfitting_t* outfitting, qboolean legacyProtocol );
 void                BG_CompressOutfitting               ( goutfitting_t* outfitting, char* compressed, int size );
 int                 BG_ParseOutfittingTemplates         ( qboolean force );
 int                 BG_FindOutfitting                   ( goutfitting_t* outfitting);
 void                BG_ApplyLeanOffset                  ( playerState_t* ps, vec3_t origin );
-void BG_InitializeWeaponsAndAmmo(void);
 
 /*******************************************************************************
  *
@@ -1035,5 +1048,10 @@ void        G_TempFree                          ( int size );
 char        *G_StringAlloc                      ( const char *source );
 
 void        G_InitMemory                        ( void );
+
+
+char* G_TranslateGametypeToPublicGametype(char* gametype);
+
+extern vmCvar_t g_leanType;
 
 #endif // __BG_PUBLIC_H__

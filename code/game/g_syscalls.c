@@ -193,8 +193,8 @@ void trap_GetUsercmd( int clientNum, usercmd_t *cmd ) {
     syscall( G_GET_USERCMD, clientNum, cmd );
 }
 
-qboolean trap_GetEntityToken( char *buffer, int bufferSize ) {
-    return syscall( G_GET_ENTITY_TOKEN, buffer, bufferSize );
+qboolean trap_GetEntityToken( char *buffer, int bufferSize, qboolean inSubBSP ) {
+    return syscall( G_GET_ENTITY_TOKEN, buffer, bufferSize, inSubBSP );
 }
 
 void *trap_BotGetMemoryGame(int size)
@@ -1025,4 +1025,29 @@ int trap_GT_SendEvent ( int event, int time, int arg0, int arg1, int arg2, int a
 void trap_GT_Shutdown ( void )
 {
     syscall ( G_GT_SHUTDOWN );
+}
+
+// custom syscalls.
+qboolean trap_IsClientLegacy(int clientNum) {
+    return (qboolean)syscall(G_CLIENT_ISLEGACYPROTOCOL, clientNum);
+}
+
+int trap_TranslateSilverWeaponToGoldWeapon(int weapon) {
+    return (int)syscall(G_TRANSLATE_SILVER_WPN_TO_GOLD, weapon);
+}
+
+int trap_TranslateGoldWeaponToSilverWeapon(int weapon) {
+    return (int)syscall(G_TRANSLATE_GOLD_WPN_TO_SILVER, weapon);
+}
+
+int trap_ValidateMapName(const char* mapName, char* output, int outputSize) {
+    return (int)syscall(G_VALIDATE_MAP_NAME, mapName, output, outputSize);
+}
+
+int trap_MapcycleList(char* output, int sizeofOutput) {
+    return (int)syscall(G_GET_MAPCYCLE_LIST, output, sizeofOutput);
+}
+
+void trap_SkipToMap(int skipTo) {
+    syscall(G_SKIP_TO_MAP, skipTo);
 }

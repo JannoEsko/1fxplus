@@ -3,7 +3,6 @@
 // g_active.c --
 
 #include "g_local.h"
-#include "1fx/1fxFunctions.h"
 
 
 void P_SetTwitchInfo(gclient_t  *client)
@@ -107,7 +106,29 @@ void P_WorldEffects( gentity_t *ent )
         return;
     }
 
+    if (level.autoSectionActive[MAPSECTION_NOLOWER] && level.noSectionEntFound[MAPSECTION_NOLOWER]) { // if enabled -- Boe!Man 6/2/12: Also check for nolower2. This is qtrue when the entity was found.
+        if (ent->r.currentOrigin[2] <= level.noLR[0][2] && !G_IsClientDead(ent->client)) {
+            G_printInfoMessageToAll("%s was killed for being lower.", ent->client->pers.cleanName);
+
+            // Make sure godmode isn't an issue with being lower.
+            if (ent->flags & FL_GODMODE) {
+                ent->flags ^= FL_GODMODE;
+            }
+            G_Damage(ent, NULL, NULL, NULL, NULL, 10000, 0, MOD_TRIGGER_HURT, 0);
+        }
+    }
+
+    // Boe!Man 6/3/12: Check for roof. This is best done in a seperate function.
+    checkRoof(ent);
+
     waterlevel = ent->waterlevel;
+
+    if (isCurrentGametype(GT_HNS) && waterlevel >= 1) {
+        ent->client->sess.speedDecrement.speedAlterationFrom = level.time;
+        ent->client->sess.speedDecrement.speedAlterationReason = SPEEDALTERATION_WATER;
+        ent->client->sess.speedDecrement.speedAlterationDuration = g_waterSpeedTime.integer;
+        ent->client->sess.speedDecrement.speedAlterationTo = level.time + g_waterSpeedTime.integer;
+    }
 
     // check for drowning
     if ( waterlevel == 3 && (ent->watertype & CONTENTS_WATER))
@@ -536,11 +557,17 @@ void SpectatorThink( gentity_t *ent, usercmd_t *ucmd )
 
     client = ent->client;
 
-    if ( client->sess.spectatorState != SPECTATOR_FOLLOW )
+    if ( client->sess.spectatorState != SPECTATOR_FOLLOW && (cm_state.integer == COMPMODE_NONE || (cm_state.integer > COMPMODE_NONE && match_followEnemy.integer)) )
     {
         client->ps.pm_type = PM_SPECTATOR;
         client->ps.speed = 400; // faster than normal
         client->ps.loopSound = 0;
+
+        if (level.specLocked) {
+            SetClientViewAngle(ent, (vec3_t) { 90.0, 0.0, 0.0 });
+            client->ps.pm_type = PM_FREEZE;
+            
+        }
 
         // set up for pmove
         memset (&pm, 0, sizeof(pm));
@@ -552,6 +579,8 @@ void SpectatorThink( gentity_t *ent, usercmd_t *ucmd )
 
         pm.animations = NULL;
 
+        pm.legacyProtocol = client->sess.legacyProtocol;
+
         // perform a pmove
         Pmove (&pm);
 
@@ -562,6 +591,14 @@ void SpectatorThink( gentity_t *ent, usercmd_t *ucmd )
 
         G_TouchTriggers( ent );
         trap_UnlinkEntity( ent );
+    } else if (level.specLocked) {
+        G_StopFollowing(ent);
+        return;
+    }
+
+    if (cm_state.integer > COMPMODE_NONE && !match_followEnemy.integer && client->sess.spectatorState != SPECTATOR_FOLLOW) {
+        // We force the client to follow a player.
+        Cmd_FollowCycle_f(ent, 1);
     }
 
     client->oldbuttons = client->buttons;
@@ -626,7 +663,8 @@ qboolean ClientInactivityTimer( gclient_t *client ) {
         // gameplay, everyone isn't kicked
         client->inactivityTime = level.time + 60 * 1000;
         client->inactivityWarning = qfalse;
-    } else if ( client->pers.cmd.forwardmove ||
+    } else if ( level.paused || 
+        client->pers.cmd.forwardmove ||
         client->pers.cmd.rightmove ||
         client->pers.cmd.upmove ||
         (client->pers.cmd.buttons & (BUTTON_ATTACK|BUTTON_ALT_ATTACK)) ) {
@@ -634,14 +672,14 @@ qboolean ClientInactivityTimer( gclient_t *client ) {
         client->inactivityWarning = qfalse;
     } else if ( !client->pers.localClient ) {
         if ( level.time > client->inactivityTime ) {
-            //trap_DropClient( client - level.clients, "Dropped due to inactivity" ); SoF is dead, so why drop clients.
-            //return qfalse;
-            G_printInfoMessageToAll("%s has been moved to spectator team due to inactivity.", client->pers.cleanName);
-            SetTeam(&g_entities[client->ps.clientNum], "spectator", NULL, TEAMCHANGE_REGULAR);
+            //trap_DropClient( client - level.clients, "Dropped due to inactivity" ); // Stop kicking clients for being afk.
+            SetTeam(&g_entities[client - level.clients], "s", NULL, qtrue);
+            G_printInfoMessageToAll("%s was forced to spectator for being AFK.", client->pers.cleanName);
+            return qfalse;
         }
         if ( level.time > client->inactivityTime - 10000 && !client->inactivityWarning ) {
             client->inactivityWarning = qtrue;
-            G_Broadcast("You will be \\forceteamed to spec\nif you don't move in the next 10 seconds.", BROADCAST_GAME_IMPORTANT, &g_entities[client->ps.clientNum], qtrue);
+            trap_SendServerCommand( client - level.clients, "cp \"Ten seconds until inactivity drop!\n\"" );
         }
     }
     return qtrue;
@@ -686,6 +724,25 @@ void ClientTimerActions( gentity_t *ent, int msec )
             client->voiceFloodCount--;
 
             client->voiceFloodTimer -= forgiveTime;
+        }
+    }
+
+    if (client->pers.oneSecondChecks < level.time) {
+        client->pers.oneSecondChecks = level.time + 1000;
+
+        if (client->pers.burnSeconds) {
+            client->pers.burnSeconds--;
+            if (ent->client->ps.stats[STAT_HEALTH] >= 35)
+                G_Damage(ent, NULL, NULL, NULL, NULL, 12, 0, MOD_BURN, HL_NONE);
+
+            vec3_t fireAngs, dir;
+            VectorCopy(ent->client->ps.viewangles, fireAngs);
+            AngleVectors(fireAngs, dir, NULL, NULL);
+            dir[0] *= -1.0;
+            dir[1] *= -1.0;
+            dir[2] = 0.0;
+            VectorNormalize(dir);
+            G_ApplyKnockback(ent, dir, 10);  //knock them back
         }
     }
 }
@@ -901,6 +958,7 @@ void SendPendingPredictableEvents( playerState_t *ps ) {
         // set external event to zero before calling BG_PlayerStateToEntityState
         extEvent = ps->externalEvent;
         ps->externalEvent = 0;
+
         // create temporary entity for event
         t = G_TempEntity( ps->origin, event );
         number = t->s.number;
@@ -944,6 +1002,23 @@ void ClientThink_real( gentity_t *ent )
         return;
     }
 
+    if (!(ent->r.svFlags & SVF_BOT)) {
+        if (!client->sess.legacyProtocol && client->sess.checkClientAdditions && level.time > client->sess.clientAdditionCheckTime) {
+            if (client->sess.checkClientAdditions > 10) {
+                kickPlayer(ent, NULL, "kicked", "This server requires you to use 1fx. Client additions. Please turn on autodownload and reconnect (cl_allowdownload 1)");
+            }
+            else {
+                client->sess.clientAdditionCheckTime = level.time + 2500;
+                G_Broadcast(BROADCAST_AWARDS, ent, qfalse, "This server requires ^11fx. Client\n^7Turn on autodownload to get it\ncl_allowdownload 1");
+                G_printInfoMessage(ent, "This server requires ^11fx. Client Additions.^7 Turn on autodownload to get it: cl_allowdownload 1");
+                
+            }
+
+            trap_SendServerCommand(ent - g_entities, "ca_verify");
+            client->sess.checkClientAdditions++;
+        }
+    }
+
     // mark the time, so the connection sprite can be removed
     ucmd = &ent->client->pers.cmd;
 
@@ -985,12 +1060,73 @@ void ClientThink_real( gentity_t *ent )
         ucmd->serverTime = ((ucmd->serverTime + pmove_msec.integer-1) / pmove_msec.integer) * pmove_msec.integer;
     }
 
-    if (level.awardTime && ent->client->sess.clientMod != CL_ROCMOD) {
+    if (level.awardTime && isCurrentGametype(GT_HNS)) {
         ent->client->ps.pm_type = PM_FREEZE;
         ent->client->ps.stats[STAT_HEALTH] = -1;
-
         memset(&pm, 0, sizeof(pm));
         pm.ps = &client->ps;
+        pm.cmd = *ucmd;
+        Pmove(&pm);
+        return;
+    }
+
+    if (isCurrentGametype(GT_PROP)) {
+
+        if (client->pers.cmd.buttons & BUTTON_RELOAD) {
+            if (client->pers.prop.isMovingModel && client->pers.prop.nextModelState < level.time) {
+                if (client->pers.prop.isModelStatic) {
+                    client->pers.prop.isModelStatic = qfalse;
+                    G_printChatInfoMessage(ent, "You can move again. Press Reload to make yourself static again (5 sec cooldown).");
+                    client->pers.prop.stateCooldownMessage = level.time + 1000;
+#ifndef _DEVEL
+                    client->pers.prop.nextModelState = level.time + 5000;
+#else 
+                    client->pers.prop.nextModelState = level.time + 500;
+#endif
+                    client->inactivityTime = level.time + g_inactivity.integer * 1000;
+                }
+                else if (client->ps.pm_flags & PMF_JUMPING || client->ps.velocity[2] < 0 || client->ps.groundEntityNum == ENTITYNUM_NONE) {
+
+                    if (level.time > client->pers.prop.stateCooldownMessage) {
+                        client->pers.prop.stateCooldownMessage = level.time + 3000;
+                        G_printChatInfoMessage(ent, "You cannot be jumping while trying to freeze.");
+                    }
+                }
+                else {
+                    client->pers.prop.isModelStatic = qtrue;
+                    G_printChatInfoMessage(ent, "You're now static. Your model will not move. Press Reload to move again (5 sec cooldown)");
+                    client->pers.prop.stateCooldownMessage = level.time + 1000;
+#ifndef _DEVEL
+                    client->pers.prop.nextModelState = level.time + 5000;
+#else 
+                    client->pers.prop.nextModelState = level.time + 500;
+#endif
+                }
+            }
+            else if (client->pers.prop.isMovingModel && client->pers.prop.stateCooldownMessage < level.time) {
+                G_printChatInfoMessage(ent, "You must wait until you can %s again.", client->pers.prop.isModelStatic ? "unfreeze" : "freeze");
+                client->pers.prop.stateCooldownMessage = level.time + 1000;
+            }
+        }
+
+    }
+
+    if (ent->client->pers.prop.isMovingModel && isCurrentGametypeInList((gameTypes_t[]) { GT_HNS, GT_PROP, GT_MAX })) {
+
+        if (G_IsClientDead(ent->client)) {
+            freeProphuntProps(ent);
+        }
+        else {
+            prop_ThinkMovingModelSingle(&g_entities[ent->client->sess.transformedEntity]);
+        }
+
+    }
+
+    if ((client->sess.transformed || client->pers.prop.isModelStatic) && !(client->pers.cmd.buttons & BUTTON_RELOAD)) {
+        client->ps.pm_type = PM_FREEZE;
+        Com_Memset(&pm, 0, sizeof(pm));
+        pm.ps = &client->ps;
+        ucmd->buttons = 0;
         pm.cmd = *ucmd;
         Pmove(&pm);
         return;
@@ -1005,115 +1141,73 @@ void ClientThink_real( gentity_t *ent )
         return;
     }
 
-    if (level.pause) {
-        if (g_inactivity.integer) {
+    //Ryan june 15 2003
+    if (level.paused)     //if paused stop here
+    {
+        ///RxCxW - 08.28.06 - 03:51pm - #paused - reset inactivity counter so we dont get kicked
+        if (g_inactivity.integer)
             client->inactivityTime = level.time + g_inactivity.integer * 1000;
-        }
-        else {
+        else
             client->inactivityTime = level.time + 60 * 1000;
-        }
         client->inactivityWarning = qfalse;
+        ///End  - 08.28.06 - 03:52pm
         return;
     }
 
-    if(client->sess.firstTime && !client->sess.motdStartTime && !level.intermissionQueued) {
-        if ( ucmd->buttons & BUTTON_ANY )
+    // Boe!Man 3/30/10: We wait for the motd.
+    if (client->sess.firstTime && !client->sess.motdStartTime && !level.intermissionQueued)
+    {
+        if (ucmd->buttons & BUTTON_ANY)
         {
-            char *info = G_ColorizeMessage("\\Info:");
             client->sess.motdStartTime = level.time;
             client->sess.motdStopTime = level.time + 10000;
-            trap_SendServerCommand( ent - g_entities, va("chat -1 \"%s This server is running SoF2Plus with %s\n\"", info, MOD_NAME_COLORED));
-            trap_SendServerCommand( ent - g_entities, va("chat -1 \"%s Please report any bugs on github.com/JannoEsko/1fxplus\n\"", info));
-            trap_SendServerCommand( ent - g_entities, va("chat -1 \"%s You can find more about SoF2Plus at github.com/sof2plus\n\"", info));
+            G_printChatInfoMessage(ent, "This server is running " MODNAME_COLORED);
+            G_printChatInfoMessage(ent, "Please report any bugs on GitHub or 3d-sof2.com");
             showMotd(ent);
         }
     }
+    //Ryan
 
-    if (level.clientMod == CL_ROCMOD && client->sess.clientMod != CL_ROCMOD && level.time > client->sess.clientCheckTime) {
-        if (client->sess.clientCheckCount > 25) {
+
+    // Boe!Man 5/6/15: Check for the client Mod.
+    if (level.goldMod == CL_ROCMOD && !client->sess.legacyProtocol && client->sess.clientMod != CL_ROCMOD && level.time > client->sess.clientModCheckTime) {
+        if (client->sess.clientModChecks > 25) {
             char* info = G_ColorizeMessage("\\Info:");
 
-            trap_SendServerCommand(ent - g_entities, va("chat -1 \"%s This " MOD_NAME_COLORED " server expects you to be running ^1ROCmod 2.1c^7.\n\"", info));
+            trap_SendServerCommand(ent - g_entities, va("chat -1 \"%s This TEST server expects you to be running ^1ROCmod 2.1c^7.\n\"", info));
             trap_SendServerCommand(ent - g_entities, va("chat -1 \"%s You do not appear to be running that specific version of ^1ROCmod^7.\n\"", info));
             trap_SendServerCommand(ent - g_entities, va("chat -1 \"%s Please ^1download the mod^7, or ^1turn on auto-downloading^7, and re-join the game.\n\"", info));
 
             // It looks like the client doesn't have the proper client, just continue bothering him every 20 seconds.
-            client->sess.clientCheckTime = level.time + 20000;
+            client->sess.clientModCheckTime = level.time + 20000;
         }
         else {
             // Get the client to verify as soon as possible.
-            client->sess.clientCheckTime = level.time + 5000;
+            client->sess.clientModCheckTime = level.time + 5000;
         }
 
         trap_SendServerCommand(ent - g_entities, "verifymod");
-        client->sess.clientCheckCount++;
+        client->sess.clientModChecks++;
 
     }
 
-    if (client->sess.spinViewState != SPINVIEW_NONE && client->sess.nextSpin <= level.time) {
-        spinView(ent);
-    }
-
-    if (client->sess.coasterCounter && client->sess.nextCoaster <= level.time) {
-        client->sess.coasterCounter--;
-
-        switch (client->sess.coasterState) {
-            case COASTER_UPPERCUT:
-                client->sess.coasterState = COASTER_RUNOVER;
-                client->sess.spinViewState = SPINVIEW_NONE;
-                uppercutPlayer(ent, 0);
-                break;
-            case COASTER_RUNOVER:
-                client->sess.coasterState = COASTER_SPIN;
-                client->sess.nextSpin = level.time + 750;
-                client->sess.lastSpin = level.time + 750 + 750;
-                client->sess.spinViewState = SPINVIEW_FAST;
-                runoverPlayer(ent);
-                break;
-            case COASTER_SPIN:
-                client->sess.coasterState = COASTER_UPPERCUT;
-                break;
-            default:
-                break;
-        }
-
-        client->sess.nextCoaster = level.time + 750;
-    }
-
-    if(client->sess.motdStartTime) {
+    if (client->sess.motdStartTime) {
         // Boe!Man 10/18/15: Make sure the motd is being broadcasted several times.
-        if (level.time >= client->sess.motdStartTime + 1000 && level.time < client->sess.motdStopTime - 3500){
-			client->sess.motdStartTime += 1000;
-			showMotd(ent);
-		} else if(level.time >= client->sess.motdStopTime && level.time > (ent->client->sess.lastMessage + 4000)) {
+        if (level.time >= client->sess.motdStartTime + 1000 && level.time < client->sess.motdStopTime - 3500) {
+            client->sess.motdStartTime += 1000;
+            showMotd(ent);
+        }
+        else if (level.time >= client->sess.motdStopTime && level.time > (ent->client->sess.lastMessage + 4000)) {
             // Boe!Man 3/16/11: Better to reset the values and actually put firstTime to qfalse so it doesn't mess up when we want to broadcast a teamchange.
             client->sess.motdStartTime = 0;
             client->sess.motdStopTime = 0;
-            if(client->sess.firstTime)
+            if (client->sess.firstTime)
             {
-                BroadcastTeamChange( client, -1 );
+                BroadcastTeamChange(client, -1);
                 client->sess.firstTime = qfalse;
             }
         }
 
-    }
-
-    if (level.time > client->sess.oneSecChecks) {
-        client->sess.oneSecChecks = level.time + 1000;
-        if ( client->sess.burnTimer ) {
-            client->sess.burnTimer--;
-            if (ent->client->ps.stats[STAT_HEALTH] >= 35) {
-                G_Damage (ent, NULL, NULL, NULL, NULL, 12, 0, MOD_BURN, HL_NONE );
-            }
-            vec3_t fireAngles, direction;
-            VectorCopy(ent->client->ps.viewangles, fireAngles);
-            AngleVectors( fireAngles, direction, NULL, NULL );
-            direction[0] *= -1.0;
-            direction[1] *= -1.0;
-            direction[2] = 0.0;
-            VectorNormalize ( direction );
-            G_ApplyKnockback ( ent, direction, 10 );  //knock them back
-        }
     }
 
     // spectators don't do much
@@ -1150,6 +1244,356 @@ void ClientThink_real( gentity_t *ent )
 
     // set speed
     client->ps.speed = g_speed.value;
+
+    if (isCurrentGametype(GT_HNS)) {
+
+        if (client->ps.weapon == WP_MM1_GRENADE_LAUNCHER) {
+            client->ps.gravity /= 1.6;
+        }
+
+        if (client->ps.weapon == WP_RPG7_LAUNCHER &&
+            level.time > client->sess.speedDecrement.speedAlterationTo &&
+            (
+                level.time < level.gametypeDelayTime ||
+                !g_rpgSpeedDrain.integer ||
+                client->ps.stats[STAT_ARMOR] > 0)
+            ) {
+            client->ps.speed += g_rpgSpeedIncrement.integer;
+
+            if (client->ps.stats[STAT_ARMOR] > 0 && level.time >= level.gametypeDelayTime && level.time >= client->sess.rpgAnimation && g_rpgSpeedDrain.integer && (ent->r.currentOrigin[1] != client->sess.oldvelocity[1] || ent->r.currentOrigin[2] != client->sess.oldvelocity[2])) {
+                client->sess.rpgAnimation = level.time + g_rpgSpeedDrainSec.value * 1000;
+                client->ps.stats[STAT_ARMOR]--;
+
+                if (client->ps.stats[STAT_ARMOR] <= 0) {
+                    G_printInfoMessage(ent, "Your RPG speed boost has been drained.");
+                }
+                if (ent->client->ps.clip[ATTACK_NORMAL][WP_RPG7_LAUNCHER] == 0 && ent->client->ps.clip[ATTACK_ALTERNATE][WP_RPG7_LAUNCHER] == 0 && client->ps.stats[STAT_ARMOR] <= 0 && g_rpgRemove.integer) {
+                    removeWeaponFromClient(ent, WP_RPG7_LAUNCHER, qfalse, WP_KNIFE);
+                    G_printInfoMessage(ent, "No more RPG rounds and boost!");
+                    Com_sprintf(level.hns.RPGloc, sizeof(level.hns.RPGloc), "%s", "Disappeared");
+                    G_printGametypeMessageToAll("RPG has disappeared.");
+                }
+            }
+
+            if (level.time >= client->sess.speedAnimation) {
+                if (ent->r.currentOrigin[1] != client->sess.oldvelocity[1] || ent->r.currentOrigin[2] != client->sess.oldvelocity[2]) {
+                    G_PlayEffect(G_EffectIndex("arm2smallsmoke"), client->ps.origin, ent->pos1);
+                    client->sess.speedAnimation = level.time + 10;
+                    VectorCopy(ent->r.currentOrigin, client->sess.oldvelocity);
+                }
+            }
+        }
+        else if (level.time <= client->sess.speedIncrement.speedAlterationTo) {
+            client->ps.speed += g_stunSpeedIncrement.integer;
+
+            if (level.time >= client->sess.speedAnimation) {
+                if (ent->r.currentOrigin[1] != client->sess.oldvelocity[1] || ent->r.currentOrigin[2] != client->sess.oldvelocity[2]) {
+                    G_PlayEffect(G_EffectIndex("arm2smallsmoke"), client->ps.origin, ent->pos1);
+                    client->sess.speedAnimation = level.time + 30;
+                    VectorCopy(ent->r.currentOrigin, client->sess.oldvelocity);
+                }
+            }
+        }
+        else if (level.time <= client->sess.speedDecrement.speedAlterationTo) {
+            int slowSpeedValue, timeLeft;
+            switch (client->sess.speedDecrement.speedAlterationReason) {
+            case SPEEDALTERATION_FIRENADE:
+            case SPEEDALTERATION_MM1:
+
+                timeLeft = client->sess.speedDecrement.speedAlterationTo - level.time;
+                slowSpeedValue = (int)timeLeft * g_fireSpeedDecrement.integer / client->sess.speedDecrement.speedAlterationDuration;
+                client->ps.speed -= slowSpeedValue;
+                break;
+            case SPEEDALTERATION_KNIFE:
+            case SPEEDALTERATION_M4:
+                client->ps.speed -= g_stunSpeedDecrement.integer;
+                break;
+            case SPEEDALTERATION_WATER:
+                client->ps.speed -= g_waterSpeedDecrement.integer;
+                break;
+            case SPEEDALTERATION_STUNGUN:
+                client->ps.speed = 0; // fully stunned
+                break;
+            default:
+                client->ps.speed -= g_stunSpeedDecrement.integer;
+                break;
+            }
+        }
+
+        if (level.customGameStarted && client->sess.team == TEAM_BLUE) {
+            vec3_t newOrigin;
+
+            // The seeker moved.
+            if (client->pers.cmd.forwardmove || client->pers.cmd.rightmove || client->pers.cmd.upmove || (client->pers.cmd.buttons & (BUTTON_ATTACK | BUTTON_ALT_ATTACK))) {
+                if (client->pers.seekerAway) {
+                    client->pers.seekerAway = qfalse;
+                }
+                client->pers.seekerAwayTime = level.time + 10000;
+            }
+            else if (level.time > client->pers.seekerAwayTime) {
+                if (!client->pers.seekerAway) {
+                    client->pers.seekerAway = qtrue;
+                }
+                client->pers.seekerAwayTime = level.time + 500;
+
+                VectorCopy(client->ps.origin, newOrigin);
+                newOrigin[0] += 5;
+                newOrigin[2] += 75;
+                G_PlayEffect(G_EffectIndex("misc/exclaimation"), newOrigin, ent->pos1);
+            }
+        }
+
+        if (client->pers.cmd.buttons & BUTTON_RELOAD) {
+
+            if (client->sess.transformed) {
+
+                if (client->sess.transformedEntity) {
+                    G_FreeEntity(&g_entities[client->sess.transformedEntity]);
+                    client->sess.transformedEntity = 0;
+                }
+
+                if (client->sess.transformedEntityBBox) {
+                    G_FreeEntity(&g_entities[client->sess.transformedEntityBBox]);
+                    client->sess.transformedEntityBBox = 0;
+                }
+
+                client->sess.invisible = qfalse;
+                client->sess.transformed = qfalse;
+                client->ps.pm_type = PM_NORMAL;
+                client->ps.eFlags &= ~EF_HSBOX;
+                ent->s.eFlags &= ~EF_HSBOX;
+
+                client->inactivityTime = level.time + g_inactivity.integer * 1000;
+
+            }
+
+        }
+
+    }
+    else if (isCurrentGametype(GT_HNZ)) {
+        if (TeamCount(-1, TEAM_BLUE, NULL) == 1 && ent->client->sess.team == TEAM_BLUE) {
+            client->ps.speed += 70;
+            client->ps.stats[STAT_ARMOR] = Com_Clamp(0, 100, TeamCount(-1, TEAM_RED, NULL) * 10);
+            if (level.time > client->sess.speedAnimation) {
+                if (ent->r.currentOrigin[1] != client->sess.oldvelocity[1] || ent->r.currentOrigin[2] != client->sess.oldvelocity[2]) {
+                    G_PlayEffect(G_EffectIndex("arm2smallsmoke"), client->ps.origin, ent->pos1);
+                    client->sess.speedAnimation = level.time + 10;
+                    VectorCopy(ent->r.currentOrigin, client->sess.oldvelocity);
+                }
+            }
+        }
+    }
+    else if (isCurrentGametype(GT_CSINF)) {
+        // CSINF guns slow down players.
+
+        static const int gunWeightToSpeedDecrement[] = {
+            [GUNWEIGHT_NONE] = 0,
+            [GUNWEIGHT_LIGHT] = 5,
+            [GUNWEIGHT_SHOTGUN] = 10,
+            [GUNWEIGHT_SMG] = 8,
+            [GUNWEIGHT_RIFLE] = 12,
+            [GUNWEIGHT_SNIPER] = 15,
+            [GUNWEIGHT_MACHINEGUN] = 20
+        };
+
+        int speedDecrement = gunWeightToSpeedDecrement[GUNWEIGHT_MACHINEGUN];
+
+        if (ent->client->ps.weapon > WP_KNIFE) {
+            speedDecrement = 20; // Assume max decrement until a weapon is found.
+
+            for (int i = 0; i < CSINF_GUNTABLE_SIZE; i++) {
+                csInfGuns_t* gun = &csInfGunsTable[i];
+
+                if (gun->gunType != GUNTYPE_UTILITY && gun->gunId == ent->client->ps.weapon) {
+                    speedDecrement = gunWeightToSpeedDecrement[gun->gunWeight];
+                    break;
+                }
+            }
+
+            if (speedDecrement > 0) {
+                ent->client->ps.speed *= (1.0 - ((float)speedDecrement / 100.0));
+            }
+
+        }
+    }
+    else if (isCurrentGametype(GT_PROP)) {
+        if (client->sess.team == TEAM_BLUE) {
+            client->ps.speed += 35;
+        }
+    }
+
+    if (client->sess.punishment && client->sess.team != TEAM_SPECTATOR && !G_IsClientDead(client)) {
+        if (level.time > ent->client->sess.nextPunishmentTime) {
+            int newPunishment = ent->client->sess.currentPunishment;
+
+            ent->client->sess.nextPunishmentTime = level.time + 15000;
+
+            while (newPunishment == ent->client->sess.currentPunishment) {
+                newPunishment = irand(PUNISH_NONE + 1, PUNISH_MAX - 1);
+
+                if (newPunishment == PUNISH_TELEENEMY) {
+                    // only use teleenemy in specific conditions.
+
+                    if (!isCurrentGametypeInList((gameTypes_t[]) { GT_HNZ, GT_HNS, GT_PROP, GT_MAX })) {
+                        newPunishment = ent->client->sess.currentPunishment;
+                        continue;
+                    }
+
+                    if (ent->client->sess.team != TEAM_RED) {
+                        newPunishment = ent->client->sess.currentPunishment;
+                        continue;
+                    }
+
+                }
+
+            }
+
+            ent->client->sess.currentPunishment = newPunishment;
+            ent->client->sess.currentPunishmentCycleTime = level.time;
+            ent->client->sess.spinView = qfalse;
+
+            if (ent->client->pers.twisted) {
+                SetClientViewAngle(ent, (vec3_t) { 0, 0, 0 });
+            }
+
+            ent->client->pers.twisted = qfalse;
+            ent->client->pers.gocrazy = qfalse;
+
+        }
+
+        if (level.time > ent->client->sess.nextPunishmentMessage) {
+            char* currentPunishment;
+            ent->client->sess.nextPunishmentMessage = level.time + 1500;
+
+            currentPunishment = getPunishmentAsText(ent);
+
+            G_Broadcast(BROADCAST_GAME, ent, qfalse, "You're being \\punished.\nReason: %s\nCurrent punishment: \\%s\nEnjoy!", ent->client->sess.punishmentReason, currentPunishment);
+        }
+
+        if (level.time > ent->client->sess.currentPunishmentCycleTime) {
+            int idle = 0;
+            int randomEnemy;
+            gentity_t* tent;
+            int i = 0;
+            switch (ent->client->sess.currentPunishment) {
+            case PUNISH_CROUCH:
+                ent->client->ps.pm_flags = PMF_DUCKED;
+
+                ucmd->upmove = 128;
+                break;
+            case PUNISH_DEGRADINGHEALTH:
+
+                if (ent->client->sess.currentPunishmentCycleTime < level.time) {
+                    ent->client->sess.currentPunishmentCycleTime = level.time + 333;
+                    ent->health--;
+                    ent->client->ps.stats[STAT_HEALTH]--;
+
+                    if (ent->health <= 0 || ent->client->ps.stats[STAT_HEALTH] <= 0) {
+                        player_die(ent, ent, ent, 99999, MOD_DUGUP, HL_NONE, vec3_origin);
+                    }
+                }
+                break;
+            case PUNISH_HARDGRAVITY:
+                ent->client->ps.gravity += 400;
+                break;
+
+            case PUNISH_LOCKVIEW:
+                SetClientViewAngle(ent, (vec3_t) { 90, 0, 0 });
+                break;
+
+            case PUNISH_LOWSPEED:
+                ent->client->ps.speed -= 100;
+                break;
+
+            case PUNISH_SPIN:
+                ent->client->sess.spinView = qtrue;
+                ent->client->sess.nextSpin = level.time;
+                ent->client->sess.lastSpin = level.time + 15000;
+                ent->client->sess.spinViewState = SPINVIEW_FAST;
+                ent->client->sess.currentPunishmentCycleTime = ent->client->sess.nextPunishmentTime;
+                break;
+
+            case PUNISH_TWIST:
+                ent->client->pers.twisted = qtrue;
+                SetClientViewAngle(ent, (vec3_t) { 100, 0, 130 });
+                ent->client->sess.currentPunishmentCycleTime = ent->client->sess.nextPunishmentTime;
+                break;
+
+
+            case PUNISH_USERCMD:
+                ent->client->pers.gocrazy = qtrue;
+                ent->client->sess.currentPunishmentCycleTime = ent->client->sess.nextPunishmentTime;
+                break;
+
+            case PUNISH_RANDOMMOVE:
+
+                ucmd->forwardmove = 127;  
+                ucmd->rightmove = 127;   
+                ucmd->upmove = 127;        
+                SetClientViewAngle(ent, (vec3_t) { -90, 0, 0 });
+
+                break;
+
+            case PUNISH_STRIP:
+                stripClient(ent, qtrue);
+                break;
+
+            case PUNISH_TELEENEMY:
+
+
+                while (i < 200) {
+
+                    randomEnemy = irand(0, level.numConnectedClients);
+
+                    tent = &g_entities[randomEnemy];
+
+                    if (tent && tent->client && tent->client->sess.team != ent->client->sess.team && tent->client->sess.team != TEAM_SPECTATOR) {
+
+                        TeleportPlayerNoKillbox(tent, ent->r.currentOrigin, ent->client->ps.viewangles, qtrue);
+                        ent->client->sess.currentPunishmentCycleTime = level.time + 1000;
+                        break;
+                    }
+
+                    i++;
+                }
+                i = 0;
+                break;
+
+            default:
+                break;
+
+            }
+
+        }
+    }
+
+    if (client->sess.acceleratorCooldown) {
+        if (client->sess.acceleratorCooldown > level.time) {
+            client->ps.speed += (g_speed.integer / 5000) * (client->sess.acceleratorCooldown - level.time);
+        }
+        else {
+            client->sess.acceleratorCooldown = 0;
+        }
+    }
+
+    if (g_noHighFps.integer) {
+        if (msec < 4) {
+            client->ps.gravity += (msec <= 2) ? 500 : 111;
+        }
+    }
+
+    if (client->sess.spinView) {
+        spinView(ent);
+    }
+
+    if (client->pers.gocrazy) {
+        ucmd->upmove *= -1;
+        ucmd->forwardmove *= -1;
+        ucmd->rightmove *= -1;
+        ucmd->angles[0] *= -1;
+        ucmd->angles[1] *= -1;
+        ucmd->angles[2] *= -1;
+    }
 
     // set up for pmove
     oldEventSequence = client->ps.eventSequence;
@@ -1196,7 +1640,7 @@ void ClientThink_real( gentity_t *ent )
     pm.pmove_msec = pmove_msec.integer;
 
     pm.animations = NULL;
-
+    pm.legacyProtocol = client->sess.legacyProtocol;
     VectorCopy( client->ps.origin, client->oldOrigin );
 
     Pmove (&pm);
@@ -1329,6 +1773,9 @@ void G_CheckClientTeamkill ( gentity_t* ent )
     char userinfo[MAX_INFO_STRING];
     char *value;
 
+    // JANFIXME - with CSINF, maybe make use of this function. But up until that time........
+    return;
+
     if ( !g_teamkillDamageMax.integer || !level.gametypeData->teams || !ent->client->sess.teamkillDamage )
     {
         return;
@@ -1361,6 +1808,7 @@ void G_CheckClientTeamkill ( gentity_t* ent )
     value = Info_ValueForKey (userinfo, "ip");
 
     G_LogPrintf( "ClientKick: %i %s - auto kick for teamkilling\n", ent->s.number, value );
+    logGame(NULL, ent, "autokick", "teamkill");
 
     ent->client->sess.teamkillDamage      = 0;
     ent->client->sess.teamkillForgiveTime = 0;
@@ -1428,7 +1876,7 @@ void G_CheckClientTimeouts ( gentity_t *ent )
     // longer than the timeout to spectator then force this client into spectator mode
     if ( level.time - ent->client->pers.cmd.serverTime > g_timeouttospec.integer * 1000 )
     {
-        SetTeam ( ent, "spectator", NULL, TEAMCHANGE_REGULAR);
+        SetTeam ( ent, "spectator", NULL, qfalse );
     }
 }
 
@@ -1585,7 +2033,7 @@ void ClientEndFrame( gentity_t *ent )
     // If the end of unit layout is displayed, don't give
     // the player any normal movement attributes
     //
-    if ( level.intermissiontime )
+    if ( level.intermissiontime || level.paused )
     {
         return;
     }

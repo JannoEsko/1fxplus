@@ -226,7 +226,9 @@ void G_FireBullet ( gentity_t* ent, int weapon, int attack )
 
     gbullethit_t    hit[MAX_HITS];
 
-    statinfo_t* stat = &ent->client->pers.statinfo;
+    //Ryan
+    statInfo_t* stat = &ent->client->pers.statInfo;
+    //Ryan
 
     // Grab the firing info
     weaponDat = &weaponData[ent->s.weapon];
@@ -280,8 +282,11 @@ void G_FireBullet ( gentity_t* ent, int weapon, int attack )
     {
         int location = HL_NONE;
 
+        //Ryan april 7 2003
+        //add to the number of shots this client has made
         stat->weapon_shots[attack * WP_NUM_WEAPONS + weapon]++;
         stat->shotcount++;
+        //Ryan
 
         // Determine the endpoint for the bullet
         BG_CalculateBulletEndpoint ( muzzlePoint, fireAngs, inaccuracy, attackDat->rV.range + 15, end, &seed );
@@ -459,7 +464,7 @@ void G_FireBullet ( gentity_t* ent, int weapon, int attack )
             }
 
             // we hit something that noticed, so that is enough pellets
-            if ( (int)(attackDat->damage * damageMult) > 0 )
+            if ( (int)(attackDat->damage * damageMult) > 0 || (isCurrentGametype(GT_HNS) && weapon == WP_M4_ASSAULT_RIFLE))
             {
                 if ( !attackDat->melee )
                 {
@@ -602,7 +607,11 @@ void G_FireBullet ( gentity_t* ent, int weapon, int attack )
     // the body
     G_UndoAntiLag ( );
 
+    //Ryan
+    //We'll calculate the accuracy here, no need to do it after
+    //each pellet with the rest of the stats
     stat->accuracy = (float)stat->hitcount / (float)stat->shotcount * 100;
+    //Ryan
 
     if ( hitcount )
     {
@@ -677,9 +686,9 @@ gentity_t* G_FireProjectile ( gentity_t *ent, weapon_t weapon, attackType_t atta
     {
         vec3_t      dir;
 
-        statinfo_t* stat = &ent->client->pers.statinfo;
-
+        statInfo_t* stat = &ent->client->pers.statInfo;
         stat->shotcount++;
+
         // Boe!Man 6/2/10: The Weapon stats get updated/added here.
         if (weapon == WP_M4_ASSAULT_RIFLE)
         {
@@ -831,6 +840,37 @@ gentity_t* G_FireWeapon( gentity_t *ent, attackType_t attack )
     else
     {
         G_FireBullet ( ent, ent->s.weapon, attack );
+
+        if (isCurrentGametype(GT_HNS)) {
+            if (ent->s.weapon == WP_M4_ASSAULT_RIFLE && isWeaponFullyOutOfAmmo(ent, ent->s.weapon)) {
+                removeWeaponFromClient(ent, ent->s.weapon, qfalse, WP_KNIFE);
+                Q_strncpyz(level.hns.M4loc, "Disappeared", sizeof(level.hns.M4loc));
+                G_printGametypeMessageToAll("M4 has disappeared");
+            } else if (ent->s.weapon == WP_M3A1_SUBMACHINEGUN && isWeaponFullyOutOfAmmo(ent, ent->s.weapon)) {
+                removeWeaponFromClient(ent, ent->s.weapon, qfalse, WP_KNIFE);
+                G_printGametypeMessageToAll("Telegun has disappeared");
+            }
+            else if (ent->s.weapon == WP_USSOCOM_PISTOL && isWeaponFullyOutOfAmmo(ent, ent->s.weapon)) {
+                removeWeaponFromClient(ent, ent->s.weapon, qfalse, WP_KNIFE);
+                G_printGametypeMessageToAll("Stungun has disappeared");
+            }
+        }
+        else if (isCurrentGametype(GT_HNZ) && ent->client->ps.weapon != WP_KNIFE && ent->client->ps.weapon != WP_M590_SHOTGUN && ent->client->sess.team == TEAM_RED) {
+
+            if (isWeaponFullyOutOfAmmo(ent, ent->client->ps.weapon)) {
+                removeWeaponFromClient(ent, ent->client->ps.weapon, qfalse, WP_KNIFE);
+
+                // Try to find whether we have a better weapon to switch to than knife.
+                for (int i = WP_NUM_WEAPONS - 1; i > WP_KNIFE; i--) {
+                    if (!isWeaponFullyOutOfAmmo(ent, i)) {
+                        ent->client->ps.weapon = i;
+                        break;
+                    }
+                }
+            }
+
+        }
+        
     }
 
     return NULL;

@@ -33,7 +33,7 @@ along with this program; if not, see <http://www.gnu.org/licenses/>.
 //
 
 #define GAMETYPE_NAME               "H&S"
-#define GAMETYPE_NAME_FULL          "Hide & Seek"
+#define GAMETYPE_NAME_FULL          "Hide and Seek"
 
 #define ITEM_BRIEFCASE              100
 #define TRIGGER_EXTRACTION          200

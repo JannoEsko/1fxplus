@@ -3,8 +3,6 @@
 // g_combat.c
 
 #include "g_local.h"
-#include "1fx/1fxFunctions.h"
-#include "bg_weapons.h"
 
 void BotDamageNotification  ( gclient_t *bot, gentity_t *attacker );
 
@@ -63,11 +61,27 @@ void TossClientItems( gentity_t *self )
     }
 
     // If we have a valid weapon to drop and it has ammo then drop it
-    if ( weapon > WP_KNIFE && weapon < WP_NUM_WEAPONS &&
-         (self->client->ps.ammo[ weaponData[weapon].attack[ATTACK_NORMAL].ammoIndex ] + self->client->ps.clip[weapon]) )
-    {
-        G_DropWeapon ( self, weapon, 0 );
+
+    if (isCurrentGametype(GT_HNS)) {
+        if (weapon > WP_KNIFE && weapon < WP_MAX_WEAPONS && weapon != WP_RPG7_LAUNCHER && weapon != WP_M4_ASSAULT_RIFLE) {
+            G_DropWeapon(self, (weapon_t)weapon, 0);
+        }
+        else if (self->client->ps.stats[STAT_WEAPONS] & (1 << WP_RPG7_LAUNCHER)) {
+            G_DropWeapon(self, WP_RPG7_LAUNCHER, 0);
+        }
+        else if (self->client->ps.stats[STAT_WEAPONS] & (1 << WP_M4_ASSAULT_RIFLE)) {
+            G_DropWeapon(self, WP_M4_ASSAULT_RIFLE, 0);
+        }
     }
+    else if (!isCurrentGametype(GT_GUNGAME)) {
+
+        if (weapon > WP_KNIFE && weapon < WP_NUM_WEAPONS &&
+            (self->client->ps.ammo[weaponData[weapon].attack[ATTACK_NORMAL].ammoIndex] + self->client->ps.clip[weapon]))
+        {
+            G_DropWeapon(self, weapon, 0);
+        }
+    }
+
 
     G_DropGametypeItems ( self, 0 );
 }
@@ -107,7 +121,7 @@ void body_die( gentity_t *self, gentity_t *inflictor, gentity_t *attacker, int d
     return;
 }
 
-/*
+
 // these are just for logging, the client prints its own messages
 char *modNames[] =
 {
@@ -146,12 +160,8 @@ char *modNames[] =
     "MOD_TEAMCHANGE",
     "MOD_TARGET_LASER",
     "MOD_TRIGGER_HURT",
-    "MOD_TRIGGER_HURT_NOSUICIDE",
-
-    // custom mods from 1fxplus.
-
-    "MOD_POP"
-};*/
+    "MOD_TRIGGER_HURT_NOSUICIDE"
+};
 
 /*
 ==================
@@ -195,25 +205,178 @@ void player_die(
     if ( attacker && attacker->client )
     {
         trap_GT_SendEvent ( GTEV_CLIENT_DEATH, level.time, self->s.number, self->client->sess.team, attacker->s.number, attacker->client->sess.team, 0 );
+
     }
     else
     {
         trap_GT_SendEvent ( GTEV_CLIENT_DEATH, level.time, self->s.number, self->client->sess.team, -1, -1, 0 );
     }
 
-    if (attacker && attacker != self && attacker->client && self->client->pers.statinfo.killsinarow >= 3 && Q_stricmp(g_realGametype.string, "h&s"))
-    {
-        G_Broadcast(va("%s\nhis \\killing spree\nwas ended by %s", self->client->pers.netname, attacker->client->pers.netname), BROADCAST_GAME, NULL, qfalse);
+    if (attacker && attacker != self && attacker->client && self->client->pers.statInfo.killsinarow >= 3 && !isCurrentGametype(GT_HNS)) {
+        G_Broadcast(BROADCAST_GAME, NULL, qfalse, "%s\nhis \\killing spree\nwas ended by %s", self->client->pers.netname, attacker->client->pers.netname);
     }
 
-    if (self->client->pers.statinfo.killsinarow > self->client->pers.statinfo.bestKillsInARow)
-        self->client->pers.statinfo.bestKillsInARow = self->client->pers.statinfo.killsinarow;
+    // Reset kills in a row. If this is a personal best, save it.
+    if (self->client->pers.statInfo.killsinarow > self->client->pers.statInfo.bestKillsInARow)
+        self->client->pers.statInfo.bestKillsInARow = self->client->pers.statInfo.killsinarow;
 
-    self->client->pers.statinfo.killsinarow = 0;
-    self->client->pers.statinfo.deaths++;
+    self->client->pers.statInfo.killsinarow = 0;
 
     // Add to the number of deaths for this player
     self->client->sess.deaths++;
+    self->client->pers.statInfo.deaths++;
+    // JANFIXME - Boe had a differentiation of deaths when in H&S + cagefight. 
+
+    if (isCurrentGametype(GT_CSINF)) {
+
+        self->client->pers.csinf.resetGuns = qtrue;
+
+        if (attacker && attacker->client && self != attacker) {
+
+            if (attacker->client->sess.team == self->client->sess.team) {
+                csinf_handleCash(attacker, csinf_friendlyKill.integer, "killing a teammate", qtrue);
+            }
+            else {
+
+                if (meansOfDeath == MOD_KNIFE) {
+                    csinf_handleCash(attacker, csinf_killBonus.integer * 6, "killing an enemy with a knife", qtrue);
+                }
+                else {
+
+                    qboolean cashGiven = qfalse;
+
+                    for (int i = 0; i < CSINF_GUNTABLE_SIZE; i++) {
+                        csInfGuns_t* gun = &csInfGunsTable[i];
+
+                        if (gun->gunId == meansOfDeath) {
+
+                            cashGiven = qtrue;
+
+                            if (gun->gunType == GUNTYPE_SMG) {
+                                csinf_handleCash(attacker, csinf_killBonus.integer * 4, "killing an enemy with a SMG", qtrue);
+                            }
+                            else if (gun->gunType == GUNTYPE_SHOTGUN) {
+                                csinf_handleCash(attacker, csinf_killBonus.integer * 3, "killing an enemy with a shotgun", qtrue);
+                            }
+                            else {
+                                csinf_handleCash(attacker, csinf_killBonus.integer, "killing an enemy", qtrue);
+                            }
+
+                            break;
+                        }
+                    }
+
+                    if (!cashGiven) {
+                        csinf_handleCash(attacker, csinf_killBonus.integer, "killing an enemy", qtrue);
+                    }
+                }
+
+            }
+
+        }
+        else {
+            csinf_handleCash(self, csinf_suicidePenalty.integer, "suicide", qtrue);
+        }
+
+    }
+    else if (isCurrentGametype(GT_HNS)) {
+
+        if (self->client->sess.transformedEntity) {
+            if (self->client->pers.prop.isMovingModel) {
+                freeProphuntProps(self);
+
+            }
+
+            // Boe!Man 12/15/16: Sometimes it happens a seeker can kill a hider
+            // while the hider is hidden in a ? grenade.
+            // When this happens the hider body is killed just outside the
+            // spawned model. To avoid the hider being stuck we perform an extra
+            // check here.
+            if (self->client->sess.transformedEntityBBox) {
+                // We first check entity2 because when the 2nd entity is used,
+                // we set the hideseek flag on this entity.
+                transformPlayerBack(
+                    &g_entities[self->client->sess.transformedEntityBBox],
+                    attacker, NULL);
+            }
+            else if (self->client->sess.transformedEntity) {
+                transformPlayerBack(
+                    &g_entities[self->client->sess.transformedEntity],
+                    attacker, NULL);
+            }
+
+            self->s.eFlags &= ~EF_HSBOX;
+            self->client->ps.eFlags &= ~EF_HSBOX;
+
+        }
+
+        // We write the death time into the sess struct GIVEN that the gametype has started.
+
+        if (level.customGameStarted && self->client->sess.team == TEAM_RED && !level.hns.roundOver && level.customGameWeaponsDistributed) {
+            self->client->sess.hsTimeOfDeath = level.time;
+        }
+
+        if (attacker && attacker->client && level.customGameStarted && attacker->client->sess.team == TEAM_BLUE && self && self->client && self->client->sess.team == TEAM_RED) {
+            attacker->client->pers.killsAsSeekCurrentRound++;
+
+            if (attacker->client->pers.killsAsSeekCurrentRound > level.hns.previousRoundBestSeekerKills) {
+                level.hns.previousRoundBestSeeker = attacker->s.number;
+                level.hns.previousRoundBestSeekerKills = attacker->client->pers.killsAsSeekCurrentRound;
+            }
+        }
+
+    }
+    else if (isCurrentGametype(GT_GUNGAME)) {
+        if (self && self->client && attacker && attacker->client && attacker != self) {
+            attacker->client->pers.gg.level++;
+
+            if (attacker->client->pers.gg.level >= 25) {
+                gentity_t* tent;
+                tent = G_TempEntity(vec3_origin, EV_GAME_OVER);
+                tent->s.eventParm = GAME_OVER_SCORELIMIT;
+                tent->r.svFlags = SVF_BROADCAST;
+                tent->s.otherEntityNum = attacker->client->ps.clientNum;
+
+                G_GlobalSound(G_SoundIndex("sound/ctf_win.mp3"));
+                G_Broadcast(BROADCAST_AWARDS, NULL, qfalse, "%s\nhas \\won the game!", attacker->client->pers.netname);
+
+                LogExit(va("%s won!", attacker->client->pers.netname));
+            }
+            else {
+                gungame_giveGuns(attacker);
+            }
+        }
+    }
+    else if (isCurrentGametype(GT_HNZ)) {
+        if (self && self->client && attacker && attacker->client && self->client->sess.team == TEAM_BLUE && attacker->client->sess.team == TEAM_RED) {
+            hnz_dropRandomWeapon(self->r.currentOrigin);
+        }
+
+        if (self->client->sess.team == TEAM_RED && mod != MOD_TEAMCHANGE) {
+            SetTeam(self, "blue", NULL, qtrue);
+            respawn(self);
+        }
+    }
+    else if (isCurrentGametype(GT_PROP)) {
+        if (self && self->client && self->client->pers.prop.isMovingModel) {
+            freeProphuntProps(self);
+        }
+    }
+    else if (isCurrentGametype(GT_VIP)) {
+        if (self && self->client && self->client->pers.isVip) {
+            // Killing the VIP means the round ends.
+            trap_GT_SendEvent(GTEV_VIP_DIED, level.time, self->client->sess.team, attacker && attacker->client ? attacker->s.number : -1, 0, 0, 0);
+        }
+    }
+
+    //Ryan april 22 2003
+    //If they are planted unplant them before we kill them
+    if (self->client->sess.planted)
+    {
+        self->client->ps.origin[2] += 65;
+        VectorCopy(self->client->ps.origin, self->s.origin);
+        self->client->sess.planted = qfalse;
+    }
 
     // This is just to ensure that the player wont render for even a single frame
     self->s.eFlags |= EF_DEAD;
@@ -266,30 +429,29 @@ void player_die(
         gentity_t* missile;
         missile = G_FireWeapon( self, ATTACK_NORMAL );
 
-        if ( attacker && attacker->client && attacker->client->sess.team != self->client->sess.team )
-        {
-            missile->dflags |= DAMAGE_NO_TEAMKILL;
+        if (missile) { // ensure that we always have a valid missile pointer - this fixes a crash where there's no missile but we're setting a flag to it.
+
+            if (attacker && attacker->client && attacker->client->sess.team != self->client->sess.team)
+            {
+                missile->dflags |= DAMAGE_NO_TEAMKILL;
+            }
+
+            VectorClear(missile->s.pos.trDelta);
         }
 
-        if ( missile )
-        {
-            VectorClear ( missile->s.pos.trDelta );
-        }
     }
 
     G_LogPrintf("Kill: %i %i %i: %s killed %s by %s\n",
         killer, self->s.number, meansOfDeath, killerName,
         self->client->pers.netname, obit );
+    logGame(attacker, self, "kill", va("killed by %s", obit));
 
-    if (g_clientHandlesDeathMessages.integer) {
-        // broadcast the death event to everyone
-        ent = G_TempEntity(self->r.currentOrigin, EV_OBITUARY);
-        ent->s.eventParm = mod;
-        ent->s.otherEntityNum = self->s.number;
-        ent->s.otherEntityNum2 = killer;
-        ent->r.svFlags = SVF_BROADCAST; // send to everyone
-    }
-    
+    // broadcast the death event to everyone
+    ent = G_TempEntity( self->r.currentOrigin, EV_OBITUARY );
+    ent->s.eventParm = mod;
+    ent->s.otherEntityNum = self->s.number;
+    ent->s.otherEntityNum2 = killer;
+    ent->r.svFlags = SVF_BROADCAST; // send to everyone
 
     self->enemy = attacker;
 
@@ -299,114 +461,73 @@ void player_die(
 
         if ( attacker == self )
         {
-            if ( mod != MOD_TEAMCHANGE && mod != MOD_TRIGGER_HURT_NOSUICIDE )
+            if ( mod != MOD_TEAMCHANGE && mod != MOD_TRIGGER_HURT_NOSUICIDE && !isCurrentGametypeInList((gameTypes_t[]){GT_HNS, GT_HNZ, GT_MAX}))
             {
                 G_AddScore( attacker, g_suicidePenalty.integer );
             }
         }
         else if ( OnSameTeam ( self, attacker ) )
         {
-            if ( mod != MOD_TELEFRAG && mod != MOD_TRIGGER_HURT_NOSUICIDE )
+            if ( mod != MOD_TELEFRAG && mod != MOD_TRIGGER_HURT_NOSUICIDE && !isCurrentGametypeInList((gameTypes_t[]) { GT_HNS, GT_HNZ, GT_MAX }))
             {
                 G_AddScore( attacker, g_teamkillPenalty.integer );
             }
+            else if (isCurrentGametype(GT_HNS) && level.hns.cagefight) {
+                G_AddScore(attacker, 10);
+            }
         }
-        else
+        else if (!isCurrentGametype(GT_HNS) || (isCurrentGametype(GT_HNS) && !level.hns.cagefight))
         {
-            G_AddScore( attacker, 1 );
+            if (isCurrentGametype(GT_HNS) && self->client) {
+
+                if (self->client->ps.stats[STAT_WEAPONS] & (1 << WP_M4_ASSAULT_RIFLE)) {
+                    G_AddScore(attacker, 2);
+                    attacker->client->sess.kills++;
+                }
+                else if (self->client->ps.stats[STAT_WEAPONS] & (1 << WP_RPG7_LAUNCHER)) {
+                    G_AddScore(attacker, 3);
+                    attacker->client->sess.kills += 2;
+                }
+                else {
+                    G_AddScore(attacker, 1);
+                }
+                // JANFIXME add seekkills, roundkills from 1fx?
+
+            }
+            else if (isCurrentGametype(GT_VIP)) {
+                if (self->client && self->client->pers.isVip) {
+                    G_AddScore(attacker, 15);
+                    level.vipKilledInTeam = self->client->sess.team;
+                }
+                else {
+                    G_AddScore(attacker, 1);
+                }
+            }
+            else {
+                G_AddScore(attacker, 1);
+            }
+            
             attacker->client->sess.kills++;
-            attacker->client->pers.statinfo.killsinarow++;
-            // Boe!Man 6/2/10: Add it to our own stats list.
-            attacker->client->pers.statinfo.kills++;
+            attacker->client->pers.statInfo.killsinarow++;
+            attacker->client->pers.statInfo.kills++;
+
             attacker->client->lastKillTime = level.time;
+
+            if (attacker->client->pers.statInfo.killsinarow >= 3 && !isCurrentGametype(GT_HNS)) {
+                G_Broadcast(BROADCAST_GAME, NULL, qfalse, "%s\nis on \\fire\nwith %i kills in a row!", attacker->client->pers.netname, attacker->client->pers.statInfo.killsinarow);
+            }
         }
     }
-    else if ( mod != MOD_TEAMCHANGE && mod != MOD_TRIGGER_HURT_NOSUICIDE )
-    {
+    else if (mod != MOD_TEAMCHANGE && mod != MOD_TRIGGER_HURT_NOSUICIDE && !isCurrentGametypeInList((gameTypes_t[]) { GT_HNS, GT_HNZ, GT_PROP, GT_MAX })) {
         G_AddScore( self, g_suicidePenalty.integer );
     }
-
-    if (attacker->client) {
-        if (attacker->client->pers.statinfo.killsinarow >= 3 && Q_stricmp(g_realGametype.string, "h&s")) {
-            G_Broadcast(va("%s\nis on \\fire\nwith %i kills in a row!", attacker->client->pers.netname, attacker->client->pers.statinfo.killsinarow), BROADCAST_GAME, NULL, qfalse);
-        }
-    }
-
-
-    
-    // Boe!Man 5/27/15: Do keep track of some stats.
-    int hitLoc2;
-    statinfo_t* info = &attacker->client->pers.statinfo;
-    if (self != attacker && self && attacker && attacker->client &&
-        (!level.gametypeData->teams || (level.gametypeData->teams && !OnSameTeam(self, attacker)))) { // Make sure the attacker and self pointers are valid and actual clients.
-        hitLoc2 = hitLocation & (~HL_DISMEMBERBIT);
-        if (hitLoc2 == HL_HEAD) {
-            //add to the total headshot count for this player
-            info->headShotKills++;
-            info->weapon_headshots[attacker->client->pers.statinfo.attack * WP_NUM_WEAPONS + attacker->client->pers.statinfo.weapon]++;
-        }
-
-        switch (meansOfDeath) {
-        case MOD_KNIFE:
-            info->knifeKills++;
-            break;
-        case MOD_M4_ASSAULT_RIFLE:
-            if (attack == ATTACK_ALTERNATE) {
-                info->explosiveKills++;
-            }
-            break;
-        case MOD_MM1_GRENADE_LAUNCHER:
-        case MOD_RPG7_LAUNCHER:
-        case MOD_M84_GRENADE:
-        case MOD_SMOHG92_GRENADE:
-        case MOD_ANM14_GRENADE:
-        case MOD_M15_GRENADE:
-            if (mod == MOD_ANM14_GRENADE)
-            {
-                info->hitcount++;
-                info->accuracy = (float)info->hitcount / (float)info->shotcount * 100;
-                info->weapon_hits[((mod > 256) ? ATTACK_ALTERNATE : ATTACK_NORMAL) * WP_NUM_WEAPONS + normalAttackMod(mod)]++;
-
-            }
-
-            info->explosiveKills++;
-            break;
-        default:
-            break;
-        }
-    }
-
-    //Ryan march 22 2004 9:20pm   calculate ratio's
-    if (attacker && attacker->client && attacker != self)
-    {
-        if (attacker->client->pers.statinfo.deaths)
-        {
-            attacker->client->pers.statinfo.ratio = (float)attacker->client->pers.statinfo.kills / (float)attacker->client->pers.statinfo.deaths;
-        }
-        else
-        {
-            attacker->client->pers.statinfo.ratio = attacker->client->pers.statinfo.kills;
-        }
-    }
-    //Careful if this "if" isnt here and they die from changing teams
-    //before they have any other deaths we will divide by 0 since
-    //we dont add deaths incurred from changing teams
-    if (self->client->pers.statinfo.deaths)
-    {
-        self->client->pers.statinfo.ratio = (float)self->client->pers.statinfo.kills / (float)self->client->pers.statinfo.deaths;
-    }
-    else
-    {
-        self->client->pers.statinfo.ratio = (float)self->client->pers.statinfo.kills;
-    }
-    //Ryan
 
     // If client is in a nodrop area, don't drop anything
     contents = trap_PointContents( self->r.currentOrigin, -1 );
     if ( !( contents & CONTENTS_NODROP ) )
     {
         // People who kill themselves dont drop guns
-        if ( attacker == self )
+        if ( attacker == self && !isCurrentGametype(GT_HNS) )
         {
             self->client->ps.stats[STAT_WEAPONS] = 0;
         }
@@ -440,13 +561,6 @@ void player_die(
 
     Cmd_Score_f( self );
 
-    // Henk 01/04/10 -> Hp/armor message if you are killed
-    if (attacker->client && self->client && attacker->s.number != self->s.number && Q_stricmp(g_realGametype.string, "h&s")) { // if the attacker and target are both clients
-        G_printInfoMessage(self, "%s had ^3%i ^7health and ^3%i ^7armor left.", attacker->client->pers.cleanName, attacker->health, attacker->client->ps.stats[STAT_ARMOR]);
-        self->client->pers.statinfo.lastKillerHealth = attacker->health;
-        self->client->pers.statinfo.lastKillerArmor = attacker->client->ps.stats[STAT_ARMOR];
-    }
-
     // send updated scores to any clients that are following this one,
     // or they would get stale scoreboards
     for ( i = 0 ; i < level.numConnectedClients; i++ )
@@ -467,6 +581,7 @@ void player_die(
 
         if ( client->sess.spectatorClient == self->s.number )
         {
+            sendRoxLastSpec(self->s.number, ent->s.number);
             Cmd_Score_f( g_entities + i );
         }
     }
@@ -497,6 +612,81 @@ void player_die(
     // don't allow respawn until the death anim is done
     // g_forcerespawn may force spawning at some later time
     self->client->respawnTime = level.time + 1700;
+
+    if (attacker && attacker->client) {
+        statInfo_t* info = &attacker->client->pers.statInfo;
+
+        if (self != attacker && self && attacker && attacker->client &&
+            (!level.gametypeData->teams || (level.gametypeData->teams && !OnSameTeam(self, attacker)))) { // Make sure the attacker and self pointers are valid and actual clients.
+            if ((hitLocation & (~HL_DISMEMBERBIT)) == HL_HEAD) {
+                //add to the total headshot count for this player
+                info->headShotKills++;
+                info->weapon_headshots[attacker->client->pers.statInfo.attack * WP_NUM_WEAPONS + attacker->client->pers.statInfo.weapon]++;
+            }
+
+            switch (meansOfDeath) {
+            case MOD_KNIFE:
+                info->knifeKills++;
+                break;
+            case MOD_M4_ASSAULT_RIFLE:
+                if (attack == ATTACK_ALTERNATE) {
+                    info->explosiveKills++;
+                }
+                break;
+            case MOD_MM1_GRENADE_LAUNCHER:
+            case MOD_RPG7_LAUNCHER:
+                //case MOD_M67_GRENADE:
+            case MOD_M84_GRENADE:
+                //case MOD_F1_GRENADE:
+                //case MOD_L2A2_GRENADE:
+                //case MOD_MDN11_GRENADE:
+            case MOD_SMOHG92_GRENADE:
+            case MOD_ANM14_GRENADE:
+            case MOD_M15_GRENADE:
+                if (mod == MOD_ANM14_GRENADE)
+                {
+                    info->hitcount++;
+                    info->accuracy = (float)info->hitcount / (float)info->shotcount * 100;
+                    info->weapon_hits[((mod > 256) ? ATTACK_ALTERNATE : ATTACK_NORMAL) * WP_NUM_WEAPONS + normalAttackMod(mod)]++;
+
+                }
+
+                info->explosiveKills++;
+                break;
+            default:
+                break;
+            }
+        }
+
+        if (attacker->client->pers.statInfo.deaths)
+        {
+            attacker->client->pers.statInfo.ratio = (float)attacker->client->pers.statInfo.kills / (float)attacker->client->pers.statInfo.deaths;
+        }
+        else
+        {
+            attacker->client->pers.statInfo.ratio = attacker->client->pers.statInfo.kills;
+        }
+
+        if (self && self->client && attacker != self && !isCurrentGametype(GT_HNS)) {
+            G_printInfoMessage(self, "%s had ^3%i ^7health and ^3%i ^7armor left.", attacker->client->pers.cleanName, attacker->health, attacker->client->ps.stats[STAT_ARMOR]);
+            self->client->pers.statInfo.lastKillerHealth = attacker->health;
+            self->client->pers.statInfo.lastKillerArmor = attacker->client->ps.stats[STAT_ARMOR];
+        }
+    }
+
+    //Careful if this "if" isnt here and they die from changing teams
+    //before they have any other deaths we will divide by 0 since
+    //we dont add deaths incurred from changing teams
+    if (self->client->pers.statInfo.deaths)
+    {
+        self->client->pers.statInfo.ratio = (float)self->client->pers.statInfo.kills / (float)self->client->pers.statInfo.deaths;
+    }
+    else
+    {
+        self->client->pers.statInfo.ratio = (float)self->client->pers.statInfo.kills;
+    }
+    //Ryan
+    
 
     switch ( hitLocation & (~HL_DISMEMBERBIT) )
     {
@@ -594,9 +784,11 @@ void player_die(
     // the location that was hit
     if ( hitLocation & HL_DISMEMBERBIT )
     {
-        CopyToBodyQue (self, hitLocation & (~HL_DISMEMBERBIT), hitDir );
+        if (!isCurrentGametype(GT_HNZ) || (isCurrentGametype(GT_HNZ) && mod != MOD_TEAMCHANGE)) {
+            CopyToBodyQue(self, hitLocation & (~HL_DISMEMBERBIT), hitDir);
+        }
     }
-    else
+    else if(!isCurrentGametype(GT_HNZ) || (isCurrentGametype(GT_HNZ) && mod != MOD_TEAMCHANGE))
     {
         CopyToBodyQue (self, HL_NONE, hitDir );
     }
@@ -879,11 +1071,8 @@ int G_Damage (
     gclient_t       *client;
     int             take;
     int             save;
-    int             asave;
+    int             asave = 0;
     int             knockback;
-    int             actualtake;
-
-    qboolean teamDamage = qfalse;
 
     if (!targ->takedamage)
     {
@@ -986,12 +1175,187 @@ int G_Damage (
     }
 */
 
+
+    if (damage < 1)
+    {
+        damage = 1;
+    }
+    int originalDamage = damage;
+    // Start H&S specifics.
+    if (isCurrentGametype(GT_HNS) && attacker && attacker->client && client) {
+        float radius = 1000.0f;
+        
+        if (!level.hns.cagefight) {
+            damage = 0;
+        }
+        
+        if (client->sess.team == TEAM_RED && attacker->client->sess.team == TEAM_BLUE && mod == MOD_USSOCOM_PISTOL) {
+            // Stungun.
+            addSpeedAlteration(targ, qtrue, SPEEDALTERATION_STUNGUN);
+            removeWeaponFromClient(attacker, WP_USSOCOM_PISTOL, qfalse, WP_KNIFE);
+            G_Broadcast(BROADCAST_GAME, targ, qfalse, "You got \\tased\nby %s!", attacker->client->pers.netname);
+            G_Broadcast(BROADCAST_GAME, attacker, qfalse, "You have tased %s!", client->pers.netname);
+
+            G_PlayEffect(G_EffectIndex("misc/electrical"), targ->r.currentOrigin, targ->r.currentAngles);
+
+            gentity_t* tent = G_TempEntity(targ->r.currentOrigin, EV_GENERAL_SOUND);
+            tent->r.svFlags |= SVF_BROADCAST;
+            tent->s.time2 = (int)(radius * 1000.0f);
+            G_AddEvent(tent, EV_GENERAL_SOUND, G_SoundIndex("sound/ambience/generic/sparks2.mp3"));
+        } else if (mod == altAttack(MOD_KNIFE) && client->sess.team == TEAM_RED && attacker->client->sess.team == TEAM_RED && g_hsgiveknife.integer && !g_friendlyFire.integer) {
+            int ammoIdx = weaponData[WP_KNIFE].attack[ATTACK_ALTERNATE].ammoIndex;
+            G_Broadcast(BROADCAST_GAME, attacker, qfalse, "You gave a knife to %s!", client->pers.netname);
+            G_Broadcast(BROADCAST_GAME, targ, qfalse, "%s gave you a knife!", attacker->client->pers.netname);
+
+            if (client->ps.ammo[ammoIdx] < 5) {
+                client->ps.ammo[ammoIdx]++;
+            }
+        } else if (client->sess.team == TEAM_BLUE && attacker->client->sess.team == TEAM_RED) {
+            if (!client->pers.seekerAway && level.customGameStarted) {
+                qboolean stunned = qfalse;
+                speedAlterationReason_t speedAlterationReason = SPEEDALTERATION_NONE;
+                if (mod == MOD_KNIFE) {
+                    stunned = qtrue;
+                    speedAlterationReason = SPEEDALTERATION_KNIFE;
+                    int ammoIdx = weaponData[WP_KNIFE].attack[ATTACK_ALTERNATE].ammoIndex;
+                    if (attacker->client->ps.ammo[ammoIdx] < 5) {
+                        attacker->client->ps.ammo[ammoIdx]++;
+                    }
+                    else {
+                        attacker->client->pers.knifeBox = qtrue;
+                    }
+                }
+                else if (mod == altAttack(MOD_KNIFE)) {
+                    stunned = qtrue;
+                    speedAlterationReason = SPEEDALTERATION_KNIFE;
+                }
+                else if (mod == MOD_M4_ASSAULT_RIFLE) {
+                    stunned = qtrue;
+                    speedAlterationReason = SPEEDALTERATION_M4;
+                }
+                
+                if (stunned) {
+                    addSpeedAlteration(targ, qtrue, speedAlterationReason);
+                    addSpeedAlteration(attacker, qfalse, speedAlterationReason);
+                    G_Broadcast(BROADCAST_GAME, targ, qfalse, "You got stunned by %s!", attacker->client->pers.netname);
+                    targ->client->sess.gotStunned++;
+                    G_Broadcast(BROADCAST_GAME, attacker, qfalse, "You have stunned %s!", targ->client->pers.netname);
+                    attacker->client->sess.stunAttacks++;
+                }
+
+            }
+        }
+        else if (client->sess.team == TEAM_RED && attacker->client->sess.team == TEAM_BLUE) {
+            if (mod == MOD_KNIFE) {
+                damage = originalDamage;
+                if (!level.hns.MM1Given && hideSeek_Weapons.string[HSWPN_MM1] == '1') {
+                    level.hns.MM1Given = qtrue;
+                    giveWeaponToClient(attacker, WP_MM1_GRENADE_LAUNCHER, qfalse);
+                    Q_strncpyz(level.hns.MM1loc, attacker->client->pers.netname, sizeof(level.hns.MM1loc));
+                    level.hns.MM1ent = -1;
+                    G_printGametypeMessageToAll("First blood: %s has taken the MM1", attacker->client->pers.cleanName);
+                    G_Broadcast(BROADCAST_GAME, attacker, qfalse, "You now have the \\MM1!");
+                    attacker->client->sess.takenMM1++;
+                }
+            }
+        }
+        else if (client->sess.team == attacker->client->sess.team && client->sess.team == TEAM_RED) {
+            if (mod == WP_M3A1_SUBMACHINEGUN) {
+                TeleportPlayerToPlayer(attacker, targ, qtrue, qtrue);
+                removeWeaponFromClient(attacker, WP_M3A1_SUBMACHINEGUN, qfalse, WP_KNIFE);
+                G_printGametypeMessageToAll("%s used the telegun to teleport to %s.", attacker->client->pers.cleanName, client->pers.cleanName);
+            }
+            else if (client->ps.weaponstate == WEAPON_READY && mod == WP_KNIFE) {
+
+                if (
+                    (attacker->client->ps.stats[STAT_WEAPONS] & (1 << WP_M4_ASSAULT_RIFLE) && client->ps.weapon == WP_RPG7_LAUNCHER) ||
+                    (attacker->client->ps.stats[STAT_WEAPONS] & (1 << WP_RPG7_LAUNCHER) && client->ps.weapon == WP_M4_ASSAULT_RIFLE)
+                    ) {
+                    if (!g_friendlyFire.integer) {
+                        return 0;
+                    }
+                } else if (client->ps.weapon == WP_RPG7_LAUNCHER) {
+                    stealWeaponWithAmmo(targ, attacker, WP_RPG7_LAUNCHER);
+                    G_Broadcast(BROADCAST_GAME, attacker, qfalse, "You stole the \\RPG!");
+                    G_Broadcast(BROADCAST_GAME, targ, qfalse, "%s stole your \\RPG!", attacker->client->pers.netname);
+                    G_printGametypeMessageToAll("%s took the RPG from %s.", attacker->client->pers.cleanName, client->pers.cleanName);
+                    attacker->client->sess.weaponsStolen++;
+                }
+                else if (client->ps.weapon == WP_M4_ASSAULT_RIFLE) {
+                    stealWeaponWithAmmo(targ, attacker, WP_M4_ASSAULT_RIFLE);
+                    G_Broadcast(BROADCAST_GAME, attacker, qfalse, "You stole the \\M4!");
+                    G_Broadcast(BROADCAST_GAME, targ, qfalse, "%s stole your \\M4!", attacker->client->pers.netname);
+                    G_printGametypeMessageToAll("%s took the M4 from %s.", attacker->client->pers.cleanName, client->pers.cleanName);
+                    attacker->client->sess.weaponsStolen++;
+                }
+            }
+        }
+        else if (!g_friendlyFire.integer && mod == MOD_TELEFRAG && !level.hns.cagefight) {
+            damage = originalDamage;
+        } else if (g_friendlyFire.integer) {
+            damage = originalDamage;
+        }
+
+        if (level.hns.cagefight) {
+            if (mod == altAttack(MOD_AK74_ASSAULT_RIFLE)) {
+                damage = originalDamage;
+            }
+            else {
+                damage = 0;
+            }
+        }
+
+        if (attacker->client->sess.team != client->sess.team) {
+            if (mod == MOD_ANM14_GRENADE) {
+                addSpeedAlteration(targ, qtrue, SPEEDALTERATION_FIRENADE);
+            }
+            else if (mod == MOD_RPG7_LAUNCHER || mod == MOD_SMOHG92_GRENADE) {
+                G_ApplyKnockback(targ, dir, 50.0f);
+                targ->client->ps.velocity[2] = 230;
+                vec3_t kvel;
+                VectorScale(dir, g_knockback.value * 50.0f / 200.0f, kvel);
+                VectorAdd(targ->client->ps.velocity, kvel, targ->client->ps.velocity);
+
+                if (!targ->client->ps.pm_time) {
+                    int pmTime = knockback * 2;
+                    Com_Clamp(50, 200, pmTime);
+                    targ->client->ps.pm_time = pmTime;
+                    targ->client->ps.pm_flags |= PMF_TIME_KNOCKBACK;
+                }
+            }
+            
+        }
+
+    }
+    else if (isCurrentGametype(GT_HNZ) && attacker && targ && attacker->client && targ->client) {
+
+        if (attacker->client->sess.team == TEAM_BLUE && targ->client->sess.team == TEAM_RED && mod == MOD_KNIFE) {
+            G_Damage(targ, NULL, NULL, NULL, NULL, 10000, 0, MOD_TEAMCHANGE, HL_HEAD);
+            cloneBody(attacker, targ->s.number);
+            damage = 0;
+            targ->client->pers.hnz.zombifiedTime = level.time;
+            attacker->client->sess.score++;
+            attacker->client->sess.kills++;
+            G_printGametypeMessageToAll("%s was zombified by %s.", targ->client->pers.cleanName, attacker->client->pers.cleanName);
+        }
+        else if (attacker->client->sess.team == TEAM_RED && targ->client->sess.team == TEAM_BLUE) {
+            // 1fxmod modified knife dmg here, we don't.
+            // Expectation is that the weapon file is built correctly for HNZ.
+            targ->client->pers.hnz.nextsuicide = level.time + 10000;
+            targ->client->pers.hnz.healthRegen = level.time + 2000;
+        }
+
+    }
+    else if (isCurrentGametype(GT_PROP) && client && client->sess.team == TEAM_BLUE) {
+        damage = 0;
+    }
+
     // check for completely getting out of the damage
     if ( !(dflags & DAMAGE_NO_PROTECTION) ) {
 
         // if TF_NO_FRIENDLY_FIRE is set, don't do damage to the target
         // if the attacker was on the same team
-        if ( targ != attacker && OnSameTeam (targ, attacker)  )
+        if ( targ != attacker && OnSameTeam (targ, attacker) && !level.hns.cagefight  )
         {
             if ( !g_friendlyFire.integer || level.warmupTime )
             {
@@ -1006,10 +1370,6 @@ int G_Damage (
         }
     }
 
-    if ( damage < 1 )
-    {
-        damage = 1;
-    }
 
     take = damage;
     save = 0;
@@ -1021,10 +1381,13 @@ int G_Damage (
     }
 
     // save some from armor
-    asave = CheckArmor (targ, take, dflags);
-    take -= asave;
-
-    actualtake = Com_Clamp(0, targ->health, take);
+    if (!isCurrentGametype(GT_HNS)) {
+        asave = CheckArmor(targ, take, dflags);
+        take -= asave;
+    }
+    
+    int actualtake = Com_Clamp(0, targ->health, take);
+    qboolean teamDamage = qfalse;
 
     // Teamkill dmage thats not caused by a telefrag?
     if ( g_teamkillDamageMax.integer && mod != MOD_TELEFRAG && !(dflags&DAMAGE_NO_TEAMKILL) )
@@ -1034,7 +1397,6 @@ int G_Damage (
             // Hurt your own team?
             if ( OnSameTeam ( targ, attacker ) )
             {
-                int actualtake = Com_Clamp ( 0, targ->health, take );
 
                 if ( targ->client->ps.stats[STAT_GAMETYPE_ITEMS] )
                 {
@@ -1068,6 +1430,7 @@ int G_Damage (
                           targ->client->pers.netname,
                           location,
                           (int)((float)take) );
+        logGame(attacker, targ, "hit", va("%i", (int)((float)take)));
     }
 
     if ( g_debugDamage.integer )
@@ -1118,17 +1481,16 @@ int G_Damage (
         }
     }
 
-    if (targ->client)
+    if (targ && targ->client)
     {
         // set the last client who damaged the target
         targ->client->lasthurt_client = attacker->s.number;
         targ->client->lasthurt_time = level.time;
         targ->client->lasthurt_mod = mod;
 
-        if (attacker->client)
-        {
-            targ->client->pers.statinfo.lasthurtby = attacker->s.number;
-            attacker->client->pers.statinfo.lastclient_hurt = targ->s.number;
+        if (attacker && attacker->client) {
+            targ->client->pers.statInfo.lasthurtby = attacker->s.number;
+            attacker->client->pers.statInfo.lastclient_hurt = targ->s.number;
         }
     }
 
@@ -1139,20 +1501,30 @@ int G_Damage (
 
         if ( targ->client )
         {
+
+            //Ryan
+            //Punish them for killing themselves by not adding to
+            //their damagedone
             if (targ == attacker)
             {
-                targ->client->pers.statinfo.damageTaken += actualtake;
+                targ->client->pers.statInfo.damageTaken += actualtake;
             }
+            ////Punish them for killing a teammate and dont add to the
+            ////victims damage taken
+            ///RxCxW - 11.01.05 - 06:21am - #DLL barfs on this
             else if (level.gametypeData->teams && OnSameTeam(targ, attacker))
             {
-                attacker->client->pers.statinfo.damageDone -= actualtake;
+                attacker->client->pers.statInfo.damageDone -= actualtake;
             }
+            ///RxCxW - 01.08.06 - 09:50pm - all below as added by me
+            
             else if (attacker && attacker->client) {
-
-                attacker->client->pers.statinfo.damageDone += actualtake;
-                targ->client->pers.statinfo.damageTaken += actualtake;
+                ///End  - 01.10.06 - 02:26pm
+                attacker->client->pers.statInfo.damageDone += actualtake;
+                targ->client->pers.statInfo.damageTaken += actualtake;
 
             }
+
 
             targ->client->ps.stats[STAT_HEALTH] = targ->health;
 
@@ -1209,10 +1581,10 @@ int G_Damage (
             targ->die (targ, inflictor, attacker, take, mod, location, dir );
 
             if (teamDamage) {
-                if (attacker->client->pers.statinfo.killsinarow > attacker->client->pers.statinfo.bestKillsInARow)
-                    attacker->client->pers.statinfo.bestKillsInARow = attacker->client->pers.statinfo.killsinarow;
+                if (attacker->client->pers.statInfo.killsinarow > attacker->client->pers.statInfo.bestKillsInARow)
+                    attacker->client->pers.statInfo.bestKillsInARow = attacker->client->pers.statInfo.killsinarow;
 
-                attacker->client->pers.statinfo.killsinarow = 0;
+                attacker->client->pers.statInfo.killsinarow = 0;
             }
         }
         else if ( targ->pain )
@@ -1408,19 +1780,73 @@ qboolean G_RadiusDamage (
     int         numListedEntities;
     vec3_t      mins, maxs;
     vec3_t      v;
-    vec3_t      dir;
+    vec3_t      dir = { 0.0f, 0.0f, 0.0f };
     int         i, e;
     qboolean    hitClient = qfalse;
+
+    // H&S specifics.
+    vec3_t mins1, maxs1, mins2, maxs2;
+    vec3_t rpgAngs, rpgDir;
+    qboolean cageOutOfBoundaries = qfalse;
+    qboolean nadeOutOfBoundaries = qfalse;
+    int ammoIdx;
+    gentity_t* missile;
+    int countCaught = 0;
+    int lastCaught = -1;
+    int     cageCaughtEntityList[MAX_GENTITIES];
+    // END H&S specifics
 
     if ( radius < 1 )
     {
         radius = 1;
     }
 
-    for ( i = 0 ; i < 3 ; i++ )
-    {
-        mins[i] = origin[i] - radius;
-        maxs[i] = origin[i] + radius;
+    
+    if (isCurrentGametype(GT_HNS) && attacker && (mod == WP_M67_GRENADE || mod == altAttack(WP_M67_GRENADE))) {
+        origin = attacker->r.currentOrigin;
+    }
+    else {
+        for (i = 0; i < 3; i++)
+        {
+            mins[i] = origin[i] - radius;
+            maxs[i] = origin[i] + radius;
+        }
+    }
+    
+
+    if (isCurrentGametype(GT_HNS)) {
+        if (mod == altAttack(MOD_M4_ASSAULT_RIFLE)) {
+            mins1[0] = origin[0] - 115;
+            mins1[1] = origin[1] - 25;
+            mins1[2] = origin[2] - 25;
+            maxs1[0] = origin[0] + 115;
+            maxs1[1] = origin[1] + 25;
+            maxs1[2] = origin[2] + 213;
+
+            for (i = 0; i < 3; i++) {
+                mins2[i] = origin[i] - 90;
+                maxs2[i] = origin[i] + 90;
+            }
+
+            Com_Memset(cageCaughtEntityList, 0, sizeof(cageCaughtEntityList));
+        }
+        else if (mod == MOD_MDN11_GRENADE || mod == altAttack(MOD_MDN11_GRENADE)) {
+            // Boe!Man 3/21/14: Custom check for the MDN11 grenade.
+            mins1[0] = origin[0] - 22;
+            mins1[1] = origin[1] - 17;
+            mins1[2] = origin[2] - 9;
+
+            maxs1[0] = origin[0] + 23;
+            maxs1[1] = origin[1] + 58;
+            maxs1[2] = origin[2] - 9;
+        }
+        else if (mod == MOD_M67_GRENADE || mod == altAttack(MOD_M67_GRENADE)) {
+            for (i = 0; i < 3; i++) {
+                mins[i] = origin[i] - DEFAULT_PLAYER_Z_MAX * 2;
+                maxs[i] = origin[i] + DEFAULT_PLAYER_Z_MAX * 2;
+            }
+        }
+        maxs1[2] += 50;
     }
 
     numListedEntities = trap_EntitiesInBox( mins, maxs, entityList, MAX_GENTITIES );
@@ -1428,6 +1854,136 @@ qboolean G_RadiusDamage (
     for ( e = 0 ; e < numListedEntities ; e++ )
     {
         ent = &g_entities[entityList[ e ]];
+
+        if (isCurrentGametype(GT_HNS)) {
+            if (ent->client) {
+                if (mod == altAttack(MOD_M4_ASSAULT_RIFLE)) {
+                    if (ent->client->sess.team == TEAM_RED && !G_IsClientDead(ent->client)) {
+                        cageOutOfBoundaries = qtrue;
+                        break;
+                    }
+                    else if (ent->client->sess.team == TEAM_BLUE) {
+                        cageOutOfBoundaries = qtrue;
+                        int num = trap_EntitiesInBox(mins2, maxs2, cageCaughtEntityList, MAX_GENTITIES);
+
+                        for (int cageCaught = 0; cageCaught < num; cageCaught++) {
+                            gentity_t* tent = &g_entities[cageCaughtEntityList[cageCaught]];
+
+                            if (tent->client && tent->client->sess.team == TEAM_BLUE && tent->s.number == ent->s.number) {
+                                cageOutOfBoundaries = qfalse;
+                                countCaught++;
+                                ent->client->sess.trappedInCage++;
+                                lastCaught = ent->s.number;
+                                break;
+                            }
+                        }
+
+                        if (cageOutOfBoundaries) {
+                            break;
+                        }
+
+                    }
+                }
+                else if (mod == MOD_MM1_GRENADE_LAUNCHER) {
+                    if (ent->client->sess.team == TEAM_RED) {
+                        ent->client->sess.MM1HitsTaken++;
+
+                        VectorCopy(ent->client->ps.viewangles, rpgAngs);
+                        rpgDir[0] = 0.0;
+                        rpgDir[1] = 0.0;
+                        rpgDir[2] = 0.75;
+                        VectorNormalize(rpgDir);
+                        G_ApplyKnockback(ent, rpgDir, 115);
+                        ent->client->ps.velocity[1] -= 50.0f;
+                        break;
+                    }
+                }
+                
+                else if (mod == MOD_MDN11_GRENADE || mod == altAttack(MOD_MDN11_GRENADE)) {
+                    if (ent->client) {
+                        if (ent->client->sess.team == TEAM_RED || ent->client->sess.team == TEAM_BLUE) {
+                            nadeOutOfBoundaries = qtrue;
+                            break; // break the loop to save performance, no more loops needed because box already failed no matter what.
+                        }
+                    }
+                }
+                else if (mod == MOD_L2A2_GRENADE || mod == altAttack(MOD_L2A2_GRENADE)) {
+                    if (ent == attacker) {
+                        G_CloseSound(attacker->r.currentOrigin, G_SoundIndex("sound/weapons/rpg7/fire01.mp3"));
+                        attacker->client->ps.pm_flags |= PMF_JUMPING;
+                        attacker->client->ps.groundEntityNum = ENTITYNUM_NONE;
+                        attacker->client->ps.velocity[2] = g_rpgBoost.integer;
+                        break;
+                    }
+                }
+                else if (mod == MOD_M67_GRENADE || mod == altAttack(MOD_M67_GRENADE)) {
+                    // Check if a player was caught in the radius.
+                    if (ent != attacker && ent->client) {
+                        if (ent && ent->client) {
+                            nadeOutOfBoundaries = qtrue;
+                            break;
+                        }
+                    }
+                }
+
+                else if (mod == MOD_RPG7_LAUNCHER && ent == attacker) {
+                    attacker->client->ps.pm_flags |= PMF_JUMPING;
+                    attacker->client->ps.groundEntityNum = ENTITYNUM_NONE;
+                    attacker->client->ps.velocity[2] = g_rpgBoost.integer;
+                    attacker->client->sess.rpgBoosts++;
+                }
+            }
+            else {
+                if (mod == MOD_RPG7_LAUNCHER && ent->classname && strstr(ent->classname, "booster") && !(attacker->client->ps.pm_flags & PMF_JUMPING)) {
+                    attacker->client->ps.pm_flags |= PMF_JUMPING;
+                    attacker->client->ps.groundEntityNum = ENTITYNUM_NONE;
+                    attacker->client->ps.velocity[2] = g_rpgBoost.integer;
+                    attacker->client->sess.rpgBoosts++;
+                }
+                else if ((mod == MOD_F1_GRENADE || mod == altAttack(MOD_F1_GRENADE)) && ent->classname && strstr(ent->classname, "f1")) { // Boe!Man 8/2/12: Fix for Altattack of tele nade not doing anything.
+                    if (origin[2] <= ent->origin_from[2]) {
+                        vec3_t          org1, org2;
+                        trace_t         tr;
+
+                        mins[0] = -12;
+                        mins[1] = -12;
+                        mins[2] = -31;
+
+                        maxs[0] = 12;
+                        maxs[1] = 12;
+                        maxs[2] = 32;
+
+                        VectorCopy(origin, org1);
+                        VectorCopy(origin, org2);
+                        org1[2] += 50;
+                        trap_Trace(&tr, org1, mins, maxs, org2, attacker->s.number, MASK_PLAYERSOLID); // Boe!Man 7/23/13: Used to be MASK_ALL, and before that MASK_SOLID. This seems to work best (MASK_PLAYERSOLID).
+                        if (!tr.startsolid && !tr.allsolid) {
+                            runF1Teleport(attacker, origin);
+                        }
+                        else if (level.time > attacker->client->pers.lastpickup) {
+                            ammoIdx = weaponData[WP_F1_GRENADE].attack[ATTACK_ALTERNATE].ammoIndex;
+                            attacker->client->ps.ammo[ammoIdx] += 1;
+                            if (!(attacker->client->ps.stats[STAT_WEAPONS] & (1 << WP_F1_GRENADE))) { // Boe!Man 8/22/11: Make sure the attacker has the weapon, if not, re-add it (fixes bug which made weapon disappear on last throw).
+                                attacker->client->ps.stats[STAT_WEAPONS] |= (1 << WP_F1_GRENADE);
+                            }
+
+                            G_printInfoMessage(attacker, "Surface is not empty.");
+                            attacker->client->pers.lastpickup = level.time + 50;
+                        }
+                    }
+                    else if (level.time > attacker->client->pers.lastpickup) {
+                        ammoIdx = weaponData[WP_F1_GRENADE].attack[ATTACK_ALTERNATE].ammoIndex;
+                        attacker->client->ps.ammo[ammoIdx] += 1;
+                        if (!(attacker->client->ps.stats[STAT_WEAPONS] & (1 << WP_F1_GRENADE))) { // Boe!Man 8/22/11: Make sure the attacker has the weapon, if not, re-add it (fixes bug which made weapon disappear on last throw).
+                            attacker->client->ps.stats[STAT_WEAPONS] |= (1 << WP_F1_GRENADE);
+                        }
+                        G_printInfoMessage(attacker, "Surface is too high.");
+                        attacker->client->pers.lastpickup = level.time + 50;
+                    }
+                }
+            }
+            
+        }
 
         if (ent == ignore)
         {
@@ -1489,8 +2045,8 @@ qboolean G_RadiusDamage (
 
             if ( d && ent->client )
             {
+                statInfo_t* stat = &attacker->client->pers.statInfo;
 
-                statinfo_t* stat = &attacker->client->pers.statinfo;
 
                 //Fire nades only count a hit if they kill
                 if (mod != MOD_ANM14_GRENADE && (!level.gametypeData->teams || (level.gametypeData->teams && !OnSameTeam(attacker, ent))))
@@ -1500,7 +2056,7 @@ qboolean G_RadiusDamage (
                     stat->weapon_hits[((mod > 256) ? ATTACK_ALTERNATE : ATTACK_NORMAL) * WP_NUM_WEAPONS + normalAttackMod(mod)]++;
                 }
                 //Ryan
-                
+
                 // Only one of the grenade hits will count for tk damage
                 if ( ent != attacker )
                 {
@@ -1536,6 +2092,126 @@ qboolean G_RadiusDamage (
                 SnapVector ( tent->s.angles );
             }
         }
+    }
+
+    if (isCurrentGametype(GT_HNZ)) {
+
+        if (mod == MOD_M67_GRENADE || mod == altAttack(MOD_M67_GRENADE) || mod == MOD_L2A2_GRENADE || mod == altAttack(MOD_L2A2_GRENADE)) {
+            G_CreateDamageArea(origin, attacker, 0.0, mod == MOD_L2A2_GRENADE || mod == altAttack(MOD_L2A2_GRENADE) ? 500 : radius, 20000, mod);
+        }
+
+    }
+    else if (isCurrentGametype(GT_HNS)) {
+        if (mod == altAttack(MOD_M4_ASSAULT_RIFLE)) {
+            ammoIdx = weaponData[WP_M4_ASSAULT_RIFLE].attack[ATTACK_ALTERNATE].ammoIndex;
+            int normAmmoIdx = weaponData[WP_M4_ASSAULT_RIFLE].attack[ATTACK_NORMAL].ammoIndex;
+            if (cageOutOfBoundaries) {
+                if (g_cageAttempts.integer) {
+                    if (attacker->client->sess.cageAttempts < g_cageAttempts.integer) {
+                        attacker->client->ps.ammo[ammoIdx]++;
+                        attacker->client->sess.cageAttempts++;
+                        G_printInfoMessage(attacker, "M4 cage failed %d of %d: Seeker at boundary or hider caught in cage", attacker->client->sess.cageAttempts, g_cageAttempts.integer);
+                    }
+                    else {
+                        G_printInfoMessage(attacker, "M4 cage failed too many times: not adding ammo.");
+
+                        
+                        if (attacker->client->ps.ammo[ammoIdx] == 0 && attacker->client->ps.ammo[normAmmoIdx] == 0
+                            && attacker->client->ps.clip[ATTACK_NORMAL][WP_M4_ASSAULT_RIFLE] == 0 && attacker->client->ps.clip[ATTACK_ALTERNATE][WP_M4_ASSAULT_RIFLE] == 0) {
+                            removeWeaponFromClient(attacker, WP_M4_ASSAULT_RIFLE, qfalse, WP_KNIFE);
+                            Q_strncpyz(level.hns.M4loc, "Disappeared", sizeof(level.hns.M4loc));
+                            G_printGametypeMessageToAll("M4 has disappeared!");
+                        }
+                    }
+                }
+                else {
+                    attacker->client->ps.ammo[ammoIdx]++;
+                    G_printInfoMessage(attacker, "Seeker at boundary or hider caught in cage.");
+                }
+            }
+            else {
+                if (lastCaught != -1 && countCaught == 1) {
+                    G_printGametypeMessageToAll("%s was trapped in a cage by %s.", g_entities[lastCaught].client->pers.cleanName, attacker->client->pers.cleanName);
+                }
+                else if (countCaught > 1) {
+                    G_printGametypeMessageToAll("%d seekers were trapped in a cage by %s.", countCaught, attacker->client->pers.cleanName);
+                }
+
+                attacker->client->sess.seekersCaged++;
+                if (attacker->client->ps.ammo[ammoIdx] == 0 && attacker->client->ps.ammo[normAmmoIdx] == 0
+                    && attacker->client->ps.clip[ATTACK_NORMAL][WP_M4_ASSAULT_RIFLE] == 0 && attacker->client->ps.clip[ATTACK_ALTERNATE][WP_M4_ASSAULT_RIFLE] == 0) {
+                    removeWeaponFromClient(attacker, WP_M4_ASSAULT_RIFLE, qfalse, WP_KNIFE);
+                    G_printGametypeMessageToAll("M4 has disappeared");
+                    Q_strncpyz(level.hns.M4loc, "Disappeared", sizeof(level.hns.M4loc));
+                }
+
+                spawnCage(origin, qfalse, qfalse);
+            }
+        }
+        else if (mod == WP_MM1_GRENADE_LAUNCHER) {
+            missile = NV_projectile(attacker, origin, dir, WP_ANM14_GRENADE, 0);
+            missile->nextthink = level.time + 100;
+        }
+        else if (mod == MOD_MDN11_GRENADE || mod == altAttack(MOD_MDN11_GRENADE)) {
+            if (nadeOutOfBoundaries) {
+                ammoIdx = weaponData[WP_MDN11_GRENADE].attack[ATTACK_ALTERNATE].ammoIndex;
+                if (g_boxAttempts.integer != 0) {
+                    if (attacker->client->sess.mdnAttempts < g_boxAttempts.integer) {
+                        attacker->client->sess.mdnAttempts += 1;
+                        attacker->client->ps.ammo[ammoIdx] += 1;
+
+                        if (!(attacker->client->ps.stats[STAT_WEAPONS] & (1 << WP_MDN11_GRENADE))) { // Boe!Man 8/22/11: Make sure the attacker has the weapon, if not, re-add it (fixes bug which made weapon disappear on last throw).
+                            attacker->client->ps.stats[STAT_WEAPONS] |= (1 << WP_MDN11_GRENADE);
+                        }
+
+                        G_printInfoMessage(attacker, "MDN box failed %d of %d: You cannot throw a box at a person.", attacker->client->sess.mdnAttempts, g_boxAttempts.integer);
+                    }
+                    else {
+                        G_printInfoMessage(attacker, "MDN box failed too many times: not adding ammo.");
+                    }
+                }
+                else {
+                    attacker->client->ps.ammo[ammoIdx] += 1;
+                    G_printInfoMessage(attacker, "You cannot throw a box at a person.");
+                }
+            }
+            else {
+                spawnBox(origin);
+            }
+        }
+        else if (mod == MOD_M67_GRENADE || mod == altAttack(MOD_M67_GRENADE)) {
+            if (!(attacker->client->ps.pm_flags & PMF_JUMPING) && !nadeOutOfBoundaries) {
+                G_printGametypeMessageToAll("%s transformed into something...", attacker->client->pers.cleanName);
+                G_printInfoMessage(attacker, "Hit your Reload button to get out (usually 'R').");
+                transformPlayerToObject(attacker);
+            }
+            else {
+                // Give them their nade back if they don't have it.
+                ammoIdx = weaponData[WP_M67_GRENADE].attack[ATTACK_ALTERNATE].ammoIndex;
+
+                if (attacker->client->ps.pm_flags & PMF_JUMPING) {
+                    G_printInfoMessage(attacker, "You're not allowed to jump while using this grenade.");
+
+                    if (!(attacker->client->ps.stats[STAT_WEAPONS] & (1 << WP_M67_GRENADE))) {
+                        attacker->client->ps.stats[STAT_WEAPONS] |= (1 << WP_M67_GRENADE);
+                    }
+                    attacker->client->ps.ammo[ammoIdx] += 1;
+                }
+                else {
+                    G_printInfoMessage(attacker, "Another object caught in radius.");
+
+                    if (!(attacker->client->ps.stats[STAT_WEAPONS] & (1 << WP_M67_GRENADE))) {
+                        attacker->client->ps.stats[STAT_WEAPONS] |= (1 << WP_M67_GRENADE);
+                    }
+                    attacker->client->ps.ammo[ammoIdx] += 1;
+                }
+
+            }
+
+            attacker->client->pers.lastpickup = level.time + 50;
+        }
+        // JANFIXME CUSTOM NADES FROM 1.00
+        // JANFIXME readd RPG disappearing?
     }
 
     return hitClient;

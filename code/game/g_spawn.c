@@ -2,7 +2,6 @@
 //
 
 #include "g_local.h"
-#include "1fx/1fxFunctions.h"
 
 qboolean G_SpawnString( const char *key, const char *defaultString, char **out )
 {
@@ -107,6 +106,44 @@ field_t fields[] =
     {"angle",               FOFS(s.angles),             F_ANGLEHACK},
     {"targetShaderName",    FOFS(targetShaderName),     F_LSTRING},
     {"targetShaderNewName", FOFS(targetShaderNewName),  F_LSTRING},
+    {"bspmodel",            FOFS(bspmodel),             F_LSTRING},
+    {"mins",                FOFS(r.mins),               F_VECTOR},
+    {"maxs",                FOFS(r.maxs),               F_VECTOR},
+    {"origin2",             FOFS(s.origin2),            F_VECTOR},
+    ///Henk 15/01/10 -> Door rotate
+    // Boe!Man 1/24/10: This can now be used for door_sliding.
+
+    // Henk 26/02/10 -> minimum hiders before teleport can be triggered
+    {"minimumhiders",       FOFS(minimumhiders),        F_INT},
+    {"apos1",               FOFS(apos1),                F_VECTOR},
+    {"apos2",               FOFS(apos2),                F_VECTOR},
+    {"distance",            FOFS(distance),             F_FLOAT},
+    {"message2",            FOFS(message2),             F_LSTRING},
+    {"up",                  FOFS(up),                   F_INT},
+    {"forward",             FOFS(forward),              F_INT},
+    {"origin_from",         FOFS(origin_from),          F_VECTOR},
+    {"origin_to",           FOFS(origin_to),            F_VECTOR},
+    {"angles_from",         FOFS(angles_from),          F_VECTOR},
+    {"angles_to",           FOFS(angles_to),            F_VECTOR},
+    {"both_sides",          FOFS(both_sides),           F_LSTRING},
+    {"max_players",         FOFS(max_players),          F_INT},
+    {"min_players",         FOFS(min_players),          F_INT},
+    {"invisible",           FOFS(invisible),            F_LSTRING},
+    {"auto",                FOFS(autoSection),          F_LSTRING},
+    {"hideseek",            FOFS(hideseek),             F_INT},
+
+    // Boe!Man 6/3/11: Parts for the reachable object (sun).
+    {"endround",            FOFS(endround),             F_LSTRING},
+    {"endround2",           FOFS(endround2),            F_INT},
+    {"score",               FOFS(score),                F_INT},
+    {"broadcast",           FOFS(broadcast),            F_LSTRING},
+    {"effect_touch",        FOFS(effect_touch),         F_LSTRING},
+
+    // Boe!Man 5/22/12: Sound set for some entities (like the booster).
+    {"sound",               FOFS(sound),                F_LSTRING},
+
+    // Boe!Man 6/30/12: Add 'size' -> This is for hideseek_cage.
+    {"size",                FOFS(size),                 F_LSTRING},
 
     {NULL}
 };
@@ -176,6 +213,18 @@ void SP_mission_player              (gentity_t* ent);
 
 void SP_fx_play_effect              (gentity_t* ent);
 
+/* === 1FXMOD FUNCTIONS === */
+void SP_1fx_teleport(gentity_t* self);
+void SP_misc_weaponmodel(gentity_t* ent);
+void NV_model(gentity_t* ent);
+void NV_misc_bsp(gentity_t* ent);
+void nolower(gentity_t* ent);
+void noroof(gentity_t* ent);
+void nomiddle(gentity_t* ent);
+void nowhole(gentity_t* ent);
+void SP_seekers(gentity_t* ent);
+void SP_Anticamp(gentity_t* ent);
+
 spawn_t spawns[] =
 {
     // info entities don't do anything at all, but provide positional
@@ -194,7 +243,7 @@ spawn_t spawns[] =
     {"func_train",                  SP_func_train},
     {"func_timer",                  SP_func_timer},
     {"func_glass",                  SP_func_glass},
-    {"func_wall",                   SP_func_wall},
+    {"func_wall",                   SP_func_wall}, // func_wall has ET_WALL entity event, which does not exist in 1.00
 
     // Triggers are brush objects that cause an effect when contacted
     // by a living player, usually involving firing targets.
@@ -253,7 +302,6 @@ spawn_t spawns[] =
     {"func_group",                  0},
     {"info_camp",                   0},
     {"info_null",                   0},
-    {"door_rotating",               0},
     {"emplaced_wpn",                0},
     {"info_NPC*",                   0},
     {"info_player_start",           0},
@@ -264,8 +312,35 @@ spawn_t spawns[] =
     {"trigger_arioche_objective",   0},
     {"func_brushmodel_child",       0},
 
-    // 1fx additions
-    {"seekers",                     parseCustomETHiders},
+    // Additions from 1fxmod
+    {"1fx_teleport",                SP_1fx_teleport},
+    {"1fx_position",                SP_target_position},
+    {"client_model1",               SP_model_static},
+    {"misc_weaponmodel",            SP_misc_weaponmodel},
+    {"func_door_rotating",          SP_func_door_rotating},
+    {"door_rotating",               SP_func_door_rotating},
+    {"door_sliding",                SP_func_door},
+    {"nv_model",                    NV_model },
+    {"blocker",                     NV_misc_bsp},
+    {"1fx_play_effect",             SP_fx_play_effect}, // internal use so we can clean it up
+    {"nolower",                     nolower},
+    {"noroof",                      noroof},
+    {"nomiddle",                    nomiddle},
+    {"nowhole",                     nowhole},
+    {"blocked_trigger",             NV_blocked_trigger},
+    {"blocked_teleporter",          NV_blocked_Teleport},
+    {"booster",                     SP_booster},
+    {"teleporter",                  SP_teleporter},
+    {"seekers",                     SP_seekers},
+    {"reachable_object",            SP_sun},
+    {"hideseek_cage",               hideseek_cage},
+    {"accelerator",                 SP_accelerator},
+    { "monkey_player",              SP_monkey_player },
+    { "hideseek_cageplayer",        SP_hideseek_cageplayer },
+
+    { "hideseek_cageextra",         hideseek_cageextra },
+
+    { "anticamp",                   SP_Anticamp },              
 
     {0, 0}
 };
@@ -475,7 +550,7 @@ Spawn an entity and fill in all of the level fields from
 level.spawnVars[], then call the class specfic spawn function
 ===================
 */
-void G_SpawnGEntityFromSpawnVars( qboolean inSubBSP )
+int G_SpawnGEntityFromSpawnVars( qboolean inSubBSP )
 {
     int         i;
     gentity_t   *ent;
@@ -488,7 +563,7 @@ void G_SpawnGEntityFromSpawnVars( qboolean inSubBSP )
         if (value[0] && Q_stricmp(level.mFilter, value))
         {
             // we are not matching up to the filter, so no spawney
-            return;
+            return -1;
         }
     }
 
@@ -497,7 +572,20 @@ void G_SpawnGEntityFromSpawnVars( qboolean inSubBSP )
 
     for ( i = 0 ; i < level.numSpawnVars ; i++ )
     {
-        G_ParseField( level.spawnVars[i][0], level.spawnVars[i][1], ent );
+        if (isCurrentGametype(GT_HNS)) {
+            if (strstr(level.spawnVars[i][1], "gametype_item")) {
+                ent->think = G_FreeEntity;
+                ent->nextthink = level.time + 100;
+            }
+        }
+        if (strstr(level.spawnVars[i][0], "tempent")) {
+            ent->think = G_FreeEntity;
+            ent->nextthink = level.time + 100;
+            level.tempent = ent->s.number;
+        }
+
+        G_ParseField(level.spawnVars[i][0], level.spawnVars[i][1], ent);
+        
     }
 
     // check for "notteam" flag (GT_DM)
@@ -507,7 +595,7 @@ void G_SpawnGEntityFromSpawnVars( qboolean inSubBSP )
         if ( i )
         {
             G_FreeEntity( ent );
-            return;
+            return -1;
         }
     }
     else
@@ -516,7 +604,7 @@ void G_SpawnGEntityFromSpawnVars( qboolean inSubBSP )
         if ( i )
         {
             G_FreeEntity( ent );
-            return;
+            return -1;
         }
     }
 
@@ -530,13 +618,13 @@ void G_SpawnGEntityFromSpawnVars( qboolean inSubBSP )
                 if ( !G_IsGametypeInList ( level.gametypeData->basegametype, value ) )
                 {
                     G_FreeEntity ( ent );
-                    return;
+                    return -1;
                 }
             }
             else
             {
                 G_FreeEntity ( ent );
-                return;
+                return -1;
             }
         }
     }
@@ -550,6 +638,11 @@ void G_SpawnGEntityFromSpawnVars( qboolean inSubBSP )
     {
         G_FreeEntity( ent );
     }
+
+    level.numSpawnVars = 0;
+    level.numSpawnVarChars = 0;
+
+    return ent->s.number;
 }
 
 
@@ -737,7 +830,7 @@ qboolean G_ParseSpawnVars( qboolean inSubBSP )
     level.numSpawnVarChars = 0;
 
     // parse the opening brace
-    if ( !trap_GetEntityToken( com_token, sizeof( com_token ) ) )
+    if ( !trap_GetEntityToken( com_token, sizeof( com_token ), inSubBSP ) )
     {
         // end of spawn string
         return qfalse;
@@ -752,7 +845,7 @@ qboolean G_ParseSpawnVars( qboolean inSubBSP )
     while ( 1 )
     {
         // parse key
-        if ( !trap_GetEntityToken( keyname, sizeof( keyname ) ) )
+        if ( !trap_GetEntityToken( keyname, sizeof( keyname ), inSubBSP ) )
         {
             Com_Error( ERR_FATAL, "G_ParseSpawnVars: EOF without closing brace" );
         }
@@ -763,7 +856,7 @@ qboolean G_ParseSpawnVars( qboolean inSubBSP )
         }
 
         // parse value
-        if ( !trap_GetEntityToken( com_token, sizeof( com_token ) ) )
+        if ( !trap_GetEntityToken( com_token, sizeof( com_token ), inSubBSP ) )
         {
             Com_Error( ERR_FATAL, "G_ParseSpawnVars: EOF without closing brace" );
         }
@@ -958,6 +1051,110 @@ qboolean SP_bsp_worldspawn ( void )
     return qtrue;
 }
 
+// Boe!Man 9/11/12: Function to preload effects in H&S/H&Z.
+static void Preload_Effects(void)
+{
+    // Boe!Man 9/11/12: Handle H&S/H&Z stuff.
+    if (isCurrentGametypeInList((gameTypes_t[]) { GT_HNS, GT_HNZ, GT_MAX })) {
+        // We'll have to preload the non-map effects in order to use them.
+        AddSpawnField("classname", "fx_play_effect");
+        AddSpawnField("effect", "flare_blue");
+        AddSpawnField("tempent", "1");
+        G_SpawnGEntityFromSpawnVars(qtrue);
+        G_FreeEntity(&g_entities[level.tempent]);
+
+        AddSpawnField("classname", "fx_play_effect");
+        AddSpawnField("effect", "flare_red");
+        AddSpawnField("tempent", "1");
+        G_SpawnGEntityFromSpawnVars(qtrue);
+        G_FreeEntity(&g_entities[level.tempent]);
+
+        AddSpawnField("classname", "fx_play_effect");
+        AddSpawnField("effect", "arm2smallsmoke");
+        AddSpawnField("tempent", "1");
+        G_SpawnGEntityFromSpawnVars(qtrue);
+        G_FreeEntity(&g_entities[level.tempent]);
+
+        AddSpawnField("classname", "fx_play_effect");
+        AddSpawnField("effect", "levels/air4_toxic_smoke");
+        AddSpawnField("tempent", "1");
+        G_SpawnGEntityFromSpawnVars(qtrue);
+        G_FreeEntity(&g_entities[level.tempent]);
+
+        AddSpawnField("classname", "fx_play_effect");
+        AddSpawnField("effect", "misc/exclaimation");
+        AddSpawnField("tempent", "1");
+        G_SpawnGEntityFromSpawnVars(qtrue);
+        G_FreeEntity(&g_entities[level.tempent]);
+
+        AddSpawnField("classname", "fx_play_effect");
+        AddSpawnField("effect", "red_dot");
+        AddSpawnField("tempent", "1");
+        G_SpawnGEntityFromSpawnVars(qtrue);
+        G_FreeEntity(&g_entities[level.tempent]);
+    }
+
+    AddSpawnField("classname", "fx_play_effect");
+    AddSpawnField("effect", "misc/electrical");
+    AddSpawnField("tempent", "1");
+    G_SpawnGEntityFromSpawnVars(qtrue);
+    G_FreeEntity(&g_entities[level.tempent]);
+
+    AddSpawnField("classname", "fx_play_effect");
+    AddSpawnField("effect", "misc/electrical");
+    AddSpawnField("tempent", "1");
+    G_SpawnGEntityFromSpawnVars(qtrue);
+    G_FreeEntity(&g_entities[level.tempent]);
+
+    AddSpawnField("classname", "fx_play_effect");
+    AddSpawnField("effect", "gen_tendril1");
+    AddSpawnField("tempent", "1");
+    G_SpawnGEntityFromSpawnVars(qtrue);
+    G_FreeEntity(&g_entities[level.tempent]);
+
+    AddSpawnField("classname", "fx_play_effect");
+    AddSpawnField("effect", "levels/shop7_toxiic_explosion");
+    AddSpawnField("tempent", "1");
+    G_SpawnGEntityFromSpawnVars(qtrue);
+    G_FreeEntity(&g_entities[level.tempent]);
+
+    AddSpawnField("classname", "fx_play_effect");
+    AddSpawnField("effect", "effects/explosions/col9_boat_explosion");
+    AddSpawnField("tempent", "1");
+    G_SpawnGEntityFromSpawnVars(qtrue);
+    G_FreeEntity(&g_entities[level.tempent]);
+
+    AddSpawnField("classname", "fx_play_effect");
+    AddSpawnField("effect", "jon_sam_trail");
+    AddSpawnField("tempent", "1");
+    G_SpawnGEntityFromSpawnVars(qtrue);
+    G_FreeEntity(&g_entities[level.tempent]);
+
+    AddSpawnField("classname", "fx_play_effect");
+    AddSpawnField("effect", "effects/levels/hk6_spark_shower");
+    AddSpawnField("tempent", "1");
+    G_SpawnGEntityFromSpawnVars(qtrue);
+    G_FreeEntity(&g_entities[level.tempent]);
+
+    AddSpawnField("classname", "fx_play_effect");
+    AddSpawnField("effect", "fire/blue_target_flame");
+    AddSpawnField("tempent", "1");
+    G_SpawnGEntityFromSpawnVars(qtrue);
+    G_FreeEntity(&g_entities[level.tempent]);
+
+    // Boe!Man 4/15/13: Effect for the accelerator.
+    AddSpawnField("classname", "fx_play_effect");
+    AddSpawnField("effect", "explosions/phosphorus_trail");
+    AddSpawnField("tempent", "1");
+    G_SpawnGEntityFromSpawnVars(qtrue);
+    G_FreeEntity(&g_entities[level.tempent]);
+
+    level.hns.MM1Flare = -1;
+    level.hns.M4Flare = -1;
+    level.hns.RPGFlare = -1;
+}
+// End
+
 /*QUAKED worldspawn (0 0 0) ?
 
 Every map should have exactly one worldspawn.
@@ -1017,9 +1214,6 @@ void SP_worldspawn( void )
         trap_SetConfigstring( CS_GAMETYPE_BLUETEAM, level.gametypeTeam[TEAM_BLUE] );
     }
 
-    G_SpawnString( "message", "", &text );
-    trap_SetConfigstring( CS_MESSAGE, text );               // map specific message
-
     trap_SetConfigstring( CS_MOTD, g_motd.string );     // message of the day
 
     G_SpawnString( "gravity", va("%d", g_gravity.integer), &text );
@@ -1073,6 +1267,8 @@ void SP_worldspawn( void )
                 i, lengthRed, lengthGreen, lengthBlue);
         }
     }
+
+    Preload_Effects();
 }
 
 
@@ -1152,4 +1348,264 @@ void SP_model_static ( gentity_t* ent )
     trap_LinkEntity ( ent );
 }
 
+/* === SPAWN FUNCTIONS FROM 1FXMOD === */
 
+void SP_1fx_teleport(gentity_t* self) {
+    char* origin;
+    origin = va("%.0f %.0f %.0f", self->r.currentOrigin[0], self->r.currentOrigin[1], self->r.currentOrigin[2] - 30);
+    AddSpawnField("classname", "fx_play_effect");
+    AddSpawnField("effect", "fire/blue_target_flame");
+    AddSpawnField("origin", origin);
+    AddSpawnField("angles", "0 90 0");
+    AddSpawnField("count", "-1");
+    G_SpawnGEntityFromSpawnVars(qtrue);
+    InitTrigger(self);
+    //G_PlayEffect ( 3,self->client->ps.origin, self->pos1);
+    // unlike other triggers, we need to send this one to the client
+    // unless is a spectator trigger
+    if (self->spawnflags & 1) {
+        self->r.svFlags |= SVF_NOCLIENT;
+    }
+    else {
+        self->r.svFlags &= ~SVF_NOCLIENT;
+    }
+
+    // make sure the client precaches this sound
+    G_SoundIndex("sound/world/jumppad.wav");
+
+    self->s.eType = ET_TELEPORT_TRIGGER;
+    self->touch = trigger_teleporter_touch;
+
+    trap_LinkEntity(self);
+}
+
+/*
+==============
+SP_misc_weaponmodel
+12/28/15 - 11:18 PM
+Spawns a weapon that cannot be picked up
+and has no other effects on the specified
+origin.
+==============
+*/
+
+void SP_misc_weaponmodel(gentity_t* ent)
+{
+    int         i;
+    gentity_t* weapon = NULL;
+    gitem_t* weaponItem = NULL;
+
+    // Check if there was a weapon specified.
+    if (!ent->model || !ent->model[0]) {
+        Com_Printf("misc_weaponmodel: no model specified, not spawning.\n");
+        G_FreeEntity(ent);
+        return;
+    }
+
+    // Get the weapon number.
+    Q_strlwr(ent->model);
+    for (i = WP_KNIFE; i < WP_MAX_WEAPONS; i++) {
+        if (strstr(Q_strlwr(va("%s", bg_weaponNames[i])), ent->model)) {
+            weaponItem = BG_FindWeaponItem((weapon_t)i);
+            break;
+        }
+    }
+
+    // Invalid weapon specified, name not found.
+    if (weaponItem == NULL) {
+        Com_Printf("misc_weaponmodel: invalid weapon specified (%s), not spawning.\n", ent->model);
+        G_FreeEntity(ent);
+        return;
+    }
+
+    // Spawn the weapon and set the model.
+    weapon = G_Spawn();
+    weapon->classname = ent->classname;
+    weapon->s.eType = ET_ITEM;
+    weapon->s.eFlags = EF_PERMANENT;
+    weapon->s.modelindex = weaponItem - bg_itemlist;
+
+    // Update its origin and angle(s).
+    G_SetOrigin(weapon, ent->s.origin);
+    VectorCopy(ent->s.angles, weapon->s.angles);
+
+    trap_LinkEntity(weapon);
+
+    // Free the original entity, no need to keep this around.
+    G_FreeEntity(ent);
+}
+
+void NV_model(gentity_t* ent)
+{
+    ent->s.modelindex = G_ModelIndex(ent->model);
+    VectorSet(ent->r.mins, -16, -16, -16);
+    VectorSet(ent->r.maxs, 16, 16, 16);
+    trap_LinkEntity(ent);
+
+    G_SetOrigin(ent, ent->s.origin);
+    VectorCopy(ent->s.angles, ent->s.apos.trBase);
+}
+
+void NV_misc_bsp(gentity_t* ent)
+{
+    char    temp[MAX_QPATH];
+    char* out;
+    vec3_t  newAngle;
+    int     tempint;
+    vec3_t  mins, maxs;
+    //int       newBsp = 0;
+
+    // Boe!Man 5/24/12: Using a float isn't foolproof, use a vector instead.
+    if (G_SpawnVector("angles", "0 0 0", newAngle)) {
+        ent->s.angles[0] = newAngle[0];
+        ent->s.angles[1] = newAngle[1];
+        ent->s.angles[2] = newAngle[2];
+#ifdef _SPMAPS
+        VectorCopy(ent->s.angles, ent->savedAngles);
+#endif
+
+    }
+    // don't support rotation any other way
+    //ent->s.angles[0] = 0.0;
+    //ent->s.angles[2] = 0.0;
+
+    G_SpawnString("bspmodel", "", &out);
+
+    //ent->s.eFlags = /*EF_PERMANENT*/ EF_TELEPORT_BIT;
+
+    // Mainly for debugging
+    G_SpawnInt("spacing", "0", &tempint);
+    ent->s.time2 = tempint;
+    G_SpawnInt("flatten", "0", &tempint);
+    ent->s.time = tempint;
+    Com_sprintf(temp, MAX_QPATH, "#%s", out);
+
+    trap_SetBrushModel(ent, temp);  // SV_SetBrushModel -- sets mins and maxs
+    G_BSPIndex(temp);
+
+    if (G_SpawnVector("maxs", "0 0 0", maxs)) {
+        //VectorCopy(ent->r.maxs, maxs);
+        ent->r.maxs[0] = (int)maxs[0];
+        ent->r.maxs[1] = (int)maxs[1];
+        ent->r.maxs[2] = (int)maxs[2];
+    }
+
+    if (G_SpawnVector("mins", "0 0 0", mins)) {
+        //VectorCopy(ent->r.mins, mins);
+        ent->r.mins[0] = (int)mins[0];
+        ent->r.mins[1] = (int)mins[1];
+        ent->r.mins[2] = (int)mins[2];
+    }
+    level.mNumBSPInstances++;
+    Com_sprintf(temp, MAX_QPATH, "%d-", level.mNumBSPInstances);
+    VectorCopy(ent->s.origin, level.mOriginAdjust);
+    level.mRotationAdjust = ent->s.angles[1];
+    level.mTargetAdjust = temp;
+    level.hasBspInstances = qtrue;
+    level.mBSPInstanceDepth++;
+    G_SpawnString("filter", "", &out);
+    strcpy(level.mFilter, out);
+    G_SpawnString("teamfilter", "", &out);
+    strcpy(level.mTeamFilter, out);
+
+    VectorCopy(ent->s.origin, ent->s.pos.trBase);
+    VectorCopy(ent->s.origin, ent->r.currentOrigin);
+    VectorCopy(ent->s.angles, ent->s.apos.trBase);
+    VectorCopy(ent->s.angles, ent->r.currentAngles);
+
+    ent->s.eType = ET_MOVER;
+    ///ent->s.eType = ET_WALL;
+
+    trap_LinkEntity(ent);
+
+    trap_SetActiveSubBSP(ent->s.modelindex);
+    G_SpawnEntitiesFromString(qtrue);
+    trap_SetActiveSubBSP(-1);
+
+    level.mBSPInstanceDepth--;
+    level.mFilter[0] = level.mTeamFilter[0] = 0;
+
+    if (g_debugRMG.integer)
+    {
+        G_SpawnDebugCylinder(ent->s.origin, ent->s.time2, &g_entities[0], 2000, COLOR_WHITE);
+
+        if (ent->s.time)
+        {
+            G_SpawnDebugCylinder(ent->s.origin, ent->s.time, &g_entities[0], 2000, COLOR_RED);
+        }
+    }
+
+}
+
+void nolower(gentity_t* ent) {
+    static char message[24];
+
+    strncpy(message, G_ColorizeMessage("Lower"), sizeof(message));
+    ent->message = message;
+    ent->message2 = "\\Lower";
+    blockSection(ent, MAPSECTION_NOLOWER);
+}
+
+void noroof(gentity_t* ent) {
+    static char message[24];
+
+    strncpy(message, G_ColorizeMessage("Roof"), sizeof(message));
+    ent->message = message;
+    ent->message2 = "\\Roof";
+    blockSection(ent, MAPSECTION_NOROOF);
+}
+
+void nomiddle(gentity_t* ent) {
+    static char message[24];
+
+    strncpy(message, G_ColorizeMessage("Middle"), sizeof(message));
+    ent->message = message;
+    ent->message2 = "\\Middle";
+    blockSection(ent, MAPSECTION_NOMIDDLE);
+}
+
+void nowhole(gentity_t* ent) {
+    static char message[24];
+
+    strncpy(message, G_ColorizeMessage("Whole"), sizeof(message));
+    ent->message = message;
+    ent->message2 = "\\Whole";
+    blockSection(ent, MAPSECTION_NOWHOLE);
+}
+
+/*
+=================================================================================
+seekers
+
+Entity that lets a user define the team balance.
+=================================================================================
+*/
+
+void SP_seekers(gentity_t* ent)
+{
+    int i, tempInt;
+
+    // We loop through the command, and check if we can find something useful.
+    // The even teams command blindly checks whatever the user put here, it's up to the server owner to declare valid values.
+    for (i = 1; i <= MAX_CUSTOM_ET_AMOUNT; i++) {
+        G_SpawnInt(va("%i", i), "-1", &tempInt);
+
+        if (tempInt) {
+            level.hns.customETHiderAmount[i - 1] = tempInt;
+        }
+    }
+}
+
+void SP_Anticamp(gentity_t* ent) {
+
+    if (level.anticamp.extentsCount >= MAX_ANTICAMP_ZONES - 1) {
+        logSystem(LOGLEVEL_WARN, "SP_Anticamp: Too many extents. Rest ignored.");
+        return;
+    }
+
+    G_SpawnVector("mins", "0 0 0", level.anticamp.extentsMins[level.anticamp.extentsCount]);
+    G_SpawnVector("maxs", "0 0 0", level.anticamp.extentsMaxs[level.anticamp.extentsCount]);
+
+    level.anticamp.extentsCount++;
+
+}

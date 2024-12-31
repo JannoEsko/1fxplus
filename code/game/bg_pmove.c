@@ -6,6 +6,7 @@
 #include "../qcommon/q_shared.h"
 #include "bg_public.h"
 #include "bg_local.h"
+#include "g_local.h"
 
 pmove_t     *pm;
 pml_t       pml;
@@ -183,7 +184,7 @@ static void PM_Friction( void )
             drop += control*pm_ladderfriction*pml.frametime;
         }
     }
-    else if ( pm->waterlevel > 1 )
+    else if ( (!pm->legacyProtocol && pm->waterlevel > 1) || (pm->legacyProtocol && pm->waterlevel) )
     {
         drop += speed*pm_waterfriction*pm->waterlevel*pml.frametime;
     }
@@ -1873,7 +1874,14 @@ static void PM_SetWeaponTime ( TAnimWeapon *aW )
         return;
     }
 
-    pm->ps->weaponTime = 1000.0f / aIW->mFPS[0] * aIW->mNumFrames[0] / aIW->mSpeed;
+    float wpnTime = 1000.0f;
+
+    if (isCurrentGametype(GT_HNS) && pm->ps->weapon == WP_KNIFE && pm->cmd.buttons & BUTTON_ATTACK && pm->ps->stats[STAT_GAMETYPE_ITEMS]) {
+        wpnTime = 500.0f;
+    }
+
+    pm->ps->weaponTime = wpnTime / aIW->mFPS[0] * aIW->mNumFrames[0] / aIW->mSpeed;
+
     pm->ps->weaponAnimTime = pm->ps->weaponTime;
 }
 
@@ -1932,7 +1940,7 @@ void PM_CheckWeaponNotes ( void )
     ps   = pm->ps;
     aW   = BG_GetInviewAnimFromIndex ( ps->weapon, (ps->weaponAnimId&~ANIM_TOGGLEBIT) );
 
-    assert ( aW );
+    //assert ( aW ); //handsup state
     if ( !aW )
     {
         return;
@@ -2005,7 +2013,7 @@ void PM_SetWeaponAnimChoice(TAnimWeapon *aW)
 
     if(!aW)
     {
-        assert(0);
+        //assert(0); //handsup state
         return;
     }
 
@@ -2042,6 +2050,9 @@ TAnimWeapon* PM_GetAnimFromName ( char *animName, playerState_t *ps, int *animIn
             else if(!strcmp(animName,"fire"))
             {
                 aW=BG_GetInviewAnimFromIndex(ps->weapon,ps->weaponAnimId&~ANIM_TOGGLEBIT);
+                if (aW == NULL || aW->mName == NULL) {
+                    break;
+                }
                 if((!strcmp(aW->mName,"prefire"))||strstr(aW->mName,"firetrans"))
                 {
                     // Get 'fire' anim.
@@ -2109,6 +2120,10 @@ TAnimWeapon* PM_GetAnimFromName ( char *animName, playerState_t *ps, int *animIn
         case WP_SMOHG92_GRENADE:
         case WP_ANM14_GRENADE:
         case WP_M15_GRENADE:
+        case WP_M67_GRENADE:
+        case WP_L2A2_GRENADE:
+        case WP_MDN11_GRENADE:
+        case WP_F1_GRENADE:
             if(!strcmp(animName,"charge"))
             {
                 // Get 'throwbegin' anim.
@@ -2329,7 +2344,7 @@ static void PM_BeginWeaponChange(int weapon)
     PM_AddEvent(EV_CHANGE_WEAPON);
     pm->ps->weaponstate = WEAPON_DROPPING;
 
-    if( pm->ps->weapon >= WP_M84_GRENADE && pm->ps->weapon <= WP_M15_GRENADE && pm->ps->clip[ATTACK_NORMAL][pm->ps->weapon] <= 0 )
+    if( pm->ps->weapon >= WP_M84_GRENADE && pm->ps->weapon < WP_NUM_WEAPONS && pm->ps->clip[ATTACK_NORMAL][pm->ps->weapon] <= 0 )
     {
         // We don't want to play the 'putaway' anim for the grenades if we are out of grenades!
         return;
@@ -2375,7 +2390,7 @@ static void PM_FinishWeaponChange( void )
     }
 
     // We don't want to play the 'takeout' anim for the grenades if we are about to reload anyway
-    if( pm->ps->weapon >= WP_M84_GRENADE && pm->ps->weapon <= WP_M15_GRENADE && pm->ps->clip[ATTACK_NORMAL][pm->ps->weapon] <=0 )
+    if( pm->ps->weapon >= WP_M84_GRENADE && pm->ps->weapon < WP_NUM_WEAPONS && pm->ps->clip[ATTACK_NORMAL][pm->ps->weapon] <=0 )
     {
         return;
     }
@@ -2516,6 +2531,26 @@ int PM_GetAttackButtons(void)
     if ( pm->ps->stats[STAT_FROZEN] )
     {
         buttons &= ~BUTTON_ATTACK;
+    }
+
+    if (isCurrentGametype(GT_HNS)) {
+        // As soon as the button is released you are ok to press attack again
+        if (pm->ps->pm_debounce & PMD_ATTACK)
+        {
+            if (!(buttons & BUTTON_ATTACK))
+            {
+                pm->ps->pm_debounce &= ~(PMD_ATTACK);
+            }
+            else if (pm->ps->firemode[pm->ps->weapon] != WP_FIREMODE_AUTO)
+            {
+                buttons &= ~BUTTON_ATTACK;
+            }
+        }
+
+        if (pm->ps->stats[STAT_FROZEN])
+        {
+            buttons &= ~BUTTON_ATTACK;
+        }
     }
 
     // Handle firebutton in varous firemodes.
@@ -2904,13 +2939,13 @@ static void PM_Weapon( void )
     {
         // Handle the weapons idle animation
         PM_WeaponIdle ( );
-
         return;
     }
 
     // Reload the alt clip immediately
     if( !pm->ps->clip[ATTACK_ALTERNATE][pm->ps->weapon] && pm->ps->ammo[weaponData[pm->ps->weapon].attack[ATTACK_ALTERNATE].ammoIndex] > 0)
     {
+        
         switch(weaponData[pm->ps->weapon].attack[ATTACK_ALTERNATE].fireFromClip)
         {
             case 2:
@@ -2942,6 +2977,11 @@ static void PM_Weapon( void )
     // Zoom in animation complete... now set zoom parms.
     if( pm->ps->weaponstate == WEAPON_ZOOMIN )
     {
+
+        if (pm->legacyProtocol && !pm->ps->zoomFov && 0) {
+            pm->ps->zoomFov = 20;
+        }
+
         // The zoomfov may still be remembered from a reload while zooming
         pm->ps->pm_flags |= PMF_ZOOMED;
         pm->ps->pm_flags |= PMF_ZOOM_LOCKED;
@@ -2958,6 +2998,10 @@ static void PM_Weapon( void )
             case WP_SMOHG92_GRENADE:
             case WP_ANM14_GRENADE:
             case WP_M15_GRENADE:
+            case WP_M67_GRENADE:
+            case WP_L2A2_GRENADE:
+            case WP_MDN11_GRENADE:
+            case WP_F1_GRENADE:
                 if(!(attackButtons&(BUTTON_ATTACK|BUTTON_ALT_ATTACK)) )
                 {
                     if(pm->ps->weaponstate==WEAPON_CHARGING)
@@ -3080,7 +3124,7 @@ static void PM_Weapon( void )
         PM_StartRefillClip( ATTACK_NORMAL );
         return;
     }
-    else if( pm->ps->weapon==WP_KNIFE || (pm->ps->weapon>=WP_RPG7_LAUNCHER && pm->ps->weapon<=WP_M15_GRENADE) )
+    else if( pm->ps->weapon==WP_KNIFE || (pm->ps->weapon>=WP_RPG7_LAUNCHER && pm->ps->weapon< WP_NUM_WEAPONS) )
     {
         if(pm->ps->clip[ATTACK_NORMAL][pm->ps->weapon]<1)
         {
@@ -3107,7 +3151,17 @@ static void PM_Weapon( void )
     }
 
     // Handle zooming in/out for sniper rifle.
-    if( weaponData[pm->ps->weapon].zoom[0].fov )
+
+    qboolean isZoomableWeapon = qfalse;
+
+    if (pm->legacyProtocol && 0) {
+        isZoomableWeapon = pm->ps->weapon == WP_MSG90A1 ? qtrue : qfalse;
+    }
+    else {
+        isZoomableWeapon = weaponData[pm->ps->weapon].zoom[0].fov ? qtrue : qfalse;
+    }
+
+    if(isZoomableWeapon)
     {
         if( (attackButtons&BUTTON_ALT_ATTACK) || (pm->ps->pm_flags & PMF_ZOOM_REZOOM) )
         {
@@ -3125,20 +3179,47 @@ static void PM_Weapon( void )
         {
             if(pm->cmd.buttons&BUTTON_ZOOMIN)
             {
-                if ( pm->ps->zoomFov + 1 < ZOOMLEVEL_MAX && weaponData[pm->ps->weapon].zoom[pm->ps->zoomFov+1].fov )
-                {
-                    pm->ps->zoomFov++;
-                    pm->ps->weaponTime=175;
+
+                if (pm->legacyProtocol && 0) {
+                    pm->ps->zoomFov = pm->ps->zoomFov >> 1;
+                    if (pm->ps->zoomFov < 5)
+                    {
+                        pm->ps->zoomFov = 5;
+                    }
+                    pm->ps->weaponTime = 175;
                 }
+                else {
+                    if (pm->ps->zoomFov + 1 < ZOOMLEVEL_MAX && weaponData[pm->ps->weapon].zoom[pm->ps->zoomFov + 1].fov)
+                    {
+                        pm->ps->zoomFov++;
+                        pm->ps->weaponTime = 175;
+                    }
+                }
+
+                
                 return;
             }
             else if(pm->cmd.buttons&BUTTON_ZOOMOUT)
             {
-                if ( pm->ps->zoomFov > 0 )
-                {
-                    pm->ps->zoomFov--;
-                    pm->ps->weaponTime=175;
+
+                if (pm->legacyProtocol && 0) {
+                    pm->ps->zoomFov = pm->ps->zoomFov << 1;
+
+                    if (pm->ps->zoomFov > 20) {
+                        pm->ps->zoomFov = 20;
+                    }
+
+                    pm->ps->weaponTime = 175;
                 }
+                else {
+                    if (pm->ps->zoomFov > 0)
+                    {
+                        pm->ps->zoomFov--;
+                        pm->ps->weaponTime = 175;
+                    }
+                }
+
+                
                 return;
             }
         }
@@ -3252,7 +3333,7 @@ static void PM_Weapon( void )
         return;
     }
 
-    pm->ps->pm_debounce |= PMD_ATTACK;
+    pm->ps->pm_debounce |= PMD_ATTACK; // JANFIXME - multiprot impact?
 
     // Decrease the ammo
     (*ammoSource) -= attackData->fireAmount;
@@ -3285,6 +3366,10 @@ static void PM_Weapon( void )
         case WP_SMOHG92_GRENADE:
         case WP_ANM14_GRENADE:
         case WP_M15_GRENADE:
+        case WP_M67_GRENADE:
+        case WP_L2A2_GRENADE:
+        case WP_MDN11_GRENADE:
+        case WP_F1_GRENADE:
 
             // Start the detonation timer on the grenade going.
             pm->ps->grenadeTimer = attackData->projectileLifetime;
@@ -3355,12 +3440,137 @@ static void PM_DropTimers( void )
     }
 }
 
+static void PM_CheckLeanLegacy(void)
+{
+    trace_t     trace;
+    float       leanTime;
+
+
+    qboolean	canlean;
+
+    canlean = qfalse;
+
+
+    if (!pm || !pm->ps)
+    {
+        return;
+    }
+
+    // No leaning as a spectator or a ghost
+    if ((pm->ps->pm_flags & PMF_GHOST) || pm->ps->pm_type == PM_SPECTATOR)
+    {
+        pm->ps->leanTime = LEAN_TIME;
+        pm->ps->pm_flags &= ~PMF_LEANING;
+        return;
+    }
+
+    leanTime = (float)pm->ps->leanTime - LEAN_TIME;
+
+    // If their lean button is being pressed and they are on the ground then perform the lean
+    if ((pm->cmd.buttons & (BUTTON_LEAN_RIGHT | BUTTON_LEAN_LEFT)) && (pm->ps->groundEntityNum != ENTITYNUM_NONE))
+    {
+        vec3_t  start, end, right, mins, maxs;
+        int     leanDir;
+
+        if (pm->cmd.buttons & BUTTON_LEAN_RIGHT)
+        {
+            leanDir = 1;
+        }
+        else
+        {
+            leanDir = -1;
+        }
+
+        // check for collision
+        VectorCopy(pm->ps->origin, start);
+
+        start[2] += pm->ps->viewheight;
+        AngleVectors(pm->ps->viewangles, NULL, right, NULL);
+
+
+        VectorSet(mins, -6, -6, -8);
+        VectorSet(maxs, 6, 6, 8);
+
+
+        // since we're moving the camera over
+        // check that move
+
+        VectorMA(start, leanDir * LEAN_OFFSET * 1.25f, right, end);
+
+        memset(&trace, 0, sizeof(trace));
+
+        if (pm->trace)
+            pm->trace(&trace, start, mins, maxs, end, pm->ps->clientNum, pm->tracemask);
+
+        if (trace.fraction < 0 || trace.fraction >= 1.0f)
+        {
+            leanTime += (leanDir * pml.msec);
+            if (leanTime > LEAN_TIME)
+            {
+                leanTime = LEAN_TIME;
+            }
+            else if (leanTime < -LEAN_TIME)
+            {
+                leanTime = -LEAN_TIME;
+            }
+
+
+            canlean = qtrue;
+
+        }
+        else if ((pm->ps->pm_flags & PMF_LEANING) && trace.fraction < 1.0f)
+        {
+            int templeanTime = (float)leanDir * (float)LEAN_TIME
+                * trace.fraction;
+
+            if (fabs((float)templeanTime) < fabs(leanTime))
+            {
+                leanTime = templeanTime;
+            }
+        }
+    }
+
+
+    if (!canlean)
+    {
+        if (leanTime > 0)
+        {
+            leanTime -= pml.msec;
+            if (leanTime < 0)
+            {
+                leanTime = 0;
+            }
+        }
+        else if (leanTime < 0)
+        {
+            leanTime += pml.msec;
+            if (leanTime > 0)
+            {
+                leanTime = 0;
+            }
+        }
+    }
+
+    // Set a pm flag for leaning for convienience
+    if (leanTime != 0)
+    {
+        pm->ps->pm_flags |= PMF_LEANING;
+    }
+    else
+    {
+        pm->ps->pm_flags &= ~PMF_LEANING;
+    }
+
+    // The lean time is kept positive by adding in the base lean time
+    pm->ps->leanTime = (int)(leanTime + LEAN_TIME);
+}
+
 /*
 ==============
 PM_CheckLean
 ==============
 */
-static void PM_CheckLean( void )
+static void PM_CheckLeanGold( void )
 {
     trace_t     trace;
     qboolean    canlean;
@@ -3515,8 +3725,23 @@ void PM_UpdateViewAngles( playerState_t *ps, const usercmd_t *cmd )
         }
         ps->viewangles[i] = SHORT2ANGLE(temp);
     }
+    
+    if (!g_leanType.integer) {
+        PM_CheckLeanGold();
+    }
+    else if (g_leanType.integer == 1) {
+        PM_CheckLeanLegacy();
+    }
+    else {
+        if (pm->legacyProtocol) {
+            PM_CheckLeanLegacy();
+        }
+        else {
+            PM_CheckLeanGold();
+        }
+    }
 
-    PM_CheckLean ( );
+    
 }
 
 /*
@@ -3835,7 +4060,8 @@ void PmoveSingle (pmove_t *pmove) {
     PM_Weapon();
 
     // Use
-    PM_Use ( );
+    PM_Use( );
+    
 
     // torso animation
     PM_TorsoAnimation( pm->ps );

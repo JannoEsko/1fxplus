@@ -109,7 +109,6 @@ void G_ExplodeMissile( gentity_t *ent ) {
     G_AddEvent( ent, EV_MISSILE_MISS, (DirToByte( dir ) << MATERIAL_BITS) | MATERIAL_NONE);
 
     ent->freeAfterEvent = qtrue;
-
     // All grenade explosions are now broadcast to ensure that fire and smoke is always seen
     ent->r.svFlags |= SVF_BROADCAST;
 
@@ -216,6 +215,7 @@ gentity_t* G_CreateMissile( vec3_t org, vec3_t dir, float vel, int life, gentity
     VectorCopy( org, missile->s.pos.trBase );
     VectorScale( dir, vel, missile->s.pos.trDelta );
     VectorCopy( org, missile->r.currentOrigin);
+    VectorCopy(org, missile->origin_from); // Boe!Man 7/10/13: Use this for grenades like the F1 (in H&S), to determine where the seeker threw it from.
     SnapVector(missile->s.pos.trDelta);
 
     return missile;
@@ -253,8 +253,15 @@ gentity_t* G_CreateDamageArea ( vec3_t origin, gentity_t* attacker, float damage
 
     damageArea = G_Spawn();
 
-    damageArea->nextthink = level.time + 350;
-    damageArea->think = G_CauseAreaDamage;
+    if (isCurrentGametype(GT_HNZ) && (mod == MOD_M67_GRENADE || mod == altAttack(MOD_M67_GRENADE))) {
+        damageArea->nextthink = level.time + 500;
+        damageArea->think = think_forcefield;
+    }
+    else if (!(isCurrentGametype(GT_HNZ) && (mod == MOD_L2A2_GRENADE || mod == altAttack(MOD_L2A2_GRENADE)))) {
+        damageArea->nextthink = level.time + 350;
+        damageArea->think = G_CauseAreaDamage;
+    }
+
     damageArea->s.eType = ET_DAMAGEAREA;
     damageArea->r.svFlags = SVF_USE_CURRENT_ORIGIN;
     damageArea->parent = attacker;
@@ -296,12 +303,16 @@ void G_MissileImpact( gentity_t *ent, trace_t *trace )
     gentity_t       *other;
     vec3_t  velocity;
     int d;
+
+    static vec3_t   mins = { -15,-15,-45 };
+    static vec3_t   maxs = { 15,15,46 };
+
     other = &g_entities[trace->entityNum];
 
     d = 0;
 
     // check for bounce
-    if ( ( ent->s.eFlags & ( EF_BOUNCE | EF_BOUNCE_HALF | EF_BOUNCE_SCALE ) ) )
+    if (!isCurrentGametypeInList((gameTypes_t[]) { GT_HNS, GT_HNZ, GT_MAX }) && ( ent->s.eFlags & ( EF_BOUNCE | EF_BOUNCE_HALF | EF_BOUNCE_SCALE ) ) )
     {
         G_BounceMissile( ent, trace );
         return;
@@ -340,7 +351,7 @@ void G_MissileImpact( gentity_t *ent, trace_t *trace )
                 gentity_t *tent;
                 vec3_t hitdir;
 
-                statinfo_t* stat = &g_entities[ent->r.ownerNum].client->pers.statinfo;
+                statInfo_t* stat = &g_entities[ent->r.ownerNum].client->pers.statInfo;
 
                 if (!level.gametypeData->teams || (level.gametypeData->teams && !OnSameTeam(&g_entities[ent->r.ownerNum], other)))
                 {
@@ -384,22 +395,36 @@ void G_MissileImpact( gentity_t *ent, trace_t *trace )
 
     if ( d && other->client )
     {
-        G_AddEvent( ent, EV_MISSILE_HIT,
-                    (DirToByte( trace->plane.normal ) << MATERIAL_BITS) | (trace->surfaceFlags & MATERIAL_MASK));
-        ent->s.otherEntityNum = other->s.number;
-        if( ent->damage )
-        {
-            // FIXME: might be able to use the value from inside G_Damage to avoid recalc???
-            ent->s.otherEntityNum2 = G_GetHitLocation ( other, g_entities[ent->r.ownerNum].r.currentOrigin, velocity );
+        // JANFIXME - Boe had a F1 check here.
+        if (!isCurrentGametype(GT_HNZ) || (isCurrentGametype(GT_HNZ) && ent->methodOfDeath != MOD_M67_GRENADE)) {
+            G_AddEvent(ent, EV_MISSILE_HIT,
+                (DirToByte(trace->plane.normal) << MATERIAL_BITS) | (trace->surfaceFlags & MATERIAL_MASK));
+            ent->s.otherEntityNum = other->s.number;
+            if (ent->damage)
+            {
+                // FIXME: might be able to use the value from inside G_Damage to avoid recalc???
+                ent->s.otherEntityNum2 = G_GetHitLocation(other, g_entities[ent->r.ownerNum].r.currentOrigin, velocity);
+            }
         }
+
+        
     }
     else
     {
-        G_AddEvent( ent, EV_MISSILE_MISS,
-                    (DirToByte( trace->plane.normal ) << MATERIAL_BITS) | (trace->surfaceFlags & MATERIAL_MASK));
+        qboolean createClaymore = qfalse;
+        if (!isCurrentGametype(GT_HNZ) || (isCurrentGametype(GT_HNZ) && (ent->methodOfDeath != MOD_M67_GRENADE && ent->methodOfDeath != altAttack(MOD_M67_GRENADE)))) {
+            G_AddEvent(ent, EV_MISSILE_MISS,
+                (DirToByte(trace->plane.normal) << MATERIAL_BITS) | (trace->surfaceFlags & MATERIAL_MASK));
+
+
+
+            if (isCurrentGametype(GT_HNZ) && ent->think != HZ_Claymore && (ent->methodOfDeath == MOD_L2A2_GRENADE || ent->methodOfDeath == altAttack(MOD_L2A2_GRENADE))) {
+                createClaymore = qtrue;
+            }
+        }
 
         // If missile should stick into impact point (e.g. a thrown knife).
-        if(!Q_stricmp(ent->classname,"Knife"))
+        if((!Q_stricmp(ent->classname,"Knife") && !isCurrentGametype(GT_HNS)) || (isCurrentGametype(GT_HNZ) && createClaymore))
         {
             // Create a pickup where we impacted.
             vec3_t      pickupPos;
@@ -407,7 +432,7 @@ void G_MissileImpact( gentity_t *ent, trace_t *trace )
 
             VectorMA(trace->endpos,1,trace->plane.normal,pickupPos);
 
-            pickupEnt=CreateWeaponPickup(pickupPos,WP_KNIFE);
+            pickupEnt=CreateWeaponPickup(pickupPos, createClaymore ? WP_L2A2_GRENADE : WP_KNIFE);
             if(pickupEnt)
             {
                 vec3_t knifeDir,knifeAngles;
@@ -425,8 +450,62 @@ void G_MissileImpact( gentity_t *ent, trace_t *trace )
                 pickupEnt->s.angles[1]=knifeAngles[1];
                 pickupEnt->s.angles[2]=knifeAngles[2];
 
-                pickupEnt->think = G_FreeEntity;
-                pickupEnt->nextthink = level.time + 30000;  // Stick around for 30 seconds
+                if (!Q_stricmp(ent->classname, "Knife") && isCurrentGametype(GT_HNS)) {
+                    pickupEnt->think = G_FreeEntity;
+                    pickupEnt->nextthink = level.time + 30000;  // Stick around for 30 seconds
+                }
+                else if (isCurrentGametype(GT_HNZ) && createClaymore) {
+
+                    // Boe!Man 12/13/14: Claymore specifics.
+                    // Make sure it doesn't get picked up.
+                    pickupEnt->touch = NULL;
+
+                    // Its main think function.
+                    pickupEnt->think = HZ_Claymore;
+                    pickupEnt->nextthink = level.time + 500;
+
+                    // We need to make sure the server knows this entity can take damage.
+                    // With this, we can shoot at the entity.
+                    pickupEnt->takedamage = qtrue;
+                    pickupEnt->r.contents = -1;
+                    pickupEnt->die = HZ_ClaymoreShoot;
+
+                    // Copy over some essentials, so we can mimic a proper blast + damage area later.
+                    pickupEnt->parent = ent->parent;
+                    pickupEnt->splashDamage = ent->splashDamage;
+                    pickupEnt->splashRadius = ent->splashRadius;
+                    pickupEnt->splashMethodOfDeath = ent->splashMethodOfDeath;
+
+
+                    // Check if a human was caught in the radius.
+                    // If so, get rid of this claymore.
+
+                    vec3_t bboxMins, bboxMaxs;
+
+                    VectorAdd(trace->endpos, mins, bboxMins);
+                    VectorAdd(trace->endpos, maxs, bboxMaxs);
+
+                    int claymoreTouch[MAX_GENTITIES];
+
+                    int num = trap_EntitiesInBox(bboxMins, bboxMaxs, claymoreTouch,
+                        MAX_GENTITIES);
+
+                    // Iterate through caught entities.
+                    for (int i = 0; i < num; i++) {
+                        gentity_t* hit = &g_entities[claymoreTouch[i]];
+                        if (hit->client && hit->client->sess.team == TEAM_RED) {
+                            // We hit a human.
+                            G_printInfoMessage(ent->parent,
+                                "Claymores cannot be thrown on humans!");
+
+                            // Free entity and return.
+                            G_FreeEntity(pickupEnt);
+                            G_FreeEntity(ent);
+                            return;
+                        }
+                    }
+                }
+                
 
                 pickupEnt->count = 1;
 
@@ -438,6 +517,11 @@ void G_MissileImpact( gentity_t *ent, trace_t *trace )
                 pickupEnt->clipmask = ent->clipmask;
                 pickupEnt->s.groundEntityNum = trace->entityNum;
                 trap_LinkEntity(pickupEnt);
+
+                if (createClaymore) {
+                    G_FreeEntity(ent);
+                    return;
+                }
             }
         }
     }

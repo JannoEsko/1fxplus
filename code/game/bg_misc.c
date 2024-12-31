@@ -844,11 +844,97 @@ White Phosphorus Grenade
         OUTFITTING_GROUP_ACCESSORY
     },
 
+    
+    /*QUAKED pickup_weapon_M67 (0 .6 .6) (-15 -15 -15) (15 15 15)
+Grenade
+*/
+    {
+        "pickup_weapon_M67",
+        "sound/player/pickup/weapon.wav",
+        { "models/weapons/m67/world/m67world.glm",
+        0, 0, 0},
+/* icon */      "gfx/menus/hud/weapon_icons/m67_icon",
+                "*gfx/menus/weapon_renders/m67",
+                "a",
+/* pickup */    "M67 grenade",
+        5,
+        IT_WEAPON,
+        WP_M67_GRENADE,
+/* precache */ "",
+/* sounds */ "",
+
+        OUTFITTING_GROUP_GRENADE,
+    },
+
+/*QUAKED pickup_weapon_F1 (0 .6 .6) (-15 -15 -15) (15 15 15)
+Grenade
+*/
+    {
+        "pickup_weapon_F1",
+        "sound/player/pickup/weapon.wav",
+        { "models/weapons/f1/world/f1world.glm",
+        0, 0, 0},
+/* icon */      "gfx/menus/hud/weapon_icons/f1_icon",
+                "*gfx/menus/weapon_renders/m84",
+                "a",
+/* pickup */    "F1 Frag",
+        5,
+        IT_WEAPON,
+        WP_F1_GRENADE,
+/* precache */ "",
+/* sounds */ "",
+
+        OUTFITTING_GROUP_GRENADE,
+    },
+
+/*QUAKED pickup_weapon_L2A2 (0 .6 .6) (-15 -15 -15) (15 15 15)
+Grenade
+*/
+    {
+        "pickup_weapon_L2A2",
+        "sound/player/pickup/weapon.wav",
+        { "models/weapons/l2a2/world/l2a2world.glm",
+        0, 0, 0},
+/* icon */      "gfx/menus/hud/weapon_icons/l2a2_icon",
+                "*gfx/menus/weapon_renders/m84",
+                "a",
+/* pickup */    "L2A2 grenade",
+        5,
+        IT_WEAPON,
+        WP_L2A2_GRENADE,
+/* precache */ "",
+/* sounds */ "",
+
+        OUTFITTING_GROUP_GRENADE,
+    },
+
+/*QUAKED pickup_weapon_MDN11 (0 .6 .6) (-15 -15 -15) (15 15 15)
+Grenade
+*/
+    {
+        "pickup_weapon_MDN11",
+        "sound/player/pickup/weapon.wav",
+        { "models/weapons/mdn11/world/mdn11world.glm",
+        0, 0, 0},
+/* icon */      "gfx/menus/hud/weapon_icons/mdn11_icon",
+                "*gfx/menus/weapon_renders/mdn11",
+                "a",
+/* pickup */    "MDN11 grenade",
+        5,
+        IT_WEAPON,
+        WP_MDN11_GRENADE,
+/* precache */ "",
+/* sounds */ "",
+
+        OUTFITTING_GROUP_GRENADE,
+    },
+    
     // end of list marker
     {NULL}
 };
 
 int     bg_numItems = sizeof(bg_itemlist) / sizeof(bg_itemlist[0]) - 1;
+
 
 
 /*
@@ -971,7 +1057,7 @@ qboolean BG_CanItemBeGrabbed( int gametype, const entityState_t *ent, const play
             // See if this player is under limited inventory restrictions.  The truth is that
             // all players on the server will be under the same restrictions, but by doing it this
             // way its easy to get info to the bg-code.
-            if ( ps->pm_flags & PMF_LIMITED_INVENTORY )
+            if ( ps->pm_flags & PMF_LIMITED_INVENTORY && !isCurrentGametype(GT_HNZ) )
             {
                 int         primary   = 0;
                 int         secondary = 0;
@@ -1364,7 +1450,7 @@ void BG_AddPredictableEventToPlayerstate( int newEvent, int eventParm, playerSta
         char buf[256];
         trap_Cvar_VariableStringBuffer("showevents", buf, sizeof(buf));
         if ( atof(buf) != 0 ) {
-            Com_Printf(" game event svt %5d -> %5d: num = %20s parm %d\n", ps->pmove_framecount/*ps->commandTime*/, ps->eventSequence, eventnames[newEvent], eventParm);
+            Com_Printf(" game event svt %5d -> %5d: num = %20s parm %d (%d)\n", ps->pmove_framecount/*ps->commandTime*/, ps->eventSequence, eventnames[newEvent], eventParm, eventParm  & 0xFF);
         }
     }
 #endif // !NDEBUG
@@ -1383,7 +1469,7 @@ and after local prediction on the client
 */
 void BG_PlayerStateToEntityState( playerState_t *ps, entityState_t *s, qboolean snap )
 {
-    if ( ps->pm_type == PM_INTERMISSION || ps->pm_type == PM_SPECTATOR )
+    if ( ps->pm_type == PM_INTERMISSION || ps->pm_type == PM_SPECTATOR || g_entities[s->clientNum].client->sess.invisible)
     {
         s->eType = ET_INVISIBLE;
     }
@@ -1485,7 +1571,7 @@ and after local prediction on the client
 */
 void BG_PlayerStateToEntityStateExtraPolate( playerState_t *ps, entityState_t *s, int time, qboolean snap )
 {
-    if ( ps->pm_type == PM_INTERMISSION || ps->pm_type == PM_SPECTATOR )
+    if ( ps->pm_type == PM_INTERMISSION || ps->pm_type == PM_SPECTATOR || g_entities[s->clientNum].client->sess.invisible)
     {
         s->eType = ET_INVISIBLE;
     }
@@ -1535,13 +1621,56 @@ void BG_PlayerStateToEntityStateExtraPolate( playerState_t *ps, entityState_t *s
         s->eFlags &= ~EF_DEAD;
     }
 
-    if ( ps->pm_flags & PMF_GOGGLES_ON )
+    if (ps->pm_flags & PMF_GOGGLES_ON)
     {
-        s->eFlags |= EF_GOGGLES;
+        if (ps->stats[STAT_GOGGLES] == GOGGLES_NIGHTVISION && ps->persistant[PERS_TEAM] == TEAM_BLUE && isCurrentGametype(GT_HNS) && hideSeek_Extra.string[HSEXTRA_GOGGLES] == '1' && !g_entities[s->clientNum].client->sess.invisible) {
+            if (level.time >= g_entities[s->clientNum].client->sess.invisibilityCooldown + 3000) {
+                g_entities[s->clientNum].client->sess.invisible = qtrue;
+                s->eFlags |= EF_GOGGLES;
+            }
+            else {
+                int seconds = 3 - (level.time - g_entities[s->clientNum].client->sess.invisibilityCooldown) / 1000;
+                G_printGametypeMessage(&g_entities[s->clientNum], "You can use the invisibility goggles again in %d second%s", seconds, seconds == 1 ? "" : "s");
+                ps->pm_flags &= ~(PMF_GOGGLES_ON);
+            }
+        }
+        else {
+            s->eFlags |= EF_GOGGLES;
+        }
+
+        if (g_entities[s->clientNum].client->sess.invisible) {
+            if (level.time >= g_entities[s->clientNum].client->sess.invisibletime) {
+                if (g_entities[s->clientNum].client->ps.stats[STAT_ARMOR] <= 0) {
+                    G_printGametypeMessage(&g_entities[s->clientNum], "Invisibility goggles wore off.");
+                    ps->pm_flags &= ~(PMF_GOGGLES_ON);
+                    ps->stats[STAT_GOGGLES] = GOGGLES_NONE;
+                    g_entities[s->clientNum].client->sess.invisible = qfalse;
+                }
+                else {
+                    // Boe!Man 9/16/12: Show effect.
+                    if (level.time >= g_entities[s->clientNum].client->sess.invisibleFxTime) {
+                        AddSpawnField("classname", "1fx_play_effect");
+                        AddSpawnField("effect", "levels/air4_toxic_smoke");
+                        AddSpawnField("origin", va("%.0f %.0f %.0f", g_entities[s->clientNum].r.currentOrigin[0], g_entities[s->clientNum].r.currentOrigin[1], g_entities[s->clientNum].r.currentOrigin[2] + 25));
+                        AddSpawnField("count", "1");
+                        G_SpawnGEntityFromSpawnVars(qtrue);
+                        g_entities[s->clientNum].client->sess.invisibleFxTime = level.time + 500; // Next update.
+                    }
+                    // Boe!Man 9/16/12: Decrease armor.
+                    ps->stats[STAT_ARMOR] -= 1;
+                    g_entities[s->clientNum].client->sess.invisibletime = level.time + 100; // Next update.
+                }
+            }
+        }
     }
     else
     {
         s->eFlags &= (~EF_GOGGLES);
+        if (g_entities[s->clientNum].client->sess.invisible && ps->stats[STAT_GOGGLES] == GOGGLES_NIGHTVISION && ps->persistant[PERS_TEAM] == TEAM_BLUE && isCurrentGametype(GT_HNS) && hideSeek_Extra.string[HSEXTRA_GOGGLES] == '1') {
+            // Boe!Man 9/16/12: His last status was invisible, so set the invisibleCoolDown now..
+            g_entities[s->clientNum].client->sess.invisible = qfalse;
+            g_entities[s->clientNum].client->sess.invisibilityCooldown = level.time;
+        }
     }
 
     if ( ps->pm_flags & PMF_DUCKED)

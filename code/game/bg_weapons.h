@@ -46,6 +46,13 @@ typedef enum
     MOD_ANM14_GRENADE,
     MOD_M15_GRENADE,
 
+    // Additional grenades for 1fx. Client Additions.
+    MOD_M67_GRENADE,
+    MOD_F1_GRENADE,
+    MOD_L2A2_GRENADE,
+    MOD_MDN11_GRENADE,
+
+    // Those MODs are the same as v1.00.
     MOD_WATER,
     MOD_CRUSH,
     MOD_TELEFRAG,
@@ -55,10 +62,14 @@ typedef enum
     MOD_TARGET_LASER,
     MOD_TRIGGER_HURT,
     MOD_TRIGGER_HURT_NOSUICIDE,
-    MOD_POP,
-    MOD_BURN,
+    //Ryan april 6 2003
     MOD_CAR,
-    MOD_REFRESH
+    MOD_POP,
+    MOD_REFRESH,
+    //Ryan
+    //RxCxW - #MOD
+    MOD_DUGUP,
+    MOD_BURN,
 
 } meansOfDeath_t;
 
@@ -97,8 +108,52 @@ typedef enum
     WP_ANM14_GRENADE,
     WP_M15_GRENADE,
 
+    // Boe!Man 7/27/15: Extra grenades for 1fx. Client Additions.
+    WP_M67_GRENADE,
+    WP_F1_GRENADE,
+    WP_L2A2_GRENADE,
+    WP_MDN11_GRENADE,
+
     WP_NUM_WEAPONS
 } weapon_t;
+
+typedef enum
+{
+    L_WP_NONE,
+
+    // Knife
+    L_WP_KNIFE,
+
+    // Pistols
+    L_WP_M1911A1_PISTOL,
+    L_WP_USSOCOM_PISTOL,
+
+    // Secondarys
+    L_WP_M590_SHOTGUN,
+    L_WP_MICRO_UZI_SUBMACHINEGUN,
+    L_WP_M3A1_SUBMACHINEGUN,
+
+    // Primaries
+    L_WP_USAS_12_SHOTGUN,
+    L_WP_M4_ASSAULT_RIFLE,
+    L_WP_AK74_ASSAULT_RIFLE,
+    L_WP_MSG90A1,
+    L_WP_M60_MACHINEGUN,
+    L_WP_MM1_GRENADE_LAUNCHER,
+    L_WP_RPG7_LAUNCHER,
+
+    // Grenades
+    L_WP_M67_GRENADE,
+    L_WP_M84_GRENADE,
+    L_WP_F1_GRENADE,
+    L_WP_L2A2_GRENADE,
+    L_WP_MDN11_GRENADE,
+    L_WP_SMOHG92_GRENADE,
+    L_WP_ANM14_GRENADE,
+    L_WP_M15_GRENADE,
+
+    L_WP_NUM_WEAPONS
+} legacyWeapon_t;
 
 #define WP_DELAYED_CHANGE_BIT   (1<<5)
 
@@ -120,12 +175,36 @@ typedef enum
     AMMO_762_BELT,
 
     AMMO_MP5_9,
-
+    //AMMO_M67,
+    //AMMO_L2A2,
     AMMO_MAX,
 
-    AMMO_NONE,
+    AMMO_NONE, 
 
 } ammo_t;
+
+typedef enum
+{
+    CLADD_AMMO_KNIFE,
+    CLADD_AMMO_045,
+    CLADD_AMMO_556,
+    CLADD_AMMO_9,
+    CLADD_AMMO_12,
+    CLADD_AMMO_762,
+    CLADD_AMMO_40,
+    CLADD_AMMO_RPG7,
+    CLADD_AMMO_M15,
+    CLADD_AMMO_M84,
+    CLADD_AMMO_SMOHG92,
+    CLADD_AMMO_ANM14,
+
+    CLADD_AMMO_F1,
+    CLADD_AMMO_MDN11,
+    CLADD_AMMO_M67,
+
+    CLADD_AMMO_L2A2,
+
+} goldAmmoClAdd_t;
 
 #define WP_FIREMODE_NONE        0
 #define WP_FIREMODE_AUTO        1
@@ -246,18 +325,16 @@ typedef struct  ammoData_s
 
 } ammoData_t;
 
-extern char *weaponNames[WP_MAX_WEAPONS];
-extern weaponData_t weaponData[WP_MAX_WEAPONS];
-extern char *ammoNames[WP_MAX_AMMO];
-extern ammoData_t ammoData[WP_MAX_AMMO];
-
-extern char *modNames[WP_MAX_MODS];
+extern char *weaponNames[WP_NUM_WEAPONS];
+extern weaponData_t weaponData[WP_NUM_WEAPONS];
+extern char *ammoNames[MAX_AMMO];
+extern ammoData_t ammoData[MAX_AMMO];
 
 // Specific weapon information
 
 #define WP_FIRST_RANGED_WEAPON      WP_M1911A1_PISTOL   // this is the first weapon for next and prev weapon switching
 #define WP_FIRST_MELEE_WEAPON       WP_KNIFE
-#define MAX_PLAYER_WEAPONS          (WP_MAX_WEAPONS-1)  // this is the max you can switch to and get with the give all.
+#define MAX_PLAYER_WEAPONS          (WP_NUM_WEAPONS-1)  // this is the max you can switch to and get with the give all.
 
 #define MAX_WEAPON_SOUNDS       12
 #define MAX_WEAPON_SOUND_SLOTS  3
@@ -375,7 +452,7 @@ typedef struct SWeaponInfo
     struct SWeaponModel         mWeaponModel;
 } TWeaponParseInfo;
 
-extern TWeaponParseInfo weaponParseInfo[WP_MAX_WEAPONS];
+extern TWeaponParseInfo weaponParseInfo[WP_NUM_WEAPONS];
 extern char             weaponLeftHand[MAX_QPATH];
 extern char             weaponRightHand[MAX_QPATH];
 
