@@ -99,6 +99,15 @@ void SP_trigger_multiple( gentity_t *ent )
     ent->touch = Touch_Multi;
     ent->use = Use_Multi;
 
+    if (!Q_stricmp(ent->model, "BLOCKED_TRIGGER")) {
+        if (!VectorCompare(ent->s.angles, vec3_origin))
+            G_SetMovedir(ent->s.angles, ent->movedir);
+        ent->r.contents = CONTENTS_TRIGGER;
+        ent->r.svFlags = SVF_NOCLIENT;
+        trap_LinkEntity(ent);
+        return;
+    }
+
     InitTrigger( ent );
     trap_LinkEntity (ent);
 }

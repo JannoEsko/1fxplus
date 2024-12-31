@@ -302,7 +302,6 @@ spawn_t spawns[] =
     {"func_group",                  0},
     {"info_camp",                   0},
     {"info_null",                   0},
-    {"door_rotating",               0},
     {"emplaced_wpn",                0},
     {"info_NPC*",                   0},
     {"info_player_start",           0},
