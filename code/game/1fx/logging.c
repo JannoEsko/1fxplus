@@ -50,7 +50,7 @@ void logRcon(char* ip, char* action) {
 
     if (g_logThroughSocket.integer) {
         char maxLog[MAX_SOCK_LOG];
-        Q_strncpyz(maxLog, va("logRcon\\%s\\%s\\%s", g_sockIdentifier.string, ip, action), sizeof(maxLog));
+        Q_strncpyz(maxLog, va("logRcon\\%s\\%s\\\\%s", g_sockIdentifier.string, ip, action), sizeof(maxLog));
         enqueueOutbound(THREADACTION_LOG_VIA_SOCKET, -1, maxLog, strlen(maxLog));
     }
 
