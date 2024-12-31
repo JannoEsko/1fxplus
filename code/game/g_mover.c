@@ -809,15 +809,10 @@ void Touch_DoorTrigger( gentity_t *ent, gentity_t *other, trace_t *trace )
     if ( other->client && !G_IsClientSpectating ( other->client ) )
     {
         // if the door is not open and not opening
-        if ( ent->parent->moverState != MOVER_1TO2 &&
-             ent->parent->moverState != MOVER_POS2)
+        if ( ent->parent->moverState != MOVER_1TO2 && ent->parent->moverState != MOVER_POS2)
         {
-            Touch_DoorTriggerSpectator( ent, other, trace );
+            Use_BinaryMover( ent->parent, ent, other );
         }
-    }
-    else if ( ent->parent->moverState != MOVER_1TO2 )
-    {
-        Use_BinaryMover( ent->parent, ent, other );
     }
 }
 
