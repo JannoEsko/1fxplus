@@ -900,8 +900,9 @@ int adm_forceTeam(int argNum, gentity_t* adm, qboolean shortCmd) {
 
 int adm_blockSeek(int argNum, gentity_t* adm, qboolean shortCmd) {
 
-	if (isCurrentGametype(GT_HNS)) {
+	if (!isCurrentGametype(GT_HNS)) {
 		G_printInfoMessage(adm, "This command only works in H&S gametype.");
+		return -1;
 	}
 
 	int idNum = G_ClientNumFromArg(adm, argNum, "blockseek", qfalse, qfalse, qfalse, shortCmd);
@@ -953,10 +954,10 @@ int adm_blockSeekList(int argNum, gentity_t* adm, qboolean shortCmd) {
 			if (ent->client->sess.blockseek) {
 
 				if (isRcon) {
-					Com_Printf("%-5.5s%-25.25s\n", ent->s.number, ent->client->pers.cleanName);
+					Com_Printf("%-5d%-25.25s\n", ent->s.number, ent->client->pers.cleanName);
 				}
 				else {
-					trap_SendServerCommand(adm - g_entities, va("print \"%5d%-25.25s\n\"", ent->s.number, ent->client->pers.cleanName));
+					trap_SendServerCommand(adm - g_entities, va("print \"%-5d%-25.25s\n\"", ent->s.number, ent->client->pers.cleanName));
 				}
 
 			}
