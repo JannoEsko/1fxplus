@@ -3,11 +3,14 @@
 #include "g_local.h"
 
 
-void InitTrigger( gentity_t *self ) {
-    if (!VectorCompare (self->s.angles, vec3_origin))
-        G_SetMovedir (self->s.angles, self->movedir);
+void InitTrigger(gentity_t* self) {
+    if (!VectorCompare(self->s.angles, vec3_origin))
+        G_SetMovedir(self->s.angles, self->movedir);
 
-    trap_SetBrushModel( self, self->model );
+    // Boe!Man 1/23/13: We do need to allow trigger_teleports to bypass this check..
+    if ((!strstr(self->classname, "teleport") || strstr(self->classname, "trigger_teleport")) && !strstr(self->model, "NV_MODEL") && !strstr(self->model, "BLOCKED_TRIGGER")) {
+        trap_SetBrushModel(self, self->model); // Henk -> This crashes teleports
+    }
     self->r.contents = CONTENTS_TRIGGER;        // replaces the -1 from trap_SetBrushModel
     self->r.svFlags = SVF_NOCLIENT;
 }

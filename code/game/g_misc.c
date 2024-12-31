@@ -353,7 +353,17 @@ void SP_terrain(gentity_t *ent)
     int                 terrainID;
 
     VectorClear (ent->s.angles);
-    trap_SetBrushModel( ent, ent->model );
+
+    if (!Q_stricmp(ent->model, "NV_MODEL")) {
+        ent->r.contents = CONTENTS_TERRAIN;
+        //ent->r.svFlags = SVF_NOCLIENT;
+        //ent->s.eFlags = EF_PERMANENT;
+        ent->s.eType = ET_TERRAIN;
+        trap_LinkEntity(ent);
+    }
+    else {
+        trap_SetBrushModel(ent, ent->model);
+    }
 
     if (RMG.integer)
     {
