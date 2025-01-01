@@ -444,6 +444,46 @@ void G_RunMover( gentity_t *ent ) {
     G_RunThink( ent );
 }
 
+
+void Rot_SetMoverState( gentity_t *ent, moverState_t moverState, int time )
+{
+    vec3_t          delta;
+    float           f;
+
+    ent->s.apos.trTime = time;
+
+    switch( moverState )
+    {
+    case MOVER_POS1:
+        VectorCopy( ent->apos1, ent->s.apos.trBase );
+        ent->s.apos.trType = TR_STATIONARY;
+        break;
+
+    case MOVER_POS2:
+        VectorCopy( ent->apos2, ent->s.apos.trBase );
+        ent->s.apos.trType = TR_STATIONARY;
+        break;
+
+    case MOVER_1TO2:
+        VectorCopy( ent->apos1, ent->s.apos.trBase );
+        VectorSubtract( ent->apos2, ent->apos1, delta );
+        f = 1000.0 / ent->s.apos.trDuration;
+        VectorScale( delta, f, ent->s.apos.trDelta );
+        ent->s.apos.trType = TR_LINEAR_STOP;
+        break;
+
+    case MOVER_2TO1:
+        VectorCopy( ent->apos2, ent->s.apos.trBase );
+        VectorSubtract( ent->apos1, ent->apos2, delta );
+        f = 1000.0 / ent->s.apos.trDuration;
+        VectorScale( delta, f, ent->s.apos.trDelta );
+        ent->s.apos.trType = TR_LINEAR_STOP;
+        break;
+    }
+
+    BG_EvaluateTrajectory(&ent->s.apos, level.time, ent->r.currentAngles);
+}
+
 /*
 ============================================================================
 
@@ -464,6 +504,13 @@ void SetMoverState( gentity_t *ent, moverState_t moverState, int time ) {
     float           f;
 
     ent->moverState = moverState;
+
+    if (ent->apos2[0] || ent->apos2[1] || ent->apos2[2])
+    {
+        Rot_SetMoverState( ent, moverState, time );
+        trap_LinkEntity( ent );
+        return;
+    }
 
     ent->s.pos.trTime = time;
     switch( moverState ) {
