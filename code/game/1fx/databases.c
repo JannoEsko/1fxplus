@@ -477,7 +477,7 @@ int dbGetAdminLevel(admType_t adminType, gentity_t* ent, char* passguid) {
             (adminType == ADMTYPE_GUID ? "guid" : ""), 
         adminType == ADMTYPE_IP ? "AND ip = ?" : 
             (adminType == ADMTYPE_PASS && passguid && strlen(passguid) > 0 ? "AND password = ?" : 
-                (adminType == ADMTYPE_GUID && passguid && strlen(passguid) > 0 ? "AND guid = ?" : "")
+                (adminType == ADMTYPE_GUID && passguid && strlen(passguid) > 0 ? "AND acguid = ?" : "")
             )
     
     );
