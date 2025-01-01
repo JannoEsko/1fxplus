@@ -2050,9 +2050,11 @@ TAnimWeapon* PM_GetAnimFromName ( char *animName, playerState_t *ps, int *animIn
             else if(!strcmp(animName,"fire"))
             {
                 aW=BG_GetInviewAnimFromIndex(ps->weapon,ps->weaponAnimId&~ANIM_TOGGLEBIT);
+
                 if (aW == NULL || aW->mName == NULL) {
                     break;
                 }
+                
                 if((!strcmp(aW->mName,"prefire"))||strstr(aW->mName,"firetrans"))
                 {
                     // Get 'fire' anim.
@@ -2092,6 +2094,11 @@ TAnimWeapon* PM_GetAnimFromName ( char *animName, playerState_t *ps, int *animIn
             if(!strcmp(animName,"reload"))
             {
                 aW=BG_GetInviewAnimFromIndex(ps->weapon,ps->weaponAnimId&~ANIM_TOGGLEBIT);
+                
+                if(aW == NULL || aW->mName == NULL){
+                    break;
+                }
+
                 if(!strcmp(aW->mName,"reloadbegin")||!strcmp(aW->mName,"reloadshell"))
                 {
                     // Get 'reloadshell' anim.
