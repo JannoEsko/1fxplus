@@ -75,9 +75,9 @@ void DeathmatchScoreboardMessage( gentity_t *ent )
                     (level.time - cl->pers.enterTime) / 60000,
                     (ghost || cl->ps.pm_type == PM_DEAD) ? qtrue : qfalse,
                     g_entities[level.sortedClients[i]].s.gametypeitems,
-                    //	g_teamkillDamageMax.integer ? 100 * cl->sess.teamkillDamage / g_teamkillDamageMax.integer : 0,
-                    //	cl->pers.statinfo.accuracy,
-                    //	cl->pers.statinfo.headShotKills,
+                    //    g_teamkillDamageMax.integer ? 100 * cl->sess.teamkillDamage / g_teamkillDamageMax.integer : 0,
+                    //    cl->pers.statinfo.accuracy,
+                    //    cl->pers.statinfo.headShotKills,
                     cl->sess.weaponsStolen,
                     cl->sess.stunAttacks,
                     cl->sess.seekersCaged

@@ -3453,7 +3453,7 @@ static void PM_CheckLeanLegacy(void)
     float       leanTime;
 
 
-    qboolean	canlean;
+    qboolean    canlean;
 
     canlean = qfalse;
 

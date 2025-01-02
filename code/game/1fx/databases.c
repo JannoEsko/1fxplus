@@ -245,68 +245,68 @@ admType_t getAdminType(gentity_t* ent) {
 
 char* getNameOrArg(gentity_t* ent, char* arg, qboolean cleanName) {
 
-	if (cleanName) {
-		return ent && ent->client ? ent->client->pers.cleanName : arg;
-	}
-	else {
-		return ent && ent->client ? ent->client->pers.netname : arg;
-	}
+    if (cleanName) {
+        return ent && ent->client ? ent->client->pers.cleanName : arg;
+    }
+    else {
+        return ent && ent->client ? ent->client->pers.netname : arg;
+    }
 }
 
 void loadDatabases(void) {
     Com_PrintInfo("loadDatabases()\n");
-	struct stat st = { 0 };
-	sqlite3* db;
+    struct stat st = { 0 };
+    sqlite3* db;
 
-	if (stat("./1fx/databases", &st) == -1) {
+    if (stat("./1fx/databases", &st) == -1) {
 #ifdef _WIN32
 #ifdef __GNUC__
-		mkdir("./1fx/databases");
+        mkdir("./1fx/databases");
 #elif _MSC_VER
-		mkdir(".\\1fx\\databases");
+        mkdir(".\\1fx\\databases");
 #endif
 #elif __linux__
-		mkdir("./1fx/databases", 0755);
+        mkdir("./1fx/databases", 0755);
 #endif
-	}
+    }
 
-	int rc = sqlite3_open("./1fx/databases/game.db", &db);
+    int rc = sqlite3_open("./1fx/databases/game.db", &db);
 
-	if (rc) {
-		logSystem(LOGLEVEL_FATAL_DB, "Game dropped due to failing to write game.db file in databases folder.\n");
-		return;
-	}
+    if (rc) {
+        logSystem(LOGLEVEL_FATAL_DB, "Game dropped due to failing to write game.db file in databases folder.\n");
+        return;
+    }
 
-	// check for the migration level, use create table if not exists to create migration table.
+    // check for the migration level, use create table if not exists to create migration table.
 
-	if (sqlite3_exec(db, "CREATE TABLE IF NOT EXISTS migrationlevel (migrationlevel INTEGER)", 0, 0, 0) != SQLITE_OK) {
+    if (sqlite3_exec(db, "CREATE TABLE IF NOT EXISTS migrationlevel (migrationlevel INTEGER)", 0, 0, 0) != SQLITE_OK) {
         sqlite3_close(db);
-		logSystem(LOGLEVEL_FATAL_DB, "Game dropped due to failing to write migrationlevel table into game.db.\n");
-		return;
-	}
+        logSystem(LOGLEVEL_FATAL_DB, "Game dropped due to failing to write migrationlevel table into game.db.\n");
+        return;
+    }
 
-	sqlite3_stmt* stmt;
-	int gameMigrationLevel = -1;
+    sqlite3_stmt* stmt;
+    int gameMigrationLevel = -1;
 
-	rc = sqlite3_prepare(db, "SELECT * FROM migrationlevel", -1, &stmt, 0);
+    rc = sqlite3_prepare(db, "SELECT * FROM migrationlevel", -1, &stmt, 0);
 
     if (rc != SQLITE_OK) {
         logSystem(LOGLEVEL_FATAL_DB, "miragtionLevel game.db prepare failed: %s", sqlite3_errmsg(db));
         return;
     }
 
-	if (sqlite3_step(stmt) != SQLITE_DONE) {
-		gameMigrationLevel = sqlite3_column_int(stmt, 0);
-	}
+    if (sqlite3_step(stmt) != SQLITE_DONE) {
+        gameMigrationLevel = sqlite3_column_int(stmt, 0);
+    }
 
-	sqlite3_finalize(stmt);
-	if (SQL_GAME_MIGRATION_LEVEL != gameMigrationLevel) {
-		Com_Printf("    Migrating gameDb to be migrated from level %d to level %d.\n", gameMigrationLevel, SQL_GAME_MIGRATION_LEVEL);
-		migrateGameDatabase(db, gameMigrationLevel);
-	}
-	else {
-		Com_Printf("    gameDb is up to date!\n");
-	}
+    sqlite3_finalize(stmt);
+    if (SQL_GAME_MIGRATION_LEVEL != gameMigrationLevel) {
+        Com_Printf("    Migrating gameDb to be migrated from level %d to level %d.\n", gameMigrationLevel, SQL_GAME_MIGRATION_LEVEL);
+        migrateGameDatabase(db, gameMigrationLevel);
+    }
+    else {
+        Com_Printf("    gameDb is up to date!\n");
+    }
 
     Com_Printf("    Attaching gameDB to memory...");
     sqlite3_open(":memory:", &gameDb);
