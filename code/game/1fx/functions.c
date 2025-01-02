@@ -2017,6 +2017,10 @@ void resetCompetitionModeVariables() {
     trap_Cvar_Update(&g_scorelimit);
     trap_Cvar_Update(&g_timelimit);
 
+    level.blueLocked = qfalse;
+    level.redLocked = qfalse;
+    level.specLocked = qfalse;
+
 }
 
 /*
