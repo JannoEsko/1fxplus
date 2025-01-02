@@ -1314,7 +1314,7 @@ void G_StopFollowing( gentity_t *ent )
 
     // Don't allow stopfollowing when in compmode and followEnemy is disabled.
 
-    if (cm_state.integer > COMPMODE_NONE && !match_followEnemy.integer) {
+    if (cm_state.integer > COMPMODE_NONE && !g_followEnemy.integer) {
         return;
     }
 
@@ -1442,7 +1442,7 @@ void Cmd_Follow_f( gentity_t *ent )
 
     if ( trap_Argc() != 2 )
     {
-        if ( ent->client->sess.spectatorState == SPECTATOR_FOLLOW && (!cm_state.integer || (cm_state.integer > COMPMODE_NONE && match_followEnemy.integer)))
+        if ( ent->client->sess.spectatorState == SPECTATOR_FOLLOW && (!cm_state.integer || (cm_state.integer > COMPMODE_NONE && g_followEnemy.integer)))
         {
             G_StopFollowing( ent );
         }
@@ -1475,7 +1475,7 @@ void Cmd_Follow_f( gentity_t *ent )
     }
 
     // Dissallow following of the enemy if the cvar is set
-    if ( level.gametypeData->teams && (!g_followEnemy.integer || (cm_state.integer > COMPMODE_NONE && !match_followEnemy.integer)) && ent->client->sess.team != TEAM_SPECTATOR )
+    if ( level.gametypeData->teams && (!g_followEnemy.integer || (cm_state.integer > COMPMODE_NONE && !g_followEnemy.integer)) && ent->client->sess.team != TEAM_SPECTATOR )
     {
         // Are they on the same team?
         if ( level.clients[ i ].sess.team != ent->client->sess.team )
@@ -1563,7 +1563,7 @@ void Cmd_FollowCycle_f( gentity_t *ent, int dir )
         }
 
         // Dissallow following of the enemy if the cvar is set
-        if ( level.gametypeData->teams && (!g_followEnemy.integer || (cm_state.integer > COMPMODE_NONE && !match_followEnemy.integer)) && ent->client->sess.team != TEAM_SPECTATOR )
+        if ( level.gametypeData->teams && (!g_followEnemy.integer || (cm_state.integer > COMPMODE_NONE && !g_followEnemy.integer)) && ent->client->sess.team != TEAM_SPECTATOR )
         {
             // Are they on the same team?
             if ( level.clients[ clientnum ].sess.team != ent->client->sess.team )
