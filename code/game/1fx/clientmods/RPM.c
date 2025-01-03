@@ -110,6 +110,14 @@ void RPM_UpdateTMI(void)
             thirdPerson = 2;
         }
         adm = cl->sess.adminLevel;
+
+        if (adm > 0) {
+            adm++;
+            if (adm >= 5) {
+                adm = 4;
+            }
+        }
+
         damage = cl->pers.statInfo.damageDone;
         if (damage < 100) {
             string = va("%i", trap_TranslateGoldWeaponToSilverWeapon(cl->ps.weapon));
