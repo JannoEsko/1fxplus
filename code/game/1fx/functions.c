@@ -2031,6 +2031,7 @@ void parseChatTokens(gentity_t* ent, chatMode_t chatMode, const char* input, cha
     char temp[MAX_SAY_TEXT];
     int outIndex = 0;
     qboolean soundParsed = qfalse;
+    qboolean hasSoundBeenPlayed = qfalse;
 
     Q_strncpyz(temp, input, sizeof(temp));
 
@@ -2057,6 +2058,7 @@ void parseChatTokens(gentity_t* ent, chatMode_t chatMode, const char* input, cha
 
                     ent->client->sess.voiceFloodCount++;
                     ent->client->sess.voiceFloodTimer = level.time + 60000;
+                    hasSoundBeenPlayed = qtrue;
 
                     if (chatParse.isCustomSound) {
 
@@ -2299,7 +2301,11 @@ void parseChatTokens(gentity_t* ent, chatMode_t chatMode, const char* input, cha
                             outIndex += len;
                         }
 
-                        G_GlobalSound(mvchat_chatGetNextSound(NULL)); // JANFIXME - only play this when we haven't played a sound yet.
+                        if (!hasSoundBeenPlayed) {
+                            hasSoundBeenPlayed = qtrue;
+                            G_GlobalSound(mvchat_chatGetNextSound(NULL));
+                        }
+
                     }
                     break;
                 }
