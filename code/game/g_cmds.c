@@ -1434,7 +1434,6 @@ Cmd_Follow_f
 void Cmd_Follow_f( gentity_t *ent )
 {
     int     i;
-    char    arg[MAX_TOKEN_CHARS];
 
     if (level.specLocked) {
         return;
@@ -1449,8 +1448,7 @@ void Cmd_Follow_f( gentity_t *ent )
         return;
     }
 
-    trap_Argv( 1, arg, sizeof( arg ) );
-    i = ClientNumberFromString( ent, arg );
+    i = G_ClientNumFromArg(ent, 1, "follow", qtrue, qtrue, qtrue, qfalse);
     if ( i == -1 )
     {
         return;
