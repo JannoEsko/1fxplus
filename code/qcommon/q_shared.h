@@ -1340,7 +1340,8 @@ typedef enum chatMode_s {
     SAY_TELL_SELF,
     SAY_CALLADMCHAT,
     SAY_PM,
-    SAY_RE
+    SAY_RE,
+    SAY_PM_CMD
 } chatMode_t;
 
 typedef struct {

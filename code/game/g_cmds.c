@@ -2050,6 +2050,23 @@ static void Cmd_Say_f( gentity_t *ent, int mode ) {
                 return;
             }
 
+        } 
+        else if (mode == SAY_PM_CMD) {
+            mode = SAY_TELL;
+            // CMD is always via console, so it's /tell person text.
+            int idNum = G_ClientNumFromArg(ent, 1, "tell", qfalse, qtrue, qtrue, qfalse);
+
+            if (idNum >= 0) {
+                target = &g_entities[idNum];
+                target->client->sess.lastPM = ent - g_entities;
+                target->client->sess.privateMessageActive = qtrue;
+                ent->client->sess.lastPM = idNum;
+                ent->client->sess.privateMessageActive = qtrue;
+                p = concatArgs(2, qfalse, qtrue);
+            }
+            else {
+                return;
+            }
         }
 
         // Run all of the tokens.
@@ -2397,7 +2414,7 @@ void ClientCommand( int clientNum ) {
 
     if (Q_stricmp (cmd, "tell") == 0)
     {
-        Cmd_Say_f(ent, SAY_PM);
+        Cmd_Say_f(ent, SAY_PM_CMD);
         //Cmd_Tell_f ( ent );
 
         return;
