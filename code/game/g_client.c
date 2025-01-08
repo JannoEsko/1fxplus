@@ -1108,14 +1108,6 @@ void ClientUserinfoChanged( int clientNum )
         }
     }
 
-    // See if we need to find a new name because the one they chose is taken
-    Q_strncpyz ( origname, client->pers.netname,  MAX_NETNAME - 5 );
-    while ( G_FindClientByName ( client->pers.netname, clientNum ) )
-    {
-        Com_sprintf ( client->pers.netname, MAX_NETNAME, "%s(%d)", origname, namecount );
-        namecount++;
-    }
-
     // set max health
     health = atoi( Info_ValueForKey( userinfo, "handicap" ) );
 
@@ -1923,7 +1915,7 @@ void ClientSpawn(gentity_t *ent)
 
     if ( ent->client->sess.team != TEAM_SPECTATOR )
     {
-        G_KillBox( ent );
+        G_KillBox( ent, qfalse );
         trap_LinkEntity (ent);
 
         // force the base weapon up

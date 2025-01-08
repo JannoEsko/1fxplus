@@ -55,6 +55,11 @@
 #define TOTAL_SECTIONS              4
 #define MAX_CUSTOM_ET_AMOUNT        16
 
+#define AUTOMSG_NONE    0x00
+#define AUTOMSG_INFO    0x01
+#define AUTOMSG_TIP     0x02
+
+
 typedef enum {
     CL_NONE,
     CL_RPM,
@@ -734,6 +739,8 @@ typedef struct
     clientPunishments_t currentPunishment;
     int                 currentPunishmentCycleTime;
     int                 nextPunishmentMessage;
+
+    int                 nextRefresh;
 } clientSession_t;
 
 //
@@ -1225,6 +1232,11 @@ typedef struct
 
     hnzLvl_t        hnz;
 
+    int             nextAutoInfoMsg;
+    int             nextDisplayableAutoInfoMsg;
+    int             nextAutoTipMsg;
+
+
 } level_locals_t;
 
 //
@@ -1298,7 +1310,7 @@ int     G_IconIndex         ( char *name );
 int     G_EffectIndex       ( char *name );
 
 void    G_TeamCommand( team_t team, char *cmd );
-void    G_KillBox (gentity_t *ent);
+void    G_KillBox (gentity_t *ent, qboolean teleport);
 gentity_t *G_Find (gentity_t *from, int fieldofs, const char *match);
 int     G_RadiusList ( vec3_t origin, float radius, gentity_t *ignore, qboolean takeDamage, gentity_t *ent_list[MAX_GENTITIES]);
 gentity_t *G_PickTarget (char *targetname);
@@ -1842,6 +1854,22 @@ extern  vmCvar_t    g_sockPort;
 extern  vmCvar_t    g_sockIdentifier;
 extern  vmCvar_t    g_logThroughSocket;
 
+extern  vmCvar_t    g_colorlessRedName;
+extern  vmCvar_t    g_colorlessBlueName;
+extern  vmCvar_t    g_refreshCooldown;
+
+extern  vmCvar_t    g_automatedMessages; // AUTOMSG_ bitflags
+extern  vmCvar_t    g_automsg1;
+extern  vmCvar_t    g_automsg2;
+extern  vmCvar_t    g_automsg3;
+extern  vmCvar_t    g_automsg4;
+extern  vmCvar_t    g_automsg5;
+extern  vmCvar_t    g_automsg6;
+
+extern  vmCvar_t    g_automsgPeriodicity; // How often we send an automessage. This does not affect the time between the messages, only from automsg6 -> automsg1 period.
+extern  vmCvar_t    g_autotipsPeriodicity;
+
+
 //extern vmCvar_t     g_leanType;
 
 void    trap_Print( const char *text );
@@ -2098,7 +2126,7 @@ void        mvchat_printHelp(gentity_t* ent);
 void mvchat_findSounds(gentity_t* ent);
 
 
-#define SQL_GAME_MIGRATION_LEVEL 6
+#define SQL_GAME_MIGRATION_LEVEL 7
 #define SQL_LOG_MIGRATION_LEVEL 1
 #define SQL_COUNTRY_MIGRATION_LEVEL 1
 #define MAX_SQL_TEMP_NAME 16
@@ -2163,6 +2191,11 @@ int dbAddProfanity(char* profanity);
 int dbRemoveProfanity(char* profanity);
 void dbPrintProfanitylist(gentity_t* ent);
 void dbCheckStringForProfanities(char* input, int sizeofInput);
+void dbPrintTips(gentity_t* ent);
+qboolean dbGetRandomTip(char* output, int sizeofOutput);
+int dbRemoveTip(int rowId);
+int dbAddTip(char* tip);
+
 
 void logSystem(loggingLevel_t logLevel, const char* msg, ...) __attribute__((format(printf, 2, 3)));
 void logRcon(char* ip, char* action);
@@ -2272,6 +2305,7 @@ void adm_setPassword(gentity_t* ent, char* password);
 void adm_Login(gentity_t* ent, char* password);
 void adm_printAdminCommands(gentity_t* adm);
 int adm_followEnemy(int argNum, gentity_t* adm, qboolean shortCmd);
+int adm_listTips(int argNum, gentity_t* adm, qboolean shortCmd);
 
 // RPM.c
 void RPM_UpdateTMI(void);
@@ -2382,7 +2416,7 @@ void TeleportPlayerNoKillbox(gentity_t* player, vec3_t origin, vec3_t angles, qb
 void G_MissileImpact(gentity_t* ent, trace_t* trace);
 void runF1Teleport(gentity_t* ent, vec3_t origin);
 void spawnBox(vec3_t org);
-qboolean isWeaponFullyOutOfAmmo(gentity_t* ent, weapon_t wpn);
+qboolean isWeaponFullyOutOfAmmo(gentity_t* ent, weapon_t wpn, qboolean checkAlt);
 int getWeaponAmmoIdx(weapon_t wpn, qboolean alt);
 int getWeaponClip(gentity_t* ent, weapon_t wpn, qboolean alt);
 int getWeaponAmmo(gentity_t* ent, weapon_t wpn, qboolean alt);
@@ -2419,6 +2453,8 @@ void clanVsAll(void);
 qboolean replaceProfanityWithAsterisks(char* input, char* profanity);
 void sendMessageToConsole(gentity_t* ent, const char* text);
 char* getPunishmentAsText(gentity_t* ent);
+
+void refreshClient(gentity_t* ent);
 
 void vote_callVote(gentity_t* ent);
 void vote_castVote(gentity_t* ent);

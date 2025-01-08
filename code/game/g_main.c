@@ -299,6 +299,23 @@ vmCvar_t    g_sockPort;
 vmCvar_t    g_sockIdentifier;
 vmCvar_t    g_logThroughSocket;
 
+vmCvar_t    g_colorlessRedName;
+vmCvar_t    g_colorlessBlueName;
+
+vmCvar_t    g_refreshCooldown;
+
+vmCvar_t    g_automatedMessages; // AUTOMSG_ bitflags
+vmCvar_t    g_automsg1;
+vmCvar_t    g_automsg2;
+vmCvar_t    g_automsg3;
+vmCvar_t    g_automsg4;
+vmCvar_t    g_automsg5;
+vmCvar_t    g_automsg6;
+
+vmCvar_t    g_automsgPeriodicity; // How often we send an automessage. This does not affect the time between the messages, only from automsg6 -> automsg1 period.
+vmCvar_t    g_autotipsPeriodicity;
+
+
 static cvarTable_t gameCvarTable[] =
 {
     // don't override the cheat state set by the system
@@ -520,6 +537,8 @@ static cvarTable_t gameCvarTable[] =
     { &g_inaccuracyRatio, "g_inaccuracyRatio", "1",       CVAR_ARCHIVE | CVAR_SYSTEMINFO | CVAR_LATCH | CVAR_LOCK_RANGE, 0.0f, 1.0f, 0, qfalse }, // THese 2 will not alter the attack stats any more, but rather will rely on server wpnfile provided values. This is only for 1fx Client Additions support.
     { &g_customRedName, "g_customRedName", "Red Team",       CVAR_ROM | CVAR_SYSTEMINFO, 0.0f, 0.0f, 0, qfalse },
     { &g_customBlueName, "g_customBlueName", "Blue Team",       CVAR_ROM | CVAR_SYSTEMINFO, 0.0f, 0.0f, 0, qfalse },
+    { &g_colorlessRedName, "g_colorlessRedName", "Red Team",       CVAR_ROM, 0.0f, 0.0f, 0, qfalse },
+    { &g_colorlessBlueName, "g_colorlessBlueName", "Blue Team",       CVAR_ROM, 0.0f, 0.0f, 0, qfalse },
     { &g_allowCustomTeams, "g_allowCustomTeams", "1",       CVAR_ROM | CVAR_SYSTEMINFO, 0.0f, 0.0f, 0, qfalse },
     { &g_useNoLower, "g_useNoLower", "1",       CVAR_ARCHIVE, 0.0f, 0.0f, 0, qfalse },
     { &g_useNoRoof, "g_useNoRoof", "1",       CVAR_ARCHIVE, 0.0f, 0.0f, 0, qfalse },
@@ -609,6 +628,18 @@ static cvarTable_t gameCvarTable[] =
     { &g_sockPort, "g_sockPort", "10000", CVAR_ARCHIVE | CVAR_LATCH, 0.0f, 0.0f, 0, qfalse },
     { &g_sockIdentifier, "g_sockIdentifier", "", CVAR_ARCHIVE | CVAR_LATCH, 0.0f, 0.0f, 0, qfalse },
     { &g_logThroughSocket, "g_logThroughSocket", "0", CVAR_ARCHIVE | CVAR_LATCH, 0.0f, 0.0f, 0, qfalse },
+
+    { &g_refreshCooldown, "g_refreshCooldown", "5", CVAR_ARCHIVE | CVAR_LATCH, 0.0f, 0.0f, 0, qfalse },
+    { &g_automatedMessages, "g_automatedMessages", "3", CVAR_ARCHIVE | CVAR_LOCK_RANGE, 0.0f, 3.0f, 0, qfalse },
+
+    { &g_automsg1, "g_automsg1", "", CVAR_ARCHIVE, 0.0f, 0.0f, 0, qfalse },
+    { &g_automsg2, "g_automsg2", "", CVAR_ARCHIVE, 0.0f, 0.0f, 0, qfalse },
+    { &g_automsg3, "g_automsg3", "", CVAR_ARCHIVE, 0.0f, 0.0f, 0, qfalse },
+    { &g_automsg4, "g_automsg4", "", CVAR_ARCHIVE, 0.0f, 0.0f, 0, qfalse },
+    { &g_automsg5, "g_automsg5", "", CVAR_ARCHIVE, 0.0f, 0.0f, 0, qfalse },
+    { &g_automsg6, "g_automsg6", "", CVAR_ARCHIVE, 0.0f, 0.0f, 0, qfalse },
+    { &g_automsgPeriodicity, "g_automsgPeriodicity", "3", CVAR_ARCHIVE | CVAR_LOCK_RANGE, 1.0f, 30.0f, 0, qfalse },
+    { &g_autotipsPeriodicity, "g_autotipsPeriodicity", "5", CVAR_ARCHIVE | CVAR_LOCK_RANGE, 1.0f, 30.0f, 0, qfalse },
 };
 
 // bk001129 - made static to avoid aliasing
@@ -1269,7 +1300,7 @@ void G_InitGame( int levelTime, int randomSeed, int restart )
     BG_BuildGametypeList ( );
 
     // Set the current gametype
-
+    trap_Cvar_Set("g_spoofGametype", "1");
     trap_Cvar_Set("g_gametype", G_TranslateGametype(g_gametype.string));
     trap_Cvar_Update(&g_gametype);
 
@@ -2345,6 +2376,13 @@ void CheckExitRules(void)
         return;
     }
 
+    // Check that whether timelimit has been changed in the meantime.
+    if (level.timelimitHit && level.time - level.startTime < (g_timelimit.integer + level.timeExtension) * 60000) {
+        G_printInfoMessageToAll("Timelimit has changed, game will continue.");
+        level.timelimitHit = qfalse;
+        level.timelimitMsg = qfalse;
+    }
+
     // check for sudden death
     if (g_suddenDeath.integer && ScoreIsTied() && !isCurrentGametypeInList((gameTypes_t[]){GT_HNS, GT_HNZ, GT_MAX})) // Don't check suddenDeath in HNS and HNZ, as there it has no meaning.
     {
@@ -3195,6 +3233,58 @@ void G_RunFrame( int levelTime )
             else {
                 trap_SendConsoleCommand(EXEC_APPEND, "mapcycle");
             }
+
+        }
+
+    }
+
+    // Tips and auto messages.
+
+    // When we run the frame first time we set the values when they should be displayed.
+
+    if (g_automatedMessages.integer > AUTOMSG_NONE) {
+
+        if (level.nextAutoInfoMsg == 0 && g_automatedMessages.integer & AUTOMSG_INFO) {
+            level.nextAutoInfoMsg = level.time + 30000; // Send the first one after 10 seconds.
+            level.nextDisplayableAutoInfoMsg = 1;
+        }
+
+        if (level.nextAutoTipMsg == 0 && g_automatedMessages.integer & AUTOMSG_TIP) {
+            level.nextAutoTipMsg = level.time + 60000; // Automsg is sent from 10 seconds after start, 3 second pause and has 6 messages, so lets send a tip later.
+        }
+
+
+        if (level.time > level.nextAutoInfoMsg && g_automatedMessages.integer & AUTOMSG_INFO) {
+
+            char autoMsg[MAX_SAY_TEXT];
+            trap_Cvar_VariableStringBuffer(va("g_automsg%d", level.nextDisplayableAutoInfoMsg), autoMsg, sizeof(autoMsg));
+
+            if (strlen(autoMsg) > 0) {
+                G_printChatInfoMessageToAll(autoMsg);
+            }
+
+            if (level.nextDisplayableAutoInfoMsg == 6) {
+                level.nextAutoInfoMsg = level.time + g_automsgPeriodicity.integer * 60000;
+                level.nextDisplayableAutoInfoMsg = 1;
+            }
+            else {
+                level.nextAutoInfoMsg = level.time + 3000;
+                level.nextDisplayableAutoInfoMsg++;
+            }
+
+
+        }
+
+        if (level.time > level.nextAutoTipMsg && g_automatedMessages.integer & AUTOMSG_TIP) {
+
+            char autoTip[MAX_SAY_TEXT];
+            qboolean result = dbGetRandomTip(autoTip, sizeof(autoTip));
+
+            if (result) {
+                G_printCustomChatMessageToAll("Tip", autoTip);
+            }
+
+            level.nextAutoTipMsg = level.time + g_autotipsPeriodicity.integer * 60000;
 
         }
 

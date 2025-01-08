@@ -658,7 +658,7 @@ gentity_t* G_FireProjectile ( gentity_t *ent, weapon_t weapon, attackType_t atta
     muzzlePoint[2] += ent->client->ps.viewheight;
 
     // Inform of the grenade toss if its a timed grenade
-    if ( weapon >= WP_M84_GRENADE && weapon < WP_M15_GRENADE && (flags&PROJECTILE_TIMED) && (ent->client->ps.pm_type == PM_NORMAL) )
+    if ( weapon >= WP_M84_GRENADE && weapon < WP_NUM_WEAPONS && (flags&PROJECTILE_TIMED) && (ent->client->ps.pm_type == PM_NORMAL) )
     {
         gentity_t* nearby;
 
@@ -708,6 +708,10 @@ gentity_t* G_FireProjectile ( gentity_t *ent, weapon_t weapon, attackType_t atta
             dir[0] += flrand(-0.1 * inaccuracy, 0.1 * inaccuracy);
             dir[1] += flrand(-0.1 * inaccuracy, 0.1 * inaccuracy);
             dir[2] += flrand(-0.1 * inaccuracy, 0.1 * inaccuracy);
+        }
+
+        if (!(flags & PROJECTILE_TIMED) && isCurrentGametype(GT_HNS) && weapon == WP_MDN11_GRENADE) {
+            muzzlePoint[2] += 30.0f;
         }
 
         missile = G_CreateMissile( muzzlePoint, dir, attackDat->rV.velocity, min(projectileLifetime, 10000), ent, attack );
@@ -842,27 +846,27 @@ gentity_t* G_FireWeapon( gentity_t *ent, attackType_t attack )
         G_FireBullet ( ent, ent->s.weapon, attack );
 
         if (isCurrentGametype(GT_HNS)) {
-            if (ent->s.weapon == WP_M4_ASSAULT_RIFLE && isWeaponFullyOutOfAmmo(ent, ent->s.weapon)) {
+            if (ent->s.weapon == WP_M4_ASSAULT_RIFLE && isWeaponFullyOutOfAmmo(ent, ent->s.weapon, qtrue)) {
                 removeWeaponFromClient(ent, ent->s.weapon, qfalse, WP_KNIFE);
                 Q_strncpyz(level.hns.M4loc, "Disappeared", sizeof(level.hns.M4loc));
                 G_printGametypeMessageToAll("M4 has disappeared");
-            } else if (ent->s.weapon == WP_M3A1_SUBMACHINEGUN && isWeaponFullyOutOfAmmo(ent, ent->s.weapon)) {
+            } else if (ent->s.weapon == WP_M3A1_SUBMACHINEGUN && isWeaponFullyOutOfAmmo(ent, ent->s.weapon, qfalse)) {
                 removeWeaponFromClient(ent, ent->s.weapon, qfalse, WP_KNIFE);
                 G_printGametypeMessageToAll("Telegun has disappeared");
             }
-            else if (ent->s.weapon == WP_USSOCOM_PISTOL && isWeaponFullyOutOfAmmo(ent, ent->s.weapon)) {
+            else if (ent->s.weapon == WP_USSOCOM_PISTOL && isWeaponFullyOutOfAmmo(ent, ent->s.weapon, qfalse)) {
                 removeWeaponFromClient(ent, ent->s.weapon, qfalse, WP_KNIFE);
                 G_printGametypeMessageToAll("Stungun has disappeared");
             }
         }
         else if (isCurrentGametype(GT_HNZ) && ent->client->ps.weapon != WP_KNIFE && ent->client->ps.weapon != WP_M590_SHOTGUN && ent->client->sess.team == TEAM_RED) {
 
-            if (isWeaponFullyOutOfAmmo(ent, ent->client->ps.weapon)) {
+            if (isWeaponFullyOutOfAmmo(ent, ent->client->ps.weapon, qfalse)) {
                 removeWeaponFromClient(ent, ent->client->ps.weapon, qfalse, WP_KNIFE);
 
                 // Try to find whether we have a better weapon to switch to than knife.
                 for (int i = WP_NUM_WEAPONS - 1; i > WP_KNIFE; i--) {
-                    if (!isWeaponFullyOutOfAmmo(ent, i)) {
+                    if (!isWeaponFullyOutOfAmmo(ent, i, qfalse)) {
                         ent->client->ps.weapon = i;
                         break;
                     }

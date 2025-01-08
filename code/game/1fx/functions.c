@@ -181,20 +181,17 @@ Removes additional carets from text.
 
 void G_RemoveAdditionalCarets(char* text)
 {
-    int i, l;
+    int curpos = 0;
 
-    l = 0;
-    for (i = 0; text[i]; i++) {
-        if (text[i] == '^' &&
-            (text[i + 1] == '^' || i + 1 == strlen(text))) {
-            i++;
-            continue;
+    for (int i = 0; text[i] != '\0'; i++) {
+        if (text[i] == '^' && i > 0 && text[i - 1] == '^') {
+            continue; // Skip consecutive carets
         }
 
-        text[l++] = text[i];
+        text[curpos++] = text[i];
     }
 
-    text[l] = '\0';
+    text[curpos] = '\0';
 }
 
 /*
@@ -1003,6 +1000,10 @@ int evenTeams(qboolean autoEven) {
         for (int i = 0; i < level.numConnectedClients; i++) {
             gentity_t* ent = &g_entities[level.sortedClients[i]];
 
+            if (ent->client->sess.team == TEAM_SPECTATOR) {
+                continue;
+            }
+
             if (ent == lowestDeathClient) {
                 ent->client->sess.team = TEAM_BLUE;
             }
@@ -1747,6 +1748,17 @@ void writeGametypeTeamNames(const char* redTeam, const char* blueTeam) {
     trap_Cvar_Set("g_customBlueName", blueTeam);
     trap_Cvar_Update(&g_customRedName);
     trap_Cvar_Update(&g_customBlueName);
+
+    // Write the names into a tmp buffer so that Q_CleanStr doesn't overwrite it completely.
+    char tmpRed[MAX_QPATH], tmpBlue[MAX_QPATH];
+    Q_strncpyz(tmpRed, redTeam, sizeof(tmpRed));
+    Q_strncpyz(tmpBlue, blueTeam, sizeof(tmpBlue));
+
+    trap_Cvar_Set("g_colorlessRedName", Q_CleanStr(tmpRed));
+    trap_Cvar_Set("g_colorlessBlueName", Q_CleanStr(tmpBlue));
+
+    trap_Cvar_Update(&g_colorlessRedName);
+    trap_Cvar_Update(&g_colorlessBlueName);
 
 }
 
@@ -3259,16 +3271,18 @@ void transformPlayerBack(gentity_t* self, gentity_t* other, trace_t* trace)
             other->client->pers.cleanName,
             g_entities[self->hideseek].client->pers.cleanName,
             (g_entities[self->hideseek].client->pers.identity && strstr(g_entities[self->hideseek].client->pers.identity->mCharacter->mModel, "female") ? "her" : "his")));
+        other->s.eFlags &= ~EF_HSBOX;
+        other->client->ps.eFlags &= ~EF_HSBOX;
     }
     else {
         trap_SendServerCommand(-1, va("print \"^3[H&S] ^7%s was scared back to %s original form!\n\"",
             g_entities[self->hideseek].client->pers.cleanName,
             (g_entities[self->hideseek].client->pers.identity && strstr(g_entities[self->hideseek].client->pers.identity->mCharacter->mModel, "female") ? "her" : "his")));
+        g_entities[self->hideseek].s.eFlags &= ~EF_HSBOX;
+        g_entities[self->hideseek].client->ps.eFlags &= ~EF_HSBOX;
     }
 
     strncpy(level.hns.randomNadeLoc, "Disappeared", sizeof(level.hns.randomNadeLoc));
-    g_entities[self->hideseek].s.eFlags &= ~EF_HSBOX;
-    g_entities[self->hideseek].client->ps.eFlags &= ~EF_HSBOX;
     G_FreeEntity(self);
 }
 
@@ -3759,7 +3773,7 @@ void TeleportPlayerToPlayer(gentity_t* player, gentity_t* toPlayer, qboolean kil
     }
 
     if (killbox) {
-        G_KillBox(player);
+        G_KillBox(player, qtrue);
     }
 
     BG_PlayerStateToEntityState(&player->client->ps, &player->s, qtrue);
@@ -4261,10 +4275,9 @@ void spawnBox(vec3_t org)
     level.numSpawnVarChars = 0;
 }
 
-qboolean isWeaponFullyOutOfAmmo(gentity_t* ent, weapon_t wpn) {
+qboolean isWeaponFullyOutOfAmmo(gentity_t* ent, weapon_t wpn, qboolean checkAlt) {
 
-    return (getWeaponAmmo(ent, wpn, qfalse) + getWeaponAmmo(ent, wpn, qtrue) + getWeaponClip(ent, wpn, qfalse) + getWeaponClip(ent, wpn, qtrue)) == 0;
-
+    return (getWeaponAmmo(ent, wpn, qfalse) + (checkAlt ? getWeaponAmmo(ent, wpn, qtrue) : 0) + getWeaponClip(ent, wpn, qfalse) + (checkAlt ? getWeaponClip(ent, wpn, qtrue) : 0)) == 0;
 }
 
 int getWeaponAmmoIdx(weapon_t wpn, qboolean alt) {
@@ -5838,6 +5851,10 @@ void propRunFrame(void) {
             for (int i = 0; i < level.numConnectedClients; i++) {
                 gentity_t* ent = &g_entities[level.sortedClients[i]];
 
+                if (ent->client->sess.team == TEAM_SPECTATOR) {
+                    continue;
+                }
+
                 if (!G_IsClientDead(ent->client) && ent->client->sess.team == TEAM_RED) {
                     transformPlayerToProp(ent, randomProps[ent - g_entities], qtrue);
                     G_printChatInfoMessage(ent, "You've been turned into a prop. Press reload to freeze your character into place.");
@@ -5991,6 +6008,34 @@ char* getPunishmentAsText(gentity_t* ent) {
         return "You lose all guns";
     default:
         return "";
+    }
+
+}
+
+void refreshClient(gentity_t* ent) {
+
+    if (g_refreshCooldown.integer == -1) {
+        G_printInfoMessage(ent, "Refreshing not allowed here.");
+        return;
+    }
+
+    if (level.time > ent->client->sess.nextRefresh) {
+        G_printInfoMessage(ent, "Refreshed. Cooldown: %d minutes.", g_refreshCooldown.integer);
+        G_printInfoMessageToAll("%s refreshed their stats.", ent->client->pers.cleanName);
+        ent->client->sess.nextRefresh = level.time + g_refreshCooldown.integer * 60000;
+
+        ent->client->sess.score = 0;
+        ent->client->sess.kills = 0;
+        ent->client->sess.deaths = 0;
+        ent->client->pers.hnz.killsAsHuman = 0;
+        ent->client->pers.hnz.killsAsZombie = 0;
+        CalculateRanks();
+    }
+    else {
+        int remainingTime = ent->client->sess.nextRefresh - level.time;
+        int minutes = remainingTime / 60000;
+        int seconds = (remainingTime % 60000) / 1000;
+        G_printInfoMessage(ent, "You have to wait for %d:%02d before you can refresh again.", minutes, seconds);
     }
 
 }

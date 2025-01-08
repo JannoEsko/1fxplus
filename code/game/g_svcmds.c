@@ -313,6 +313,57 @@ qboolean ConsoleCommand( void )
         return qtrue;
     }
 
+    if (!Q_stricmp(cmd, "addtip")) {
+
+        char tip[MAX_SAY_TEXT];
+        Q_strncpyz(tip, concatArgs(1, qfalse, qtrue), sizeof(tip));
+
+        G_RemoveAdditionalCarets(tip);
+
+        if (strlen(tip) < 5) {
+            G_printInfoMessage(NULL, "Tip is too short. Minimum length is 5 characters.");
+        }
+        else {
+            int output = dbAddTip(tip);
+
+            if (output != 1) {
+                logSystem(LOGLEVEL_WARN, "Failed to add tip '%s' into the database.", tip);
+                G_printInfoMessage(NULL, "Something went wrong, please try again.");
+            }
+            else {
+                logAdmin(NULL, NULL, "addtip", tip);
+                G_printInfoMessage(NULL, "Tip successfully added.");
+            }
+        }
+
+        return qtrue;
+    }
+
+    if (!Q_stricmp(cmd, "removetip")) {
+
+        char arg[15];
+        trap_Argv(1, arg, sizeof(arg));
+
+        int rowId = atoi(arg);
+
+        if (rowId > 0) {
+            int output = dbRemoveTip(rowId);
+
+            if (output != 1) {
+                G_printInfoMessage(NULL, "Row %d does not exist.", rowId);
+            }
+            else {
+                G_printInfoMessage(NULL, "Tip removed.");
+                logAdmin(NULL, NULL, "removetip", arg);
+            }
+        }
+        else {
+            G_printInfoMessage(NULL, "Invalid row '%s'.", arg);
+        }
+
+        return qtrue;
+    }
+
     if (g_dedicated.integer)
     {
         if (Q_stricmp (cmd, "say") == 0)

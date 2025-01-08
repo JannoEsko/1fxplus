@@ -92,9 +92,15 @@ admCmd_t adminCommands[] = {
     {"!mcl",    "mapcyclelist",     &a_mapswitch.integer,       &adm_mapCycleList,              "Shows the current mapcycle",       "",                 NULL},
     {"!stm",    "skiptomap",        &a_mapswitch.integer,       &adm_skipToMap,                 "Skips to the specified map index", "<map num>",        NULL },
     {"!fe",    "followenemy",        &a_followEnemy.integer,       &adm_followEnemy,                 "Toggles followenemy", "",        NULL },
+    {"!lt",    "listtips",        &minimumAdminLevel,       &adm_listTips,                 "Lists available tips", "",        NULL },
 };
 
 int adminCommandsSize = sizeof(adminCommands) / sizeof(adminCommands[0]);
+
+int adm_listTips(int argNum, gentity_t* adm, qboolean shortCmd) {
+    dbPrintTips(adm);
+    return -1;
+}
 
 const char* getAdminNameByAdminLevel(admLevel_t adminLevel) {
 
@@ -883,16 +889,36 @@ int adm_forceTeam(int argNum, gentity_t* adm, qboolean shortCmd) {
             return -1;
         }
     }
+    else {
+        G_printInfoMessage(adm, "No team specified. Valid values: blue, red, spec");
+        return -1;
+    }
 
-    
+    int idNum = -1;
 
-    int idNum = G_ClientNumFromArg(adm, argNum, "forceteam", qfalse, qtrue, qtrue, shortCmd);
+    if (!Q_stricmp(G_GetArg(argNum, shortCmd, qfalse), "all")) {
+        for (int i = 0; i < level.numConnectedClients; i++) {
+            gentity_t* ent = &g_entities[level.sortedClients[i]];
 
-    if (idNum >= 0) {
+            if (ent->client->sess.team != TEAM_SPECTATOR) {
+                SetTeam(ent, teamChar, NULL, qtrue);
+            }
+        }
 
-        gentity_t* ent = &g_entities[idNum];
+        logAdmin(adm, NULL, "forceteam all", NULL);
+        G_Broadcast(BROADCAST_CMD, NULL, qtrue, "%s\nforceteamed everyone\nto %s", getNameOrArg(adm, "\\RCON", qfalse), team == TEAM_BLUE ? g_customBlueName.string : (team == TEAM_RED ? g_customRedName.string : "Spectators"));
+        G_printCustomMessageToAll("Admin Action", "%s forceteamed everyone to %s.", getNameOrArg(adm, "RCON", qtrue), team == TEAM_BLUE ? g_customBlueName.string : (team == TEAM_RED ? g_customRedName.string : "Spectators"));
+    }
+    else {
 
-        SetTeam(ent, teamChar, NULL, qtrue);
+        idNum = G_ClientNumFromArg(adm, argNum, "forceteam", qfalse, qtrue, qtrue, shortCmd);
+
+        if (idNum >= 0) {
+
+            gentity_t* ent = &g_entities[idNum];
+
+            SetTeam(ent, teamChar, NULL, qtrue);
+        }
     }
 
     return idNum;

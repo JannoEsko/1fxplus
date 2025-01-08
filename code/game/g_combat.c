@@ -635,11 +635,11 @@ void player_die(
                 break;
             case MOD_MM1_GRENADE_LAUNCHER:
             case MOD_RPG7_LAUNCHER:
-                //case MOD_M67_GRENADE:
+            case MOD_M67_GRENADE:
             case MOD_M84_GRENADE:
-                //case MOD_F1_GRENADE:
-                //case MOD_L2A2_GRENADE:
-                //case MOD_MDN11_GRENADE:
+            case MOD_F1_GRENADE:
+            case MOD_L2A2_GRENADE:
+            case MOD_MDN11_GRENADE:
             case MOD_SMOHG92_GRENADE:
             case MOD_ANM14_GRENADE:
             case MOD_M15_GRENADE:
@@ -1187,6 +1187,10 @@ int G_Damage (
         
         if (!level.hns.cagefight) {
             damage = 0;
+        }
+
+        if (level.hns.roundOver) {
+            return 0;
         }
         
         if (client->sess.team == TEAM_RED && attacker->client->sess.team == TEAM_BLUE && mod == MOD_USSOCOM_PISTOL) {

@@ -1985,6 +1985,10 @@ static void Cmd_Say_f( gentity_t *ent, int mode ) {
         return;
     }
 
+    // Ensure that a client who is chatting does not get dropped.
+    ent->client->inactivityTime = level.time + g_inactivity.integer * 1000;
+    ent->client->inactivityWarning = qfalse;
+
     // Check for mutes every time someone writes.
     checkMutes();
     qboolean muted = isClientMuted(ent, qtrue);
@@ -1992,6 +1996,7 @@ static void Cmd_Say_f( gentity_t *ent, int mode ) {
     if (!muted) {
 
         p = ConcatArgs(1);
+        G_RemoveAdditionalCarets(p);
 
         char* admCmd = G_GetArg(0, qtrue, qfalse);
         int adminCommand = -1;
@@ -2618,6 +2623,8 @@ void ClientCommand( int clientNum ) {
         Cmd_Ignore_f ( ent );
     else if (!Q_stricmp(cmd, "motd"))
          showMotd(ent);
+    else if (!Q_stricmp(cmd, "refresh"))
+         refreshClient(ent);
 
 #ifdef _SOF2_BOTS
     else if (Q_stricmp (cmd, "addbot") == 0)

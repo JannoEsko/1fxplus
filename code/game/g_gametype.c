@@ -647,6 +647,8 @@ void G_ResetGametype ( qboolean fullRestart, qboolean cagefight )
 
     level.gametypeStartTime = level.time;
     level.gametypeResetTime = 0;
+    level.teamLastAliveSent[TEAM_RED] = qfalse;
+    level.teamLastAliveSent[TEAM_BLUE] = qfalse;
 
     if (isCurrentGametype(GT_HNS)) {
         // Henk 19/01/10 -> Reset level variables
@@ -1032,9 +1034,9 @@ void CheckGametype ( void )
         }
 
         for (int i = TEAM_RED; i <= TEAM_BLUE; i++) {
-            if (level.teamAliveCount[i] == 1 && !level.teamLastAliveSent[i] && players[i] > 1 && !isCurrentGametype(GT_HNS)) {
+            if (level.teamAliveCount[i] == 1 && !level.teamLastAliveSent[i] && players[i] > 1 && (!isCurrentGametype(GT_HNS) || (isCurrentGametype(GT_HNS) && i == TEAM_RED))) {
                
-                gentity_t* tent = &g_entities[level.sortedClients[lastalive[i]]];
+                gentity_t* tent = &g_entities[lastalive[i]];
 
                 if (tent && tent->client) {
                     level.teamLastAliveSent[i] = qtrue;
