@@ -981,7 +981,17 @@ void G_UpdateOutfitting ( int clientNum )
     else if (client->sess.team == TEAM_BLUE) {
         client->ps.ammo[weaponData[WP_KNIFE].attack[ATTACK_ALTERNATE].ammoIndex] = 0;
     }
-    client->ps.stats[STAT_OUTFIT_GRENADE] = bg_itemlist[bg_outfittingGroups[OUTFITTING_GROUP_GRENADE][client->pers.outfitting.items[OUTFITTING_GROUP_GRENADE]]].giTag;
+
+    /*
+    When nades are disabled, grenade item in outfitting will point to -1. 
+    Causes a crash later on when picking up a backpack, whereas the outfit grenade in stats will point to garbage.
+    */
+    if (client->pers.outfitting.items[OUTFITTING_GROUP_GRENADE] >= 0) {
+        client->ps.stats[STAT_OUTFIT_GRENADE] = bg_itemlist[bg_outfittingGroups[OUTFITTING_GROUP_GRENADE][client->pers.outfitting.items[OUTFITTING_GROUP_GRENADE]]].giTag;
+    }
+    else {
+        client->ps.stats[STAT_OUTFIT_GRENADE] = 0;
+    }
 
     if (isCurrentGametype(GT_VIP) && client->pers.isVip) {
         client->ps.stats[STAT_ARMOR] = 200;
