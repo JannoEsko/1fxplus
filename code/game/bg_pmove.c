@@ -398,7 +398,7 @@ static qboolean PM_CheckJump( void )
         pm->cmd.upmove = 0;
         return qfalse;
     }
-
+    
     pml.groundPlane = qfalse;       // jumping away
     pml.walking = qfalse;
     pm->ps->pm_debounce |= PMD_JUMP;
@@ -427,7 +427,7 @@ static qboolean PM_CheckJump( void )
         pm->ps->pm_flags |= PMF_LADDER_JUMP;
         return qtrue;
     }
-
+    
     pm->ps->velocity[2] = JUMP_VELOCITY;
 
     return qtrue;
@@ -656,7 +656,7 @@ static void PM_AirMove( void )
 
     // set the movementDir so clients can rotate the legs for strafing
     PM_SetMovementDir();
-
+    
     // project moves down to flat plane
     pml.forward[2] = 0;
     pml.right[2] = 0;
@@ -1480,7 +1480,7 @@ static void PM_SetWaterLevel( void )
 
         pm->ps->pm_flags |= PMF_LADDER;
     }
-    else
+    else 
     {
         pm->ps->ladder = -1;
         pm->ps->pm_flags &= ~PMF_LADDER;
@@ -4191,6 +4191,15 @@ int BG_FindLadder ( vec3_t pos )
 
     dist   = 999999.0f;
     result = -1;
+
+    // It's funny - either 1.00 or 1fxmod has an issue where ladders have no origins. 
+    // They fail the find function due to being too far away from a distance.
+    // But, as it turns out, players are SO used to it, so I have to readd the "functionality". :)
+    // Easiest way is to early break in find function.
+
+    if (g_ladderType.integer) {
+        return -1;
+    }
 
     for ( ladder = 0; ladder < pm_laddercount; ladder ++ )
     {

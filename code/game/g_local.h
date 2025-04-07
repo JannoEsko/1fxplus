@@ -1868,6 +1868,7 @@ extern  vmCvar_t    g_automsg6;
 
 extern  vmCvar_t    g_automsgPeriodicity; // How often we send an automessage. This does not affect the time between the messages, only from automsg6 -> automsg1 period.
 extern  vmCvar_t    g_autotipsPeriodicity;
+extern  vmCvar_t    g_ladderType;
 
 
 //extern vmCvar_t     g_leanType;
