@@ -120,6 +120,7 @@ void mvchat_parseFiles()
     mvchatSoundFileCount = 0;
     Com_Memset(maleSoundsParsed, 0, sizeof(int) * MVCHAT_NUM_LANGS);
     Com_Memset(femaleSoundsParsed, 0, sizeof(int) * MVCHAT_NUM_LANGS);
+    Com_Memset(mvchatSounds, 0, sizeof(mvchatSounds));
 
     // Get the available .mvchat files.
     mvchatCount = trap_FS_GetFileList("files/mvchats", ".mvchat", mvchatFileBuf, sizeof(mvchatFileBuf));

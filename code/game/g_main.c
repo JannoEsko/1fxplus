@@ -968,6 +968,11 @@ void G_UpdateAvailableWeapons ( void )
             continue;
         }
 
+        if ((weapon >= WP_M67_GRENADE || weapon <= WP_MDN11_GRENADE) && !sv_useLegacyNades.integer) {
+            available[weapon - 1] = '0';
+            continue;
+        }
+
         switch ( (int)trap_Cvar_VariableValue ( va("disable_%s", item->classname ) ) )
         {
             case 0:
@@ -1323,8 +1328,6 @@ void G_InitGame( int levelTime, int randomSeed, int restart )
         // We also do not reset the variable. To be honest, if the server runs h&s / h&z, it should be 1fx.rocmod all the time.
         trap_Cvar_Set("g_enforce1fxAdditions", "0");
         trap_Cvar_Update(&g_enforce1fxAdditions);
-        trap_Cvar_Set("sv_useLegacyNades", "0");
-        trap_Cvar_Update(&sv_useLegacyNades);
     }
 
     if (isCurrentGametype(GT_HNS)) {
@@ -1346,6 +1349,13 @@ void G_InitGame( int levelTime, int randomSeed, int restart )
             ammoNames[13] = "MDN11";
 
         }
+
+    }
+
+    if (!g_enforce1fxAdditions.integer || Q_stricmp(sv_clientMod.string, "1fx.rocmod")) {
+
+        trap_Cvar_Set("sv_useLegacyNades", "0");
+        trap_Cvar_Update(&sv_useLegacyNades);
 
     }
 

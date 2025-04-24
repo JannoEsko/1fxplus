@@ -1284,6 +1284,7 @@ int G_Damage (
                     G_Broadcast(BROADCAST_GAME, targ, qfalse, "%s stole your \\RPG!", attacker->client->pers.netname);
                     G_printGametypeMessageToAll("%s took the RPG from %s.", attacker->client->pers.cleanName, client->pers.cleanName);
                     attacker->client->sess.weaponsStolen++;
+                    Q_strncpyz(level.hns.RPGloc, attacker->client->pers.netname, sizeof(level.hns.RPGloc));
                 }
                 else if (client->ps.weapon == WP_M4_ASSAULT_RIFLE) {
                     stealWeaponWithAmmo(targ, attacker, WP_M4_ASSAULT_RIFLE);
@@ -1291,6 +1292,7 @@ int G_Damage (
                     G_Broadcast(BROADCAST_GAME, targ, qfalse, "%s stole your \\M4!", attacker->client->pers.netname);
                     G_printGametypeMessageToAll("%s took the M4 from %s.", attacker->client->pers.cleanName, client->pers.cleanName);
                     attacker->client->sess.weaponsStolen++;
+                    Q_strncpyz(level.hns.M4loc, attacker->client->pers.netname, sizeof(level.hns.M4loc));
                 }
             }
         }
