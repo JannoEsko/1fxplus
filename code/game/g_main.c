@@ -968,7 +968,7 @@ void G_UpdateAvailableWeapons ( void )
             continue;
         }
 
-        if ((weapon >= WP_M67_GRENADE || weapon <= WP_MDN11_GRENADE) && !sv_useLegacyNades.integer) {
+        if (weapon >= WP_M67_GRENADE && weapon <= WP_MDN11_GRENADE && !sv_useLegacyNades.integer) {
             available[weapon - 1] = '0';
             continue;
         }
