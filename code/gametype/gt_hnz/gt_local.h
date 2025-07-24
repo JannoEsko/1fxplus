@@ -49,6 +49,8 @@ typedef struct {
     int     caseTakenSound;
     int     caseCaptureSound;
     int     caseReturnSound;
+    int     airstrikePlaneSound;
+    int     airstrikeAnnounceSound;
 } gametypeLocals_t;
 
 //=============================================

@@ -5339,6 +5339,35 @@ void clearCampingInformation(gentity_t* ent) {
 
 }
 
+void distributeAirstrike(){
+    int shuffledClients[level.numConnectedClients];
+    int maxBludgeonKills = 0;
+    for (int i = 0; i < level.numConnectedClients; i++) {
+        shuffledClients[i] = level.sortedClients[i];
+        gclient_t* client = g_entities[level.sortedClients[i]].client;
+        if (client->pers.hnz.bludgeonKills > maxBludgeonKills) {
+            maxBludgeonKills = client->pers.hnz.bludgeonKills;
+        }
+    }
+    shuffleIntArray(shuffledClients, level.numConnectedClients);
+
+    gentity_t* bestBludgeoner = NULL;
+    for (int i = 0; i<level.numConnectedClients; i++){
+        gentity_t* ent = &g_entities[shuffledClients[i]];
+
+        if (ent->client->sess.team == TEAM_RED && ent->client->pers.hnz.bludgeonKills >= maxBludgeonKills) {
+            bestBludgeoner = ent;
+        }
+        // Only reset after using previous round stats to select a client.
+        ent->client->pers.hnz.bludgeonKills = 0;
+    }
+
+    if (bestBludgeoner != NULL){
+        giveWeaponWithCustomAmmoToClient(bestBludgeoner, WP_M15_GRENADE, qfalse, 1, hnz_airstrikeAmmo.integer-1, -1, -1);
+        G_printGametypeMessageToAll("Airstrike given to %s (most bludgeon kills).", bestBludgeoner->client->pers.cleanName);
+    }
+}
+
 void hnzRunFrame() {
 
     // Don't continue if we are in intermission.
@@ -5369,21 +5398,23 @@ void hnzRunFrame() {
 
                     longestSurvivor = ent;
                     longestSurvivorTime = ent->client->pers.hnz.zombifiedTime;
-
                 }
-
                 giveWeaponToClient(ent, WP_M590_SHOTGUN, qtrue);
-
             }
 
         }
 
-        if (longestSurvivorTime > 0 && longestSurvivor && longestSurvivor->client) {
-            // Give them the forcefield grenade.
-            giveWeaponToClient(longestSurvivor, WP_M67_GRENADE, qfalse);
-            G_printGametypeMessageToAll("Forcefield given to %s.", longestSurvivor->client->pers.cleanName);
+        if (hnz_rewards.string[HZREWARD_AIRSTRIKE] == '1'){
+            distributeAirstrike();
         }
 
+        if (hnz_rewards.string[HZREWARD_FORCEFIELD] == '1'){
+            if (longestSurvivorTime > 0 && longestSurvivor && longestSurvivor->client) {
+                // Give them the forcefield grenade.
+                giveWeaponToClient(longestSurvivor, WP_M67_GRENADE, qfalse);
+                G_printGametypeMessageToAll("Forcefield given to %s.", longestSurvivor->client->pers.cleanName);
+            }
+        }
     }
 
     if (level.customGameWeaponsDistributed && !TeamCount(-1, TEAM_BLUE, NULL)) {

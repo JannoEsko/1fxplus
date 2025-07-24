@@ -150,6 +150,11 @@ typedef enum {
 } hideseekWeapons_t;
 
 typedef enum {
+    HZREWARD_FORCEFIELD,
+    HZREWARD_AIRSTRIKE,
+} zombies_extras_t;
+
+typedef enum {
     SPEEDALTERATION_NONE,
     SPEEDALTERATION_MM1,
     SPEEDALTERATION_M4,
@@ -570,6 +575,8 @@ typedef struct hnzSpecifics_s {
     int zombieBody;
     vec3_t spawnAngles;
     int lastForcefieldPush;
+    int bludgeonKills;
+    int airstrikeAttempts;
 } hnzSpecifics_t;
 
 typedef struct propSpecifics_s {
@@ -1833,6 +1840,10 @@ extern  vmCvar_t    csinf_friendlyKill;
 
 extern  vmCvar_t    csinf_killBonus;
 extern  vmCvar_t    csinf_startingCash;
+
+extern vmCvar_t     hnz_rewards;   
+extern vmCvar_t     hnz_airstrikeAttempts; 
+extern vmCvar_t     hnz_airstrikeAmmo; 
 
 extern  vmCvar_t    g_anticampType;
 extern  vmCvar_t    g_anticamp;
