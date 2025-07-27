@@ -1102,7 +1102,7 @@ void CheckGametype ( void )
             if (!alreadyHit) {
                 trap_GT_SendEvent(GTEV_TEAM_ELIMINATED, level.time, TEAM_RED, 0, 0, 0, 0);
             }
-        } else if (!level.teamAliveCount[TEAM_BLUE] && dead[TEAM_BLUE] && !isCurrentGametype(GT_HNS)) {
+        } else if (!level.teamAliveCount[TEAM_BLUE] && dead[TEAM_BLUE] && !isCurrentGametypeInList((gameTypes_t[]) {GT_HNS, GT_HNZ})) {
             if (level.timelimitHit) {
                 gentity_t* tent;
                 tent = G_TempEntity(vec3_origin, EV_GAME_OVER);
