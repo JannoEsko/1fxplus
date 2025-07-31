@@ -6,6 +6,102 @@ int G_MultipleDamageLocations(int hitLocation);
 
 #define MISSILE_PRESTEP_TIME    50
 
+#define AIRSTRIKE_MISSILE_COUNT    5
+#define AIRSTRIKE_SPACING_MULTIPLIER    200
+#define AIRSTRIKE_RANDOMNESS    30
+
+
+void dropMissile(gentity_t* ent){
+    gentity_t* missile = NV_projectile(ent->parent, ent->origin_from, ent->angles_from, WP_MM1_GRENADE_LAUNCHER, 0);
+    missile->splashDamage = 250;
+    missile->splashRadius = 300;
+    missile->nextthink = level.time + 10000;
+
+    G_FreeEntity(ent);
+}
+
+void planeSoundAirstrike(gentity_t* ent) {
+    G_GlobalSound(G_SoundIndex("sound/misc/events/f16_flyby.mp3"));
+    G_FreeEntity(ent);
+}
+void announceSoundAirstrike(gentity_t* ent) {
+    G_SoundAtLoc(ent->r.currentOrigin, CHAN_WEAPON, G_SoundIndex("sound/radio/male/take_cover.mp3"));
+    G_FreeEntity(ent);
+}
+
+void airstrike(vec3_t originFrom, vec3_t originTo, gentity_t* attacker){
+
+
+    // determine if nade is thrown inside.
+    trace_t tr;
+    vec3_t upVec;
+    VectorCopy(originTo, upVec);
+    upVec[2] += 4096;
+
+    // TODO: should probably do this for each missile as not every map has a nice 
+    // flat skybox (e.g. liner1)
+    trap_Trace(&tr, originTo, NULL, NULL, upVec, -1, MASK_SOLID);
+
+    if (tr.surfaceFlags & SURF_NODRAW || tr.surfaceFlags & SURF_SKY || tr.fraction == 1){
+        vec3_t strafeAngle;
+        VectorSubtract(originTo, originFrom, strafeAngle);
+        strafeAngle[2] = 0; // Don't care about vertical angle
+        VectorNormalize(strafeAngle);
+
+
+        AddSpawnField("classname", "1fx_play_effect");
+        AddSpawnField("effect", "flare_blue");
+        AddSpawnField("origin", va("%.0f %.0f %.0f", originTo[0], originTo[1], originTo[2]));
+        AddSpawnField("wait", "1");
+        AddSpawnField("count", "1");
+
+        G_SpawnGEntityFromSpawnVars(qtrue);
+
+        gentity_t* announceDelayEnt = G_Spawn();
+        VectorCopy(originTo, announceDelayEnt->r.currentOrigin);
+        announceDelayEnt->think = announceSoundAirstrike;
+        announceDelayEnt->nextthink = level.time + 1000;
+        gentity_t* planeSoundDelayEnt = G_Spawn();
+        planeSoundDelayEnt->think = planeSoundAirstrike;
+        planeSoundDelayEnt->nextthink = level.time + 2000;
+
+        vec3_t startPoint;
+        VectorCopy(originTo, startPoint);
+        int offsetMultiplier = ceil(AIRSTRIKE_MISSILE_COUNT / 2.0f * AIRSTRIKE_SPACING_MULTIPLIER);
+        startPoint[0] -= offsetMultiplier * strafeAngle[0];
+        startPoint[1] -= offsetMultiplier * strafeAngle[1]; 
+        for (int i=0; i<AIRSTRIKE_MISSILE_COUNT; i++){
+            // Use a dummy entity to delay the missile
+            gentity_t* delayEnt = G_Spawn();
+            delayEnt->origin_from[0] = startPoint[0] + i * AIRSTRIKE_SPACING_MULTIPLIER * strafeAngle[0] + irand(-AIRSTRIKE_RANDOMNESS, AIRSTRIKE_RANDOMNESS);
+            delayEnt->origin_from[1] = startPoint[1] + i * AIRSTRIKE_SPACING_MULTIPLIER * strafeAngle[1] + irand(-AIRSTRIKE_RANDOMNESS, AIRSTRIKE_RANDOMNESS);
+            delayEnt->origin_from[2] = tr.endpos[2] - 20; // Just some margin so we don't spawn missiles too close to a solid
+            delayEnt->angles_from[0] = strafeAngle[0] * 50;
+            delayEnt->angles_from[1] = strafeAngle[1] * 50;
+            delayEnt->angles_from[2] = 100;
+            delayEnt->parent = attacker;
+            delayEnt->think = dropMissile;
+            delayEnt->nextthink = level.time + 2500 + i * 500;
+        }
+    }
+    else {
+        if (attacker->client->pers.hnz.airstrikeAttempts < hnz_airstrikeAttempts.integer){
+            G_printInfoMessage(attacker, "Airstrike failed (%i/%i), can only be used outside!", ++attacker->client->pers.hnz.airstrikeAttempts, hnz_airstrikeAttempts.integer);
+            // because of the delay, the client may no longer have the nades.
+            if (attacker->client->ps.clip[ATTACK_NORMAL][WP_M15_GRENADE]){
+                int ammoIdx = weaponData[WP_M15_GRENADE].attack[ATTACK_NORMAL].ammoIndex;
+                attacker->client->ps.ammo[ammoIdx] += 1;
+            } else {
+                giveWeaponWithCustomAmmoToClient(attacker, WP_M15_GRENADE, qfalse, 1, -1, -1, -1);
+            }
+        } else {
+            G_printInfoMessage(attacker, "Airstrike failed too many times: not adding ammo");
+        }
+    }
+
+}
+
+
 /*
 ================
 G_BounceMissile
@@ -96,6 +192,13 @@ Explode a missile without an impact
 void G_ExplodeMissile( gentity_t *ent ) {
     vec3_t      dir;
     vec3_t      origin;
+
+    if (isCurrentGametype(GT_HNZ) && (ent->methodOfDeath == MOD_M15_GRENADE || ent->methodOfDeath == altAttack(MOD_M15_GRENADE))){
+        // Don't handle regular smoke but trigger airstrike instead
+        airstrike(ent->origin_from, ent->r.currentOrigin, ent->parent);
+        G_FreeEntity(ent);
+        return;
+    }
 
     BG_EvaluateTrajectory( &ent->s.pos, level.time, origin );
     SnapVector( origin );
@@ -291,6 +394,17 @@ gentity_t* G_CreateDamageArea ( vec3_t origin, gentity_t* attacker, float damage
     return damageArea;
 }
 
+
+int isBounceNade(gentity_t* ent){
+    if (currentGametype.integer == GT_HNZ && !Q_stricmp(ent->classname,"m15")){
+        return 1;
+    }
+    if (!isCurrentGametypeInList((gameTypes_t[]) { GT_HNS, GT_HNZ, GT_MAX }) && ( ent->s.eFlags & ( EF_BOUNCE | EF_BOUNCE_HALF | EF_BOUNCE_SCALE ) ) ){
+        return 1;
+    }
+    return 0;
+}
+
 /*
 ================
 G_MissileImpact
@@ -312,7 +426,7 @@ void G_MissileImpact( gentity_t *ent, trace_t *trace )
     d = 0;
 
     // check for bounce
-    if (!isCurrentGametypeInList((gameTypes_t[]) { GT_HNS, GT_HNZ, GT_MAX }) && ( ent->s.eFlags & ( EF_BOUNCE | EF_BOUNCE_HALF | EF_BOUNCE_SCALE ) ) )
+    if (isBounceNade( ent ))
     {
         G_BounceMissile( ent, trace );
         return;
@@ -559,6 +673,9 @@ void G_MissileImpact( gentity_t *ent, trace_t *trace )
 
     trap_LinkEntity( ent );
 }
+
+
+
 
 /*
 ================

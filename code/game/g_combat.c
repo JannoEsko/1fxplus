@@ -350,7 +350,12 @@ void player_die(
     else if (isCurrentGametype(GT_HNZ)) {
         if (self && self->client && attacker && attacker->client && self->client->sess.team == TEAM_BLUE && attacker->client->sess.team == TEAM_RED) {
             hnz_dropRandomWeapon(self->r.currentOrigin);
+            if (attack == ATTACK_ALTERNATE && (meansOfDeath == MOD_M590_SHOTGUN || meansOfDeath == MOD_USSOCOM_PISTOL || meansOfDeath == MOD_M1911A1_PISTOL)){
+                attacker->client->pers.hnz.bludgeonKills++;
+            }
         }
+
+
 
         if (self->client->sess.team == TEAM_RED && mod != MOD_TEAMCHANGE) {
             SetTeam(self, "blue", NULL, qtrue);
@@ -506,7 +511,7 @@ void player_die(
             else {
                 G_AddScore(attacker, 1);
             }
-            
+
             attacker->client->sess.kills++;
             attacker->client->pers.statInfo.killsinarow++;
             attacker->client->pers.statInfo.kills++;

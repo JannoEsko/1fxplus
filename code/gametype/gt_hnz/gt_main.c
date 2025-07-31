@@ -140,6 +140,8 @@ void GT_Init ( void )
     gametype.caseTakenSound   = trap_Cmd_RegisterSound ( "sound/ctf_flag.mp3" );
     gametype.caseCaptureSound = trap_Cmd_RegisterSound ( "sound/ctf_win.mp3" );
     gametype.caseReturnSound  = trap_Cmd_RegisterSound ( "sound/ctf_return.mp3" );
+    gametype.airstrikePlaneSound  = trap_Cmd_RegisterSound ( "sound/misc/events/f16_flyby.mp3" );
+    gametype.airstrikeAnnounceSound  = trap_Cmd_RegisterSound ( "sound/radio/male/take_cover.mp3" );
 
     // Register the items
     memset ( &itemDef, 0, sizeof(itemDef) );
