@@ -2307,6 +2307,11 @@ void Cmd_Ignore_f( gentity_t *ent )
         return;
     }
 
+    if (!g_entities[ignoree].client || g_entities[ignoree].client->pers.connected == CON_DISCONNECTED) {
+        trap_SendServerCommand(ent - g_entities, va("print \"No such client.\n\""));
+        return;
+    }
+
     G_IgnoreClientChat ( ent->s.number, ignoree, ignore);
 
     if ( ignore )
