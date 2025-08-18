@@ -4940,6 +4940,10 @@ TIdentity* getRandomCustomTeamIdentity(team_t team) {
 
     }
 
+    if (!identCount) {
+        return NULL;
+    }
+
     // Pick a random ident and throw it back.
 
     return idents[rand() % identCount];
