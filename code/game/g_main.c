@@ -723,7 +723,7 @@ Q_EXPORT intptr_t vmMain( int command, intptr_t arg0, intptr_t arg1, intptr_t ar
             }
             return 0;
         case GAME_RCON_LOG:
-            logRcon(arg0, arg1);
+            logRcon((char*) arg0, (char*) arg1);
             return 0;
     }
 
