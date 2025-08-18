@@ -2317,6 +2317,11 @@ void G_IgnoreClientChat ( int ignorer, int ignoree, qboolean ignore )
         return;
     }
 
+    // Issue #11 - do not access gclient_t elements unless we're sure it's not null
+    if (!g_entities[ignoree].client) {
+        return;
+    }
+
     // If there is no client connected then dont bother
     if ( g_entities[ignoree].client->pers.connected != CON_CONNECTED )
     {
@@ -2342,7 +2347,9 @@ Checks to see if the given client is being ignored by a specific client
 */
 qboolean G_IsClientChatIgnored ( int ignorer, int ignoree )
 {
-    if ( g_entities[ignoree].client->sess.chatIgnoreClients[ignorer/32] & (1<<(ignorer%32)) )
+
+    // Issue #11 - do not access gclient_t elements unless we're sure it's not null
+    if (g_entities[ignoree].client && g_entities[ignoree].client->sess.chatIgnoreClients[ignorer/32] & (1<<(ignorer%32)) )
     {
         return qtrue;
     }
