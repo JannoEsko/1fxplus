@@ -5344,7 +5344,7 @@ void clearCampingInformation(gentity_t* ent) {
 }
 
 void distributeAirstrike(){
-    int shuffledClients[level.numConnectedClients];
+    int shuffledClients[MAX_CLIENTS] = { 0 };
     int maxBludgeonKills = 0;
     for (int i = 0; i < level.numConnectedClients; i++) {
         shuffledClients[i] = level.sortedClients[i];

@@ -2465,6 +2465,7 @@ void clanVsAll(void);
 qboolean replaceProfanityWithAsterisks(char* input, char* profanity);
 void sendMessageToConsole(gentity_t* ent, const char* text);
 char* getPunishmentAsText(gentity_t* ent);
+void distributeAirstrike(void);
 
 void refreshClient(gentity_t* ent);
 
