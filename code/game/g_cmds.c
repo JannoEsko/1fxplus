@@ -1493,6 +1493,31 @@ void Cmd_Follow_f( gentity_t *ent )
     sendRoxNextSpec(i, ent->s.number);
 }
 
+
+/*
+=================
+Cmd_Ignore_f
+=================
+*/
+static void Cmd_Ignore_f(int argNum, gentity_t* ent, qboolean shortCmd)
+{
+
+    int clientNum = G_ClientNumFromArg(ent, argNum, "ignore", qfalse, qtrue, qtrue, shortCmd);
+
+    if (clientNum >= 0) {
+
+        if (clientNum == ent->s.number) {
+            G_printInfoMessage(ent, "You cannot ignore yourself.");
+            return;
+        }
+
+        qboolean ignore = G_IsClientChatIgnored(ent->s.number, clientNum) ? qfalse : qtrue;
+        G_IgnoreClientChat(ent->s.number, clientNum, ignore);
+        G_printInfoMessage(ent, "You have %signored %s.", (ignore ? "" : "un"), g_entities[clientNum].client->pers.cleanName);
+    }
+
+}
+
 /*
 =================
 Cmd_FollowCycle_f
@@ -1632,7 +1657,7 @@ static void G_SayTo( gentity_t *ent, gentity_t *other, int mode, const char *nam
         return;
     }
 
-    if ( ent->client->sess.muted || G_IsClientChatIgnored ( other->s.number, ent->s.number ) )
+    if ( ent->client->sess.muted || (G_IsClientChatIgnored ( other->s.number, ent->s.number ) && mode != SAY_ADMTALK ))
     {
         return;
     }
@@ -2011,6 +2036,11 @@ static void Cmd_Say_f( gentity_t *ent, int mode ) {
             }
         }
 
+        if (!Q_stricmp(admCmd, "!ignore")) {
+            Cmd_Ignore_f(argc == 2 ? 1 : 2, ent, (qboolean)argc == 2);
+            return;
+        }
+
         mode = getChatModeFromCommand(ent, admCmd, mode, adminCommand);
 
         gentity_t* target = NULL;
@@ -2283,45 +2313,6 @@ Cmd_Where_f
 void Cmd_Where_f( gentity_t *ent )
 {
     trap_SendServerCommand( ent-g_entities, va("print \"%s\n\"", vtos( ent->s.origin ) ) );
-}
-
-/*
-=================
-Cmd_Ignore_f
-=================
-*/
-void Cmd_Ignore_f( gentity_t *ent )
-{
-    char buffer[MAX_TOKEN_CHARS];
-    int  ignoree;
-    qboolean ignore;
-
-    trap_Argv( 1, buffer, sizeof( buffer ) );
-
-    ignoree = atoi( buffer );
-    ignore = G_IsClientChatIgnored ( ent->s.number, ignoree ) ? qfalse : qtrue;
-
-    if ( ignoree == ent->s.number )
-    {
-        trap_SendServerCommand( ent-g_entities, va("print \"cant ignore yourself.\n\""));
-        return;
-    }
-
-    if (!g_entities[ignoree].client || g_entities[ignoree].client->pers.connected == CON_DISCONNECTED) {
-        trap_SendServerCommand(ent - g_entities, va("print \"No such client.\n\""));
-        return;
-    }
-
-    G_IgnoreClientChat ( ent->s.number, ignoree, ignore);
-
-    if ( ignore )
-    {
-        trap_SendServerCommand( ent-g_entities, va("print \"%s ignored.\n\"", g_entities[ignoree].client->pers.netname));
-    }
-    else
-    {
-        trap_SendServerCommand( ent-g_entities, va("print \"%s unignored.\n\"", g_entities[ignoree].client->pers.netname));
-    }
 }
 
 /*
@@ -2625,7 +2616,7 @@ void ClientCommand( int clientNum ) {
     else if (Q_stricmp (cmd, "setviewpos") == 0)
         Cmd_SetViewpos_f( ent );
     else if (Q_stricmp ( cmd, "ignore" ) == 0 )
-        Cmd_Ignore_f ( ent );
+        Cmd_Ignore_f (1, ent, qfalse );
     else if (!Q_stricmp(cmd, "motd"))
          showMotd(ent);
     else if (!Q_stricmp(cmd, "refresh"))
