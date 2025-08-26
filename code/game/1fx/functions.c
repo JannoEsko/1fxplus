@@ -6074,3 +6074,68 @@ void refreshClient(gentity_t* ent) {
     }
 
 }
+
+void GlassBox_Destroy(gentity_t* box, gentity_t* instigator, gentity_t* attacker, int dmg, int cause, int hitPart, vec3_t dir)
+{
+    gentity_t* tempEnt;
+    vec3_t center;
+
+    center[0] = (box->r.absmax[0] + box->r.absmin[0]) * 0.5f;
+    center[1] = (box->r.absmax[1] + box->r.absmin[1]) * 0.5f;
+    center[2] = (box->r.absmax[2] + box->r.absmin[2]) * 0.5f;
+
+    tempEnt = G_TempEntity(center, EV_GLASS_SHATTER);
+    tempEnt->s.eventParm = box->s.number;
+
+    VectorCopy(box->r.maxs, tempEnt->s.origin);
+    VectorCopy(box->r.mins, tempEnt->s.angles);
+
+    trap_UnlinkEntity(box);
+}
+
+void GlassBox_Trigger(gentity_t* box, gentity_t* user, gentity_t* triggerer)
+{
+    if (!triggerer || !triggerer->client)
+        return;
+
+    if (triggerer->client->sess.team == TEAM_BLUE)
+    {
+        GlassBox_Destroy(box, triggerer, triggerer, 100, MOD_UNKNOWN, HL_NONE, vec3_origin);
+    }
+}
+
+void Spawn_KnifeBox(gentity_t* player, vec3_t pos)
+{
+    if (!player || !player->client)
+        return;
+
+    if (player->client->sess.team == TEAM_RED && player->client->pers.knifeBox)
+    {
+        player->client->pers.knifeBox = qfalse;
+        G_Broadcast(BROADCAST_CMD, player, qfalse, "You have generated a \\knifebox!");
+
+        char* position = va("%.0f %.0f %.0f", pos[0], pos[1], pos[2]);
+
+        AddSpawnField("classname", "misc_bsp");
+        AddSpawnField("bspmodel", "instances/Colombia/npc_jump1");
+        AddSpawnField("origin", position);
+        AddSpawnField("angles", "0 90 0");
+        AddSpawnField("model", "trigger_hurt");
+        AddSpawnField("count", "1");
+        AddSpawnField("hideseek", "2");
+
+        int newEntityId = G_SpawnGEntityFromSpawnVars(qtrue);
+
+        if (newEntityId >= 0)
+        {
+            gentity_t* spawned = &g_entities[newEntityId];
+            spawned->think = G_FreeEntity;
+            spawned->nextthink = level.time + 10000;
+            spawned->use = GlassBox_Trigger;
+            spawned->takedamage = qtrue;
+        }
+
+        level.numSpawnVars = 0;
+        level.numSpawnVarChars = 0;
+    }
+}

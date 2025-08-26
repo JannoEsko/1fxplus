@@ -538,6 +538,11 @@ void G_MissileImpact( gentity_t *ent, trace_t *trace )
         }
 
         // If missile should stick into impact point (e.g. a thrown knife).
+
+        if (!Q_stricmp(ent->classname, "knife") && isCurrentGametype(GT_HNS)) {
+            Spawn_KnifeBox(ent->parent, trace->endpos);
+        }
+
         if((!Q_stricmp(ent->classname,"Knife") && !isCurrentGametype(GT_HNS)) || (isCurrentGametype(GT_HNZ) && createClaymore))
         {
             // Create a pickup where we impacted.
