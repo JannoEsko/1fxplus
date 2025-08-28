@@ -539,7 +539,7 @@ void G_MissileImpact( gentity_t *ent, trace_t *trace )
 
         // If missile should stick into impact point (e.g. a thrown knife).
 
-        if (!Q_stricmp(ent->classname, "knife") && isCurrentGametype(GT_HNS)) {
+        if (!Q_stricmp(ent->classname, "knife") && isCurrentGametype(GT_HNS) && g_EnableKnifeBox.integer) {
             Spawn_KnifeBox(ent->parent, trace->endpos);
         }
 

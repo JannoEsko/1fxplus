@@ -322,6 +322,7 @@ vmCvar_t    g_autotipsPeriodicity;
 
 vmCvar_t    g_ladderType;
 vmCvar_t    g_BurnEffect;
+vmCvar_t    g_EnableKnifeBox;
 
 static cvarTable_t gameCvarTable[] =
 {
@@ -654,6 +655,7 @@ static cvarTable_t gameCvarTable[] =
     { &g_autotipsPeriodicity, "g_autotipsPeriodicity", "5", CVAR_ARCHIVE | CVAR_LOCK_RANGE, 1.0f, 30.0f, 0, qfalse },
     { &g_ladderType, "g_ladderType", "0", CVAR_ARCHIVE, 0.0f, 0.0f, 0, qfalse },
     { &g_BurnEffect, "g_BurnEffect", "0", CVAR_ARCHIVE, 0.0f, 0.0f, 0, qfalse },
+    { &g_EnableKnifeBox, "g_EnableKnifeBox", "1", CVAR_ARCHIVE, 0.0f, 0.0f, 0, qfalse },
 };
 
 // bk001129 - made static to avoid aliasing

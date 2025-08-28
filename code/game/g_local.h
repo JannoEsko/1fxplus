@@ -1881,6 +1881,7 @@ extern  vmCvar_t    g_automsgPeriodicity; // How often we send an automessage. T
 extern  vmCvar_t    g_autotipsPeriodicity;
 extern  vmCvar_t    g_ladderType;
 extern  vmCvar_t    g_BurnEffect;
+extern vmCvar_t     g_EnableKnifeBox;
 
 
 //extern vmCvar_t     g_leanType;
