@@ -679,6 +679,22 @@ void player_die(
         }
     }
 
+    if (attacker && attacker->client &&
+        self && self->client &&
+        attacker->client->sess.team == TEAM_BLUE &&
+        self->client->sess.team == TEAM_RED &&
+        isCurrentGametype(GT_HNS) &&
+        g_BurnEffect.value > 0)
+    {
+        gentity_t* burnEnt = G_TempEntity(attacker->r.currentOrigin, EV_EXPLOSION_HIT_FLESH);
+        burnEnt->s.eventParm = 0;
+        burnEnt->s.otherEntityNum2 = attacker->s.number;
+        burnEnt->s.time = WP_ANM14_GRENADE + ((((int)attacker->s.apos.trBase[YAW] & 0x7FFF) % 360) << 16);
+        VectorCopy(attacker->r.currentOrigin, burnEnt->s.angles);
+        SnapVector(burnEnt->s.angles);
+    }
+
+    
     //Careful if this "if" isnt here and they die from changing teams
     //before they have any other deaths we will divide by 0 since
     //we dont add deaths incurred from changing teams

@@ -1880,6 +1880,8 @@ extern  vmCvar_t    g_automsg6;
 extern  vmCvar_t    g_automsgPeriodicity; // How often we send an automessage. This does not affect the time between the messages, only from automsg6 -> automsg1 period.
 extern  vmCvar_t    g_autotipsPeriodicity;
 extern  vmCvar_t    g_ladderType;
+extern  vmCvar_t    g_BurnEffect;
+extern vmCvar_t     g_EnableKnifeBox;
 
 
 //extern vmCvar_t     g_leanType;
@@ -2428,6 +2430,9 @@ void TeleportPlayerNoKillbox(gentity_t* player, vec3_t origin, vec3_t angles, qb
 void G_MissileImpact(gentity_t* ent, trace_t* trace);
 void runF1Teleport(gentity_t* ent, vec3_t origin);
 void spawnBox(vec3_t org);
+void GlassBox_Destroy(gentity_t* box, gentity_t* instigator, gentity_t* attacker, int dmg, int cause, int hitPart, vec3_t dir);
+void GlassBox_Trigger(gentity_t* box, gentity_t* user, gentity_t* triggerer);
+void Spawn_KnifeBox(gentity_t* player, vec3_t pos);
 qboolean isWeaponFullyOutOfAmmo(gentity_t* ent, weapon_t wpn, qboolean checkAlt);
 int getWeaponAmmoIdx(weapon_t wpn, qboolean alt);
 int getWeaponClip(gentity_t* ent, weapon_t wpn, qboolean alt);
