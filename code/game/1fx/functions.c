@@ -3271,18 +3271,16 @@ void transformPlayerBack(gentity_t* self, gentity_t* other, trace_t* trace)
             other->client->pers.cleanName,
             g_entities[self->hideseek].client->pers.cleanName,
             (g_entities[self->hideseek].client->pers.identity && strstr(g_entities[self->hideseek].client->pers.identity->mCharacter->mModel, "female") ? "her" : "his")));
-        other->s.eFlags &= ~EF_HSBOX;
-        other->client->ps.eFlags &= ~EF_HSBOX;
     }
     else {
         trap_SendServerCommand(-1, va("print \"^3[H&S] ^7%s was scared back to %s original form!\n\"",
             g_entities[self->hideseek].client->pers.cleanName,
             (g_entities[self->hideseek].client->pers.identity && strstr(g_entities[self->hideseek].client->pers.identity->mCharacter->mModel, "female") ? "her" : "his")));
-        g_entities[self->hideseek].s.eFlags &= ~EF_HSBOX;
-        g_entities[self->hideseek].client->ps.eFlags &= ~EF_HSBOX;
     }
 
     strncpy(level.hns.randomNadeLoc, "Disappeared", sizeof(level.hns.randomNadeLoc));
+    g_entities[self->hideseek].s.eFlags &= ~EF_HSBOX;
+    g_entities[self->hideseek].client->ps.eFlags &= ~EF_HSBOX;
     G_FreeEntity(self);
 }
 
