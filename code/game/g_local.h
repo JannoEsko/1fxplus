@@ -2142,7 +2142,7 @@ void mvchat_findSounds(gentity_t* ent);
 
 
 #define SQL_GAME_MIGRATION_LEVEL 7
-#define SQL_LOG_MIGRATION_LEVEL 1
+#define SQL_LOG_MIGRATION_LEVEL 2
 #define SQL_COUNTRY_MIGRATION_LEVEL 1
 #define MAX_SQL_TEMP_NAME 16
 #define MAX_PACKET_BUF 900

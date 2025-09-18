@@ -1297,8 +1297,6 @@ void G_InitGame( int levelTime, int randomSeed, int restart )
     Com_Printf ("gamename: %s %s\n", PRODUCT_NAME, PRODUCT_VERSION);
     Com_Printf ("gamedate: %s\n", __DATE__);
 
-    // As system logging goes to DB's as well, we need to init the db before we do any activity. Otherwise, funny things are going to happen... :)
-    loadDatabases();
     srand( randomSeed );
 
     // set some level globals
@@ -1310,6 +1308,9 @@ void G_InitGame( int levelTime, int randomSeed, int restart )
     level.multiprotocol = trap_Cvar_VariableIntegerValue("net_multiprotocol");
 
     G_RegisterCvars();
+
+    // As system logging goes to DB's as well, we need to init the db before we do any activity. Otherwise, funny things are going to happen... :)
+    loadDatabases();
 
     // Initialize the game memory system.
     G_InitMemory();

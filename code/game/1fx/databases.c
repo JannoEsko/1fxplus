@@ -212,6 +212,25 @@ static void migrateLogsDatabase(sqlite3* db, int logsMigrationLevel) {
         }
     }
 
+    if (logsMigrationLevel < 2) {
+        // Create indexes for dt fields. Speeds up the deletion of old log entries.
+        char* migration = "CREATE INDEX IF NOT EXISTS idx_rconlog_dt ON rconlog(dt);"
+            "CREATE INDEX IF NOT EXISTS idx_adminlog_dt ON adminlog(dt);"
+            "CREATE INDEX IF NOT EXISTS idx_loginlog_dt ON loginlog(dt);"
+            "CREATE INDEX IF NOT EXISTS idx_gameslog_dt ON gameslog(dt);"
+            "CREATE INDEX IF NOT EXISTS idx_systemlog_dt ON systemlog(dt);"
+            "DELETE FROM migrationlevel;"
+            "INSERT INTO migrationlevel (migrationlevel) VALUES (2);"
+            ;
+
+        if (sqlite3_exec(db, migration, 0, 0, 0) != SQLITE_OK) {
+
+            sqlite3_close(db);
+            logSystem(LOGLEVEL_FATAL_DB, "Game dropped due to failing to migrate the logs database to level 1 (starting level: %d).\nSQLite error: %s\nCode: %d", logsMigrationLevel, sqlite3_errmsg(db), sqlite3_errcode(db));
+            return;
+        }
+    }
+
 }
 
 static void migrateCountryDatabase(sqlite3* db, int countryMigrationLevel) {
