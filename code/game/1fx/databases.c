@@ -1201,6 +1201,7 @@ void dbLogRetention(sqlite3* database) {
     sqlite3* db;
     sqlite3_stmt* stmt;
     int rc;
+    qboolean locallyOpenedDatabase = qfalse;
 
     if (!g_dbLogRetention.integer) {
         return; // Not a good idea to have NO retention, but it's up to the server owners in the end.
@@ -1213,6 +1214,7 @@ void dbLogRetention(sqlite3* database) {
             logSystem(LOGLEVEL_WARN, "Failed to open logs.db file to run retention. Error: %s\n", sqlite3_errmsg(db));
             return;
         }
+        locallyOpenedDatabase = qtrue;
     }
     else {
         db = database;
@@ -1264,9 +1266,9 @@ void dbLogRetention(sqlite3* database) {
         sqlite3_finalize(stmt);
     }
     
-
-
-    sqlite3_close(db);
+    if (locallyOpenedDatabase) {
+        sqlite3_close(db);
+    }
 
 }
 
