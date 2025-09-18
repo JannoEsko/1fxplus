@@ -381,6 +381,8 @@ void loadDatabases(void) {
         Com_Printf("    logsDb is up to date!\n");
     }
 
+    dbLogRetention(db);
+
     sqlite3_close(db); // logs DB can get too large to run just in memory, therefore we're opening / closing it every time when it's needed.
     // can have a performance implication, but haven't seen any lag due to it in 3D which already runs the same logic.
     // FIXME if server gets weird lagouts every second or so, then look here.
@@ -1051,10 +1053,6 @@ void dbLogGame(char* byIp, char* byName, char* toIp, char* toName, char* action)
     sqlite3* db;
     sqlite3_stmt* stmt;
 
-    if (!g_dbLogRetention.integer) {
-        return; // Not a good idea to have NO retention, but it's up to the server owners in the end.
-    }
-
     int rc = sqlite3_open_v2("./1fx/databases/logs.db", &db, SQLITE_OPEN_READWRITE, NULL);
 
     if (rc) {
@@ -1092,10 +1090,6 @@ void dbLogLogin(char* byIp, char* byName, admLevel_t adminLevel, admType_t admin
     sqlite3* db;
     sqlite3_stmt* stmt;
 
-    if (!g_dbLogRetention.integer) {
-        return; // Not a good idea to have NO retention, but it's up to the server owners in the end.
-    }
-
     int rc = sqlite3_open_v2("./1fx/databases/logs.db", &db, SQLITE_OPEN_READWRITE, NULL);
 
     if (rc) {
@@ -1131,10 +1125,6 @@ void dbLogRcon(char* ip, char* action) {
 
     sqlite3* db;
     sqlite3_stmt* stmt;
-
-    if (!g_dbLogRetention.integer) {
-        return; // Not a good idea to have NO retention, but it's up to the server owners in the end.
-    }
 
     int rc = sqlite3_open_v2("./1fx/databases/logs.db", &db, SQLITE_OPEN_READWRITE, NULL);
 
@@ -1206,20 +1196,26 @@ void dbLogSystem(loggingLevel_t logLevel, char* msg) {
 
 }
 
-void dbLogRetention() {
+void dbLogRetention(sqlite3* database) {
 
     sqlite3* db;
     sqlite3_stmt* stmt;
+    int rc;
 
     if (!g_dbLogRetention.integer) {
         return; // Not a good idea to have NO retention, but it's up to the server owners in the end.
     }
 
-    int rc = sqlite3_open_v2("./1fx/databases/logs.db", &db, SQLITE_OPEN_READWRITE, NULL);
+    if (!database) {
+        rc = sqlite3_open_v2("./1fx/databases/logs.db", &db, SQLITE_OPEN_READWRITE, NULL);
 
-    if (rc) {
-        logSystem(LOGLEVEL_WARN, "Failed to open logs.db file to run retention. Error: %s\n", sqlite3_errmsg(db));
-        return;
+        if (rc) {
+            logSystem(LOGLEVEL_WARN, "Failed to open logs.db file to run retention. Error: %s\n", sqlite3_errmsg(db));
+            return;
+        }
+    }
+    else {
+        db = database;
     }
 
     char* query = "DELETE FROM adminlog WHERE dt < DATETIME('now', '-' || ? || ' days')";
