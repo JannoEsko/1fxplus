@@ -8,6 +8,7 @@
 #include "../gametype/gt_public.h"
 #include "../ghoul2/g2_local.h"
 #include <curl/curl.h>
+#include "../ext/sqlite/sqlite3.h"
 
 //==================================================================
 
