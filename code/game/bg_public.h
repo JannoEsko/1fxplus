@@ -387,7 +387,7 @@ typedef struct {
     char        weaponAnim[MAX_QPATH];
     char        weaponEndAnim[MAX_QPATH];
 
-    qboolean    legacyProtocol;
+    commProtocol_t    commProto;
 } pmove_t;
 
 extern  pmove_t     *pm;
@@ -989,7 +989,7 @@ int                 BG_ParseSkin                        ( const char* filename, 
 
 qboolean            BG_IsWeaponAvailableForOutfitting   ( weapon_t weapon, int level );
 void                BG_SetAvailableOutfitting           ( const char* available );
-void                BG_DecompressOutfitting             ( const char* compressed, goutfitting_t* outfitting, qboolean legacyProtocol );
+void                BG_DecompressOutfitting             ( const char* compressed, goutfitting_t* outfitting );
 void                BG_CompressOutfitting               ( goutfitting_t* outfitting, char* compressed, int size );
 int                 BG_ParseOutfittingTemplates         ( qboolean force );
 int                 BG_FindOutfitting                   ( goutfitting_t* outfitting);

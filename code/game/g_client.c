@@ -554,7 +554,7 @@ int G_GhostCount ( team_t team )
 
         if ( g_entities[level.sortedClients[i]].client->sess.ghost )
         {
-            if ( team != -1 && team != g_entities[level.sortedClients[i]].client->sess.ghost )
+            if ( team != -1 && team != g_entities[level.sortedClients[i]].client->sess.team )
             {
                 continue;
             }
@@ -869,12 +869,12 @@ void G_UpdateOutfitting ( int clientNum )
         }
 
         // Grab the item that represents the weapon
-        if (client->sess.legacyProtocol) {
+        /*if (client->sess.commProto == COMMPROTO_SILVER) {
             item = &bg_itemlist[legacy_bg_outfittingGroups[group][client->pers.outfitting.items[group]]];
         }
-        else {
+        else {*/
             item = &bg_itemlist[bg_outfittingGroups[group][client->pers.outfitting.items[group]]];
-        }
+        //}
         
 
         client->ps.stats[STAT_WEAPONS] |= (1 << item->giTag);
@@ -1270,7 +1270,7 @@ void ClientUserinfoChanged( int clientNum )
     if ( level.pickupsDisabled )
     {
         // Parse out the new outfitting
-        BG_DecompressOutfitting ( Info_ValueForKey ( userinfo, "outfitting" ), &client->pers.outfitting, client->sess.legacyProtocol );
+        BG_DecompressOutfitting ( Info_ValueForKey ( userinfo, "outfitting" ), &client->pers.outfitting ); // spoofing for outfitting happens in engine now.
         
         if (!isCurrentGametypeInList((gameTypes_t[]) { GT_HNS, GT_HNZ, GT_GUNGAME, GT_CSINF, GT_MAX })) {
             G_UpdateOutfitting(clientNum);
@@ -1278,7 +1278,7 @@ void ClientUserinfoChanged( int clientNum )
     }
 
     // Client mods.
-    if (client->sess.legacyProtocol) {
+    if (client->sess.commProto == COMMPROTO_SILVER) {
         memset(client->sess.clientVersion, 0, sizeof(client->sess.clientVersion));
         if (level.legacyMod == CL_RPM) {
             s = Info_ValueForKey(userinfo, "cg_rpm");
@@ -1411,7 +1411,7 @@ char *ClientConnect( int clientNum, qboolean firstTime, qboolean isBot )
 
     client->sess.team = TEAM_SPECTATOR;
 
-    client->sess.legacyProtocol = trap_IsClientLegacy(clientNum);
+    client->sess.commProto = trap_GetClientProtocol(clientNum);
     // read or initialize the session data
     if ( firstTime || level.newSession )
     {

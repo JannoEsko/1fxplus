@@ -93,8 +93,8 @@ vmCvar_t    ac_allowcross;
 vmCvar_t    ac_norecoil;
 vmCvar_t    rox_support;
 
-vmCvar_t    sv_legacyClientMod;
-vmCvar_t    sv_clientMod;
+vmCvar_t    sv_silverClientMod;
+vmCvar_t    sv_goldClientMod;
 
 vmCvar_t    g_badminPrefix;
 vmCvar_t    g_adminPrefix;
@@ -463,8 +463,9 @@ static cvarTable_t gameCvarTable[] =
     { &ac_allowcross,    "ac_allowcross",     "1",        CVAR_ARCHIVE | CVAR_LATCH | CVAR_SERVERINFO,   0.0f,   0.0f,   0,  qfalse },
     { &ac_norecoil,    "ac_norecoil",     "0",        CVAR_ARCHIVE | CVAR_LATCH | CVAR_SERVERINFO,   0.0f,   0.0f,   0,  qfalse },
     { &rox_support,    "rox_support",     "1",        CVAR_ARCHIVE | CVAR_LATCH | CVAR_SERVERINFO,   0.0f,   0.0f,   0,  qfalse },
-    { &sv_legacyClientMod,    "sv_legacyClientMod",     "",        CVAR_ARCHIVE | CVAR_LATCH,   0.0f,   0.0f,   0,  qfalse },
-    { &sv_clientMod,    "sv_clientMod",     "",        CVAR_ARCHIVE | CVAR_LATCH,   0.0f,   0.0f,   0,  qfalse },    
+    { &sv_silverClientMod,    "sv_silverClientMod",     "",        CVAR_ARCHIVE | CVAR_LATCH,   0.0f,   0.0f,   0,  qfalse },
+
+    { &sv_goldClientMod,    "sv_goldClientMod",     "",        CVAR_ARCHIVE | CVAR_LATCH,   0.0f,   0.0f,   0,  qfalse },    
 
     { &g_badminPrefix,    "g_badminPrefix",     "^CB^b-^kA^+d^7min",        CVAR_ARCHIVE,   0.0f,   0.0f,   0,  qfalse },
     { &g_adminPrefix,    "g_adminPrefix",     "^CA^bd^km^+i^7n",        CVAR_ARCHIVE,   0.0f,   0.0f,   0,  qfalse },
@@ -1242,21 +1243,21 @@ void G_SetGametype ( const char* gametype )
 
 static void G_InitClientMod(void) {
 
-    if (sv_legacyClientMod.string && strlen(sv_legacyClientMod.string) > 0) {
+    if (sv_silverClientMod.string && strlen(sv_silverClientMod.string) > 0) {
 
-        if (!Q_stricmp(sv_legacyClientMod.string, "RPM")) {
+        if (!Q_stricmp(sv_silverClientMod.string, "RPM")) {
             trap_Cvar_Register(NULL, "modname", "RPM 2 k 3 v2.00 ^_- ^31fxplus", CVAR_SERVERINFO | CVAR_ROM, 0.0, 0.0);
             level.legacyMod = CL_RPM;
             Com_PrintInfo("Legacy clientmod ^1R^3P^4M ^7loaded!\n");
         }
         else {
-            Com_PrintWarn("Legacy client mod \"%s\" is unknown.\n", sv_legacyClientMod.string);
+            Com_PrintWarn("Legacy client mod \"%s\" is unknown.\n", sv_silverClientMod.string);
         }
         
     }
 
-    if (sv_clientMod.string && strlen(sv_clientMod.string) > 0) {
-        if (!Q_stricmp(sv_clientMod.string, "rocmod") || !Q_stricmp(sv_clientMod.string, "1fx.rocmod")) {
+    if (sv_goldClientMod.string && strlen(sv_goldClientMod.string) > 0) {
+        if (!Q_stricmp(sv_goldClientMod.string, "rocmod") || !Q_stricmp(sv_goldClientMod.string, "1fx.rocmod")) {
             // Register ROCmod specific CVARs.
             //if (!g_enforce1fxAdditions.integer) {
                 // Our ROCmod client with 1fx. additions properly reads the 1fx. Mod server version.
@@ -1278,7 +1279,7 @@ static void G_InitClientMod(void) {
             Com_PrintInfo("Clientmod ^1ROCmod ^7loaded!\n");
         }
         else {
-            Com_PrintWarn("Client mod \"%s\" is unknown.\n", sv_clientMod.string);
+            Com_PrintWarn("Client mod \"%s\" is unknown.\n", sv_goldClientMod.string);
         }
     }
 
@@ -1332,8 +1333,8 @@ void G_InitGame( int levelTime, int randomSeed, int restart )
         trap_Cvar_Set("g_enforce1fxAdditions", "1");
         trap_Cvar_Update(&g_enforce1fxAdditions);
 
-        trap_Cvar_Set("sv_clientMod", "1fx.rocmod");
-        trap_Cvar_Update(&sv_clientMod);
+        trap_Cvar_Set("sv_goldClientMod", "1fx.rocmod");
+        trap_Cvar_Update(&sv_goldClientMod);
 
         trap_Cvar_Set("sv_useLegacyNades", "1");
         trap_Cvar_Update(&sv_useLegacyNades);
@@ -1367,7 +1368,7 @@ void G_InitGame( int levelTime, int randomSeed, int restart )
 
     }
 
-    if (!g_enforce1fxAdditions.integer || Q_stricmp(sv_clientMod.string, "1fx.rocmod")) {
+    if (!g_enforce1fxAdditions.integer || Q_stricmp(sv_goldClientMod.string, "1fx.rocmod")) {
 
         trap_Cvar_Set("sv_useLegacyNades", "0");
         trap_Cvar_Update(&sv_useLegacyNades);

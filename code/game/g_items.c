@@ -454,7 +454,7 @@ void Touch_Item (gentity_t *ent, gentity_t *other, trace_t *trace)
     }
 
     eventID = EV_ITEM_PICKUP;
-    if ( other->client && (other->client->ps.pm_flags & PMF_DUCKED ) && !other->client->sess.legacyProtocol )
+    if ( other->client && (other->client->ps.pm_flags & PMF_DUCKED ) && other->client->sess.commProto == COMMPROTO_GOLD)
     {
         eventID = EV_ITEM_PICKUP_QUIET;
     }

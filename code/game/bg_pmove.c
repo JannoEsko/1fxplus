@@ -184,7 +184,7 @@ static void PM_Friction( void )
             drop += control*pm_ladderfriction*pml.frametime;
         }
     }
-    else if ( (!pm->legacyProtocol && pm->waterlevel > 1) || (pm->legacyProtocol && pm->waterlevel) )
+    else if ( (pm->commProto != COMMPROTO_SILVER && pm->waterlevel > 1) || (pm->commProto == COMMPROTO_SILVER && pm->waterlevel) )
     {
         drop += speed*pm_waterfriction*pm->waterlevel*pml.frametime;
     }
@@ -2985,7 +2985,7 @@ static void PM_Weapon( void )
     if( pm->ps->weaponstate == WEAPON_ZOOMIN )
     {
 
-        if (pm->legacyProtocol && !pm->ps->zoomFov && 0) {
+        if (pm->commProto == COMMPROTO_SILVER && !pm->ps->zoomFov && 0) {
             pm->ps->zoomFov = 20;
         }
 
@@ -3161,7 +3161,7 @@ static void PM_Weapon( void )
 
     qboolean isZoomableWeapon = qfalse;
 
-    if (pm->legacyProtocol && 0) {
+    if (pm->commProto == COMMPROTO_SILVER && 0) { // Disabled? Wondering why...
         isZoomableWeapon = pm->ps->weapon == WP_MSG90A1 ? qtrue : qfalse;
     }
     else {
@@ -3187,7 +3187,7 @@ static void PM_Weapon( void )
             if(pm->cmd.buttons&BUTTON_ZOOMIN)
             {
 
-                if (pm->legacyProtocol && 0) {
+                if (pm->commProto == COMMPROTO_SILVER && 0) { // disabled?
                     pm->ps->zoomFov = pm->ps->zoomFov >> 1;
                     if (pm->ps->zoomFov < 5)
                     {
@@ -3209,7 +3209,7 @@ static void PM_Weapon( void )
             else if(pm->cmd.buttons&BUTTON_ZOOMOUT)
             {
 
-                if (pm->legacyProtocol && 0) {
+                if (pm->commProto == COMMPROTO_SILVER && 0) {
                     pm->ps->zoomFov = pm->ps->zoomFov << 1;
 
                     if (pm->ps->zoomFov > 20) {
@@ -3740,7 +3740,7 @@ void PM_UpdateViewAngles( playerState_t *ps, const usercmd_t *cmd )
         PM_CheckLeanLegacy();
     }
     else {
-        if (pm->legacyProtocol) {
+        if (pm->commProto == COMMPROTO_SILVER) {
             PM_CheckLeanLegacy();
         }
         else {

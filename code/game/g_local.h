@@ -631,7 +631,7 @@ typedef struct
     int                 chatIgnoreClients[2];   // Clients which are ignoring this client. [0] = (0-31)  [1] = (32-63)
     qboolean            muted;
 
-    qboolean            legacyProtocol;
+    commProtocol_t      commProto;
     admLevel_t            adminLevel;
     admType_t             adminType;
 
@@ -1687,8 +1687,8 @@ extern  vmCvar_t    ac_allowcross;
 extern  vmCvar_t    ac_norecoil;
 extern  vmCvar_t    rox_support;
 
-extern  vmCvar_t    sv_legacyClientMod;
-extern  vmCvar_t    sv_clientMod;
+extern  vmCvar_t    sv_silverClientMod;
+extern  vmCvar_t    sv_goldClientMod;
 
 extern  vmCvar_t    g_badminPrefix;
 extern  vmCvar_t    g_adminPrefix;
@@ -2110,7 +2110,7 @@ int         trap_GT_SendEvent   ( int event, int time, int arg0, int arg1, int a
 void        trap_GT_Shutdown    ( void );
 
 // custom traps.
-qboolean trap_IsClientLegacy(int clientNum);
+commProtocol_t trap_GetClientProtocol(int clientNum);
 int trap_TranslateSilverWeaponToGoldWeapon(int weapon);
 int trap_TranslateGoldWeaponToSilverWeapon(int weapon);
 int trap_ValidateMapName(const char* mapName, char* output, int outputSize);

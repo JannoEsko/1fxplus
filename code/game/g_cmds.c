@@ -63,7 +63,7 @@ void DeathmatchScoreboardMessage( gentity_t *ent )
         //Ryan may 12 2004
         //Add some info for client-side users
         //RxCxW - 1.20.2005 - NOT compatible with 0.5. #Version
-        if (ent->client->sess.legacyProtocol) {
+        if (ent->client->sess.commProto == COMMPROTO_SILVER) {
             if (ent->client->sess.hasRoxAC && isCurrentGametype(GT_HNS)) {
                 Com_sprintf(entry, sizeof(entry),
                     " %i %i %i %i %i %i %i %i %i %i %i",
@@ -390,9 +390,11 @@ void Cmd_Drop_f ( gentity_t* ent )
 
     int weapon = atoi(ConcatArgs(1));
 
-    if (ent->client->sess.legacyProtocol) {
+    // Now done in engine.
+    /* 
+    if (ent->client->sess.commProto == COMMPROTO_SILVER) {
         weapon = trap_TranslateSilverWeaponToGoldWeapon(weapon);
-    }
+    }*/
 
     if (isCurrentGametype(GT_HNS)) {
         if (level.time > level.gametypeRoundTime) // Henk  07/03/11 -> Don't let ppl drop stuff when the round has ended.
@@ -2440,12 +2442,12 @@ void ClientCommand( int clientNum ) {
         RPM_UpdateTMI();
     }
 
-    if (Q_stricmp(cmd, "verified") == 0 && level.goldMod == CL_ROCMOD && !ent->client->sess.legacyProtocol) {
+    if (Q_stricmp(cmd, "verified") == 0 && level.goldMod == CL_ROCMOD && ent->client->sess.commProto == COMMPROTO_GOLD) {
         ROCmod_verifyClient(ent, clientNum);
         return;
     }
         
-    if (Q_stricmp(cmd, "uef") == 0 && level.goldMod == CL_ROCMOD && !ent->client->sess.legacyProtocol) {
+    if (Q_stricmp(cmd, "uef") == 0 && level.goldMod == CL_ROCMOD && ent->client->sess.commProto == COMMPROTO_GOLD) {
         ROCmod_clientUpdate(ent, clientNum);
         return;
     }

@@ -579,7 +579,7 @@ void SpectatorThink( gentity_t *ent, usercmd_t *ucmd )
 
         pm.animations = NULL;
 
-        pm.legacyProtocol = client->sess.legacyProtocol;
+        pm.commProto = client->sess.commProto;
 
         // perform a pmove
         Pmove (&pm);
@@ -1003,7 +1003,7 @@ void ClientThink_real( gentity_t *ent )
     }
 
     if (!(ent->r.svFlags & SVF_BOT)) {
-        if (!client->sess.legacyProtocol && client->sess.checkClientAdditions && level.time > client->sess.clientAdditionCheckTime) {
+        if (client->sess.commProto == COMMPROTO_GOLD && client->sess.checkClientAdditions && level.time > client->sess.clientAdditionCheckTime) {
             if (client->sess.checkClientAdditions > 10) {
                 kickPlayer(ent, NULL, "kicked", "This server requires you to use 1fx. Client additions. Please turn on autodownload and reconnect (cl_allowdownload 1)");
             }
@@ -1170,7 +1170,7 @@ void ClientThink_real( gentity_t *ent )
 
 
     // Boe!Man 5/6/15: Check for the client Mod.
-    if (level.goldMod == CL_ROCMOD && !client->sess.legacyProtocol && client->sess.clientMod != CL_ROCMOD && level.time > client->sess.clientModCheckTime) {
+    if (level.goldMod == CL_ROCMOD && client->sess.commProto == COMMPROTO_GOLD && client->sess.clientMod != CL_ROCMOD && level.time > client->sess.clientModCheckTime) {
         if (client->sess.clientModChecks > 25) {
             char* info = G_ColorizeMessage("\\Info:");
 
@@ -1640,7 +1640,7 @@ void ClientThink_real( gentity_t *ent )
     pm.pmove_msec = pmove_msec.integer;
 
     pm.animations = NULL;
-    pm.legacyProtocol = client->sess.legacyProtocol;
+    pm.commProto = client->sess.commProto;
     VectorCopy( client->ps.origin, client->oldOrigin );
 
     Pmove (&pm);

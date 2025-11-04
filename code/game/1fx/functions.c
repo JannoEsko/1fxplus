@@ -2077,7 +2077,7 @@ void parseChatTokens(gentity_t* ent, chatMode_t chatMode, const char* input, cha
                         for (int i = 0; i < level.numConnectedClients; i++) {
                             gentity_t* tent = &g_entities[level.sortedClients[i]];
 
-                            if (tent->client->sess.legacyProtocol && !tent->client->sess.hasRoxAC) {
+                            if (tent->client->sess.commProto == COMMPROTO_SILVER && !tent->client->sess.hasRoxAC) {
                                 G_printInfoMessage(tent, "Custom sound omitted. Please download Rox Anticheat from https://ac.roxmod.net to get easy access to custom sounds.");
                             }
                             else {
@@ -2744,7 +2744,7 @@ void printPlayersInfo(gentity_t* ent) {
             break;
         }
 
-        if (strlen(packetBuf) + strlen(va("[^3%2d^7] %-33.33s %-9.9s%-6d%-5.5s%-4.4s%-4.4s%-4.4s%-6.6s\n", i, tent->client->pers.cleanName, tent->client->sess.legacyProtocol ? "Silver" : "Gold", tent->client->ps.ping, tent->client->sess.countryCode, adminInitial, tent->client->sess.clanMember ? "Y" : "", tent->client->sess.muted ? "Y" : "", tent->client->sess.clientMod == CL_ROCMOD ? "ROCmod" : (tent->client->sess.clientMod == CL_RPM && !tent->client->sess.hasRoxAC ? "RPM" : (tent->client->sess.hasRoxAC ? "Rox AC" : "")))) > sizeof(packetBuf)) {
+        if (strlen(packetBuf) + strlen(va("[^3%2d^7] %-33.33s %-9.9s%-6d%-5.5s%-4.4s%-4.4s%-4.4s%-6.6s\n", i, tent->client->pers.cleanName, tent->client->sess.commProto == COMMPROTO_SILVER ? "Silver" : "Gold", tent->client->ps.ping, tent->client->sess.countryCode, adminInitial, tent->client->sess.clanMember ? "Y" : "", tent->client->sess.muted ? "Y" : "", tent->client->sess.clientMod == CL_ROCMOD ? "ROCmod" : (tent->client->sess.clientMod == CL_RPM && !tent->client->sess.hasRoxAC ? "RPM" : (tent->client->sess.hasRoxAC ? "Rox AC" : "")))) > sizeof(packetBuf)) {
             trap_SendServerCommand(ent - g_entities, va("print \"%s\"", packetBuf));
             Com_Memset(packetBuf, 0, sizeof(packetBuf));
         }
@@ -2753,7 +2753,7 @@ void printPlayersInfo(gentity_t* ent) {
             va("[^3%2d^7] %-33.33s %-9.9s%-6d%-5.5s%-4.4s%-4.4s%-4.4s%-6.6s\n", 
                 i, 
                 tent->client->pers.cleanName, 
-                tent->client->sess.legacyProtocol ? "Silver" : "Gold", 
+                tent->client->sess.commProto == COMMPROTO_SILVER ? "Silver" : "Gold",
                 tent->client->ps.ping, 
                 tent->client->sess.countryCode, 
                 adminInitial, 
@@ -2813,7 +2813,7 @@ void printStatsInfo(gentity_t* ent) {
         trap_SendServerCommand(ent - g_entities, va("print \"%-28.28s%-25.25s\n\"", "^7[^3Admin^7]", adminLevel && *adminLevel ? adminLevel : "No"));
         trap_SendServerCommand(ent - g_entities, va("print \"%-28.28s%-25.25s\n\"", "^7[^3Clan^7]", tent->client->sess.clanMember ? "Yes" : "No"));
         trap_SendServerCommand(ent - g_entities, va("print \"%-28.28s%-25.25s\n\"", "^7[^3Country^7]", tent->client->sess.country));
-        trap_SendServerCommand(ent - g_entities, va("print \"%-28.28s%-25.25s\n\"", "^7[^3Protocol^7]", tent->client->sess.legacyProtocol ? "2002 / SoF2 1.00 Silver" : "2004 / SoF2 1.03 Gold"));
+        trap_SendServerCommand(ent - g_entities, va("print \"%-28.28s%-25.25s\n\"", "^7[^3Protocol^7]", tent->client->sess.commProto == COMMPROTO_SILVER ? "2002 / SoF2 1.00 Silver" : "2004 / SoF2 1.03 Gold"));
         trap_SendServerCommand(ent - g_entities, va("print \"%-28.28s%-25.25s\n\"", "^7[^3Clientmod^7]", tent->client->sess.hasRoxAC ? "Rox Anticheat" : (tent->client->sess.clientMod == CL_ROCMOD ? "ROCmod" : (tent->client->sess.clientMod == CL_RPM ? "RPM" : "None"))));
 
         if (tent->client->sess.hasRoxAC) {

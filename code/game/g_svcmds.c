@@ -159,7 +159,7 @@ qboolean ConsoleCommand( void )
             gentity_t* tent = &g_entities[level.sortedClients[i]];
 
             if (tent && tent->client && tent->client->pers.connected == CON_CONNECTED) {
-                Com_Printf("%3i %-15s %-15s %-5s %-20s\n", tent->s.clientNum, tent->client->pers.cleanName, tent->client->sess.legacyProtocol ? "Legacy" : "Non-legacy", tent->client->sess.countryCode, tent->client->sess.country);
+                Com_Printf("%3i %-15s %-15s %-5s %-20s\n", tent->s.clientNum, tent->client->pers.cleanName, tent->client->sess.commProto == COMMPROTO_SILVER ? "Legacy" : "Non-legacy", tent->client->sess.countryCode, tent->client->sess.country);
             }
 
             
@@ -193,7 +193,7 @@ qboolean ConsoleCommand( void )
             clientSession_t* sess = &ent->client->sess;
             Com_Printf("Client: %s [%d]\n", ent->client->pers.cleanName, ent->s.number);
             Com_Printf("Muted: %d\n", sess->muted);
-            Com_Printf("Legacy protocol: %d\n", sess->legacyProtocol);
+            Com_Printf("Protocol: %d\n", sess->commProto == COMMPROTO_SILVER ? 2002 : 2004);
             Com_Printf("admLevel: %d, type: %d, admName: \"%s\"\n", sess->adminLevel, sess->adminType, sess->adminName);
             Com_Printf("clMod: %s [%d]\n", sess->clientVersion, sess->clientMod);
             Com_Printf("clanMember: %d, clanType: %d, clanName: \"%s\"\n", sess->clanMember, sess->clanType, sess->clanName);

@@ -1373,4 +1373,11 @@ typedef struct stringID_table_s
 int GetIDForString(stringID_table_t *table, const char *string);
 const char *GetStringForID(stringID_table_t *table, int id);
 
+typedef enum commProtocol_e {
+    COMMPROTO_NONE,
+    COMMPROTO_SILVER,
+    COMMPROTO_GOLD,
+    COMMPROTO_MAX
+} commProtocol_t;
+
 #endif  // __Q_SHARED_H

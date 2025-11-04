@@ -1028,8 +1028,8 @@ void trap_GT_Shutdown ( void )
 }
 
 // custom syscalls.
-qboolean trap_IsClientLegacy(int clientNum) {
-    return (qboolean)syscall(G_CLIENT_ISLEGACYPROTOCOL, clientNum);
+commProtocol_t trap_GetClientProtocol(int clientNum) {
+    return (commProtocol_t)syscall(G_CLIENT_GETPROTOCOL, clientNum);
 }
 
 int trap_TranslateSilverWeaponToGoldWeapon(int weapon) {

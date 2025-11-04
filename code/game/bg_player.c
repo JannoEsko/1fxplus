@@ -137,7 +137,7 @@ void PM_TorsoAnimation( playerState_t* ps )
         case WEAPON_SPAWNING:
         case WEAPON_READY:
 
-            if ( !pm->legacyProtocol && ps->stats[STAT_USEWEAPONDROP] )
+            if ( pm->commProto == COMMPROTO_GOLD && ps->stats[STAT_USEWEAPONDROP] )
             {
                 PM_ContinueTorsoAnim ( ps, TORSO_USE );
             }
@@ -1438,7 +1438,7 @@ BG_DecompressOutfitting
 Decompresses the given outfitting string into the outfitting structure
 ========================
 */
-void BG_DecompressOutfitting ( const char* compressed, goutfitting_t* outfitting, qboolean legacyProtocol)
+void BG_DecompressOutfitting ( const char* compressed, goutfitting_t* outfitting)
 {
     int group;
     int origitem;
@@ -1471,18 +1471,18 @@ void BG_DecompressOutfitting ( const char* compressed, goutfitting_t* outfitting
         }
 
         // Valid slot for the group ?
-        if (legacyProtocol) {
+        /*if (commProto == COMMPROTO_SILVER) {
             if (legacy_bg_outfittingGroups[group][item] == -1)
             {
                 continue;
             }
         }
-        else {
+        else {*/
             if (bg_outfittingGroups[group][item] == -1)
             {
                 continue;
             }
-        }
+        //}
         
 
         // Ok to set the item now
@@ -1496,7 +1496,7 @@ void BG_DecompressOutfitting ( const char* compressed, goutfitting_t* outfitting
 
         // Is it available?
 
-        if (legacyProtocol) {
+        /*if (commProto == COMMPROTO_SILVER) {
             if (bg_itemlist[legacy_bg_outfittingGroups[group][item]].giType == IT_WEAPON)
             {
                 origitem = item;
@@ -1517,7 +1517,7 @@ void BG_DecompressOutfitting ( const char* compressed, goutfitting_t* outfitting
                 }
             }
         }
-        else {
+        else {*/
             if (bg_itemlist[bg_outfittingGroups[group][item]].giType == IT_WEAPON)
             {
                 origitem = item;
@@ -1537,7 +1537,7 @@ void BG_DecompressOutfitting ( const char* compressed, goutfitting_t* outfitting
                     }
                 }
             }
-        }
+        //}
 
         // Ok to set the item now
         outfitting->items[group] = item;

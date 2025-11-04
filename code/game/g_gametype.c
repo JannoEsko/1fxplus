@@ -1118,7 +1118,7 @@ void CheckGametype ( void )
                 if (!G_IsClientDead(g_entities[level.sortedClients[i]].client) && g_entities[level.sortedClients[i]].client->sess.team == TEAM_RED) {
                     g_entities[level.sortedClients[i]].client->sess.kills += 1; // round winner should get 1 point more.
                     G_AddScore(&g_entities[level.sortedClients[i]], 100);
-                    Q_strncpyz(level.hns.cagewinner, &g_entities[level.sortedClients[i]].client->pers.netname, sizeof(level.hns.cagewinner));
+                    Q_strncpyz(level.hns.cagewinner, g_entities[level.sortedClients[i]].client->pers.netname, sizeof(level.hns.cagewinner));
                 }
             }
 
@@ -1533,7 +1533,7 @@ intptr_t G_GametypeCommand(int command, intptr_t arg0, intptr_t arg1, intptr_t a
                 gentity_t* ent = &g_entities[level.sortedClients[i]];
 
                 if (ent->client->sess.team == arg0) {
-                    if ((arg3 && !G_IsClientDead(ent)) || (arg4 && G_IsClientDead(ent))) { // arg3 = toAlivePlayers, arg4 = toDeadPlayers
+                    if ((arg3 && !G_IsClientDead(ent->client)) || (arg4 && G_IsClientDead(ent->client))) { // arg3 = toAlivePlayers, arg4 = toDeadPlayers
                         csinf_handleCash(ent, arg1, (char*) arg2, qtrue);
                     }
                 }

@@ -384,7 +384,7 @@ static void addAdmin(int argNum, gentity_t* adm, qboolean shortCmd, admLevel_t a
     }
     else if (!Q_stricmp(arg, "guid")) {
 
-        if (!ent->client->sess.legacyProtocol) {
+        if (ent->client->sess.commProto != COMMPROTO_SILVER) {
 
             G_printInfoMessage(adm, "You can only add GUID-admins for legacy / 1.00 clients.");
 

@@ -163,7 +163,7 @@ void RPM_UpdateTMI(void)
             continue;
         }
 
-        if (cl->sess.legacyProtocol) {
+        if (cl->sess.commProto == COMMPROTO_SILVER) {
             if (cl->sess.clientMod == CL_RPM && atof(cl->sess.clientVersion) > 0.6)
                 trap_SendServerCommand(level.sortedClients[i], va("tmi %i%s", numAdded, infoString));
         }
@@ -247,7 +247,7 @@ void RPM_Awards(void)
             //Com_Printf("%s playtime %d, Level time: %d, Enter Time: %d SPECTIME: %d\n", ent->client->pers.netname, playerTime, level.time, ent->client->pers.enterTime, ent->client->sess.totalSpectatorTime);
 
             //RxCxW - 1.20.2005 - #Version 0.5 compatible. Right?
-            if (ent->client->sess.legacyProtocol && ent->client->sess.clientMod == CL_RPM && atof(ent->client->sess.clientVersion) >= 0.5)
+            if (ent->client->sess.commProto == COMMPROTO_SILVER && ent->client->sess.clientMod == CL_RPM && atof(ent->client->sess.clientVersion) >= 0.5)
                 //          if(ent->client->sess.rpmClient >= RPM_VERSION)
             {
                 trap_SendServerCommand(i, va("stats %i %i %i %i %.2f %i %i %i %i",
@@ -262,7 +262,7 @@ void RPM_Awards(void)
                     stat->knifeKills));
             }
 
-            if (ent->client->sess.legacyProtocol) {
+            if (ent->client->sess.commProto == COMMPROTO_SILVER) {
                 //this will remove the SPECTATOR Press ESC etc.. from the specs screen
                 if (ent->client->ps.persistant[PERS_TEAM] == TEAM_SPECTATOR)
                 {
@@ -469,7 +469,7 @@ void RPM_Awards(void)
             continue;
         }
 
-        if (!ent->client->sess.legacyProtocol) {
+        if (ent->client->sess.commProto == COMMPROTO_GOLD) {
             continue;
         }
 

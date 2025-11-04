@@ -141,7 +141,7 @@ void ROCmod_sendExtraTeamInfo(gentity_t* ent)
             if (cl->pers.connected != CON_CONNECTED)
                 continue;
 
-            if (!cl->sess.legacyProtocol || cl->sess.clientMod != CL_ROCMOD) {
+            if (cl->sess.commProto == COMMPROTO_SILVER || cl->sess.clientMod != CL_ROCMOD) {
                 continue;
             }
 
@@ -285,7 +285,7 @@ void ROCmod_sendBestPlayerStats(void)
         if (ent->r.svFlags & SVF_BOT)
             continue;
 
-        if (ent->client->sess.legacyProtocol) {
+        if (ent->client->sess.commProto == COMMPROTO_SILVER) {
             continue;
         }
 
