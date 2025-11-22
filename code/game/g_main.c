@@ -1300,6 +1300,16 @@ void G_InitGame( int levelTime, int randomSeed, int restart )
 
     srand( randomSeed );
 
+    // Remove commands which we want to control on the game side.
+    trap_RemoveCommand("kick");
+    trap_RemoveCommand("kickall");
+    trap_RemoveCommand("kicknum");
+    trap_RemoveCommand("clientkick");
+    trap_RemoveCommand("banaddr");
+    trap_RemoveCommand("exceptaddr");
+    trap_RemoveCommand("bandel");
+    trap_RemoveCommand("exceptdel");
+
     // set some level globals
     memset( &level, 0, sizeof( level ) );
     level.time = levelTime;

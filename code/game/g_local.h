@@ -2116,6 +2116,7 @@ int trap_TranslateGoldWeaponToSilverWeapon(int weapon);
 int trap_ValidateMapName(const char* mapName, char* output, int outputSize);
 int trap_MapcycleList(char* output, int sizeofOutput);
 void trap_SkipToMap(int skipTo);
+void trap_RemoveCommand(const char* cmdName);
 
 void G_UpdateClientAntiLag  ( gentity_t* ent );
 void G_UndoAntiLag          ( void );

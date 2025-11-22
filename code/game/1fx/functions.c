@@ -2332,6 +2332,13 @@ void parseChatTokens(gentity_t* ent, chatMode_t chatMode, const char* input, cha
                     }
                     break;
                 }
+                default: {
+                    if (outIndex < sizeOfOutput - 1) {
+                        output[outIndex++] = '#';
+                    }
+                    ptr = start;
+                    continue;
+                }
                 }
                 ptr = start + 1;
                 continue;

@@ -1051,3 +1051,7 @@ int trap_MapcycleList(char* output, int sizeofOutput) {
 void trap_SkipToMap(int skipTo) {
     syscall(G_SKIP_TO_MAP, skipTo);
 }
+
+void trap_RemoveCommand(const char* cmdName) {
+    syscall(G_REMOVECOMMAND, cmdName);
+}
