@@ -62,3 +62,5 @@ profile
 /code/gametype/gt_vip/x64/Release
 /code/x64/Release
 /vcpkg_installed
+*packages/
+*.nupkg
