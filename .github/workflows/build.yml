@@ -1,0 +1,241 @@
+name: 1fxplus Latest Build
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            compiler: gcc
+            arch: x86_64
+            build_type: Release
+          - os: ubuntu-latest
+            compiler: gcc
+            arch: x86_64
+            build_type: Debug
+          - os: ubuntu-latest
+            compiler: gcc
+            arch: x86
+            build_type: Release
+          - os: ubuntu-latest
+            compiler: gcc
+            arch: x86
+            build_type: Debug
+          - os: windows-latest
+            compiler: mingw
+            arch: x86_64
+            build_type: Release
+          - os: windows-latest
+            compiler: mingw
+            arch: x86_64
+            build_type: Debug
+          - os: windows-latest
+            compiler: mingw
+            arch: x86
+            build_type: Release
+          - os: windows-latest
+            compiler: mingw
+            arch: x86
+            build_type: Debug
+          - os: windows-latest
+            compiler: msvc
+            arch: x86_64
+            build_type: Release
+          - os: windows-latest
+            compiler: msvc
+            arch: x86_64
+            build_type: Debug
+          - os: windows-latest
+            compiler: msvc
+            arch: x86
+            build_type: Release
+          - os: windows-latest
+            compiler: msvc
+            arch: x86
+            build_type: Debug
+
+    runs-on: ${{ matrix.os }}
+
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Setup MSBuild (MSVC)
+        if: matrix.compiler == 'msvc'
+        uses: microsoft/setup-msbuild@v2
+
+      - name: Setup vcpkg
+        if: matrix.compiler == 'msvc'
+        uses: lukka/run-vcpkg@v11
+        with:
+          vcpkgDirectory: '${{ github.workspace }}/vcpkg'
+
+      - name: Integrate vcpkg with MSBuild
+        if: matrix.compiler == 'msvc'
+        shell: pwsh
+        run: |
+          & "$env:RUNVCPKG_VCPKG_ROOT\vcpkg.exe" integrate install
+
+      - name: Setup MSYS2 (MinGW)
+        if: matrix.compiler == 'mingw'
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: ${{ matrix.arch == 'x86_64' && 'MINGW64' || 'MINGW32' }}
+          update: true
+          install: >-
+            mingw-w64-${{ matrix.arch == 'x86_64' && 'x86_64' || 'i686' }}-toolchain
+            mingw-w64-${{ matrix.arch == 'x86_64' && 'x86_64' || 'i686' }}-cmake
+            mingw-w64-${{ matrix.arch == 'x86_64' && 'x86_64' || 'i686' }}-ninja
+            mingw-w64-${{ matrix.arch == 'x86_64' && 'x86_64' || 'i686' }}-curl
+
+      - name: Install Linux deps (64-bit)
+        if: matrix.compiler == 'gcc' && matrix.arch == 'x86_64'
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y build-essential cmake ninja-build libsdl2-dev libjpeg-dev libpng-dev zlib1g-dev gcc-multilib g++-multilib libcurl4-openssl-dev
+
+      - name: Install Linux deps (32-bit)
+        if: matrix.compiler == 'gcc' && matrix.arch == 'x86'
+        run: |
+          sudo dpkg --add-architecture i386
+          sudo apt-get update -qq
+          sudo apt-get install -y build-essential cmake ninja-build libsdl2-dev libjpeg-dev libpng-dev zlib1g-dev:i386 gcc-multilib g++-multilib libcurl4-openssl-dev:i386
+
+      - name: Build (CMake - GCC)
+        if: matrix.compiler == 'gcc'
+        run: |
+          mkdir -p build && cd build
+          FLAGS=""
+          [ "${{ matrix.arch }}" = "x86" ] && FLAGS="-DFORCE_32BIT=ON -DCMAKE_C_FLAGS=-m32 -DCMAKE_CXX_FLAGS=-m32 -DCMAKE_EXE_LINKER_FLAGS=-m32"
+          cmake .. -G Ninja -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} $FLAGS -DCMAKE_LIBRARY_OUTPUT_DIRECTORY=$(pwd)/../artifacts
+          cmake --build . --parallel
+
+      - name: Build (CMake - MinGW)
+        if: matrix.compiler == 'mingw'
+        shell: msys2 {0}
+        run: |
+          mkdir -p build && cd build
+          FLAGS=""
+          [ "${{ matrix.arch }}" = "x86" ] && FLAGS="-DFORCE_32BIT=ON -DCMAKE_C_FLAGS=-m32 -DCMAKE_CXX_FLAGS=-m32 -DCMAKE_EXE_LINKER_FLAGS=-m32"
+          cmake .. -G Ninja -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} $FLAGS -DCMAKE_LIBRARY_OUTPUT_DIRECTORY=$(pwd)/../artifacts
+          cmake --build . --parallel
+
+      - name: Build (MSVC)
+        if: matrix.compiler == 'msvc'
+        shell: pwsh
+        run: |
+          $platform = if ("${{ matrix.arch }}" -eq "x86_64") { "x64" } else { "x86" }
+          msbuild code/1fxplus.sln /p:Configuration="${{ matrix.build_type }}" /p:Platform="$platform" /m
+
+      - name: Collect MSVC artifacts
+        if: always() && matrix.compiler == 'msvc'
+        shell: pwsh
+        run: |
+          mkdir artifacts
+          $dir = "build/${{ matrix.arch }}-${{ matrix.build_type }}"
+          Copy-Item "$dir/*.dll" artifacts/
+          if ("${{ matrix.build_type }}" -eq "Debug") {
+            Copy-Item "$dir/*.pdb" artifacts/ -ErrorAction SilentlyContinue
+          }
+
+      - name: Collect MinGW artifacts
+        if: always() && matrix.compiler == 'mingw'
+        run: |
+          mkdir -p artifacts
+          find . -name "*.so" -o -name "*.dll" -exec mv {} artifacts/ \; 2>/dev/null || true
+
+      - name: Collect GCC artifacts
+        if: always() && matrix.compiler == 'gcc'
+        run: |
+          mkdir -p artifacts
+          cd build
+          find . \( -name "*.so" -o -name "*.dll" \) -exec mv {} ../artifacts/ \;
+
+      - name: Archive (Linux)
+        if: always() && matrix.os == 'ubuntu-latest'
+        run: |
+          cd artifacts
+          tar -czf "../1fxplus-linux-${{ matrix.arch }}-${{ matrix.build_type }}-gcc.tar.gz" *.so
+
+      - name: Archive (Windows)
+        if: always() && matrix.os == 'windows-latest'
+        shell: pwsh
+        run: |
+          cd artifacts
+          Compress-Archive -Path * -DestinationPath "../1fxplus-windows-${{ matrix.arch }}-${{ matrix.build_type }}-${{ matrix.compiler }}.zip" -Force
+
+      - name: Upload
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: 1fxplus-${{ matrix.arch }}-${{ matrix.build_type }}-${{ matrix.compiler }}
+          path: ${{ matrix.os == 'ubuntu-latest' && '1fxplus-linux-*.tar.gz' || '1fxplus-windows-*.zip' }}
+
+  release:
+    needs: build
+    if: github.ref == 'refs/heads/master'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release_artifacts
+
+      - name: Delete old Latest tag and release
+        run: |
+          git tag -d Latest || true
+          git push origin :refs/tags/Latest || true
+          gh release delete Latest --yes || true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create and push Latest tag
+        id: tag
+        run: |
+          DATE=$(date -u +"%Y-%m-%d")
+          echo "RELEASE_DATE=$DATE" >> $GITHUB_ENV
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
+          git tag -a Latest -m "Latest automated build ($DATE)"
+          git push origin Latest --force
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: Latest
+          name: "Latest Build — ${{ env.RELEASE_DATE }}"
+          # https://github.com/orgs/community/discussions/31628 - can't use autogeneration because that only references PR's
+          draft: false
+          prerelease: true
+          fail_on_unmatched_files: true
+          body: |
+            This release contains all the latest builds for each platform and configuration.
+            Updated automatically from **master**.
+          files: |
+            release_artifacts/**/*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

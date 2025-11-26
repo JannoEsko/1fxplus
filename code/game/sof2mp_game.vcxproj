@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="..\packages\vcpkg.C.ProgramFiles.MicrosoftVisualStudio.2022.Community.VC.vcpkg.1.0.0\build\native\vcpkg.C.ProgramFiles.MicrosoftVisualStudio.2022.Community.VC.vcpkg.props" Condition="Exists('..\packages\vcpkg.C.ProgramFiles.MicrosoftVisualStudio.2022.Community.VC.vcpkg.1.0.0\build\native\vcpkg.C.ProgramFiles.MicrosoftVisualStudio.2022.Community.VC.vcpkg.props')" />
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
       <Configuration>Debug</Configuration>
@@ -71,18 +70,20 @@
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
+  <PropertyGroup Label="Vcpkg">
+    <VcpkgEnabled>true</VcpkgEnabled>
+    <VcpkgEnableManifest>true</VcpkgEnableManifest>
+    <VcpkgManifestInstall>true</VcpkgManifestInstall>
+    <VcpkgAutoLink>true</VcpkgAutoLink>
+  </PropertyGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <TargetName>sof2mp_gamex86_64</TargetName>
     <OutDir>..\..\build\x86_64-$(Configuration)\</OutDir>
-    <IncludePath>C:\vcpkg\installed\x64-windows-static\include;$(IncludePath)</IncludePath>
-    <LibraryPath>C:\vcpkg\installed\x64-windows-static\lib;$(LibraryPath)</LibraryPath>
     <IntDir>..\..\build\x86_64-$(Configuration)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <TargetName>sof2mp_gamex86</TargetName>
-    <IncludePath>$(VcpkgRoot);$(IncludePath)</IncludePath>
-    <LibraryPath>$(VC_LibraryPath_x86);$(WindowsSDK_LibraryPath_x86)</LibraryPath>
     <OutDir>..\..\build\x86-$(Configuration)\</OutDir>
     <IntDir>..\..\build\x86-$(Configuration)\</IntDir>
   </PropertyGroup>
@@ -105,12 +106,6 @@
     <VcpkgUseStatic>true</VcpkgUseStatic>
     <VcpkgTriplet>x64-windows-static</VcpkgTriplet>
     <VcpkgConfiguration>Release</VcpkgConfiguration>
-  </PropertyGroup>
-  <PropertyGroup Label="Vcpkg">
-    <VcpkgEnabled>true</VcpkgEnabled>
-    <VcpkgEnableManifest>true</VcpkgEnableManifest>
-    <VcpkgManifestInstall>true</VcpkgManifestInstall>
-    <VcpkgAutoLink>true</VcpkgAutoLink>
   </PropertyGroup>
   <PropertyGroup Label="Vcpkg" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <VcpkgUseStatic>true</VcpkgUseStatic>
@@ -164,7 +159,7 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>_DEBUG;_DEVEL;SOF2MPGAMEX8664_EXPORTS;_WINDOWS;_USRDLL;__WIN64__;_CRT_SECURE_NO_WARNINGS;CURL_STATICLIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_DEBUG;_DEVEL;SOF2MPGAMEX8664_EXPORTS;_WINDOWS;_USRDLL;__WIN64__;_CRT_SECURE_NO_WARNINGS;CURL_STATICLIB;_DEVABUSE;_ROXAC_TOTP;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>
       </PrecompiledHeader>
@@ -185,7 +180,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>_NDEBUG;SOF2MPGAMEX8664_EXPORTS;_WINDOWS;_USRDLL;__WIN64__;_CRT_SECURE_NO_WARNINGS;CURL_STATICLIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_NDEBUG;SOF2MPGAMEX8664_EXPORTS;_WINDOWS;_USRDLL;__WIN64__;_CRT_SECURE_NO_WARNINGS;CURL_STATICLIB;_DEVABUSE;_ROXAC_TOTP;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <PrecompiledHeaderFile>
@@ -274,18 +269,5 @@
     <ClInclude Include="match.h" />
     <ClInclude Include="syn.h" />
   </ItemGroup>
-  <ItemGroup>
-    <None Include="packages.config" />
-  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
-  <ImportGroup Label="ExtensionTargets">
-    <Import Project="..\packages\vcpkg.C.ProgramFiles.MicrosoftVisualStudio.2022.Community.VC.vcpkg.1.0.0\build\native\vcpkg.C.ProgramFiles.MicrosoftVisualStudio.2022.Community.VC.vcpkg.targets" Condition="Exists('..\packages\vcpkg.C.ProgramFiles.MicrosoftVisualStudio.2022.Community.VC.vcpkg.1.0.0\build\native\vcpkg.C.ProgramFiles.MicrosoftVisualStudio.2022.Community.VC.vcpkg.targets')" />
-  </ImportGroup>
-  <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
-    <PropertyGroup>
-      <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
-    </PropertyGroup>
-    <Error Condition="!Exists('..\packages\vcpkg.C.ProgramFiles.MicrosoftVisualStudio.2022.Community.VC.vcpkg.1.0.0\build\native\vcpkg.C.ProgramFiles.MicrosoftVisualStudio.2022.Community.VC.vcpkg.props')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\vcpkg.C.ProgramFiles.MicrosoftVisualStudio.2022.Community.VC.vcpkg.1.0.0\build\native\vcpkg.C.ProgramFiles.MicrosoftVisualStudio.2022.Community.VC.vcpkg.props'))" />
-    <Error Condition="!Exists('..\packages\vcpkg.C.ProgramFiles.MicrosoftVisualStudio.2022.Community.VC.vcpkg.1.0.0\build\native\vcpkg.C.ProgramFiles.MicrosoftVisualStudio.2022.Community.VC.vcpkg.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\vcpkg.C.ProgramFiles.MicrosoftVisualStudio.2022.Community.VC.vcpkg.1.0.0\build\native\vcpkg.C.ProgramFiles.MicrosoftVisualStudio.2022.Community.VC.vcpkg.targets'))" />
-  </Target>
 </Project>

@@ -249,7 +249,4 @@
       <Filter>Header Files\ext\jsmn</Filter>
     </ClInclude>
   </ItemGroup>
-  <ItemGroup>
-    <None Include="packages.config" />
-  </ItemGroup>
 </Project>
