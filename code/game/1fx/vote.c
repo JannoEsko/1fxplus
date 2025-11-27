@@ -1,5 +1,5 @@
 #include "../g_local.h"
-#define MAX_VOTEOPTION 15
+#define MAX_VOTEOPTION 20
 
 
 typedef struct voteOption_s {
@@ -401,7 +401,7 @@ void vote_callVote(gentity_t* ent) {
                 break;
             }
 
-            trap_SendServerCommand(ent - g_entities, va("print \"%-13.13s%-8.8s%-40.40s%-16.16s\n\"", voteOpt->voteCmd, voteLvl, voteOpt->desc, voteOpt->params));
+            trap_SendServerCommand(ent - g_entities, va("print \"%-16.16s%-8.8s%-37.37s%-16.16s\n\"", voteOpt->voteCmd, voteLvl, voteOpt->desc, voteOpt->params));
         }
 
         trap_SendServerCommand(ent - g_entities, "print \"\n\"");
