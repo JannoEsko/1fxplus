@@ -159,7 +159,7 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>_DEBUG;_DEVEL;SOF2MPGAMEX8664_EXPORTS;_WINDOWS;_USRDLL;__WIN64__;_CRT_SECURE_NO_WARNINGS;CURL_STATICLIB;_DEVABUSE;_ROXAC_TOTP;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_DEBUG;_DEVEL;SOF2MPGAMEX8664_EXPORTS;_WINDOWS;_USRDLL;__WIN64__;_CRT_SECURE_NO_WARNINGS;CURL_STATICLIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>
       </PrecompiledHeader>
@@ -180,7 +180,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>_NDEBUG;SOF2MPGAMEX8664_EXPORTS;_WINDOWS;_USRDLL;__WIN64__;_CRT_SECURE_NO_WARNINGS;CURL_STATICLIB;_DEVABUSE;_ROXAC_TOTP;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_NDEBUG;SOF2MPGAMEX8664_EXPORTS;_WINDOWS;_USRDLL;__WIN64__;_CRT_SECURE_NO_WARNINGS;CURL_STATICLIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <PrecompiledHeaderFile>
