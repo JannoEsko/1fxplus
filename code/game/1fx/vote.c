@@ -621,17 +621,14 @@ void vote_runFrame() {
                 level.vote.voteExecuteTime = level.time + 3000;
                 vote_updateConfigString(qtrue);
             }
-            else if (level.vote.voteNo >= level.vote.neededVotes || totalVotes == level.vote.neededVotes) {
+            else if (level.vote.voteNo >= level.vote.neededVotes || totalVotes == level.numVotingClients) {
                 G_printInfoMessageToAll("Vote failed.");
-
                 level.vote.voteTime = 0;
-
                 if (level.vote.voteAction == VOTEACTION_POLL) {
                     level.vote.voteExecuteTime = level.time + 3000;
                 }
-
                 vote_updateConfigString(qtrue);
-            } 
+            }
 
         }
     }
