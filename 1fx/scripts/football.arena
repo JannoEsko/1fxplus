@@ -1,0 +1,5 @@
+{
+	map "football"
+	longname "football"
+	type "hns inf elim ctf tdm dm hnz mm gg csinf"
+}

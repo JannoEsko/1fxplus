@@ -1,0 +1,5 @@
+{
+	map "CSL_Final"
+	longname "CSL_Final"
+	type "h&s inf elim ctf tdm dm h&z mm gg csinf"
+}

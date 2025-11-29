@@ -1,0 +1,5 @@
+{
+	map "gg_punishment"
+	longname "gg_punishment"
+	type "hns inf elim ctf tdm dm hnz mm gg csinf"
+}

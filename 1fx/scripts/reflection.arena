@@ -1,0 +1,5 @@
+{
+	map "reflection"
+	longname "reflection"
+	type "hns inf elim ctf tdm dm hnz mm gg csinf"
+}

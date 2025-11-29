@@ -1,0 +1,820 @@
+{
+"blueteam" "prometheus"
+"redteam" "civilian"
+"_color" "0.8 1 0.7"
+"ambient" "4"
+"classname" "worldspawn"
+"message" "Hong Kong Depot (by: C4)"
+}
+{
+"classname" "func_glass"
+"model" "*1"
+}
+{
+"classname" "func_glass"
+"model" "*2"
+}
+{
+"classname" "func_glass"
+"model" "*3"
+}
+{
+"classname" "func_glass"
+"model" "*4"
+}
+{
+"angle" "135"
+"origin" "1072 -2008 500"
+"classname" "info_player_intermission"
+}
+{
+"wait" "6"
+"random" "0"
+"spawnflags" "1"
+"noise" "sound/world/waterwork2.wav"
+"origin" "2544 -2224 654"
+"classname" "target_speaker"
+}
+{
+"wait" "6"
+"random" "0"
+"spawnflags" "1"
+"noise" "sound/world/waterwork2.wav"
+"origin" "2154 -2492 578"
+"classname" "target_speaker"
+}
+{
+"wait" "6"
+"random" "0"
+"spawnflags" "1"
+"noise" "sound/world/waterwork2.wav"
+"origin" "1568 -2560 832"
+"classname" "target_speaker"
+}
+{
+"wait" "7"
+"random" "1"
+"classname" "target_speaker"
+"origin" "1098 -3720 864"
+"noise" "sound/world/waterwork2.wav"
+"spawnflags" "1"
+}
+{
+"random" "1"
+"wait" "4"
+"spawnflags" "1"
+"noise" "sound/world/amb2.wav"
+"origin" "-176 -3648 708"
+"classname" "target_speaker"
+}
+{
+"random" "0"
+"wait" "4"
+"spawnflags" "1"
+"noise" "sound/world/city.wav"
+"origin" "-1216 -3696 848"
+"classname" "target_speaker"
+}
+{
+"random" "0"
+"wait" "4"
+"spawnflags" "1"
+"noise" "sound/world/city.wav"
+"origin" "-1472 -3264 848"
+"classname" "target_speaker"
+}
+{
+"random" "0"
+"wait" "4"
+"classname" "target_speaker"
+"origin" "-1340 -2412 900"
+"noise" "sound/world/city.wav"
+"spawnflags" "1"
+}
+{
+"random" "0"
+"wait" "4"
+"spawnflags" "1"
+"noise" "sound/world/city.wav"
+"origin" "-1600 -2048 896"
+"classname" "target_speaker"
+}
+{
+"random" "0"
+"wait" "4"
+"spawnflags" "1"
+"noise" "sound/world/city.wav"
+"origin" "-864 -1392 832"
+"classname" "target_speaker"
+}
+{
+"random" "0"
+"wait" "4"
+"classname" "target_speaker"
+"origin" "174 -1624 890"
+"noise" "sound/world/city.wav"
+"spawnflags" "1"
+}
+{
+"random" "0"
+"wait" "4"
+"classname" "target_speaker"
+"origin" "1232 -2688 880"
+"noise" "sound/world/city.wav"
+"spawnflags" "1"
+}
+{
+"random" "0"
+"wait" "4"
+"classname" "target_speaker"
+"origin" "-287 -2013 800"
+"noise" "sound/world/city.wav"
+"spawnflags" "1"
+}
+{
+"random" "0"
+"wait" "4"
+"spawnflags" "1"
+"noise" "sound/world/city.wav"
+"origin" "1232 -2304 864"
+"classname" "target_speaker"
+}
+{
+"random" "0"
+"wait" "4"
+"classname" "target_speaker"
+"origin" "760 -1738 884"
+"noise" "sound/world/city.wav"
+"spawnflags" "1"
+}
+{
+"classname" "target_speaker"
+"origin" "1176 -1008 620"
+"noise" "sound/world/x_bobber.wav"
+"spawnflags" "1"
+}
+{
+"wait" "900"
+"random" "10"
+"classname" "target_speaker"
+"origin" "598 -1232 816"
+"noise" "sound/world/aircondition.wav"
+"spawnflags" "1"
+}
+{
+"wait" "900"
+"random" "10"
+"spawnflags" "1"
+"noise" "sound/world/aircondition.wav"
+"origin" "1366 -1344 880"
+"classname" "target_speaker"
+}
+{
+"classname" "target_location"
+"origin" "-896 -2784 544"
+"message" "outside depot hanger"
+}
+{
+"classname" "target_location"
+"origin" "-608 -3104 544"
+"message" "outside depot hanger"
+}
+{
+"classname" "target_location"
+"origin" "1856 -2528 480"
+"message" "main depot warehouse"
+}
+{
+"message" "main depot warehouse"
+"origin" "1888 -2912 480"
+"classname" "target_location"
+}
+{
+"message" "main depot warehouse"
+"origin" "1856 -2144 480"
+"classname" "target_location"
+}
+{
+"classname" "target_location"
+"origin" "2112 -2240 480"
+"message" "main depot warehouse"
+}
+{
+"message" "main depot warehouse"
+"origin" "2144 -2624 480"
+"classname" "target_location"
+}
+{
+"classname" "target_location"
+"origin" "2528 -2624 512"
+"message" "depot warehouse garage alley"
+}
+{
+"message" "depot warehouse garage alley"
+"origin" "2528 -2240 512"
+"classname" "target_location"
+}
+{
+"classname" "target_location"
+"origin" "2528 -1824 512"
+"message" "depot warehouse garage alley"
+}
+{
+"message" "depot warehouse garage alley"
+"origin" "2528 -1344 512"
+"classname" "target_location"
+}
+{
+"classname" "target_location"
+"origin" "2144 -1280 352"
+"message" "depot garage alley"
+}
+{
+"message" "depot garage alley"
+"origin" "1856 -1248 352"
+"classname" "target_location"
+}
+{
+"classname" "target_location"
+"origin" "1344 -1248 384"
+"message" "inside depot garage"
+}
+{
+"message" "inside depot garage"
+"origin" "992 -1248 384"
+"classname" "target_location"
+}
+{
+"classname" "target_location"
+"origin" "992 -1024 480"
+"message" "inside depot garage"
+}
+{
+"message" "inside depot garage"
+"origin" "1344 -1024 480"
+"classname" "target_location"
+}
+{
+"classname" "target_location"
+"origin" "832 -1280 800"
+"message" "depot garage rooftops"
+}
+{
+"message" "depot garage rooftops"
+"origin" "1184 -1280 800"
+"classname" "target_location"
+}
+{
+"classname" "target_location"
+"origin" "544 -1216 768"
+"message" "depot garage rooftops"
+}
+{
+"message" "depot garage rooftops"
+"origin" "192 -1216 768"
+"classname" "target_location"
+}
+{
+"classname" "target_location"
+"origin" "192 -832 768"
+"message" "depot garage rooftops"
+}
+{
+"message" "depot garage rooftops"
+"origin" "544 -832 768"
+"classname" "target_location"
+}
+{
+"classname" "target_location"
+"origin" "544 -1024 608"
+"message" "depot garage rooftops"
+}
+{
+"message" "depot garage rooftops"
+"origin" "192 -1024 608"
+"classname" "target_location"
+}
+{
+"classname" "target_location"
+"origin" "1280 -1792 544"
+"message" "outdoor ship containers"
+}
+{
+"message" "outdoor ship containers"
+"origin" "512 -2016 544"
+"classname" "target_location"
+}
+{
+"classname" "target_location"
+"origin" "928 -2016 544"
+"message" "outdoor ship containers"
+}
+{
+"message" "outdoor ship containers"
+"origin" "1280 -2016 544"
+"classname" "target_location"
+}
+{
+"classname" "target_location"
+"origin" "864 -1760 544"
+"message" "outdoor ship containers"
+}
+{
+"message" "outdoor ship containers"
+"origin" "512 -1760 544"
+"classname" "target_location"
+}
+{
+"classname" "target_location"
+"origin" "192 -1760 544"
+"message" "outdoor ship containers"
+}
+{
+"message" "depot office storage"
+"origin" "-128 -1536 544"
+"classname" "target_location"
+}
+{
+"classname" "target_location"
+"origin" "192 -1536 544"
+"message" "outdoor ship containers"
+}
+{
+"message" "outdoor ship containers"
+"origin" "544 -1536 544"
+"classname" "target_location"
+}
+{
+"classname" "target_location"
+"origin" "-352 -1184 544"
+"message" "depot office storage"
+}
+{
+"message" "depot office storage"
+"origin" "-704 -1184 544"
+"classname" "target_location"
+}
+{
+"classname" "target_location"
+"origin" "-1024 -1184 544"
+"message" "depot office storage"
+}
+{
+"message" "main depot offices"
+"origin" "-1184 -1856 544"
+"classname" "target_location"
+}
+{
+"classname" "target_location"
+"origin" "-1376 -2752 544"
+"message" "main depot offices"
+}
+{
+"message" "main depot offices"
+"origin" "-1376 -2400 544"
+"classname" "target_location"
+}
+{
+"classname" "target_location"
+"origin" "-1376 -2048 544"
+"message" "main depot offices"
+}
+{
+"message" "depot offices alley"
+"origin" "-1536 -2976 544"
+"classname" "target_location"
+}
+{
+"classname" "target_location"
+"origin" "-1536 -3328 544"
+"message" "depot offices alley"
+}
+{
+"message" "depot offices alley"
+"origin" "-1536 -3680 544"
+"classname" "target_location"
+}
+{
+"classname" "target_location"
+"origin" "-1056 -3712 544"
+"message" "depot hanger stairs"
+}
+{
+"message" "resting quarters"
+"origin" "-1024 -3360 544"
+"classname" "target_location"
+}
+{
+"classname" "target_location"
+"origin" "-1060 -3136 556"
+"message" "resting quarters"
+}
+{
+"message" "4-Rent rooftop"
+"origin" "-480 -2272 736"
+"classname" "target_location"
+}
+{
+"classname" "target_location"
+"origin" "0 -2272 736"
+"message" "4-Rent rooftop"
+}
+{
+"message" "depot hanger alley"
+"origin" "-672 -1920 544"
+"classname" "target_location"
+}
+{
+"classname" "target_location"
+"origin" "-480 -2176 544"
+"message" "depot hanger alley"
+}
+{
+"message" "outside depot hanger"
+"origin" "-640 -2848 544"
+"classname" "target_location"
+}
+{
+"classname" "target_location"
+"origin" "-256 -3040 544"
+"message" "outside depot hanger"
+}
+{
+"message" "outside depot hanger"
+"origin" "64 -2848 544"
+"classname" "target_location"
+}
+{
+"classname" "target_location"
+"origin" "768 -2752 544"
+"message" "depot hanger alley exit"
+}
+{
+"message" "outside main warehouse"
+"origin" "1376 -2208 544"
+"classname" "target_location"
+}
+{
+"classname" "target_location"
+"origin" "1376 -2560 544"
+"message" "outside main warehouse"
+}
+{
+"message" "depot hanger exit"
+"origin" "1152 -3456 544"
+"classname" "target_location"
+}
+{
+"message" "depot hanger"
+"origin" "-168 -3605 562"
+"classname" "target_location"
+}
+{
+"angle" "135"
+"classname" "info_player_start"
+"origin" "1068 -2008 444"
+}
+{
+"model" "models/objects/hongkong/rice_bags/rice_bags_stack.md3"
+"origin" "-1084 -2332 288"
+"classname" "model_static"
+}
+{
+"model" "models/objects/hongkong/baskets_pots/baskets_stack_square.md3"
+"origin" "-972 -1360 288"
+"classname" "model_static"
+}
+{
+"classname" "model_static"
+"origin" "-580 -1384 288"
+"model" "models/objects/hongkong/rice_bags/rice_bag_bentup.md3"
+"angle" "90"
+}
+{
+"model" "models/objects/hongkong/rice_bags/rice_bags_stacklow.md3"
+"origin" "-432 -1344 292"
+"classname" "model_static"
+}
+{
+"spawnflags" "2"
+"origin" "1772 -1156 352"
+"classname" "gametype_player"
+"angle" "180"
+}
+{
+"spawnflags" "2"
+"origin" "2044 -1188 352"
+"classname" "gametype_player"
+"angle" "180"
+}
+{
+"classname" "gametype_player"
+"origin" "1964 -1324 352"
+"spawnflags" "2"
+"angle" "180"
+}
+{
+"spawnflags" "2"
+"origin" "1948 -1188 352"
+"classname" "gametype_player"
+"angle" "180"
+}
+{
+"classname" "gametype_player"
+"origin" "1852 -1188 352"
+"spawnflags" "2"
+"angle" "180"
+}
+{
+"classname" "gametype_player"
+"origin" "1908 -1344 352"
+"spawnflags" "2"
+"angle" "180"
+}
+{
+"spawnflags" "2"
+"origin" "1748 -1328 352"
+"classname" "gametype_player"
+"angle" "180"
+}
+{
+"spawnflags" "2"
+"origin" "2068 -1344 352"
+"classname" "gametype_player"
+"angle" "180"
+}
+{
+"spawnflags" "2"
+"origin" "1948 -1120 352"
+"classname" "gametype_player"
+"angle" "180"
+}
+{
+"spawnflags" "1"
+"origin" "-1630 -2820 350"
+"classname" "gametype_player"
+}
+{
+"spawnflags" "1"
+"origin" "-1630 -2750 350"
+"classname" "gametype_player"
+}
+{
+"spawnflags" "1"
+"origin" "-1630 -2680 350"
+"classname" "gametype_player"
+}
+{
+"spawnflags" "1"
+"origin" "-1630 -2610 350"
+"classname" "gametype_player"
+}
+{
+"spawnflags" "1"
+"origin" "-1630 -2540 350"
+"classname" "gametype_player"
+}
+{
+"spawnflags" "1"
+"origin" "-1630 -2470 350"
+"classname" "gametype_player"
+}
+{
+"spawnflags" "1"
+"origin" "-1630 -2400 350"
+"classname" "gametype_player"
+}
+{
+"spawnflags" "1"
+"origin" "-1630 -2330 350"
+"classname" "gametype_player"
+}
+{
+"spawnflags" "1"
+"origin" "-1630 -2260 350"
+"classname" "gametype_player"
+}
+{
+"spawnflags" "1"
+"origin" "-1630 -2190 350"
+"classname" "gametype_player"
+}
+{
+"spawnflags" "1"
+"origin" "-1630 -2120 350"
+"classname" "gametype_player"
+}
+
+
+{
+"spawnflags" "1"
+"origin" "-1530 -2820 350"
+"classname" "gametype_player"
+}
+{
+"spawnflags" "1"
+"origin" "-1530 -2750 350"
+"classname" "gametype_player"
+}
+{
+"spawnflags" "1"
+"origin" "-1530 -2680 350"
+"classname" "gametype_player"
+}
+{
+"spawnflags" "1"
+"origin" "-1530 -2610 350"
+"classname" "gametype_player"
+}
+{
+"spawnflags" "1"
+"origin" "-1530 -2540 350"
+"classname" "gametype_player"
+}
+{
+"spawnflags" "1"
+"origin" "-1530 -2470 350"
+"classname" "gametype_player"
+}
+{
+"spawnflags" "1"
+"origin" "-1530 -2400 350"
+"classname" "gametype_player"
+}
+{
+"spawnflags" "1"
+"origin" "-1530 -2330 350"
+"classname" "gametype_player"
+}
+{
+"spawnflags" "1"
+"origin" "-1530 -2260 350"
+"classname" "gametype_player"
+}
+{
+"spawnflags" "1"
+"origin" "-1530 -2190 350"
+"classname" "gametype_player"
+}
+{
+"spawnflags" "1"
+"origin" "-1530 -2120 350"
+"classname" "gametype_player"
+}
+
+
+
+
+{
+"spawnflags" "1"
+"origin" "-1430 -2820 350"
+"classname" "gametype_player"
+}
+{
+"spawnflags" "1"
+"origin" "-1430 -2750 350"
+"classname" "gametype_player"
+}
+{
+"spawnflags" "1"
+"origin" "-1430 -2680 350"
+"classname" "gametype_player"
+}
+{
+"spawnflags" "1"
+"origin" "-1430 -2610 350"
+"classname" "gametype_player"
+}
+{
+"spawnflags" "1"
+"origin" "-1430 -2540 350"
+"classname" "gametype_player"
+}
+{
+"spawnflags" "1"
+"origin" "-1430 -2470 350"
+"classname" "gametype_player"
+}
+{
+"spawnflags" "1"
+"origin" "-1430 -2400 350"
+"classname" "gametype_player"
+}
+{
+"spawnflags" "1"
+"origin" "-1430 -2330 350"
+"classname" "gametype_player"
+}
+{
+"spawnflags" "1"
+"origin" "-1430 -2260 350"
+"classname" "gametype_player"
+}
+{
+"spawnflags" "1"
+"origin" "-1430 -2190 350"
+"classname" "gametype_player"
+}
+{
+"spawnflags" "1"
+"origin" "-1430 -2120 350"
+"classname" "gametype_player"
+}
+
+
+{
+"classname" "model_static"
+"origin" "-1568 -1992 288"
+"model" "models/objects/finca/cars/luxurysedan.md3"
+"angle" "90"
+}
+{
+"classname" "gametype_item"
+"origin" "-876 -2844 304"
+"targetname" "briefcase"
+"gametype" "inf"
+}
+{
+"classname" "gametype_trigger"
+"targetname" "briefcase_destination"
+"gametype" "inf"
+"model" "*5"
+}
+{
+"classname" "func_glass"
+"model" "*6"
+}
+{
+"classname" "func_glass"
+"model" "*7"
+}
+{
+"classname" "func_glass"
+"model" "*8"
+}
+{
+"classname" "func_glass"
+"model" "*9"
+}
+{
+"classname" "func_glass"
+"model" "*10"
+}
+{
+"classname" "func_glass"
+"model" "*11"
+}
+{
+"classname" "func_glass"
+"model" "*12"
+}
+{
+"classname" "func_glass"
+"model" "*13"
+}
+{
+"classname" "func_glass"
+"model" "*14"
+}
+{
+"classname" "func_glass"
+"model" "*15"
+}
+{
+"classname" "func_glass"
+"model" "*16"
+}
+{
+"classname" "func_glass"
+"model" "*17"
+}
+{
+"classname" "func_glass"
+"model" "*18"
+}
+{
+"model" "models/objects/finca/lamps/lightbulb1.md3"
+"origin" "-1004 -3112 624"
+"classname" "model_static"
+}
+{
+"classname" "model_static"
+"origin" "-996 -3420 624"
+"model" "models/objects/finca/lamps/lightbulb1.md3"
+}
+{
+"classname" "model_static"
+"origin" "-1028 -2986 448"
+"model" "models/objects/finca/furniture/bar_stool.md3"
+}
+{
+"model" "models/objects/finca/furniture/bar_stool.md3"
+"origin" "-988 -2978 448"
+"classname" "model_static"
+}
+
+{
+"classname" "hideseek_cage"
+"origin" "1090 -1910 380"
+"size" "big"
+}

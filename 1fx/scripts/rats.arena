@@ -1,0 +1,5 @@
+{
+	map "rats"
+	longname "ratje"
+	type "dm tdm ctf inf elim h&s"
+}

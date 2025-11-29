@@ -1,0 +1,36 @@
+gametype
+{
+	displayname		"Hide & Seek"
+	respawn			"none"	
+	pickups			"no"
+	teams			"yes"
+	description		"Seekers have to hunt and kill hiders. Hiders have to survive the round."
+	basegametype	"inf"
+
+	photos
+	{
+		briefcase
+		{
+			displayname		"Documents"
+		}
+
+		extraction
+		{
+			displayname		"Extraction Point"
+		}
+	}
+
+	items
+	{
+		briefcase
+		{
+			displayname		"Briefcase"
+			team			"blue"
+			enabled			0
+
+			icon			"gfx/menus/hud/briefcase_small"
+			model			"models/pick_ups/briefcase_silver.md3"
+			boltmodel		"models/characters/bolt_ons/briefcase_back.glm"
+		}
+	}
+}

@@ -1,0 +1,5 @@
+{
+	map "mp_colcity"
+	longname "collie"
+	type "dm tdm ctf inf elim h&s"
+}

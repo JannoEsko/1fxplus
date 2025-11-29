@@ -1,0 +1,5 @@
+{
+	map "^wOverdose"
+	longname "^wOverdose"
+	type "hns inf elim ctf tdm dm hnz mm gg csinf"
+}

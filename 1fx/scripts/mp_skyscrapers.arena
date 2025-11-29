@@ -1,0 +1,5 @@
+{
+map		"mp_skyscrapers"
+longname	"Skyscraper Rooftops"
+type		"dm tdm elim ctf h&s h&z"
+}

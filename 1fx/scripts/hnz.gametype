@@ -1,0 +1,9 @@
+gametype
+{
+	displayname		"Humans & Zombies"
+	respawn			"none"	
+	pickups			"no"
+	teams			"yes"
+	description		"Zombies have to hunt and kill humans. Humans have to survive the round."
+	basegametype	"inf"
+}

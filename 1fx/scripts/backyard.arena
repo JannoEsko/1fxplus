@@ -1,0 +1,5 @@
+{
+	map "backyard"
+	longname "backyard"
+	type "h&s inf elim ctf tdm dm h&z mm gg csinf"
+}

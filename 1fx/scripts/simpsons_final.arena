@@ -1,0 +1,5 @@
+{
+	map "simpsons_final"
+	longname "simpsons_final"
+	type "hns inf elim ctf tdm dm hnz mm gg csinf"
+}

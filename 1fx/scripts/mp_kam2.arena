@@ -1,0 +1,5 @@
+{
+	map "mp_kam2"
+	longname "mp_kam2"
+	type "hns inf elim ctf tdm dm hnz mm gg csinf"
+}

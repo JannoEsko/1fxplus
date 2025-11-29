@@ -406,45 +406,49 @@ void loadDatabases(void) {
     // can have a performance implication, but haven't seen any lag due to it in 3D which already runs the same logic.
     // FIXME if server gets weird lagouts every second or so, then look here.
     
-    rc = sqlite3_open("./1fx/databases/country.db", &db);
+    // We should only open country.db for migration checks IF the user wants us to use it.
+    if (g_useCountryDb.integer) {
 
-    if (rc) {
-        // with the gameDb completely failing and we cannot write to it, there's no point continuing.
-        logSystem(LOGLEVEL_FATAL_DB, "Game dropped due to failing to write country.db file in databases folder.\n");
-        return;
-    }
+        rc = sqlite3_open("./1fx/databases/country.db", &db);
 
-    if (sqlite3_exec(db, "CREATE TABLE IF NOT EXISTS migrationlevel (migrationlevel INTEGER)", 0, 0, 0) != SQLITE_OK) {
+        if (rc) {
+            // with the gameDb completely failing and we cannot write to it, there's no point continuing.
+            logSystem(LOGLEVEL_FATAL_DB, "Game dropped due to failing to write country.db file in databases folder.\n");
+            return;
+        }
+
+        if (sqlite3_exec(db, "CREATE TABLE IF NOT EXISTS migrationlevel (migrationlevel INTEGER)", 0, 0, 0) != SQLITE_OK) {
+            sqlite3_close(db);
+            logSystem(LOGLEVEL_FATAL_DB, "Game dropped due to failing to write migrationlevel table into country.db.\n");
+            return;
+        }
+
+        rc = sqlite3_prepare_v2(db, "SELECT * FROM migrationlevel", -1, &stmt, 0);
+
+        if (rc != SQLITE_OK) {
+            logSystem(LOGLEVEL_FATAL_DB, "miragtionLevel countryDb prepare failed: %s", sqlite3_errmsg(db));
+            return;
+        }
+
+
+        int countryMigrationLevel = -1;
+
+        if (sqlite3_step(stmt) != SQLITE_DONE) {
+            countryMigrationLevel = sqlite3_column_int(stmt, 0);
+        }
+
+        sqlite3_finalize(stmt);
+
+        if (SQL_COUNTRY_MIGRATION_LEVEL != countryMigrationLevel) {
+            Com_Printf("    Migrating countryDb from level %d to level %d.\n", countryMigrationLevel, SQL_COUNTRY_MIGRATION_LEVEL);
+            migrateCountryDatabase(db, countryMigrationLevel);
+        }
+        else {
+            Com_Printf("    countryDb is up to date!\n");
+        }
+
         sqlite3_close(db);
-        logSystem(LOGLEVEL_FATAL_DB, "Game dropped due to failing to write migrationlevel table into country.db.\n");
-        return;
     }
-
-    rc = sqlite3_prepare_v2(db, "SELECT * FROM migrationlevel", -1, &stmt, 0);
-
-    if (rc != SQLITE_OK) {
-        logSystem(LOGLEVEL_FATAL_DB, "miragtionLevel countryDb prepare failed: %s", sqlite3_errmsg(db));
-        return;
-    }
-
-
-    int countryMigrationLevel = -1;
-
-    if (sqlite3_step(stmt) != SQLITE_DONE) {
-        countryMigrationLevel = sqlite3_column_int(stmt, 0);
-    }
-
-    sqlite3_finalize(stmt);
-
-    if (SQL_COUNTRY_MIGRATION_LEVEL != countryMigrationLevel) {
-        Com_Printf("    Migrating countryDb from level %d to level %d.\n", countryMigrationLevel, SQL_COUNTRY_MIGRATION_LEVEL);
-        migrateCountryDatabase(db, countryMigrationLevel);
-    }
-    else {
-        Com_Printf("    countryDb is up to date!\n");
-    }
-
-    sqlite3_close(db);
     
     Com_PrintInfo("Database checks done!\n");
 }

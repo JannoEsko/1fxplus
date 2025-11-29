@@ -1,0 +1,5 @@
+{
+	map "shop6"
+	longname "The Shop in Siege"
+	type "dm tdm elim ctf inf h&s"
+}

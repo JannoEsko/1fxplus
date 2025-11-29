@@ -1,0 +1,17 @@
+//
+//	GAMETYPE:		Elimination
+//
+//  DESCRIPTION:	The red team and blue team are spawned the the first team to
+//					loose all members will loose.  This gametype requires no
+//					items or triggers to be specified.
+//
+
+gametype
+{
+	displayname		"Kill the VIP"
+	respawn			"none"	
+	pickups			"no"
+	teams			"yes"
+	description		"Elimination, but if you kill the VIP, your team wins instantly"
+    basegametype	"elim"
+}

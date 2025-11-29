@@ -1,0 +1,5 @@
+{
+	map "gaf_glasswar"
+	longname "glas"
+	type "dm tdm ctf inf elim h&s"
+}

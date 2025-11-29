@@ -1,0 +1,5 @@
+{
+	map "metal_c"
+	longname "metal_cage"
+	type "dm tdm ctf inf elim h&s"
+}

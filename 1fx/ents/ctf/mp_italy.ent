@@ -1,0 +1,1684 @@
+{
+"redteam" "prometheus"
+"message" "CS Italy edited by pit!"
+"blueteam" "marine"
+"_color" "1.000000 1.000000 1.000000"
+"ambient" "65"
+"classname" "worldspawn"
+}
+{
+"model" "*1"
+"classname" "func_static"
+"gametype" "ctf"
+}
+{
+"model" "*2"
+"classname" "func_static"
+"gametype" "ctf"
+}
+{
+"model" "*3"
+"gametype" "dem"
+"targetname" "demolish1"
+"classname" "func_wall"
+}
+{
+"model" "*4"
+"dmg" "9999"
+"spawnflags" "1"
+"gametype" "dem"
+"targetname" "demolish1"
+"classname" "trigger_hurt"
+}
+{
+"model" "*5"
+"target" "demolish1"
+"gametype" "dem"
+"targetname" "demolition_site_1"
+"classname" "gametype_trigger"
+}
+{
+"angle" "270"
+"model" "models/objects/finca/lamps/wall_light2.md3"
+"origin" "906 2178 779"
+"classname" "misc_model"
+}
+{
+"light" "300"
+"classname" "light"
+"origin" "906 2160 782"
+}
+{
+"origin" "1218 2154 782"
+"classname" "light"
+"light" "300"
+}
+{
+"classname" "misc_model"
+"origin" "1218 2170 779"
+"model" "models/objects/finca/lamps/wall_light2.md3"
+"angle" "270"
+}
+{
+"angle" "90"
+"model" "models/objects/finca/lamps/wall_light2.md3"
+"origin" "1210 2197 779"
+"classname" "misc_model"
+}
+{
+"light" "300"
+"classname" "light"
+"origin" "1208 2213 780"
+}
+{
+"origin" "896 2213 780"
+"classname" "light"
+"light" "300"
+}
+{
+"classname" "misc_model"
+"origin" "898 2197 779"
+"model" "models/objects/finca/lamps/wall_light2.md3"
+"angle" "90"
+}
+{
+"angle" "270"
+"model" "models/objects/finca/lamps/wall_light2.md3"
+"origin" "1210 2206 946"
+"classname" "misc_model"
+}
+{
+"light" "300"
+"classname" "light"
+"origin" "1210 2190 949"
+}
+{
+"origin" "898 2187 950"
+"classname" "light"
+"light" "300"
+}
+{
+"classname" "misc_model"
+"origin" "898 2205 947"
+"model" "models/objects/finca/lamps/wall_light2.md3"
+"angle" "270"
+}
+{
+"angle" "90"
+"model" "models/objects/finca/lamps/wall_light2.md3"
+"origin" "890 2226 947"
+"classname" "misc_model"
+}
+{
+"light" "300"
+"classname" "light"
+"origin" "888 2242 948"
+}
+{
+"origin" "1200 2242 948"
+"classname" "light"
+"light" "300"
+}
+{
+"classname" "misc_model"
+"origin" "1202 2226 947"
+"model" "models/objects/finca/lamps/wall_light2.md3"
+"angle" "90"
+}
+{
+"origin" "-608 -2388 443"
+"classname" "gametype_player"
+"spawnflags" "2"
+}
+{
+"origin" "-584 -2500 443"
+"classname" "gametype_player"
+"spawnflags" "2"
+}
+{
+"classname" "gametype_player"
+"origin" "-1016 -2948 443"
+"spawnflags" "2"
+}
+{
+"origin" "-1080 -2412 547"
+"classname" "gametype_player"
+"spawnflags" "2"
+}
+{
+"classname" "gametype_player"
+"origin" "-1136 -2788 571"
+"spawnflags" "2"
+}
+{
+"classname" "gametype_player"
+"origin" "-1257 -2787 571"
+"spawnflags" "2"
+}
+{
+"origin" "-841 -2939 443"
+"classname" "gametype_player"
+"spawnflags" "2"
+}
+{
+"origin" "-720 -2940 443"
+"classname" "gametype_player"
+"spawnflags" "2"
+}
+{
+"classname" "gametype_player"
+"origin" "-624 -2844 443"
+"spawnflags" "2"
+}
+{
+"classname" "gametype_player"
+"origin" "-745 -2843 443"
+"spawnflags" "2"
+}
+{
+"origin" "-921 -2787 443"
+"classname" "gametype_player"
+"spawnflags" "2"
+}
+{
+"origin" "-800 -2788 443"
+"classname" "gametype_player"
+"spawnflags" "2"
+}
+{
+"classname" "gametype_player"
+"origin" "-696 -2500 443"
+"spawnflags" "2"
+}
+{
+"classname" "gametype_player"
+"origin" "-785 -2515 443"
+"spawnflags" "2"
+}
+{
+"origin" "-873 -2443 435"
+"classname" "gametype_player"
+"spawnflags" "2"
+}
+{
+"origin" "-752 -2444 435"
+"classname" "gametype_player"
+"spawnflags" "2"
+}
+{
+"classname" "gametype_player"
+"origin" "-720 -2388 443"
+"spawnflags" "2"
+}
+{
+"classname" "gametype_player"
+"origin" "-809 -2403 443"
+"spawnflags" "2"
+}
+{
+"origin" "232 1751 730"
+"classname" "gametype_player"
+"spawnflags" "1"
+}
+{
+"origin" "331 1757 726"
+"classname" "gametype_player"
+"spawnflags" "1"
+}
+{
+"classname" "gametype_player"
+"origin" "519 1812 726"
+"spawnflags" "1"
+}
+{
+"classname" "gametype_player"
+"origin" "420 1806 726"
+"spawnflags" "1"
+}
+{
+"classname" "gametype_player"
+"origin" "1019 2080 883"
+"angle" "270"
+"spawnflags" "1"
+}
+{
+"origin" "1151 1923 883"
+"classname" "gametype_player"
+"spawnflags" "1"
+}
+{
+"classname" "gametype_player"
+"origin" "1249 2080 883"
+"spawnflags" "1"
+}
+{
+"origin" "344 2402 727"
+"classname" "gametype_player"
+"spawnflags" "1"
+}
+{
+"classname" "gametype_player"
+"origin" "247 1842 725"
+"spawnflags" "1"
+}
+{
+"origin" "115 2000 726"
+"classname" "gametype_player"
+"spawnflags" "1"
+}
+{
+"classname" "gametype_player"
+"origin" "227 2061 726"
+"spawnflags" "1"
+}
+{
+"origin" "358 2306 727"
+"classname" "gametype_player"
+"spawnflags" "1"
+}
+{
+"classname" "gametype_player"
+"origin" "456 2463 727"
+"spawnflags" "1"
+}
+{
+"origin" "688 1910 726"
+"classname" "gametype_player"
+"spawnflags" "1"
+}
+{
+"classname" "gametype_player"
+"origin" "590 1753 726"
+"spawnflags" "1"
+}
+{
+"origin" "457 2312 727"
+"classname" "gametype_player"
+"spawnflags" "1"
+}
+{
+"classname" "gametype_player"
+"origin" "457 1911 726"
+"spawnflags" "1"
+}
+{
+"model" "*6"
+"gametype" "ctf"
+"targetname" "blue_capture_point"
+"classname" "gametype_trigger"
+"target" "blueflare"
+}
+{
+"model" "*7"
+"classname" "gametype_trigger"
+"targetname" "briefcase_destination"
+"gametype" "inf"
+}
+{
+"classname" "gametype_item"
+"targetname" "blue_flag"
+"origin" "-743 -2646 412"
+"angle" "90"
+}
+{
+"model" "*8"
+"classname" "gametype_trigger"
+"targetname" "red_capture_point"
+"gametype" "ctf"
+"target" "redflare"
+}
+{
+"classname" "gametype_item"
+"origin" "401 2209 696"
+"targetname" "red_flag"
+"angle" "270"
+}
+{
+"origin" "942 2229 899"
+"targetname" "demolish1"
+"gametype" "dem"
+"classname" "target_effect"
+"effect" "explosions/big_explosion.efx"
+"delay" "1100"
+}
+{
+"origin" "-277 -674 576"
+"classname" "light"
+"light" "150"
+}
+{
+"light" "300"
+"classname" "light"
+"origin" "-712 -736 742"
+}
+{
+"light" "150"
+"classname" "light"
+"origin" "-1545 1026 615"
+}
+{
+"light" "150"
+"classname" "light"
+"origin" "892 228 638"
+}
+{
+"light" "150"
+"classname" "light"
+"origin" "-1002 1920 600"
+}
+{
+"origin" "1282 382 588"
+"classname" "light"
+"light" "150"
+}
+{
+"light" "150"
+"classname" "light"
+"origin" "-702 1920 600"
+}
+{
+"origin" "-282 2004 600"
+"classname" "light"
+"light" "150"
+}
+{
+"light" "150"
+"classname" "light"
+"origin" "-350 2108 600"
+}
+{
+"origin" "-698 2108 600"
+"classname" "light"
+"light" "150"
+}
+{
+"light" "150"
+"classname" "light"
+"origin" "-1006 2108 600"
+}
+{
+"origin" "-1242 2020 600"
+"classname" "light"
+"light" "150"
+}
+{
+"origin" "-1134 1876 664"
+"classname" "light"
+"light" "150"
+}
+{
+"light" "150"
+"classname" "light"
+"origin" "-1242 1876 664"
+}
+{
+"light" "150"
+"classname" "light"
+"origin" "-1290 1404 628"
+}
+{
+"origin" "-1194 1496 632"
+"classname" "light"
+"light" "150"
+}
+{
+"light" "150"
+"classname" "light"
+"origin" "-1598 1372 632"
+}
+{
+"origin" "-1430 1268 632"
+"classname" "light"
+"light" "150"
+}
+{
+"light" "150"
+"classname" "light"
+"origin" "-1210 1344 748"
+}
+{
+"origin" "-1218 1240 756"
+"classname" "light"
+"light" "150"
+}
+{
+"light" "300"
+"classname" "light"
+"origin" "-752 -356 794"
+}
+{
+"light" "70"
+"classname" "light"
+"origin" "-824 -88 800"
+}
+{
+"origin" "-824 -184 800"
+"classname" "light"
+"light" "150"
+}
+{
+"origin" "-610 -354 792"
+"classname" "light"
+"light" "300"
+}
+{
+"angle" "360"
+"model" "models/objects/finca/lamps/wall_light2.md3"
+"origin" "-978 302 795"
+"classname" "misc_model"
+}
+{
+"classname" "misc_model"
+"origin" "-843 232 795"
+"model" "models/objects/finca/lamps/wall_light2.md3"
+"angle" "360"
+}
+{
+"angle" "360"
+"model" "models/objects/finca/lamps/wall_light2.md3"
+"origin" "-843 128 795"
+"classname" "misc_model"
+}
+{
+"angle" "180"
+"model" "models/objects/finca/lamps/wall_light2.md3"
+"origin" "-595 392 795"
+"classname" "misc_model"
+}
+{
+"classname" "misc_model"
+"origin" "-594 297 795"
+"model" "models/objects/finca/lamps/wall_light2.md3"
+"angle" "180"
+}
+{
+"angle" "360"
+"model" "models/objects/finca/lamps/wall_light2.md3"
+"origin" "-583 298 795"
+"classname" "misc_model"
+}
+{
+"classname" "misc_model"
+"origin" "-584 392 794"
+"model" "models/objects/finca/lamps/wall_light2.md3"
+"angle" "360"
+}
+{
+"angle" "90"
+"model" "models/objects/finca/lamps/wall_light2.md3"
+"origin" "-412 152 797"
+"classname" "misc_model"
+}
+{
+"angle" "90"
+"model" "models/objects/finca/lamps/wall_light2.md3"
+"origin" "-295 152 798"
+"classname" "misc_model"
+}
+{
+"angle" "90"
+"model" "models/objects/finca/lamps/wall_light2.md3"
+"origin" "-610 -376 795"
+"classname" "misc_model"
+}
+{
+"angle" "90"
+"model" "models/objects/finca/lamps/wall_light2.md3"
+"origin" "-751 -377 795"
+"classname" "misc_model"
+}
+{
+"classname" "misc_model"
+"origin" "-306 -62 797"
+"model" "models/objects/finca/lamps/wall_light2.md3"
+"angle" "180"
+}
+{
+"angle" "180"
+"model" "models/objects/finca/lamps/wall_light2.md3"
+"origin" "-487 -119 797"
+"classname" "misc_model"
+}
+{
+"classname" "misc_model"
+"origin" "-488 -19 797"
+"model" "models/objects/finca/lamps/wall_light2.md3"
+"angle" "180"
+}
+{
+"classname" "info_player_deathmatch"
+"origin" "-1232 -2880 552"
+}
+{
+"light" "100"
+"classname" "light"
+"origin" "-1312 -776 616"
+}
+{
+"light" "150"
+"classname" "light"
+"origin" "-824 -280 800"
+}
+{
+"origin" "-504 -118 800"
+"classname" "light"
+"light" "300"
+}
+{
+"light" "300"
+"classname" "light"
+"origin" "-504 -20 800"
+}
+{
+"light" "300"
+"classname" "light"
+"origin" "-324 -62 798"
+}
+{
+"origin" "-564 298 798"
+"classname" "light"
+"light" "300"
+}
+{
+"light" "300"
+"classname" "light"
+"origin" "-566 392 797"
+}
+{
+"origin" "-610 392 798"
+"classname" "light"
+"light" "300"
+}
+{
+"light" "300"
+"classname" "light"
+"origin" "-611 298 798"
+}
+{
+"origin" "-826 232 798"
+"classname" "light"
+"light" "300"
+}
+{
+"light" "300"
+"classname" "light"
+"origin" "-828 128 799"
+}
+{
+"light" "300"
+"classname" "light"
+"origin" "-960 302 796"
+}
+{
+"light" "300"
+"classname" "light"
+"origin" "-412 171 798"
+}
+{
+"origin" "-295 170 800"
+"classname" "light"
+"light" "300"
+}
+{
+"angle" "90"
+"gametype" "inf"
+"targetname" "briefcase"
+"origin" "942 2245 899"
+"classname" "gametype_item"
+}
+{
+"classname" "target_effect"
+"origin" "398 2213 721"
+"targetname" "redflare"
+"effect" "flare_red.efx"
+"delay" "300"
+}
+{
+"delay" "300"
+"effect" "flare_blue.efx"
+"targetname" "blueflare"
+"origin" "-743 -2646 438"
+"classname" "target_effect"
+}
+{
+"classname" "target_location"
+"origin" "-790 -2709 548"
+"message" "Terrorist Spawn Point"
+}
+{
+"classname" "target_location"
+"origin" "-1657 -266 548"
+"message" "West Stairs"
+}
+{
+"classname" "target_location"
+"origin" "-413 308 697"
+"message" "Middle House"
+}
+{
+"message" "Middle House"
+"origin" "-735 262 697"
+"classname" "target_location"
+}
+{
+"message" "Middle House"
+"origin" "-356 -71 697"
+"classname" "target_location"
+}
+{
+"classname" "target_location"
+"origin" "-675 -155 697"
+"message" "Middle House"
+}
+{
+"classname" "target_location"
+"origin" "-584 -713 697"
+"message" "Middle House"
+}
+{
+"classname" "target_location"
+"origin" "725 -1010 525"
+"message" "Market Place"
+}
+{
+"classname" "target_location"
+"origin" "-1582 1308 575"
+"message" "Wine Cellar"
+}
+{
+"origin" "-1163 1765 542"
+"classname" "target_location"
+"message" "Wine Cellar"
+}
+{
+"classname" "target_location"
+"origin" "-670 1999 542"
+"message" "Wine Cellar"
+}
+{
+"origin" "-350 1720 542"
+"classname" "target_location"
+"message" "Wine Cellar"
+}
+{
+"classname" "target_location"
+"origin" "-64 1926 554"
+"message" "North Stairs"
+}
+{
+"classname" "target_location"
+"origin" "142 2434 649"
+"message" "North Stairs"
+}
+{
+"classname" "target_location"
+"origin" "943 2360 833"
+"message" "North East House"
+}
+{
+"classname" "target_location"
+"origin" "-927 901 693"
+"message" "Middle House Bridge"
+}
+{
+"classname" "target_location"
+"origin" "958 417 693"
+"message" "East Tunnel"
+}
+{
+"classname" "target_location"
+"origin" "1010 827 713"
+"message" "East Tunnel"
+}
+{
+"classname" "target_location"
+"origin" "958 1309 693"
+"message" "East Tunnel"
+}
+{
+"origin" "783 2212 841"
+"classname" "target_location"
+"message" "North East House"
+}
+{
+"classname" "target_location"
+"origin" "1173 2184 842"
+"message" "North East House"
+}
+{
+"origin" "774 2312 698"
+"classname" "target_location"
+"message" "North East House"
+}
+{
+"classname" "target_location"
+"origin" "919 2152 692"
+"message" "North East House"
+}
+{
+"classname" "target_location"
+"origin" "931 1846 721"
+}
+{
+"classname" "target_location"
+"origin" "387 2063 721"
+"message" "Upper North Place"
+}
+{
+"classname" "target_location"
+"origin" "-89 798 522"
+"message" "Middle North Road"
+}
+{
+"classname" "target_location"
+"origin" "-574 1779 721"
+"message" "Upper North Place"
+}
+{
+"classname" "target_location"
+"origin" "-932 1750 721"
+"message" "Upper North Place"
+}
+{
+"message" "Upper North Place"
+"origin" "487 1898 721"
+"classname" "target_location"
+}
+{
+"message" "Middle North Road"
+"origin" "-68 1271 522"
+"classname" "target_location"
+}
+{
+"message" "East Tunnel Entrance"
+"origin" "386 361 522"
+"classname" "target_location"
+}
+{
+"classname" "target_location"
+"origin" "562 -36 522"
+"message" "East Tunnel Entrance"
+}
+{
+"message" "East Tunnel Entrance"
+"origin" "933 -129 522"
+"classname" "target_location"
+}
+{
+"message" "Under Middle House Bridge"
+"origin" "-685 624 512"
+"classname" "target_location"
+}
+{
+"classname" "target_location"
+"origin" "-961 620 512"
+"message" "Under Middle House Bridge"
+}
+{
+"message" "Middle North Road"
+"origin" "-1237 614 512"
+"classname" "target_location"
+}
+{
+"classname" "target_location"
+"origin" "-1236 613 512"
+"message" "Under Middle House Bridge"
+}
+{
+"message" "West Stairs"
+"origin" "-1664 28 548"
+"classname" "target_location"
+}
+{
+"classname" "target_location"
+"origin" "-1681 308 622"
+"message" "West Stairs"
+}
+{
+"message" "West Stairs"
+"origin" "-1687 617 711"
+"classname" "target_location"
+}
+{
+"classname" "target_location"
+"origin" "-1678 922 711"
+"message" "West Stairs"
+}
+{
+"message" "West Stairs"
+"origin" "-1489 961 711"
+"classname" "target_location"
+}
+{
+"message" "North West Road"
+"origin" "-1425 -386 548"
+"classname" "target_location"
+}
+{
+"classname" "target_location"
+"origin" "-1425 44 548"
+"message" "West Stairs"
+}
+{
+"message" "North West Road"
+"origin" "-1424 43 548"
+"classname" "target_location"
+}
+{
+"classname" "target_location"
+"origin" "-1414 355 548"
+"message" "North West Road"
+}
+{
+"message" "North West Road"
+"origin" "-1413 618 548"
+"classname" "target_location"
+}
+{
+"classname" "target_location"
+"origin" "-1100 -520 547"
+"message" "South West Road"
+}
+{
+"message" "South West Road"
+"origin" "-1090 -879 547"
+"classname" "target_location"
+}
+{
+"classname" "target_location"
+"origin" "-1088 -1257 547"
+"message" "South West Road"
+}
+{
+"message" "South West Road"
+"origin" "-1029 -1613 547"
+"classname" "target_location"
+}
+{
+"classname" "target_location"
+"origin" "-919 -1965 547"
+"message" "South West Road"
+}
+{
+"message" "South East Road"
+"origin" "-554 -2000 492"
+"classname" "target_location"
+}
+{
+"classname" "target_location"
+"origin" "-456 -1665 492"
+"message" "South East Road"
+}
+{
+"message" "South East Road"
+"origin" "-374 -1290 492"
+"classname" "target_location"
+}
+{
+"classname" "target_location"
+"origin" "-373 -951 492"
+"message" "South East Road"
+}
+{
+"classname" "pickup_weapon_AK_74"
+"origin" "-1189 -2547 506"
+}
+{
+"classname" "pickup_ammo_556"
+"origin" "-582 -2685 403"
+}
+{
+"classname" "pickup_weapon_M4"
+"origin" "-370 -652 511"
+}
+{
+"classname" "pickup_weapon_M590"
+"origin" "-795 -312 697"
+}
+{
+"classname" "pickup_weapon_USAS_12"
+"origin" "-800 325 697"
+}
+{
+"classname" "pickup_ammo_12gauge"
+"origin" "-653 183 742"
+}
+{
+"classname" "pickup_ammo_12gauge"
+"origin" "-564 -223 740"
+}
+{
+"classname" "pickup_weapon_MSG90A1"
+"origin" "784 2349 860"
+}
+{
+"classname" "pickup_weapon_microuzi"
+"origin" "-1360 1692 550"
+}
+{
+"classname" "pickup_ammo_9mm"
+"origin" "-1624 1365 896"
+}
+{
+"classname" "pickup_weapon_M60"
+"origin" "-343 1957 508"
+}
+{
+"classname" "pickup_ammo_762"
+"origin" "588 2362 692"
+}
+{
+"classname" "pickup_ammo_40mm"
+"origin" "1192 1865 690"
+}
+{
+"classname" "pickup_ammo_556"
+"origin" "1208 1791 842"
+}
+{
+"classname" "pickup_weapon_M4"
+"origin" "-931 672 690"
+}
+{
+"classname" "pickup_ammo_556"
+"origin" "-82 965 499"
+}
+{
+"classname" "pickup_weapon_M3A1"
+"origin" "678 -1071 510"
+}
+{
+"classname" "pickup_ammo_45"
+"origin" "1306 -651 511"
+}
+{
+"classname" "pickup_ammo_45"
+"origin" "241 360 501"
+}
+{
+"classname" "pickup_ammo_762"
+"origin" "-1423 -173 501"
+}
+{
+"classname" "pickup_armor_medium"
+"origin" "561 -1426 511"
+}
+{
+"classname" "pickup_armor_big"
+"origin" "863 2278 842"
+}
+{
+"classname" "pickup_armor_medium"
+"origin" "-1174 974 698"
+}
+{
+"classname" "pickup_health_small"
+"origin" "-1303 1382 577"
+}
+{
+"classname" "pickup_health_big"
+"origin" "-536 2053 573"
+}
+{
+"classname" "pickup_armor_medium"
+"origin" "-1212 -2657 512"
+}
+{
+"classname" "pickup_ammo_762"
+"origin" "-345 -1797 509"
+}
+{
+"classname" "pickup_weapon_US_SOCOM"
+"origin" "-306 -1672 509"
+}
+{
+"classname" "pickup_weapon_US_SOCOM"
+"origin" "-1709 715 694"
+}
+{
+"classname" "pickup_ammo_45"
+"origin" "-934 1584 689"
+}
+{
+"classname" "pickup_weapon_AK_74"
+"origin" "-80 1792 689"
+}
+{
+"spawnflags" "1"
+"noise" "sound/italy/Opera.wav"
+"origin" "1125 2273 874"
+"classname" "target_speaker"
+}
+{
+"spawnflags" "1"
+"classname" "target_speaker"
+"origin" "-1520 -640 1025"
+"noise" "sound/italy/guit1.wav"
+}
+{
+"gametype" "ctf"
+"origin" "572 -1069 552"
+"classname" "pickup_backpack"
+}
+{
+"gametype" "ctf"
+"origin" "-644 235 744"
+"classname" "pickup_backpack"
+}
+{
+"gametype" "ctf"
+"origin" "-1450 1686 552"
+"classname" "pickup_backpack"
+}
+{
+"gametype" "ctf"
+"origin" "1275 382 467"
+"classname" "pickup_backpack"
+}
+{
+"gametype" "ctf"
+"origin" "-1383 -1127 565"
+"classname" "pickup_backpack"
+}
+{
+"gametype" "ctf"
+"origin" "-560 -269 740"
+"classname" "pickup_backpack"
+}
+{
+"origin" "-1136 -1832 552"
+"classname" "info_player_deathmatch"
+}
+{
+"classname" "info_player_deathmatch"
+"origin" "-1664 -304 536"
+}
+{
+"origin" "-912 632 536"
+"classname" "info_player_deathmatch"
+}
+{
+"classname" "info_player_deathmatch"
+"origin" "96 344 536"
+}
+{
+"origin" "1200 -232 536"
+"classname" "info_player_deathmatch"
+}
+{
+"classname" "info_player_deathmatch"
+"origin" "712 -728 536"
+}
+{
+"origin" "704 -1240 536"
+"classname" "info_player_deathmatch"
+}
+{
+"classname" "info_player_deathmatch"
+"origin" "984 712 624"
+"angle" "90"
+}
+{
+"angle" "180"
+"origin" "408 2000 720"
+"classname" "info_player_deathmatch"
+}
+{
+"classname" "info_player_deathmatch"
+"origin" "-656 1792 728"
+"angle" "180"
+}
+{
+"angle" "270"
+"origin" "-936 1192 728"
+"classname" "info_player_deathmatch"
+}
+{
+"classname" "info_player_deathmatch"
+"origin" "-224 2408 744"
+"angle" "360"
+}
+{
+"angle" "180"
+"origin" "-880 2024 536"
+"classname" "info_player_deathmatch"
+}
+{
+"classname" "info_player_deathmatch"
+"origin" "-1368 1544 536"
+"angle" "180"
+}
+{
+"origin" "408 -352 536"
+"classname" "info_player_deathmatch"
+"angle" "270"
+}
+{
+"classname" "misc_bsp"
+"bspmodel" "instances/Generic/fence01"
+"origin" "-22 1514 450"
+"angle" "0"
+"target" "nowhole"
+}
+{
+"classname" "misc_bsp"
+"bspmodel" "instances/Generic/fence01"
+"origin" "-220 1540 420"
+"angle" "-90"
+"target" "nowhole"
+}
+{
+"classname" "misc_bsp"
+"bspmodel" "instances/Generic/fence01"
+"origin" "-165 1514 450"
+"angle" "-180"
+"target" "nowhole"
+}
+{
+"classname" "misc_bsp"
+"bspmodel" "instances/Generic/fence01"
+"origin" "-165 1514 700"
+"angle" "-180"
+"target" "nowhole"
+}
+{
+"classname" "misc_bsp"
+"bspmodel" "instances/Generic/fence01"
+"origin" "-22 1514 700"
+"angle" "0"
+"target" "nowhole"
+}
+
+
+
+{
+"classname" "misc_bsp"
+"bspmodel" "instances/Generic/fence01"
+"origin" "-881 1553 660"
+"angle" "0"
+"target" "nomiddle"
+}
+{
+"classname" "misc_bsp"
+"bspmodel" "instances/Colombia/npc_jump1"
+"origin" "-840 200 1050"
+"angle" "270"
+"target" "nowhole"
+}
+{
+"classname" "misc_bsp"
+"bspmodel" "instances/Colombia/npc_jump1"
+"origin" "-1000 200 1050"
+"angle" "270"
+"target" "nowhole"
+}
+{
+"classname" "misc_bsp"
+"bspmodel" "instances/Generic/fence01"
+"origin" "-1024 1553 660"
+"angle" "-180"
+"target" "nomiddle"
+}
+{
+"classname" "misc_bsp"
+"bspmodel" "instances/Generic/fence01"
+"origin" "-881 1553 910"
+"angle" "0"
+"target" "nomiddle"
+}
+{
+"classname" "misc_bsp"
+"bspmodel" "instances/Generic/fence01"
+"origin" "-1024 1553 910"
+"angle" "-180"
+"target" "nomiddle"
+}
+
+
+
+{
+"classname" "misc_bsp"
+"bspmodel" "instances/Generic/fence01"
+"origin" "-50 500 420"
+"angle" "0"
+"target" "nowhole"
+}
+{
+"classname" "misc_bsp"
+"bspmodel" "instances/Generic/fence01"
+"origin" "-240 390 420"
+"angle" "60"
+"target" "nowhole"
+}
+{
+"classname" "misc_bsp"
+"bspmodel" "instances/Generic/fence01"
+"origin" "-1289 -490 470"
+"angle" "90"
+"target" "nowhole"
+}
+{
+"classname" "misc_bsp"
+"bspmodel" "instances/Generic/fence01"
+"origin" "-1289 -490 720"
+"angle" "90"
+"target" "nowhole"
+}
+{
+"classname" "misc_bsp"
+"bspmodel" "instances/Generic/fence01"
+"origin" "-22 1514 450"
+"angle" "0"
+"target" "nomiddle"
+}
+{
+"classname" "misc_bsp"
+"bspmodel" "instances/Generic/fence01"
+"origin" "-220 1540 420"
+"angle" "-90"
+"target" "nomiddle"
+}
+{
+"classname" "misc_bsp"
+"bspmodel" "instances/Generic/fence01"
+"origin" "-165 1514 450"
+"angle" "-180"
+"target" "nomiddle"
+}
+{
+"classname" "misc_bsp"
+"bspmodel" "instances/Generic/fence01"
+"origin" "-165 1514 700"
+"angle" "-180"
+"target" "nomiddle"
+}
+{
+"classname" "misc_bsp"
+"bspmodel" "instances/Generic/fence01"
+"origin" "-22 1514 700"
+"angle" "0"
+"target" "nomiddle"
+}
+{
+"classname" "misc_bsp"
+"bspmodel" "instances/Generic/fence01"
+"origin" "-790 700 700"
+"angle" "90"
+"target" "nowhole"
+}
+{
+"classname" "misc_bsp"
+"bspmodel" "instances/Generic/fence01"
+"origin" "-790 587 700"
+"angle" "270"
+"target" "nowhole"
+}
+{
+"classname" "misc_bsp"
+"bspmodel" "instances/Generic/fence01"
+"origin" "-1070 587 700"
+"angle" "270"
+"target" "nowhole"
+}
+{
+"classname" "misc_bsp"
+"bspmodel" "instances/Generic/fence01"
+"origin" "-1070 700 700"
+"angle" "90"
+"target" "nowhole"
+}
+{
+"classname" "misc_bsp"
+"bspmodel" "instances/Generic/fence01"
+"origin" "-790 700 950"
+"angle" "90"
+"target" "nowhole"
+}
+{
+"classname" "misc_bsp"
+"bspmodel" "instances/Generic/fence01"
+"origin" "-790 587 950"
+"angle" "270"
+"target" "nowhole"
+}
+{
+"classname" "misc_bsp"
+"bspmodel" "instances/Generic/fence01"
+"origin" "-1070 587 950"
+"angle" "270"
+"target" "nowhole"
+}
+{
+"classname" "misc_bsp"
+"bspmodel" "instances/Generic/fence01"
+"origin" "-1070 700 950"
+"angle" "90"
+"target" "nowhole"
+}
+{
+"classname" "misc_bsp"
+"bspmodel" "instances/Generic/fence01"
+"origin" "-790 335 890"
+"angle" "90"
+"target" "nowhole"
+}
+{
+"classname" "misc_bsp"
+"bspmodel" "instances/Generic/fence01"
+"origin" "-1070 335 890"
+"angle" "90"
+"target" "nowhole"
+}
+{
+"classname" "misc_bsp"
+"bspmodel" "instances/Generic/fence01"
+"origin" "-50 500 420"
+"angle" "0"
+"target" "nomiddle"
+}
+{
+"classname" "misc_bsp"
+"bspmodel" "instances/Generic/fence01"
+"origin" "-240 390 420"
+"angle" "60"
+"target" "nomiddle"
+}
+{
+"classname" "misc_bsp"
+"bspmodel" "instances/Generic/fence01"
+"origin" "-1289 -490 470"
+"angle" "90"
+"target" "nomiddle"
+}
+{
+"classname" "misc_bsp"
+"bspmodel" "instances/Generic/fence01"
+"origin" "-482 -72 650"
+"angle" "90"
+"target" "nomiddle"
+}
+{
+"classname" "misc_bsp"
+"bspmodel" "instances/Colombia/npc_jump1"
+"origin" "-1260 -1400 690"
+"angle" "-90"
+"target" "noroof"
+}
+{
+"classname" "misc_bsp"
+"bspmodel" "instances/Colombia/npc_jump1"
+"origin" "-1260 -1400 736"
+"angle" "-90"
+"target" "noroof"
+}
+{
+"classname" "misc_bsp"
+"bspmodel" "instances/Colombia/npc_jump1"
+"origin" "-1200 -1000 790"
+"angle" "-180"
+"target" "noroof"
+}
+{
+"classname" "misc_bsp"
+"bspmodel" "instances/Colombia/npc_jump1"
+"origin" "-1200 -1000 835"
+"angle" "-180"
+"target" "noroof"
+}
+{
+"classname" "misc_bsp"
+"bspmodel" "instances/Generic/fence01"
+"origin" "1135 -5 765"
+"angle" "0"
+"target" "noroof"
+}
+{
+"classname" "misc_bsp"
+"bspmodel" "instances/Generic/fence01"
+"origin" "880 -5 765"
+"angle" "0"
+"target" "noroof"
+}
+{
+"classname" "misc_bsp"
+"bspmodel" "instances/Colombia/npc_jump1"
+"origin" "1150 -190 850"
+"angle" "90"
+"target" "noroof"
+}
+{
+"classname" "misc_bsp"
+"bspmodel" "instances/Colombia/npc_jump1"
+"origin" "1150 -190 925"
+"angle" "90"
+"target" "noroof"
+}
+{
+"classname" "misc_bsp"
+"bspmodel" "instances/Generic/fence01"
+"origin" "220 -1350 775"
+"angle" "90"
+"target" "noroof"
+}
+{
+"classname" "misc_bsp"
+"bspmodel" "instances/Generic/fence01"
+"origin" "-360 2250 850"
+"angle" "180"
+"target" "noroof"
+}
+{
+"classname" "misc_bsp"
+"bspmodel" "instances/Generic/fence01"
+"origin" "-1040 870 850"
+"angle" "90"
+"target" "noroof"
+}
+{
+"classname" "misc_bsp"
+"bspmodel" "instances/Generic/fence01"
+"origin" "-1040 950 850"
+"angle" "90"
+"target" "noroof"
+}
+{
+"classname" "misc_bsp"
+"bspmodel" "instances/Generic/fence01"
+"origin" "-1040 870 1105"
+"angle" "90"
+"target" "noroof"
+}
+{
+"classname" "misc_bsp"
+"bspmodel" "instances/Generic/fence01"
+"origin" "-1040 950 1105"
+"angle" "90"
+"target" "noroof"
+}
+{
+"classname" "misc_bsp"
+"bspmodel" "instances/Generic/fence01"
+"origin" "-685 745 1020"
+"angle" "0"
+"target" "noroof"
+}
+{
+"classname" "misc_bsp"
+"bspmodel" "instances/Generic/fence01"
+"origin" "-430 745 1020"
+"angle" "0"
+"target" "noroof"
+}
+{
+"classname" "misc_bsp"
+"bspmodel" "instances/Generic/fence01"
+"origin" "-815 870 1020"
+"angle" "270"
+"target" "noroof"
+}
+{
+"classname" "misc_bsp"
+"bspmodel" "instances/Generic/fence01"
+"origin" "-665 345 1100"
+"angle" "270"
+"target" "noroof"
+}
+
+{
+"classname" "misc_bsp"
+"bspmodel" "instances/Generic/fence01"
+"origin" "-795 188 1100"
+"angle" "180"
+"target" "noroof"
+}
+{
+"classname" "misc_bsp"
+"bspmodel" "instances/Generic/fence01"
+"origin" "-1050 188 1100"
+"angle" "180"
+"target" "noroof"
+}
+{
+"classname" "misc_bsp"
+"bspmodel" "instances/Generic/fence01"
+"origin" "-1185 188 1100"
+"angle" "180"
+"target" "noroof"
+}
+{
+"classname" "misc_bsp"
+"bspmodel" "instances/Generic/fence01"
+"origin" "-1010 -510 770"
+"angle" "270"
+"target" "noroof"
+}
+{
+"classname" "misc_bsp"
+"bspmodel" "instances/Generic/fence01"
+"origin" "-1010 -765 770"
+"angle" "270"
+"target" "noroof"
+}
+{
+"classname" "misc_bsp"
+"bspmodel" "instances/Generic/fence01"
+"origin" "-1010 -1020 770"
+"angle" "270"
+"target" "noroof"
+}
+{
+"classname" "misc_bsp"
+"bspmodel" "instances/Generic/fence01"
+"origin" "-1010 -1275 770"
+"angle" "270"
+"target" "noroof"
+}
+{
+"classname" "misc_bsp"
+"bspmodel" "instances/Generic/fence01"
+"origin" "-965 -1530 765"
+"angle" "287"
+"target" "noroof"
+}
+{
+"classname" "misc_bsp"
+"bspmodel" "instances/Generic/fence01"
+"origin" "-904 -1726 765"
+"angle" "287"
+"target" "noroof"
+}
+{
+"classname" "misc_bsp"
+"bspmodel" "instances/Generic/fence01"
+"origin" "-844 -1921 765"
+"angle" "287"
+"target" "noroof"
+}
+{
+"classname" "misc_bsp"
+"bspmodel" "instances/Colombia/npc_jump1"
+"origin" "-1250 -1310 740"
+"angle" "180"
+"target" "noroof"
+}
+{
+"classname" "misc_bsp"
+"bspmodel" "instances/Colombia/npc_jump1"
+"origin" "-1250 -1185 740"
+"angle" "180"
+"target" "noroof"
+}
+
+
+{
+"classname" "misc_bsp"
+"bspmodel" "instances/Generic/fence01"
+"origin" "-340 -807 765"
+"angle" "0"
+"target" "noroof"
+}
+{
+"classname" "misc_bsp"
+"bspmodel" "instances/Generic/fence01"
+"origin" "-467 -935 765"
+"angle" "90"
+"target" "noroof"
+}
+{
+"classname" "misc_bsp"
+"bspmodel" "instances/Generic/fence01"
+"origin" "-218 -890 860"
+"angle" "270"
+"target" "noroof"
+}
+{
+"classname" "misc_bsp"
+"bspmodel" "instances/Generic/fence01"
+"origin" "-1228 -1270 825"
+"angle" "90"
+"target" "noroof"
+}
+{
+"classname" "misc_bsp"
+"bspmodel" "instances/Generic/fence01"
+"origin" "-690 2050 940"
+"angle" "90"
+"target" "noroof"
+}
+{
+"classname" "misc_bsp"
+"bspmodel" "instances/Generic/fence01"
+"origin" "-1330 -595 920"
+"angle" "180"
+"target" "noroof"
+}
+{
+"classname" "misc_bsp"
+"bspmodel" "instances/Generic/fence01"
+"origin" "950 1710 990"
+"angle" "180"
+"target" "noroof"
+}
+
+{
+"classname" "noroof" 
+"origin" "0 0 1500"
+"auto" "yes"           
+"wait" "5"                   
+"team" "all"             
+"min_players" "60"      
+}
+{
+"classname" "nomiddle"
+"auto" "yes"
+"wait" "5"
+"team" "all"
+"min_players" "6"
+}
+{
+"classname" "nowhole"
+"auto" "yes"
+"wait" "5"
+"team" "all"
+"min_players" "8"
+}

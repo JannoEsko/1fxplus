@@ -1,0 +1,11 @@
+
+gametype
+{
+	displayname		"Gungame"
+	respawn			"normal"
+	pickups			"no"
+	teams			"no"	
+	showkills		"yes"
+	backpack		"25"
+	basegametype	"gg"
+}

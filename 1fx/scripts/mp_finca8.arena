@@ -1,0 +1,5 @@
+{
+	map "mp_finca8"
+	longname "mp_finca8"
+	type "h&s inf elim ctf tdm dm h&z mm gg csinf"
+}

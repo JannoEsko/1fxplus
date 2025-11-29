@@ -1,0 +1,2294 @@
+// Part of 1fx. Mod version 0.82 and higher.
+// RPM + extended MVCHAT file. This file contains extra sounds present
+// in the RPM soundpack, followed by the extended sounds.
+
+// An RPM client is required client-side to use the RPM sounds
+// in this MVCHAT file. No additional soundpacks are required
+// for the extended sounds.
+// The sounds defined in this file are 111 up to 240.
+
+// NOTE: When using this MVCHAT file, be sure to remove the
+// extended.mvchat file from the 1fx/files/mvchats directory.
+// The file is incompatible with this MVCHAT file.
+
+111
+{
+	number		"111"
+	text		"Ahh SHUTUP"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/ahshutup.mp3"
+		}
+	}
+}
+
+112
+{
+	number		"112"
+	text		"I don't remember askin you a goddamn thing"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/askinyou.mp3"
+		}
+	}
+}
+
+113
+{
+	number		"113"
+	text		"I do the ass kicking around here"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/asskicking.mp3"
+		}
+	}
+}
+
+114
+{
+	number		"114"
+	text		"Awwww Crap"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/awwcrap.mp3"
+		}
+	}
+}
+
+115
+{
+	number		"115"
+	text		"if I may be so blunt, who gives a shit"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/beblunt.mp3"
+		}
+	}
+}
+
+116
+{
+	number		"116"
+	text		"Bullshit"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/Bullshit.mp3"
+		}
+	}
+}
+
+117
+{
+	number		"117"
+	text		"hehe, you can't kill me suckka"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/cantkillme.mp3"
+		}
+	}
+}
+
+118
+{
+	number		"118"
+	text		"you COCK SUCKER"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/cocksucker.mp3"
+		}
+	}
+}
+
+119
+{
+	number		"119"
+	text		"DIE, you son of a bitch"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/diesob.mp3"
+		}
+	}
+}
+
+120
+{
+	number		"120"
+	text		"look at the screen you dumbshit, I'm tryin to get your attention"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/dumbshit.mp3"
+		}
+	}
+}
+
+121
+{
+	number		"121"
+	text		"the following people are gay"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/gaypeople.mp3"
+		}
+	}
+}
+
+122
+{
+	number		"122"
+	text		"aww, jesus fuck, now he's gonna cry"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/gonnacry.mp3"
+		}
+	}
+}
+
+123
+{
+	number		"123"
+	text		"he's campin again"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/hes_campin.wav"
+		}
+	}
+}
+
+124
+{
+	number		"124"
+	text		"HOLY SHIT"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/holyshit.mp3"
+		}
+	}
+}
+
+125
+{
+	number		"125"
+	text		"huh"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/huh.mp3"
+		}
+	}
+}
+
+126
+{
+	number		"126"
+	text		"I'll be back"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/beback.mp3"
+		}
+	}
+}
+
+127
+{
+	number		"127"
+	text		"I'm gonna take these bastards out"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/bastards_out.wav"
+		}
+	}
+}
+
+128
+{
+	number		"128"
+	text		"You suck, ya jackass"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/jackass.mp3"
+		}
+	}
+}
+
+129
+{
+	number		"129"
+	text		"why don't you, kiss my ass"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/kma.mp3"
+		}
+	}
+}
+
+130
+{
+	number		"130"
+	text		"ha ha ha ha haa.. SHUTUP"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/lolshutup.mp3"
+		}
+	}
+}
+
+131
+{
+	number		"131"
+	text		"hm hm hmhm hm.. yeah"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/lolyeah.mp3"
+		}
+	}
+}
+
+132
+{
+	number		"132"
+	text		"looser"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/loser.wav"
+		}
+	}
+}
+
+133
+{
+	number		"133"
+	text		"nailed those bastards"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/nailed_bastards.wav"
+		}
+	}
+}
+
+134
+{
+	number		"134"
+	text		"oh my god"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/ohmygod.mp3"
+		}
+	}
+}
+
+135
+{
+	number		"135"
+	text		"ok bitch"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/ok_bitch.wav"
+		}
+	}
+}
+
+136
+{
+	number		"136"
+	text		"oh oh that pisses me off, that pisses me right off"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/pissesmeoff.mp3"
+		}
+	}
+}
+
+137
+{
+	number		"137"
+	text		"relax tootse, don't get your panties in a bunch"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/relaxt.mp3"
+		}
+	}
+}
+
+138
+{
+	number		"138"
+	text		"just when I thought you said the stupidest thing ever, you keep talkin"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/stupidest_thing.mp3"
+		}
+	}
+}
+
+139
+{
+	number		"139"
+	text		"son of a bitch"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/sonofabitch.mp3"
+		}
+	}
+}
+
+140
+{
+	number		"140"
+	text		"I'm on you like stink on shit"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/stinkonshit.mp3"
+		}
+	}
+}
+
+141
+{
+	number		"141"
+	text		"stop whining"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/stopwhining.mp3"
+		}
+	}
+}
+
+142
+{
+	number		"142"
+	text		"I knew it I'm surrounded by assholes"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/surrounded.mp3"
+		}
+	}
+}
+
+143
+{
+	number		"143"
+	text		"you all SUCK"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/uallsuck.mp3"
+		}
+	}
+}
+
+144
+{
+	number		"144"
+	text		"you are a BITCH"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/urabitch.mp3"
+		}
+	}
+}
+
+145
+{
+	number		"145"
+	text		"I'm gonna have ta open up a can a whoopass on ya now"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/whoopass.mp3"
+		}
+	}
+}
+
+146
+{
+	number		"146"
+	text		"yeah baby..haha ha ha ha"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/yeah_baby.wav"
+		}
+	}
+}
+
+147
+{
+	number		"147"
+	text		"you guys suck"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/youguyssuck.mp3"
+		}
+	}
+}
+
+148
+{
+	number		"148"
+	text		"damn.. you suck"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/yousuck.mp3"
+		}
+	}
+}
+
+149
+{
+	number		"149"
+	text		"lol"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/lolbeavis.mp3"
+		}
+	}
+}
+
+150
+{
+	number		"150"
+	text		"this is some bullshit"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/thissome.mp3"
+		}
+	}
+}
+
+151
+{
+	number		"151"
+	text		"can you believe this ass hole"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/believethisasshole.mp3"
+		}
+	}
+}
+
+152
+{
+	number		"152"
+	text		"alright..i'm callin the shots"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/callingshots.mp3"
+		}
+	}
+}
+
+153
+{
+	number		"153"
+	text		"chalk me up another one boys"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/chalkanotherboys.mp3"
+		}
+	}
+}
+
+154
+{
+	number		"154"
+	text		"com'ere you double crossing piece of shit"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/com'heredoublecross.mp3"
+		}
+	}
+}
+
+155
+{
+	number		"155"
+	text		"I'm comin for ya"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/comin'4ya.mp3"
+		}
+	}
+}
+
+156
+{
+	number		"156"
+	text		"you're a dead bitch"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/deadbitch.mp3"
+		}
+	}
+}
+
+157
+{
+	number		"157"
+	text		"for feck's sake"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/feck'sake.mp3"
+		}
+	}
+}
+
+158
+{
+	number		"158"
+	text		"fight like men with HUGE COHONAS"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/fightlikemenhugecohon.mp3"
+		}
+	}
+}
+
+159
+{
+	number		"159"
+	text		"you're goin' down you backstabbing prick"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/goin'downprick.mp3"
+		}
+	}
+}
+
+160
+{
+	number		"160"
+	text		"good shooting my friend"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/goodshootingfriend.mp3"
+		}
+	}
+}
+
+161
+{
+	number		"161"
+	text		"Hey..he's gotta blade"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/gotablade.mp3"
+		}
+	}
+}
+
+162
+{
+	number		"162"
+	text		"Got me another one"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/gotanotherone.mp3"
+		}
+	}
+}
+
+163
+{
+	number		"163"
+	text		"we got ourselves a bleeder"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/gotbleeder.mp3"
+		}
+	}
+}
+
+164
+{
+	number		"164"
+	text		"that's gotta hurt"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/gottahurt.mp3"
+		}
+	}
+}
+
+165
+{
+	number		"165"
+	text		"greased his ass"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/greasedhisass.mp3"
+		}
+	}
+}
+
+166
+{
+	number		"166"
+	text		"com'on hotshot"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/hotshot.mp3"
+		}
+	}
+}
+
+167
+{
+	number		"167"
+	text		"I own you"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/iownyou.mp3"
+		}
+	}
+}
+
+168
+{
+	number		"168"
+	text		"Keep away from me you cheap bastard"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/keepawaybastard.mp3"
+		}
+	}
+}
+
+169
+{
+	number		"169"
+	text		"Let's Do It"
+
+	en
+	{
+		default		"yes"
+
+		female
+		{
+			sound		"sound/lets do it.mp3"
+		}
+	}
+}
+
+170
+{
+	number		"170"
+	text		"Kiss My Ass"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/kissass.mp3"
+		}
+	}
+}
+
+171
+{
+	number		"171"
+	text		"zip or fly yer little bastard"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/littlebastard.mp3"
+		}
+	}
+}
+
+172
+{
+	number		"172"
+	text		"you feel lucky punk"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/luckypunk.mp3"
+		}
+	}
+}
+
+173
+{
+	number		"173"
+	text		"NOW I'M GONNA MAKE YOU PAY"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/makeyoupay.mp3"
+		}
+	}
+}
+
+174
+{
+	number		"174"
+	text		"you're mama put's out on weekends"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/mamaweekends.mp3"
+		}
+	}
+}
+
+175
+{
+	number		"175"
+	text		"we need reinforcements from the cafe"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/needreinforcments.mp3"
+		}
+	}
+}
+
+176
+{
+	number		"176"
+	text		"NEXT"
+
+	en
+	{
+		default		"yes"
+        next        "yes"
+
+		male
+		{
+			sound		"sound/next.mp3"
+		}
+	}
+}
+
+177
+{
+	number		"177"
+	text		"OH!..You Think So"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/youthinkso.mp3"
+		}
+	}
+}
+
+178
+{
+	number		"178"
+	text		"woohiihaaa...this is to easy"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/ooohiihaatoeasy.mp3"
+		}
+	}
+}
+
+179
+{
+	number		"179"
+	text		"He's Mine..that punk's mine"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/punkmine.mp3"
+		}
+	}
+}
+
+180
+{
+	number		"180"
+	text		"I suggest you run away...Fast"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/runfast.mp3"
+		}
+	}
+}
+
+181
+{
+	number		"181"
+	text		"your a little scardy kitten..baby boy"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/scaredy_kitten.mp3"
+		}
+	}
+}
+
+182
+{
+	number		"182"
+	text		"SHIT!..he's gotta gun"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/shitgottagun.mp3"
+		}
+	}
+}
+
+183
+{
+	number		"183"
+	text		"I'm gonna shut that big mouth of your's"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/shutthatbigmouth.mp3"
+		}
+	}
+}
+
+184
+{
+	number		"184"
+	text		"Sniper on the roof"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/sniponroof.mp3"
+		}
+	}
+}
+
+185
+{
+	number		"185"
+	text		"stand still and I'll make it quick"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/standstill.mp3"
+		}
+	}
+}
+
+186
+{
+	number		"186"
+	text		"should'a stayed at home today"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/stayedathome.mp3"
+		}
+	}
+}
+
+187
+{
+	number		"187"
+	text		"you still don't get it do ya"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/stilldon'tgetit.mp3"
+		}
+	}
+}
+
+188
+{
+	number		"188"
+	text		"stop running yer fat slim-ball"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/stoprunningslimball.mp3"
+		}
+	}
+}
+
+189
+{
+	number		"189"
+	text		"take out that cowardly sniper"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/takecowardlysnip.mp3"
+		}
+	}
+}
+
+190
+{
+	number		"190"
+	text		"Thank-you"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/thankyou.mp3"
+		}
+	}
+}
+
+191
+{
+	number		"191"
+	text		"what the hell are you doin'"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/thehellar'youdoing.mp3"
+		}
+	}
+}
+
+192
+{
+	number		"192"
+	text		"this is 2 easy"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/toeasy01.mp3"
+		}
+	}
+}
+
+193
+{
+	number		"193"
+	text		"you wanna go"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/wannago.mp3"
+		}
+	}
+}
+
+194
+{
+	number		"194"
+	text		"you gotta small winky"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/winkie.mp3"
+		}
+	}
+}
+
+195
+{
+	number		"195"
+	text		"That's Right...big yankie devil make bangbang all over your ass"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/yankiebangbang.mp3"
+		}
+	}
+}
+
+196
+{
+	number		"196"
+	text		"You Bastard"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/youbastard.mp3"
+		}
+	}
+}
+
+197
+{
+	number		"197"
+	text		"You Nutter"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/younutter.mp3"
+		}
+	}
+}
+
+198
+{
+	number		"198"
+	text		"you're mine..MINE"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/yourmine.mp3"
+		}
+	}
+}
+
+199
+{
+	number		"199"
+	text		"I'm gonna barbeque your ass"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/bbq ass.mp3"
+		}
+	}
+}
+
+200
+{
+	number		"200"
+	text		"com'on let's go"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/comon.mp3"
+		}
+	}
+}
+
+201
+{
+	number		"201"
+	text		"Hey, we've got company"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/npc/air3/terrorist01/02hey.mp3"
+		}
+	}
+}
+
+202
+{
+	number		"202"
+	text		"You should be more polite, I'm the one with a gun"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/npc/air1/guard05/02gun.mp3"
+		}
+	}
+}
+
+203
+{
+	number		"203"
+	text		"Let him go son, just let him go"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/npc/gladstone/cem1/03lethimgo.mp3"
+		}
+	}
+}
+
+204
+{
+	number		"204"
+	text		"I say we kill him right now!"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/npc/hk7/terrorist04/01killhim.mp3"
+		}
+	}
+}
+
+205
+{
+	number		"205"
+	text		"With pleasure.."
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/npc/hk7/torturer/04pleasure.mp3"
+		}
+	}
+}
+
+206
+{
+	number		"206"
+	text		"Of course"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/npc/hk7/torturer/03ofcourse.mp3"
+		}
+	}
+}
+
+207
+{
+	number		"207"
+	text		"Don't worry about it"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/npc/tut1/npc02/01dontworry.mp3"
+		}
+	}
+}
+
+208
+{
+	number		"208"
+	text		"What was that, what did you say?"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/npc/tut1/npc01/03what.mp3"
+		}
+	}
+}
+
+209
+{
+	number		"209"
+	text		"I thought I saw something"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/npc/team/orders/thought_i_saw.mp3"
+		}
+	}
+}
+
+210
+{
+	number		"210"
+	text		"What was that noise"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/npc/team/orders/what_was_noise.mp3"
+		}
+	}
+}
+
+211
+{
+	number		"211"
+	text		"Alright, nothing to see here"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/npc/arm2/agent01/01nothingtosee.mp3"
+		}
+	}
+}
+
+212
+{
+	number		"212"
+	text		"Sir, I think they went this way"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/npc/col3/faber/01thisway.mp3"
+		}
+	}
+}
+
+213
+{
+	number		"213"
+	text		"HaHaHa"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/npc/col8/peterson/02laugh.mp3"
+		}
+	}
+}
+
+214
+{
+	number		"214"
+	text		"Fire in the hole!"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/npc/col8/peterson/firehole.mp3"
+		}
+	}
+}
+
+215
+{
+	number		"215"
+	text		"Go check that out"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/npc/col8/peterson/gocheck.mp3"
+		}
+	}
+}
+
+216
+{
+	number		"216"
+	text		"Good work marines!"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/npc/col8/peterson/goodwork.mp3"
+		}
+	}
+}
+
+217
+{
+	number		"217"
+	text		"Nice shot"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/npc/col8/peterson/niceshot.mp3"
+		}
+	}
+}
+
+218
+{
+	number		"218"
+	text		"Man, this place is really getting on my nerves "
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/npc/col8/washington/01place.mp3"
+		}
+	}
+}
+
+219
+{
+	number		"219"
+	text		"Seen anything like this?"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/npc/col10/scientist04/01seenanything.mp3"
+		}
+	}
+}
+
+220
+{
+	number		"220"
+	text		"Roger that, over."
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/npc/hos3/terr/02terr1.mp3"
+		}
+	}
+}
+
+221
+{
+	number		"221"
+	text		"Hey mister, you dropped your briefcase"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/npc/pra1/bum/01heymister.mp3"
+		}
+	}
+}
+
+222
+{
+	number		"222"
+	text		"Don't let anyone through here"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/enemy/english/hos/dontlet.mp3"
+		}
+	}
+}
+
+223
+{
+	number		"223"
+	text		"Watch this door"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/enemy/english/hos/watchthisdoor.mp3"
+		}
+	}
+}
+
+224
+{
+	number		"224"
+	text		"Find him!"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/enemy/english/male/find_him.mp3"
+		}
+
+		female
+		{
+			sound		"sound/enemy/english/fmale/find_him.mp3"
+		}
+	}
+
+	cn
+	{
+		male
+		{
+			sound		"sound/enemy/cantonese/male/find_him.mp3"
+		}
+
+		female
+		{
+			sound		"sound/enemy/cantonese/fmale/find_him.mp3"
+		}
+	}
+}
+
+225
+{
+	number		"225"
+	text		"FIRE!"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/enemy/english/male/fire.mp3"
+		}
+
+		female
+		{
+			sound		"sound/enemy/english/fmale/fire.mp3"
+		}
+	}
+
+	es
+	{
+		male
+		{
+			sound		"sound/enemy/spanish/soldier/fire.mp3"
+		}
+	}
+
+	cn
+	{
+		male
+		{
+			sound		"sound/enemy/cantonese/male/fire.mp3"
+		}
+
+		female
+		{
+			sound		"sound/enemy/cantonese/fmale/fire.mp3"
+		}
+	}
+}
+
+226
+{
+	number		"226"
+	text		"He's hit, he's hit!"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/enemy/english/male/he_hit.mp3"
+		}
+	}
+}
+
+227
+{
+	number		"227"
+	text		"I'm busy, please leave me alone"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/npc/civ/english/male/im_busy.mp3"
+		}
+
+		female
+		{
+			sound		"sound/npc/civ/english/fmale/im_busy.mp3"
+		}
+	}
+
+	cn
+	{
+		male
+		{
+			sound		"sound/npc/civ/hk/male/im_busy.mp3"
+		}
+
+		female
+		{
+			sound		"sound/npc/civ/hk/fmale/im_busy.mp3"
+		}
+	}
+
+	ru
+	{
+		male
+		{
+			sound		"sound/npc/civ/pra/male/im_busy.mp3"
+		}
+	}
+}
+
+228
+{
+	number		"228"
+	text		"Move it!"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/npc/civ/english/male/moveit.mp3"
+		}
+
+		female
+		{
+			sound		"sound/npc/civ/english/fmale/moveit.mp3"
+		}
+	}
+}
+
+229
+{
+	number		"229"
+	text		"Oh my God!"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/npc/civ/english/male/mygod.mp3"
+		}
+
+		female
+		{
+			sound		"sound/npc/civ/english/fmale/mygod.mp3"
+		}
+	}
+}
+
+230
+{
+	number		"230"
+	text		"I'm so scared"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/npc/civ/english/male/scared.mp3"
+		}
+
+		female
+		{
+			sound		"sound/npc/civ/english/fmale/scared.mp3"
+		}
+	}
+
+	cn
+	{
+		male
+		{
+			sound		"sound/npc/civ/hk/male/scared.mp3"
+		}
+
+		female
+		{
+			sound		"sound/npc/civ/hk/fmale/scared.mp3"
+		}
+	}
+
+	de
+	{
+		male
+		{
+			sound		"sound/npc/civ/air/male/scared.mp3"
+		}
+
+		female
+		{
+			sound		"sound/npc/civ/air/fmale/scared.mp3"
+		}
+	}
+
+	ru
+	{
+		male
+		{
+			sound		"sound/npc/civ/pra/male/scared.mp3"
+		}
+	}
+}
+
+231
+{
+	number		"231"
+	text		"Stay out of the way!"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/npc/civ/english/male/stayout.mp3"
+		}
+
+		female
+		{
+			sound		"sound/npc/civ/english/fmale/stayout.mp3"
+		}
+	}
+
+	de
+	{
+		male
+		{
+			sound		"sound/npc/civ/air/male/stayout.mp3"
+		}
+
+		female
+		{
+			sound		"sound/npc/civ/air/fmale/stayout.mp3"
+		}
+	}
+}
+
+232
+{
+	number		"232"
+	text		"Soon enough, calm down"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/npc/air1/guard04/01calm.mp3"
+		}
+	}
+}
+
+233
+{
+	number		"233"
+	text		"Hey sweet lady, you scared?"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/npc/air1/terrorists/scared01.mp3"
+		}
+	}
+}
+
+234
+{
+	number		"234"
+	text		"GRENADE!"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/npc/col6/washington/01grenade.mp3"
+		}
+	}
+}
+
+235
+{
+	number		"235"
+	text		"Yeah!"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/npc/col8/peterson/yeah.mp3"
+		}
+	}
+}
+
+236
+{
+	number		"236"
+	text		"Check your fire!"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/npc/col8/washington/checkfire.mp3"
+		}
+	}
+}
+
+237
+{
+	number		"237"
+	text		"When you're finished kill him"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/npc/deviant1/hk7/07killhim.mp3"
+		}
+	}
+}
+
+238
+{
+	number		"238"
+	text		"Muahahahaha"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/npc/fin4/vergara/02laugh.mp3"
+		}
+	}
+}
+
+239
+{
+	number		"239"
+	text		"No, NOOOO AAARRGH"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/npc/hk6/prisoner/01nono.mp3"
+		}
+	}
+}
+
+240
+{
+	number		"240"
+	text		"What?"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/npc/mullins/cem1/03what.mp3"
+		}
+	}
+}
+
+241
+{
+	number		"241"
+	text		"ben is the devil"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/misc/outtakes/ben_g.mp3"
+		}
+	}
+}
+
+242
+{
+	number		"242"
+	text		"55555555"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/enemy/dog/bark02.mp3"
+		}
+	}
+}
+
+243
+{
+	number		"243"
+	text		"monke"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/ambience/colombia/monkies04.mp3"
+		}
+	}
+}
+
+244
+{
+	number		"244"
+	text		"you cant do this to me"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/npc/shop4/prisoner/01youcant.mp3"
+		}
+	}
+}

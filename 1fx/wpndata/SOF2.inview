@@ -1,0 +1,12265 @@
+version	"SOF2 inview weapons"
+
+hands
+{
+	name	"urban"
+
+	left
+	{
+		model	"models/weapons/lhand/lhand.glm"
+		frames	"skeletons/weapons/lhand/lhand.frames"
+	}
+	right
+	{
+		model	"models/weapons/rhand/rhand.glm"
+		frames	"skeletons/weapons/rhand/rhand.frames"
+	}
+}
+
+hud
+{
+	mainfire	"hud/hud_tab"
+	altfire		"hud/hud_pop_out"
+}
+
+weapon
+{
+	name		"M4"
+	foreshorten	"0.6"
+
+	viewoffset
+	{
+		forward	"0"
+		right	"0"
+		up	"0"
+	}
+
+	sounds
+	{
+		fire
+		{
+			sound1		"sound/weapons/m4/m4fire01"
+			sound2		"sound/weapons/m4/m4fire02"
+			sound3		"sound/weapons/m4/m4fire03"
+		}
+		altfire
+		{
+			sound1		"sound/weapons/m4/glaunch"
+		}
+		m4ready
+		{
+			sound1		"sound/weapons/m4/ready_gun"
+		}
+		m4boltpull
+		{
+			sound1		"sound/weapons/m4/bolt_pull"
+		}
+		m4boltrelease
+		{
+			sound1		"sound/weapons/m4/bolt_release"
+		}	
+		m4clipout
+		{
+			sound1		"sound/weapons/m4/clip_eject"
+		}	
+		m4clipin
+		{
+			sound1		"sound/weapons/m4/clip_insert"
+		}	
+		m4bulletram
+		{
+			sound1		"sound/weapons/m4/bullet_ram_in"
+		}	
+		m4click
+		{
+			sound1		"sound/weapons/m4/click"
+		}	
+		slidegrenade
+		{
+			sound1		"sound/weapons/m4/grenade_slide"
+		}
+		loadgrenade
+		{
+			sound1		"sound/weapons/m4/grenade_load"
+		}
+		slidegrenade2
+		{
+			sound1		"sound/weapons/m4/grenade_slide2"
+		}
+		knuckles
+		{
+			sound1		"sound/weapons/m4/knuckle"
+		}
+		fingeradjust
+		{
+			sound1		"sound/weapons/idle/idle01"
+		}
+	}
+
+	forcefeedback
+	{
+		fire
+		{
+			force1		"fffx/weapons/m4/fire"
+		}
+		altfire
+		{
+			force1		"fffx/weapons/m4/altfire"
+		}
+		m4ready
+		{
+			force1		"fffx/weapons/m4/ready"
+		}
+		m4boltpull
+		{
+			force1		"fffx/weapons/m4/bolt_pull"
+		}
+		m4boltrelease
+		{
+			force1		"fffx/weapons/m4/bolt_release"
+		}	
+		m4clipout
+		{
+			force1		"fffx/weapons/m4/clip_out"
+		}	
+		m4clipin
+		{
+			force1		"fffx/weapons/m4/clip_in"
+		}	
+		m4bulletram
+		{
+			force1		"fffx/weapons/m4/bullet_ram"
+		}	
+		m4click
+		{
+			force1		"fffx/weapons/m4/click"
+		}	
+		slidegrenade
+		{
+			force1		"fffx/weapons/m4/slide_grenade"
+		}
+		loadgrenade
+		{
+			force1		"fffx/weapons/m4/load_grenade"
+		}
+		slidegrenade2
+		{
+			force1		"fffx/weapons/m4/slide_grenade_2"
+		}
+		knuckles
+		{
+			force1		"fffx/weapons/m4/knuckle"
+		}
+		fingeradjust
+		{
+			force1		"fffx/weapons/idle/idle01"
+		}
+	}
+
+	weaponmodel
+	{
+		name	"mainwpn"
+		model	"models/weapons/m4/m4.glm"
+		frames	"skeletons/weapons/m4/m4.frames"
+
+		buffer
+		{
+			name		 "rifle buffer"
+			model		 "models/weapons/buffer/rifle/buffer.glm"
+			bolttobone	 "gun"
+			muzzle		 "flash_m4"
+		}
+
+		hands
+		{
+			left
+			{
+				bolttobone	"lhand_m4"
+			}
+			right
+			{
+				bolttobone	"handle_m4"
+			}
+		}
+
+		bolton
+		{
+			name	"m203"
+			model	"models/weapons/m203/m203.glm"
+			frames	"skeletons/weapons/m203/m203.frames"
+			parent	"rifle buffer"
+			bolttobone	"m203_m4"
+
+			rightside
+			{
+				surface1	"barrelfronth"
+				surface2	"barrelbackh"
+				surface3	"40mmgrenadeh"
+				surface4	"grenadetriggerh"
+				surface5	"griph"
+				surface6	"latchh"
+			}
+		}
+
+		rightside
+		{
+			surface1	"cliph"
+			surface2	"gunmuzzleh"
+			surface3	"frontsighth"
+			surface4	"stocktubeh"
+			surface5	"bodyfronth"
+			surface6	"barrelh"
+			surface7	"gunbodyh"
+			surface8	"sighth"
+			surface9	"gunstock"
+		}
+	}
+
+	anim
+	{
+		name	"idle"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m4idle"
+			extra1	"m4fingerknuckles"
+			extra2	"m4fingeradjust"
+			speed	0.5
+
+			mp_speed	0.3
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lm4idle"
+			extra1	"lm4fingerknuckles"
+			extra2	"lm4fingeradjust"
+			speed	0.5
+			lodbias	2
+
+			mp_speed	0.3
+		}
+
+		info
+		{
+			type	"bolton"
+			name	"m203"
+			anim	"m203idle"
+			speed	1
+
+			mp_speed	0.3
+		}
+	}
+
+	anim
+	{
+		name	"proneidle"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m4proneidle"
+			speed	0.5
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lm4proneidle"
+			speed	0.5
+			lodbias	2
+		}
+
+		info
+		{
+			type	"bolton"
+			name	"m203"
+			anim	"m203idle"
+			speed	1
+		}
+	}
+
+	anim
+	{
+		name	"proneready"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m4proneready"
+			speed	"0.5"
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lm4proneready"
+			speed	"0.5"
+			lodbias	2
+		}
+
+		info
+		{
+			type	"bolton"
+			name	"m203"
+			anim	"m203idle"
+			speed	1
+		}
+	}
+
+	anim
+	{
+		name	"pronedone"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m4pronedone"
+			speed	"0.5"
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lm4pronedone"
+			speed	"0.5"
+			lodbias	2
+		}
+
+		info
+		{
+			type	"bolton"
+			name	"m203"
+			anim	"m203idle"
+			speed	1
+		}
+	}
+
+	anim
+	{
+		name	"pronefire"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m4pronefire"
+			speed	"0.5"
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lm4proneidle"
+			speed	"0.5"
+			lodbias	2
+		}
+
+		info
+		{
+			type	"bolton"
+			name	"m203"
+			anim	"m203idle"
+			speed	1
+		}
+	}
+
+	anim
+	{
+		name	"crawl"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m4crawl"
+			speed	"0.5"
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lm4crawl"
+			speed	"0.5"
+			lodbias	2
+		}
+
+		info
+		{
+			type	"bolton"
+			name	"m203"
+			anim	"m203idle"
+			speed	1
+		}
+	}
+
+	anim
+	{
+		name	"standtoprone"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m4standtoprone"
+			speed	"0.5"
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lm4standtoprone"
+			speed	"0.5"
+			lodbias	2
+		}
+
+		info
+		{
+			type	"bolton"
+			name	"m203"
+			anim	"m203idle"
+			speed	1
+		}
+	}
+
+	anim
+	{
+		name	"pronetostand"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m4pronetostand"
+			speed	"1.0"
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lm4pronetostand"
+			speed	"1.0"
+			lodbias	2
+		}
+
+		info
+		{
+			type	"bolton"
+			name	"m203"
+			anim	"m203idle"
+			speed	1
+		}
+	}
+
+	anim
+	{
+		name	"fire"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim1	"m4fire"
+			anim2	"m4fire2"
+			anim3	"m4fire3"
+			anim4	"m4fire4"
+			speed	1
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lm4fire"
+			speed	1
+			lodbias	2
+		}
+
+		info
+		{
+			type	"bolton"
+			name	"m203"
+			anim	"m203idle"
+			speed	1
+		}
+	}
+
+	anim
+	{
+		name	"dryfire"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m4dryfire"
+			speed	0.8
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lm4idle"
+			speed	0.8
+		}
+
+		info
+		{
+			type	"bolton"
+			name	"m203"
+			anim	"m203idle"
+			speed	0.8
+		}
+	}
+
+	anim
+	{
+		name	"altfire"
+		muzzle	"flashm203_m4"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m4altfire"
+			speed	.5
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lm4altfire"
+			speed	.5
+			lodbias	2
+		}
+
+		info
+		{
+			type	"bolton"
+			name	"m203"
+			anim	"m203idle"
+			speed	.5
+		}
+	}
+
+	anim
+	{
+		name	"reload"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m4reload"
+			speed	0.5
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lm4reload"
+			speed	0.5
+			lodbias	2
+		}
+
+		info
+		{
+			type	"bolton"
+			name	"m203"
+			anim	"m203idle"
+			speed	1
+		}
+	}
+
+	anim
+	{
+		name	"altreload"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m4altreload"
+			speed	.5
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lm4altreload"
+			speed	.5
+			lodbias	2
+		}
+
+		info
+		{
+			type	"bolton"
+			name	"m203"
+			anim	"m203altreload"
+			speed	.5
+		}
+	}
+
+	anim
+	{
+		name	"ready"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m4ready"
+			speed	0.5
+
+			mp_speed	0.4
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lm4ready"
+			speed	0.5
+			lodbias	2
+
+			mp_speed	0.4
+		}
+
+		info
+		{
+			type	"bolton"
+			name	"m203"
+			anim	"m203idle"
+			speed	1
+		}
+	}
+
+	anim
+	{
+		name	"done"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m4done"
+			speed	0.5
+
+			mp_speed	0.7
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lm4idle"
+			speed	0.5
+			lodbias	2
+
+			mp_speed	0.7
+		}
+
+		info
+		{
+			type	"bolton"
+			name	"m203"
+			anim	"m203idle"
+			speed	1
+		}
+	}
+}
+
+weapon
+{
+	name		"US SOCOM"
+	foreshorten	"0.6"
+
+	viewoffset
+	{
+		forward	"0"
+		right	"0"
+		up	"0"
+	}
+
+	sounds
+	{
+		fire
+		{
+			sound1	"sound/weapons/ussocom/unsfire01"
+			sound2	"sound/weapons/ussocom/unsfire02"
+		}
+		altfire
+		{
+			sound1	"sound/weapons/m1911a1/swing01"
+			sound2	"sound/weapons/m1911a1/swing02"
+		}
+		silenced
+		{
+			sound1	"sound/weapons/ussocom/socomfire01"
+			sound2	"sound/weapons/ussocom/socomfire02"
+		}
+		hammerback
+		{
+			sound1	"sound/weapons/ussocom/hammerback"
+		}
+		clipout
+		{
+			sound1	"sound/weapons/ussocom/clipout"
+		}	
+		clipin
+		{
+			sound1	"sound/weapons/ussocom/clipin"
+		}	
+		slide
+		{
+			sound1	"sound/weapons/ussocom/slide"
+		}	
+		slideback
+		{
+			sound1	"sound/weapons/ussocom/slideback"
+		}	
+		spin01
+		{
+			sound	"sound/weapons/ussocom/spin"
+		}
+		gunup
+		{
+			sound	"sound/weapons/idle/idle03"
+		}
+	}
+
+	forcefeedback
+	{
+		fire
+		{
+			force1	"fffx/weapons/ussocom/fire"
+		}
+		altfire
+		{
+			force1	"fffx/weapons/ussocom/altfire"
+		}
+		silenced
+		{
+			force1	"fffx/weapons/ussocom/silenced"
+		}
+		hammerback
+		{
+			force1	"fffx/weapons/ussocom/hammerback"
+		}
+		clipout
+		{
+			force1	"fffx/weapons/ussocom/clipout"
+		}	
+		clipin
+		{
+			force1	"fffx/weapons/ussocom/clipin"
+		}	
+		slide
+		{
+			force1	"fffx/weapons/ussocom/slide"
+		}	
+		slideback
+		{
+			force1	"fffx/weapons/ussocom/slideback"
+		}		
+		spin01
+		{
+			force1	"fffx/weapons/ussocom/spin"
+		}
+		gunup
+		{
+			force1	"fffx/weapons/idle/idle03"
+		}
+	}
+
+	surfaces
+	{
+		spinsurfacesoff
+		{
+			bodyf	off
+			triggerf	off
+			slidef	off
+			clipf	off
+		}
+
+		spinsurfaceson
+		{
+			bodyf	on
+			triggerf	on
+			slidef	on
+			clipf	on
+		}
+	}
+
+	weaponmodel
+	{
+		name	"mainwpn"
+		model	"models/weapons/ussocom/ussocom.glm"
+		frames	"skeletons/weapons/ussocom/ussocom.frames"
+
+		buffer
+		{
+			name	"pistol buffer"
+			model	"models/weapons/buffer/pistol/buffer.glm"
+			bolttobone	"gun"
+			muzzle	"flash_USSOCOM"
+		}
+
+		hands
+		{
+			left
+			{
+				bolttobone	"lhand_USSOCOM"
+			}
+			right
+			{
+				bolttobone	"handle_USSOCOM"
+			}
+		}
+
+		optionalpart
+		{
+			name	"lasersight"
+			bone	"flashlaser_USSOCOM"
+
+			surface1	"lasersight"
+			surface2	"lasersightf"
+			surface3	"lasersightl"
+			surface4	"lasersightr"
+		}
+
+		optionalpart
+		{
+			name	"silencer"
+			muzzle	"flashsilencer_USSOCOM"
+
+			surface1	"silencer"
+			surface2	"silencerf"
+			surface3	"silencerl"
+			surface4	"silencerr"
+		}
+
+		optionalpart
+		{
+			name	"utl"
+			bone	"flashlaser_USSOCOM"
+
+			surface1	"utl"
+			surface2	"utlf"
+			surface3	"utll"
+			surface4	"utlr"
+		}
+
+		optionalpart
+		{
+			name	"slide_fwd"
+
+			surface1	"slide"
+			surface2	"slidef"
+			surface3	"slidel"
+			surface4	"slider"
+		}
+
+		optionalpart
+		{
+			name	"slide_back"
+
+			surface1	"slide_off"
+			surface2	"slidef_off"
+			surface3	"slidel_off"
+			surface4	"slider_off"
+		}
+
+		rightside
+		{
+			surface1	"bodyr"
+			surface2	"triggerr"
+			surface3	"utlr"
+			surface4	"lasersightr"
+			surface5	"silencerr"
+			surface6	"slider"
+		}
+
+		leftside
+		{
+			surface1	"bodyl"
+			surface2	"triggerl"
+			surface3	"utll"
+			surface4	"lasersightl"
+			surface5	"silencerl"
+			surface6	"slidel"
+		}
+
+		front
+		{
+			surface1	"bodyf"
+			surface2	"triggerf"
+			surface3	"utlf"
+			surface4	"lasersightf"
+			surface5	"silencerf"
+			surface6	"slidef"
+		}
+	}
+
+	anim
+	{
+		name	"crawl"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"ussocomrcrawl"
+			speed	"0.5"
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lussocomrcrawl"
+			speed	"0.5"
+			lodbias	2
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"russocomridle"
+			speed	0.5
+		}
+	}
+
+	anim
+	{
+		name	"rightcrawl"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"ussocomrcrawl"
+			speed	"0.5"
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"russocomridle"
+			speed	"0.5"
+			lodbias	2
+		}
+	}
+
+	anim
+	{
+		name	"leftcrawl"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"ussocomlcrawl"
+			speed	"0.5"
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lussocomlcrawl"
+			speed	"0.5"
+			lodbias	2
+		}
+	}
+
+	anim
+	{
+		name	"standtoprone"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"ussocomrstandtoprone"
+			speed	"0.5"
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"russocomrstandtoprone"
+			speed	"0.5"
+			lodbias	2
+		}
+	}
+
+	anim
+	{
+		name	"leftstandtoprone"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"ussocomlstandtoprone"
+			speed	"0.5"
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lussocomlstandtoprone"
+			speed	"0.5"
+			lodbias	2
+		}
+	}
+
+	anim
+	{
+		name	"pronetostand"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"ussocomrpronetostand"
+			speed	"1.0"
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"russocomrpronetostand"
+			speed	"1.0"
+			lodbias	2
+		}
+	}
+
+	anim
+	{
+		name	"leftpronetostand"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"ussocomlpronetostand"
+			speed	"1.0"
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lussocomlready"
+			speed	"1.0"
+			lodbias	2
+		}
+	}
+
+	anim
+	{
+		name	"idle"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"ussocomridle"
+			extra1	"ussocomrfingergunup"
+			extra2	"ussocomrfingeradjust"
+			extra3	"ussocomrfingerspin01"
+			speed	1
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"russocomridle" 
+			extra1	"russocomrfingergunup"
+			extra2	"russocomrfingeradjust"
+			extra3	"russocomrfingerspin01"
+			speed	1
+		}
+	}
+
+	anim
+	{
+		name	"fire"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"ussocomrfire"
+			speed	0.8
+
+			mp_speed	1.2
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"russocomrfire"
+			speed	0.8
+
+			mp_speed	1.2
+		}
+	}
+
+	anim
+	{
+		name	"dryfire"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"ussocomrdryfire"
+			speed	0.8
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"russocomrdryfire"
+			speed	0.8
+		}
+	}
+
+	anim
+	{
+		name	"altfire"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"ussocomrpistolwhip"
+			speed	0.5
+
+			mp_speed 1.5
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"russocomrpistolwhip"
+			speed	0.5
+
+			mp_speed 1.5
+		}
+	}
+
+	anim
+	{
+		name	"leftaltfire"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"ussocomlhandrpistolwhip"
+			speed	"0.5"
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lussocomlidle"
+			speed	"0.5"
+			lodbias	2
+		}
+	}
+
+	anim
+	{
+		name	"reload"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"ussocomrfullreload"
+			speed	0.7
+
+			mp_speed	1.5
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"russocomrfullreload"
+			speed	0.7
+
+			mp_speed	1.5
+		}
+	}
+
+	anim
+	{
+		name	"emptyreload"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"ussocomrreload"
+			speed	0.7
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"russocomrreload"
+			speed	0.7
+		}
+	}
+
+	anim
+	{
+		name	"ready"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"ussocomrready"
+			speed	0.5
+
+			mp_speed	1.25
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"russocomrready"
+			speed	0.5
+
+			mp_speed	1.25
+		}
+	}
+
+	anim
+	{
+		name	"dualready"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"ussocomraltready"
+			speed	1
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"russocomridle"
+			speed	1
+		}
+	}
+
+	anim
+	{
+		name	"done"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"ussocomrdone"
+			speed	1
+
+			mp_speed	1.5
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"russocomrdone"
+			speed	1
+
+			mp_speed	1.5
+		}
+	}
+
+	anim
+	{
+		name	"leftready"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"ussocomlaltready"
+			speed	1
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lussocomlidle"
+			speed	1
+		}
+	}
+
+	anim
+	{
+		name	"leftidle"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"ussocomlidle"
+			extra1	"ussocomlfingergunup"
+			extra2	"ussocomlfingeradjust"
+			extra3	"ussocomlfingerspin01"
+			speed	1
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lussocomlidle"
+			extra1	"lussocomlfingergunup"
+			extra2	"lussocomlfingeradjust"
+			extra3	"lussocomlfingerspin01"
+			speed	1
+		}
+	}
+
+	anim
+	{
+		name	"leftdone"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"ussocomldone"
+			speed	1
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lussocomldone"
+			speed	1
+		}
+	}
+
+	anim
+	{
+		name	"leftfire"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"ussocomlfire"
+			speed	0.8
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lussocomlfire"
+			speed	0.8
+		}
+	}
+
+	anim
+	{
+		name	"leftreload"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"ussocomlfullreload"
+			speed	0.7
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lussocomlfullreload"
+			speed	0.7
+		}
+	}
+
+	anim
+	{
+		name	"leftemptyreload"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"ussocomlreload"
+			speed	0.7
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lussocomlreload"
+			speed	0.7
+		}
+	}
+}
+
+weapon
+{
+	name		"M2hbqcb"
+	foreshorten	"0.0"
+
+	viewoffset
+	{
+		forward	"41.5"//47
+		right	"0"
+		up	"-11.5"//-15
+	}
+
+	weaponmodel
+	{
+		name	"mainwpn"
+		model	"models/weapons/m2hbqcb/m2hbqcb.glm"
+		frames	"skeletons/weapons/m2hbqcb/m2hbqcb.frames"
+
+		buffer
+		{
+			name	"pistol buffer"
+			model	"models/weapons/buffer/pistol/buffer.glm"
+			bolttobone	"gun"
+			muzzle	"flash_USSOCOM"
+		}
+
+		hands
+		{
+			right
+			{
+				bolttobone	"handle_USSOCOM"
+			}
+		}
+		rightside
+		{
+			surface1	"tripod"
+			surface2	"tripodh"
+			surface3	"tripodlegs"
+		}
+	}
+
+	anim
+	{
+		name	"idle"
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"russocomridle"
+			speed	1.0
+		}
+	}
+
+	anim
+	{
+		name	"fire"
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"russocomrfire"
+			speed	1.0
+		}
+	}
+
+	anim
+	{
+		name	"reload"
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"russocomrreload"
+			speed	1.0
+		}
+	}
+
+	anim
+	{
+		name	"ready"
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"russocomrready"
+			speed	1.0
+		}
+	}
+
+	anim
+	{
+		name	"done"
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"russocomrdone"
+			speed	1.0
+		}
+	}
+}
+
+weapon
+{
+	name		"M60"
+	foreshorten	"0.0"
+
+	sounds
+	{
+		fire
+		{
+			sound1		"sound/weapons/m60/m60fire01"
+			sound2		"sound/weapons/m60/m60fire02"
+			sound3		"sound/weapons/m60/m60fire03"
+		}
+		
+		ready
+		{
+			sound1		"sound/weapons/m60/ready"
+		}
+		
+		latch_open
+		{
+			sound1		"sound/weapons/m60/latch_open"
+		}
+
+		ammo_belt
+		{
+			sound1		"sound/weapons/m60/ammo_belt"
+		}
+
+		latch_close
+		{
+			sound1		"sound/weapons/m60/latch_close"
+		}
+
+		final
+		{
+			sound1		"sound/weapons/m60/final"
+		}
+		fingeradjust
+		{
+			sound1		"sound/weapons/m60/idle01"
+		}
+	}
+
+	surfaces
+	{
+		newbelt
+		{
+			bullet1	on
+			bullet2	on
+			bullet3	on
+			bullet4	on
+			bullet5	on
+			bullet6	on
+		}
+	}
+
+	forcefeedback
+	{
+		fire
+		{
+			force1		"fffx/weapons/m60/fire"
+		}
+
+		ready
+		{
+			force1		"fffx/weapons/m60/ready"
+		}
+
+		latch_open
+		{
+			force1		"fffx/weapons/m60/latch_open"
+		}
+
+		ammo_belt
+		{
+			force1		"fffx/weapons/m60/ammo_latch"
+		}
+
+		latch_close
+		{
+			force1		"fffx/weapons/m60/latch_close"
+		}
+
+		final
+		{
+			force1		"fffx/weapons/m60/final"
+		}
+		fingeradjust
+		{
+			force1		"fffx/weapons/m60/idle"
+		}
+	}
+
+	weaponmodel
+	{
+		name	"mainwpn"
+		model	"models/weapons/m60/m60.glm"
+		frames	"skeletons/weapons/m60/m60.frames"
+
+		buffer
+		{
+			name	"mg buffer"
+			model	"models/weapons/buffer/mg/buffer.glm"
+			bolttobone	"gun"
+			muzzle	"flash_m60"
+		}
+
+		hands
+		{
+			left
+			{
+				bolttobone	"lhand_m60"
+			}
+		}
+
+		rightside
+		{
+			surface1	"m60bodyh"
+			surface2	"m60stockh"
+			surface3	"m60latchhh"
+			surface4	"m60barrelh"
+			surface5	"bipodh"
+			surface6	"ammoboxh"
+			surface7	"m60sighth"
+			surface8	"m60stock"
+		}
+	}
+
+	anim
+	{
+		name	"crawl"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m60ivcrawl"
+			speed	"0.5"
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lm60crawl"
+			speed	"0.5"
+		}
+	}
+
+	anim
+	{
+		name	"standtoprone"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m60ivstandtoprone"
+			speed	"0.5"
+		}
+	}
+
+	anim
+	{
+		name	"pronetostand"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m60ivpronetostand"
+			speed	"0.5"
+		}
+	}
+
+	anim
+	{
+		name	"idle"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m60ividle"
+			extra1	"m60ivfingeradjust"
+			speed	1
+		}
+	}
+
+	anim
+	{
+		name	"fire"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			animNoLerp1	"m60ivfire"
+			animNoLerp2	"m60ivfire2"
+			animNoLerp3	"m60ivfire3"
+			animNoLerp4	"m60ivfire4"
+			speed	1.5
+
+			mp_speed	1.15
+		}
+	}
+
+	anim
+	{
+		name	"reload"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m60ivreload"
+			speed	1.0
+
+			mp_speed 1.0
+		}
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lm60reload"
+			speed	1.0
+
+			mp_speed 1.0
+		}
+	}
+
+	anim
+	{
+		name	"ready"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m60ivready"
+			speed	1.0
+
+			mp_speed	1.5
+		}
+	}
+
+	anim
+	{
+		name	"done"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m60ivdone"
+			speed	1.0
+
+			mp_speed	1.5
+		}
+	}
+}
+
+weapon
+{
+	name		"OSPREYM60"
+	foreshorten	"0.0"
+
+	sounds
+	{
+		fire
+		{
+			sound1		"sound/weapons/m60/m60fire01"
+			sound2		"sound/weapons/m60/m60fire02"
+			sound3		"sound/weapons/m60/m60fire03"
+		}
+		
+		ready
+		{
+			sound1		"sound/weapons/m60/ready"
+		}
+		
+		latch_open
+		{
+			sound1		"sound/weapons/m60/latch_open"
+		}
+
+		ammo_belt
+		{
+			sound1		"sound/weapons/m60/ammo_belt"
+		}
+
+		latch_close
+		{
+			sound1		"sound/weapons/m60/latch_close"
+		}
+
+		final
+		{
+			sound1		"sound/weapons/m60/final"
+		}
+		fingeradjust
+		{
+			sound1		"sound/weapons/m60/idle01"
+		}
+	}
+}
+
+weapon
+{
+	name		"Emplaced M60"
+	foreshorten	"0.0"
+
+	viewoffset
+	{
+		forward	"21.39"
+		right	"4"  //negated
+		up	"-8.98"
+	}
+
+	sounds
+	{
+		fire
+		{
+			sound1		"sound/weapons/m60/m60fire01"
+			sound2		"sound/weapons/m60/m60fire02"
+			sound3		"sound/weapons/m60/m60fire03"
+		}
+	}
+
+	forcefeedback
+	{
+		fire
+		{
+			force1		"fffx/weapons/m60/fire"
+		}
+	}
+
+	weaponmodel
+	{
+		name	"mainwpn"
+		model	"models/weapons/m60/m60.glm"
+		frames	"skeletons/weapons/m60/m60.frames"
+
+		buffer
+		{
+			name	"mg buffer"
+			model	"models/weapons/buffer/mg/buffer.glm"
+			bolttobone	"gun"
+			muzzle	"flash_m60"
+		}
+
+		hands
+		{
+			right
+			{
+				bolttobone	"rhand_m60"
+			}
+		}
+
+		rightside
+		{
+			surface1	"m60bodyh"
+			surface2	"m60stockh"
+			surface3	"m60latchhh"
+			surface4	"m60barrelh"
+			surface5	"bipodh"
+			surface6	"ammoboxh"
+			surface7	"m60sighth"
+			surface8	"m60stock"
+		}
+	}
+
+	anim
+	{
+		name	"idle"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m60ipidle"
+			speed	1.0
+		}
+	}
+
+	anim
+	{
+		name	"fire"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m60ipfire"
+			speed	1.5
+		}
+	}
+
+	anim
+	{
+		name	"reload"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m60ipidle"
+			speed	1.0
+		}
+	}
+
+	anim
+	{
+		name	"ready"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m60ipidle"
+			speed	1.0
+		}
+	}
+
+	anim
+	{
+		name	"done"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m60ipidle"
+			speed	1.0
+		}
+	}
+}
+
+weapon
+{
+	name		"AK74"
+	foreshorten	"0.6"
+
+	viewoffset
+	{
+		forward	"0"
+		right	"0"
+		up	"0"
+	}
+
+	sounds
+	{
+		fire
+		{
+			sound1		"sound/weapons/ak74/fire01"
+			sound2		"sound/weapons/ak74/fire02"
+			sound3		"sound/weapons/ak74/fire03"
+		}
+		altfire
+		{
+			sound1		"sound/weapons/ak74/swing01"
+			sound2		"sound/weapons/ak74/swing02"	
+		}
+		slap
+		{
+			sound1		"sound/weapons/ak74/slap"
+		}
+		slide_release1
+		{
+			sound1		"sound/weapons/ak74/slide_release"
+		}
+		clip_out
+		{
+			sound1		"sound/weapons/ak74/eject_clip"
+		}
+		new_clip
+		{
+			sound1		"sound/weapons/ak74/new_clip"
+		}
+		slide_release2
+		{
+			sound1		"sound/weapons/ak74/slide_release"
+		}
+		fingercheck
+		{
+			sound1		"sound/weapons/idle/idle03"
+		}
+		
+	}
+
+	forcefeedback
+	{
+		fire
+		{
+			force1		"fffx/weapons/ak74/fire"
+		}
+		altfire
+		{
+			force1		"fffx/weapons/ak74/altfire"
+		}
+		slap
+		{
+			force1		"fffx/weapons/ak74/slap"
+		}
+		slide_release1
+		{
+			force1		"fffx/weapons/ak74/slide_release"
+		}
+		clip_out
+		{
+			force1		"fffx/weapons/ak74/clip_out"
+		}
+		new_clip
+		{
+			force1		"fffx/weapons/ak74/new_clip"
+		}
+		slide_release2
+		{
+			force1		"fffx/weapons/ak74/slide_release"
+		}
+		fingercheck
+		{
+			force1		"fffx/weapons/idle/idle03"
+		}
+	}
+
+	weaponmodel
+	{
+		name	"mainwpn"
+		model	"models/weapons/ak74/ak74.glm"
+		frames	"skeletons/weapons/ak74/ak74.frames"
+
+		buffer
+		{
+			name	"rifle buffer"
+			model	"models/weapons/buffer/rifle/buffer.glm"
+			bolttobone	"gun"
+			muzzle	"flash_ak74"
+		}
+
+		hands
+		{
+			left
+			{
+				bolttobone	"lhand_ak74"
+			}
+			right
+			{
+				bolttobone	"handle_ak74"
+			}
+		}
+
+		optionalpart
+		{
+			name	"muzzlebrake"
+			muzzle	"flashbrake_ak74"
+
+			surface1	"muzzle"
+		}
+
+		optionalpart
+		{
+			name	"bayonet"
+
+			surface1	"bayonet"
+			surface2	"bayonetr"
+		}
+
+		rightside
+		{
+			surface1	"bodyr"
+			surface2	"bayonetr"
+			surface3	"gunbarrelr"
+			//surface4	"muzzle"
+			surface5	"gunclipr"
+			surface6	"muzzler"
+			surface7	"butt"
+			surface8	"buttr"
+		}
+	}
+	anim
+	{
+		name	"idle"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"ak74idle"
+			extra1	"ak74fingercheck"
+			extra2	"ak74fingeradjust"
+			speed	1
+
+			mp_speed	0.6
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lak74idle"
+			extra1	"lak74fingercheck"
+			extra2	"lak74fingeradjust"
+			speed	1
+
+			mp_speed	0.6
+		}
+	}
+
+	anim
+	{
+		name	"crawl"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"ak74crawl"
+			speed	"0.5"
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lak74crawl"
+			speed	"0.5"
+		}
+	}
+
+	anim
+	{
+		name	"standtoprone"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"ak74standtoprone"
+			speed	"0.5"
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lak74standtoprone"
+			speed	"0.5"
+		}
+	}
+
+	anim
+	{
+		name	"pronetostand"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"ak74pronetostand"
+			speed	"1.0"
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lak74pronetostand"
+			speed	"1.0"
+		}
+	}
+
+	anim
+	{
+		name	"fire"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			animNoLerp1	"ak74fire"
+			animNoLerp2	"ak74fire2"
+			animNoLerp3	"ak74fire3"
+			animNoLerp4	"ak74fire4"
+			speed	1.0
+
+			mp_speed	0.65
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lak74fire"
+			speed	1.0
+
+			mp_speed	0.65
+		}
+	}
+
+	anim
+	{
+		name	"altfire"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"ak74bayonetstab"
+			speed	0.5
+			lodbias	1
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lak74idle"
+			speed	0.5
+		}
+	}
+
+	anim
+	{
+		name	"reload"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"ak74reload"
+			speed	0.5
+			lodbias	1
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lak74reload"
+			speed	0.5
+			lodbias	2
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"rak74reload"
+			speed	0.5
+			lodbias	2
+		}
+	}
+
+	anim
+	{
+		name	"ready"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"ak74ready"
+			speed	0.5
+			lodbias	1
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lak74ready"
+			speed	0.5
+			lodbias	2
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"rak74ready"
+			speed	0.5
+			lodbias	2
+		}
+	}
+
+	anim
+	{
+		name	"done"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"ak74done"
+			speed	0.5
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lak74done"
+			speed	0.5
+		}
+	}
+}
+
+weapon
+{
+	name		"M67"
+	foreshorten	"0.6"
+
+	viewoffset
+	{
+		forward	"0"
+		right	"0"
+		up	"0"
+	}
+
+	sounds
+	{
+		m67_throw
+		{
+			sound1		"sound/weapons/frag_grenade/throw01"
+		}
+		m67_pin_ting
+		{
+			sound1		"sound/weapons/frag_grenade/pin_rattle"
+		}
+		pin_pull
+		{
+			sound1		"sound/weapons/frag_grenade/pin_pull"
+		}
+		m67_handle_release
+		{
+			sound1		"sound/weapons/frag_grenade/handle_release"
+		}
+		toss
+		{
+			sound1		"sound/weapons/frag_grenade/throw_idle"
+		}
+
+
+	}
+
+	forcefeedback
+	{
+		m67_pin_ting
+		{
+			force1		"fffx/weapons/m67/pin_ting"
+		}
+		m67_pin_pull
+		{
+			force1		"fffx/weapons/m67/pin_pull"
+		}
+		m67_handle_release
+		{
+			force1		"fffx/weapons/m67/handle_release"
+		}
+		toss
+		{
+			force1		"fffx/weapons/m67/throw_idle"
+		}
+	}
+
+	weaponmodel
+	{
+		name	"mainwpn"
+		model	"models/weapons/m67/m67.glm"
+		frames	"skeletons/weapons/m67/m67.frames"
+
+		buffer
+		{
+			name	"gren"
+			model	"models/weapons/buffer/gren/buffer.glm"
+			bolttobone	"gun"
+			muzzle	"flash"
+		}
+
+		hands
+		{
+			left
+			{
+				bolttobone	"lhand_m67"
+			}
+			right
+			{
+				bolttobone	"rhand_m67"
+			}
+		}
+
+	}
+
+	anim
+	{
+		name	"crawl"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m67crawl"
+			speed	"0.5"
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lm67crawl"
+			speed	"0.5"
+			lodbias	2
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"rm67idle"
+			speed	"0.5"
+			lodbias	2
+		}
+	}
+
+	anim
+	{
+		name	"standtoprone"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m67standtoprone"
+			speed	"0.5"
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"rm67idle"
+			speed	"0.5"
+			lodbias	2
+		}
+	}
+
+	anim
+	{
+		name	"pronetostand"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m67pronetostand"
+			speed	"1.0"
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"rm67idle"
+			speed	"1.0"
+			lodbias	2
+		}
+	}
+
+	anim
+	{
+		name	"idle"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m67idle"
+			extra1	"m67fingertoss"
+			extra2	"m67fingeradjust"
+			speed	1
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"rm67idle"
+			extra1	"rm67fingertoss"
+			extra2	"rm67fingeradjust"
+			speed	1
+		}
+	}
+
+	anim
+	{
+		name	"fire"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m67fire"
+			speed	0.5
+			lodbias	1
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lm67fire"
+			speed	0.5
+			lodbias	1
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"rm67fire"
+			speed	0.5
+			lodbias	1
+		}
+	}
+
+	anim
+	{
+		name	"throwbegin"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m67throw_start"
+			speed	0.5
+			lodbias	1
+
+			mp_speed	0.4
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lm67throw_start"
+			speed	0.5
+			lodbias	1
+
+			mp_speed	0.4
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"rm67throw_start"
+			speed	0.5
+			lodbias	1
+
+			mp_speed	0.4
+		}
+	}
+
+	anim
+	{
+		name	"throwend"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m67throw_end"
+			speed	0.5
+			lodbias	1
+
+			mp_speed	0.5
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"rm67throw_end"
+			speed	0.5
+			lodbias	1
+
+			mp_speed	0.5
+		}
+	}
+
+	anim
+	{
+		name	"altthrowbegin"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m67altthrow_start"
+			speed	0.5
+			lodbias	1
+
+			mp_speed	0.4
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lm67altthrow_start"
+			speed	0.5
+			lodbias	1
+
+			mp_speed	0.4
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"rm67altthrow_start"
+			speed	0.5
+			lodbias	1
+
+			mp_speed	0.4
+		}
+	}
+
+	anim
+	{
+		name	"altthrowend"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m67altthrow_end"
+			speed	0.5
+			lodbias	1
+
+			mp_speed	0.5
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"rm67altthrow_end"
+			speed	0.5
+			lodbias	1
+
+			mp_speed	0.5
+		}
+	}
+
+	anim
+	{
+		name	"altfire"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m67altfire"
+			speed	0.5
+			lodbias	1
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lm67altfire"
+			speed	0.5
+			lodbias	1
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"rm67altfire"
+			speed	0.5
+			lodbias	1
+		}
+	}
+
+	anim
+	{
+		name	"reload"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m67ready"
+			speed	0.5
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"rm67idle"
+			speed	0.5
+		}
+	}
+
+	anim
+	{
+		name	"altreload"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m67ready"
+			speed	0.5
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"rm67idle"
+			speed	0.5
+		}
+	}
+
+	anim
+	{
+		name	"ready"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m67ready"
+			speed	0.5
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"rm67idle"
+			speed	0.5
+		}
+	}
+
+	anim
+	{
+		name	"done"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m67done"
+			speed	0.5
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"rm67idle"
+			speed	0.5
+		}
+	}
+}
+
+weapon
+{
+	name		"MSG90A1"
+	foreshorten	"0.6"
+
+	viewoffset
+	{
+		forward	"0"
+		right	"0"
+		up	"0"
+	}
+
+	sounds
+	{
+		fire
+		{
+			sound1		"sound/weapons/sniper/fire_01"
+			sound2		"sound/weapons/sniper/fire_02"
+		}
+		ready
+		{
+			sound1		"sound/weapons/sniper/ready"
+		}
+		snapout
+		{
+			sound1		"sound/weapons/sniper/clipout"
+		}
+		snapin
+		{
+			sound1		"sound/weapons/sniper/clipin"
+		}
+		slap
+		{
+			sound1		"sound/weapons/sniper/slap"
+		}
+		nextzoom
+		{
+			sound1		"sound/weapons/sniper/scope_zoom"
+		}
+		finalzoom
+		{
+			sound1		"sound/weapons/sniper/final_zoom"
+		}
+		first_zoom
+		{
+			sound1		"sound/weapons/sniper/first_zoom"
+		}
+		fingeradjust01
+		{
+			sound1		"sound/weapons/idle/idle01"
+		}
+		fingeradjust02
+		{
+			sound1		"sound/weapons/idle/idle02"
+		}
+	}
+
+	forcefeedback
+	{
+		fire
+		{
+			force1		"fffx/weapons/sniper/fire"
+		}
+		ready
+		{
+			force1		"fffx/weapons/sniper/ready"
+		}
+		snapout
+		{
+			force1		"fffx/weapons/sniper/snapout"
+		}
+		snapin
+		{
+			force1		"fffx/weapons/sniper/snapin"
+		}
+		slap
+		{
+			force1		"fffx/weapons/sniper/slap"
+		}
+		nextzoom
+		{
+			force1		"fffx/weapons/sniper/nextzoom"
+		}
+		finalzoom
+		{
+			force1		"fffx/weapons/sniper/finalzoom"
+		}
+		first_zoom
+		{
+			force1		"fffx/weapons/sniper/firstzoom"
+		}
+		fingeradjust01
+		{
+			force1		"fffx/weapons/idle/idle01"
+		}
+		fingeradjust02
+		{
+			force1		"fffx/weapons/idle/idle02"
+		}
+	}
+
+	weaponmodel
+	{
+		name	"mainwpn"
+		model	"models/weapons/msg90a1/msg90a1.glm"
+		frames	"skeletons/weapons/msg90a1/msg90a1.frames"
+
+		buffer
+		{
+			name	"rifle buffer"
+			model	"models/weapons/buffer/rifle/buffer.glm"
+			bolttobone	"gun"
+			muzzle	"flash_msg90a1"
+		}
+
+		hands
+		{
+			left
+			{
+				bolttobone	"lhand_msg90a1"
+			}
+		}
+
+		rightside
+		{
+			surface1	"barrelh"
+			surface2	"griph"
+			surface3	"bipodh"
+			surface4	"scopeh"
+			surface5	"bodyh"
+			surface6	"adjstockh"
+		}
+	}
+
+	anim
+	{
+		name	"crawl"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"msg90a1crawl"
+			speed	"0.5"
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lak74crawl"
+			speed	"0.5"
+			lodbias	2
+		}
+	}
+
+	anim
+	{
+		name	"standtoprone"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"msg90a1standtoprone"
+			speed	"0.5"
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lmsg90a1standtoprone"
+			speed	"0.5"
+			lodbias	2
+		}
+	}
+
+	anim
+	{
+		name	"pronetostand"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"msg90a1pronetostand"
+			speed	"0.5"
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lmsg90a1pronetostand"
+			speed	"0.5"
+			lodbias	2
+		}
+	}
+
+	anim
+	{
+		name	"idle"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"msg90a1idle"
+			extra1	"msg90a1fingeradjust01"
+			extra2	"msg90a1fingeradjust02"
+			speed	0.5
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lmsg90a1idle"
+			extra1	"lmsg90a1fingeradjust01"
+			extra2	"lmsg90a1fingeradjust02"
+			speed	0.5
+		}
+	}
+
+	anim
+	{
+		name	"ready"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"msg90a1ready"
+			speed	0.5
+
+			mp_speed	1.25
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lmsg90a1idle"
+			speed	0.5
+
+			mp_speed	1.25
+		}
+	}
+
+	anim
+	{
+		name	"fire"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"msg90a1fire"
+			speed	0.5
+
+			mp_speed	1.2
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lmsg90a1fire"
+			speed	0.5
+
+			mp_speed	1.2
+		}
+	}
+
+	anim
+	{
+		name	"reload"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"msg90a1reload"
+			speed	0.5
+
+			mp_speed	1
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lmsg90a1reload"
+			speed	0.5
+
+			mp_speed	1
+		}
+	}
+
+	anim
+	{
+		name	"done"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"msg90a1done"
+			speed	0.5
+
+			mp_speed	1.5
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lmsg90a1idle"
+			speed	0.5
+
+			mp_speed	1.5
+		}
+	}
+
+	anim
+	{
+		name	"zoomin"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"msg90a1zoomin"
+			speed	0.5
+
+			mp_speed	1
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lmsg90a1zoomin"
+			speed	0.5
+
+			mp_speed	1
+		}
+	}
+
+	anim
+	{
+		name	"zoomout"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"msg90a1zoomout"
+			speed	0.5
+
+			mp_speed	1
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lmsg90a1zoomout"
+			speed	0.5
+
+			mp_speed	1
+		}
+	}
+
+
+}
+
+weapon
+{
+	name		"Micro Uzi"
+	foreshorten	"0.6"
+
+	viewoffset
+	{
+		forward	"0"
+		right	"0"
+		up	"0"
+	}
+	sounds
+	{
+		fire
+		{
+			sound1		"sound/weapons/micro_uzi/fire01"
+			sound2		"sound/weapons/micro_uzi/fire02"
+			sound3		"sound/weapons/micro_uzi/fire03"
+		}
+		ready
+		{
+			sound1		"sound/weapons/micro_uzi/ready"
+		}
+		clipout
+		{	
+			sound1		"sound/weapons/micro_uzi/clipout"
+		}
+		clipin
+		{
+			sound1		"sound/weapons/micro_uzi/clipin"
+		}
+		bolt
+		{
+			sound1		"sound/weapons/micro_uzi/bolt"
+		}
+		gunup01
+		{
+			sound1		"sound/weapons/idle/idle03"
+		}
+		gunup02
+		{
+			sound1		"sound/weapons/idle/idle04"
+		}
+		fingeradjust
+		{
+			sound1		"sound/weapons/idle/idle01"
+		}
+		
+	}
+
+	forcefeedback
+	{
+		fire
+		{
+			force1		"fffx/weapons/micro_uzi/fire"
+		}
+		ready
+		{
+			force1		"fffx/weapons/micro_uzi/ready"
+		}
+		clipout
+		{	
+			force1		"fffx/weapons/micro_uzi/clipout"
+		}
+		clipin
+		{
+			force1		"fffx/weapons/micro_uzi/clipin"
+		}
+		bolt
+		{
+			force1		"fffx/weapons/micro_uzi/bolt"
+		}
+		gunup01
+		{
+			force1		"fffx/weapons/idle/idle03"
+		}
+		gunup02
+		{
+			force1		"fffx/weapons/idle/idle04"
+		}
+		fingeradjust
+		{
+			force1		"fffx/weapons/idle/idle01"
+		}
+		
+	}
+
+	weaponmodel
+	{
+		name	"mainwpn"
+		model	"models/weapons/microuzi/microuzi.glm"
+		frames	"skeletons/weapons/microuzi/microuzi.frames"
+
+		buffer
+		{
+			name	"pistol buffer"
+			model	"models/weapons/buffer/pistol/buffer.glm"
+			bolttobone	"gun"
+			muzzle	"flash_microuzi"
+		}
+
+		hands
+		{
+			left
+			{
+				bolttobone	"lhand_microuzi"
+			}
+			right
+			{
+				bolttobone	"rhand_microuzi"
+			}
+		}
+
+		optionalpart
+		{
+			name	"slide_fwd"
+
+			surface1	"slidea"
+			surface2	"slidef"
+			surface3	"slidel"
+			surface4	"slider"
+		}
+
+		optionalpart
+		{
+			name	"slide_back"
+
+			surface1	"slidea_off"
+			surface2	"slidef_off"
+			surface3	"slidel_off"
+			surface4	"slider_off"
+		}
+
+		rightside
+		{
+			surface1	"slider"
+			surface2	"stockr"
+			surface3	"slider"
+			surface4	"bodyr"
+		}
+		leftside
+		{
+			surface1	"bodyl"
+			surface2	"stockl"
+			surface3	"clipl"
+			surface4	"slidel"
+		}
+		front
+		{
+			surface1	"bodyf"
+			surface2	"stockf"
+			surface3	"clipf"
+			surface4	"slidef"
+			surface5	"muzzlef"
+		}
+	}
+
+	anim
+	{
+		name	"crawl"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"microuzircrawl"
+			speed	"0.5"
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lmicrouzircrawl"
+			speed	"0.5"
+			lodbias	2
+		}
+	}
+
+	anim
+	{
+		name	"rightcrawl"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"microuzircrawl"
+			speed	"0.5"
+		}
+	}
+
+	anim
+	{
+		name	"leftcrawl"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"microuzilcrawl"
+			speed	"0.5"
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lmicrouzircrawl"
+			speed	"0.5"
+			lodbias	2
+		}
+	}
+
+	anim
+	{
+		name	"standtoprone"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"microuzirstandtoprone"
+			speed	"0.5"
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"rmicrouzirstandtoprone"
+			speed	"0.5"
+			lodbias	2
+		}
+	}
+
+	anim
+	{
+		name	"leftstandtoprone"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"microuzilstandtoprone"
+			speed	"0.5"
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lmicrouzilstandtoprone"
+			speed	"0.5"
+			lodbias	2
+		}
+	}
+
+	anim
+	{
+		name	"pronetostand"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"microuzirpronetostand"
+			speed	"1.0"
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"rmicrouzirpronetostand"
+			speed	"1.0"
+			lodbias	2
+		}
+	}
+
+	anim
+	{
+		name	"leftpronetostand"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"microuzilpronetostand"
+			speed	"1.0"
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lmicrouzilready"
+			speed	"1.0"
+			lodbias	2
+		}
+	}
+
+	anim
+	{
+		name	"idle"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"microuziridle"
+			extra1	"microuzirfingeradjust"
+			extra2	"microuzirfingergunup"
+			speed	0.5
+
+			mp_speed	0.5
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"rmicrouziridle"
+			extra1	"rmicrouzirfingeradjust"
+			extra2	"rmicrouzirfingergunup"
+			speed	0.5
+
+			mp_speed	0.5
+		}
+	}
+
+	anim
+	{
+		name	"ready"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"microuzirready"
+			speed	0.5
+
+			mp_speed	1
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"rmicrouzirready"
+			speed	0.5
+
+			mp_speed	1
+		}
+	}
+
+	anim
+	{
+		name	"dualready"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"microuziraltready"
+			speed	1
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"rmicrouziridle"
+			speed	1
+		}
+	}
+
+	anim
+	{
+		name	"done"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"microuzirdone"
+			speed	1
+
+			mp_speed	2
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"rmicrouziridle"
+			speed	1
+
+			mp_speed	2
+		}
+	}
+
+	anim
+	{
+		name	"fire"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			animNoLerp1	"microuzirfire"
+			animNoLerp2	"microuzirfire2"
+			animNoLerp3	"microuzirfire3"
+			animNoLerp4	"microuzirfire4"
+			speed	1
+
+			mp_speed	1.1
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"rmicrouzirfire"
+			speed	1
+
+			mp_speed	1.1
+		}
+	}
+
+	anim
+	{
+		name	"dryfire"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim1	"microuzirdryfire"
+			speed	1
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"rmicrouzirdryfire"
+			speed	1
+		}
+	}
+
+	anim
+	{
+		name	"leftaltfire"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"microuzilhandrpistolwhip"
+			speed	"0.5"
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lmicrouzilidle"
+			speed	"0.5"
+			lodbias	2
+		}
+	}
+
+	anim
+	{
+		name	"reload"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"microuzirfullreload"
+			speed	0.7
+
+			mp_speed	0.5
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"rmicrouzirfullreload"
+			speed	0.7
+
+			mp_speed	0.5
+		}
+	}
+
+	anim
+	{
+		name	"emptyreload"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"microuzirreload"
+			speed	0.7
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"rmicrouzirreload"
+			speed	0.7
+		}
+	}
+
+	anim
+	{
+		name	"leftidle"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"microuzilidle"
+			extra1	"microuzilfingeradjust"
+			extra2	"microuzilfingergunup"
+			speed	0.5
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lmicrouzilidle"
+			extra1	"lmicrouzilfingeradjust"
+			extra2	"lmicrouzilfingergunup"
+			speed	0.5
+		}
+	}
+
+	anim
+	{
+		name	"leftready"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"microuzilaltready"
+			speed	1
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lmicrouzilidle"
+			speed	1
+		}
+	}
+
+	anim
+	{
+		name	"leftdone"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"microuzildone"
+			speed	1
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lmicrouzilidle"
+			speed	1
+		}
+	}
+
+	anim
+	{
+		name	"leftfire"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			animNoLerp1	"microuzilfire"
+			animNoLerp2	"microuzilfire"
+			animNoLerp3	"microuzilfire"
+			animNoLerp4	"microuzilfire"
+			speed	1
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lmicrouzilfire"
+			speed	1
+		}
+	}
+
+	anim
+	{
+		name	"leftreload"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"microuzilfullreload"
+			speed	0.7
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lmicrouzilfullreload"
+			speed	0.7
+		}
+	}
+
+	anim
+	{
+		name	"leftemptyreload"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"microuzilreload"
+			speed	0.7
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lmicrouzilreload"
+			speed	0.7
+		}
+	}
+}
+
+weapon
+{
+	name		"USAS-12"
+	foreshorten	"0.6"
+
+	viewoffset
+	{
+		forward	"0"
+		right	"0"
+		up	"0"
+	}
+	sounds
+	{
+		fire
+		{
+			sound1		"sound/weapons/usas12/fire01"
+			sound2		"sound/weapons/usas12/fire02"
+		}
+		
+		ready	
+		{
+			sound1		"sound/weapons/usas12/ready"
+		}
+
+		snapout
+		{
+			sound1		"sound/weapons/usas12/snapout"
+		}
+		
+		slide
+		{
+			sound1		"sound/weapons/usas12/slide_release"
+		}
+
+		snapin
+		{
+			sound1		"sound/weapons/usas12/snapin"
+		}
+		fingeradjust
+		{
+			sound1		"sound/weapons/idle/idle01"
+		}
+
+		pat
+		{
+			sound1		"sound/weapons/usas12/pat"
+		}
+	}
+
+	forcefeedback
+	{
+		fire
+		{
+			force1		"fffx/weapons/usas12/fire"
+		}
+		
+		ready	
+		{
+			force1		"fffx/weapons/usas12/ready"
+		}
+
+		snapout
+		{
+			force1		"fffx/weapons/usas12/snapout"
+		}
+
+		slide
+		{
+			force1		"fffx/weapons/usas12/slide_release"
+		}
+
+		snapin
+		{
+			force1		"fffx/weapons/usas12/snapin"
+		}
+		fingeradjust
+		{
+			force1		"fffx/weapons/idle/idle01"
+		}
+
+		pat
+		{
+			force1		"fffx/weapons/usas12/pat"
+		}
+	}
+
+	weaponmodel
+	{
+		name	"mainwpn"
+		model	"models/weapons/usas12/usas12.glm"
+		frames	"skeletons/weapons/usas12/usas12.frames"
+
+		buffer
+		{
+			name	"rifle buffer"
+			model	"models/weapons/buffer/rifle/buffer.glm"
+			bolttobone	"gun"
+			muzzle	"flash_usas12"
+		}
+
+		hands
+		{
+			left
+			{
+				bolttobone	"lhand_usas12"
+			}
+		}
+
+		rightside
+		{
+			surface1	"usas12bodyh"
+			surface2	"usas12stockh"
+			surface3	"usas12handleh"
+			surface4	"usas12sighth"
+			surface5	"usas12toph"
+			surface6	"usas12barrelh"
+		}
+	}
+
+	anim
+	{
+		name	"crawl"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"usas12crawl"
+			speed	"0.5"
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lusas12crawl"
+			speed	"0.5"
+			lodbias	2
+		}
+	}
+
+	anim
+	{
+		name	"standtoprone"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"usas12standtoprone"
+			speed	"0.5"
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lusas12standtoprone"
+			speed	"0.5"
+			lodbias	2
+		}
+	}
+
+	anim
+	{
+		name	"pronetostand"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"usas12pronetostand"
+			speed	"0.5"
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lusas12pronetostand"
+			speed	"0.5"
+			lodbias	2
+		}
+	}
+
+	anim
+	{
+		name	"idle"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"usas12idle"
+			extra1	"usas12fingeradjust"
+			extra2	"usas12fingerpat"
+			speed	0.5
+
+			mp_speed	1
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lusas12idle"
+			extra1	"lusas12fingeradjust"
+			extra2	"lusas12fingerpat"
+			speed	0.5
+
+			mp_speed	1
+		}
+	}
+
+	anim
+	{
+		name	"done"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"usas12done"
+			speed	0.5
+
+			mp_speed	1.5
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lusas12idle"
+			speed	0.5
+
+			mp_speed	1.5
+		}
+	}
+
+	anim
+	{
+		name	"ready"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"usas12ready"
+			speed	0.5
+
+			mp_speed	0.5
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lusas12ready"
+			speed	0.5
+
+			mp_speed	0.5
+		}
+	}
+
+	anim
+	{
+		name	"fire"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"usas12fire"
+			speed	2
+
+			mp_speed	3.5
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lusas12fire"
+			speed	2
+
+			mp_speed	3.5
+		}
+	}
+
+	anim
+	{
+		name	"fire2"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"usas12autofire"
+			speed	2
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lusas12fire"
+			speed	2
+		}
+	}
+
+	anim
+	{
+		name	"reload"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"usas12reload"
+			speed	0.5
+
+			mp_speed	1
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lusas12reload"
+			speed	0.5
+
+			mp_speed	1
+		}
+	}
+
+
+}
+
+weapon
+{
+	name		"Knife"
+	foreshorten	"0.6"
+
+	viewoffset
+	{
+		forward	"0"
+		right	"0"
+		up	"0"
+	}
+	sounds
+	{
+		ready
+		{
+			sound1		"sound/weapons/knife/ready"
+		}
+		swing
+		{
+			sound1		"sound/weapons/knife/swing01"
+			sound2		"sound/weapons/knife/swing02"
+			sound3		"sound/weapons/knife/swing03"
+		}
+
+		toss
+		{
+			sound1		"sound/weapons/knife/throw_idle"
+		}
+	}
+
+	surfaces
+	{
+		bluroff
+		{
+			blur1	off
+			blur2	off
+			blur3	off
+			blur4	off
+		}
+
+		bluron
+		{
+			blur1	on
+			blur2	on
+			blur3	on
+			blur4	on
+		}
+	}
+
+	forcefeedback
+	{
+		ready
+		{
+			force1		"fffx/weapons/knife/ready"
+		}
+		swing
+		{
+			force1		"fffx/weapons/knife/swing"
+		}
+		toss
+		{
+			force1		"fffx/weapons/knife/throw"
+		}
+	}
+
+	weaponmodel
+	{
+		name	"mainwpn"
+		model	"models/weapons/knife/knife.glm"
+		frames	"skeletons/weapons/knife/knife.frames"
+
+		buffer
+		{
+			name	"acc buffer"
+			model	"models/weapons/buffer/acc/buffer.glm"
+			bolttobone	"handle"
+			muzzle	"flash_knife"
+		}
+
+		hands
+		{
+			left
+			{
+				bolttobone	"lhand_knife"
+			}
+			right
+			{
+				bolttobone	"rhand_knife"
+			}
+		}
+	}
+
+	anim
+	{
+		name	"crawl"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"knifecrawl"
+			speed	"0.5"
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lknifecrawl"
+			speed	"0.5"
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"rknifecrawl"
+			speed	"0.5"
+		}
+	}
+
+	anim
+	{
+		name	"standtoprone"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"knifestandtoprone"
+			speed	"0.5"
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"rknifestandtoprone"
+			speed	"0.5"
+		}
+	}
+
+	anim
+	{
+		name	"pronetostand"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"knifepronetostand"
+			speed	"1.0"
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"rknifepronetostand"
+			speed	"1.0"
+		}
+	}
+
+	anim
+	{
+		name	"idle"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"knifeidle"
+			extraNoLerp1	"knifefingerspin01"
+			speed	1
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"rknifeidle"
+			extraNoLerp1	"rknifefingerspin01"
+			speed	1
+		}
+	}
+
+	anim
+	{
+		name	"done"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"knifedone"
+			speed	0.5
+
+			mp_speed	1.5
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"rknifedone"
+			speed	0.5
+
+			mp_speed	1.5
+		}
+	}
+
+	anim
+	{
+		name	"ready"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"knifeready"
+			speed	0.5
+
+			mp_speed	1.5
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"rknifeready"
+			speed	0.5
+
+			mp_speed	1.5
+		}
+	}
+
+	anim
+	{
+		name	"prefire"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"knifepullback"
+			speed	1
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"rknifeidle"
+			speed	1
+		}
+	}
+
+	anim
+	{
+		name	"fire"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			animNoLerp1	"knifeur_ll"
+			animNoLerp2	"knifelr_ll"
+			animNoLerp3	"knifelr_ul"
+			transition1	"firetrans1"
+			transition2	"firetrans1"
+			transition3	"firetrans1"
+			end1	"fireend1"
+			end2	"fireend1"
+			end3	"fireend1"
+			speed	1
+
+			mp_speed	.9
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"rknifeidle"
+			speed	1
+
+			mp_speed	.9
+		}
+	}
+
+	anim
+	{
+		name	"firetrans1"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			animNoLerp1	"knifell_lr"
+			animNoLerp2	"knifell_ur"
+			animNoLerp3	"knifeul_lr"
+			transition1	"fire"
+			transition2	"fire"
+			transition3	"fire"
+			end1	"fireend2"
+			end2	"fireend2"
+			end3	"fireend2"
+			speed	1
+
+			mp_speed	.9
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"rknifeidle"
+			speed	1
+
+			mp_speed	.9
+		}
+	}
+
+	anim
+	{
+		name	"fireend1"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"knifeupfromll"
+			speed	1
+
+			mp_speed	.9
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"rknifeidle"
+			speed	1
+
+			mp_speed	.9
+		}
+	}
+
+	anim
+	{
+		name	"fireend2"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"knifeupfromlr"
+			speed	1
+
+			mp_speed	.9
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"rknifeidle"
+			speed	1
+
+			mp_speed	.9
+		}
+	}
+
+	anim
+	{
+		name	"altfire"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"knifealtfire"
+			speed	1
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"rknifealtfire"
+			speed	1
+		}
+	}
+
+	anim
+	{
+		name	"reload"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"knifeready"
+			speed	0.5
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"rknifeready"
+			speed	0.5
+		}
+	}
+}
+
+weapon
+{
+	name		"M590"
+	foreshorten	"0.6"
+
+	viewoffset
+	{
+		forward	"0"
+		right	"0"
+		up	"0"
+	}
+	sounds
+	{
+		fire
+		{
+			sound1		"sound/weapons/m590/fire01"
+		}
+		altfire
+		{
+			sound1		"sound/weapons/ak74/swing01"
+			sound2		"sound/weapons/ak74/swing02"
+		}
+		pump_back
+		{
+			sound1		"sound/weapons/m590/pump1"
+		}
+		pump_forward
+		{
+			sound1		"sound/weapons/m590/pump2"
+		}
+		reload
+		{
+			sound1		"sound/weapons/m590/reload_shells"
+		}
+		fingeradjust
+		{
+			sound1		"sound/weapons/idle/idle01"
+		}
+		gunflip
+		{
+			sound1		"sound/weapons/m590/gun_flip"
+		}
+		
+	}
+
+	forcefeedback
+	{
+		fire
+		{
+			force1		"fffx/weapons/m590/fire"
+		}
+		altfire
+		{
+			force1		"fffx/weapons/ak74/altfire"
+		}
+		pump_back
+		{
+			force1		"fffx/weapons/m590/pump_back"
+		}
+		pump_forward
+		{
+			force1		"fffx/weapons/m590/pump_forward"
+		}
+		reload
+		{
+			force1		"fffx/weapons/m590/reload"
+		}
+		fingeradjust
+		{
+			force1		"fffx/weapons/idle/idle01"
+		}
+		gunflip
+		{
+			force1		"fffx/weapons/m590/gunflip"
+		}
+	}
+	surfaces
+	{
+		spinsurfacesoff
+		{
+			m590bodyr	off
+			m590handler	off
+			m590sightr	off
+			m590pumpr	off
+			m590bodyb	off
+			m590barrelb	off
+			m590handleb	off
+			m590sightb	off
+			m590pumpb	off
+
+		}
+
+		spinsurfaceson
+		{
+			m590bodyr	on
+			m590handler	on
+			m590sightr	on
+			m590pumpr	on
+			m590bodyb	on
+			m590barrelb	on
+			m590handleb	on
+			m590sightb	on
+			m590pumpb	on
+		}
+
+		riflebuttsurfaceson
+		{
+			m590bodyf	on
+			m590sightf	on
+		}
+
+		riflebuttsurfacesoff
+		{
+			m590bodyf	off
+			m590sightf	off
+
+		}
+
+	}
+
+	weaponmodel
+	{
+		name	"mainwpn"
+		model	"models/weapons/m590/m590.glm"
+		frames	"skeletons/weapons/m590/m590.frames"
+
+		buffer
+		{
+			name	"rifle buffer"
+			model	"models/weapons/buffer/rifle/buffer.glm"
+			bolttobone	"gun"
+			muzzle	"flash_m590"
+		}
+
+		hands
+		{
+			left
+			{
+				bolttobone	"lhand_m590"
+			}
+			right
+			{
+				bolttobone	"rhand_m590"
+			}
+		}
+
+		rightside
+		{
+			surface1	"m590bodyr"
+			surface2	"m590handler"
+			surface3	"m590sightr"
+			surface4	"m590pumpr"
+		}
+		front
+		{
+			surface1	"m590bodyf"
+			surface2	"m590barrelf"
+			surface3	"m590handlef"
+			surface4	"m590sightf"
+			surface5	"m590bodyb"
+			surface6	"m590barrelb"
+			surface7	"m590handleb"
+			surface8	"m590sightb"
+			surface9	"m590pumpb"
+		}
+	}
+
+	anim
+	{
+		name	"crawl"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m590crawl"
+			speed	0.5
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lm590crawl"
+			speed	0.5
+		}
+	}
+
+	anim
+	{
+		name	"pronetostand"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m590pronetostand"
+			speed	1.0
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lm590pronetostand"
+			speed	1.0
+		}
+	}
+
+	anim
+	{
+		name	"standtoprone"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m590standtoprone"
+			speed	0.5
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lm590standtoprone"
+			speed	0.5
+		}
+	}
+
+	anim
+	{
+		name	"idle"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m590idle"
+			extraNoLerp1	"m590fingerspin"
+			extra2	"m590fingeradjust"
+			speed	1
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lm590idle"
+			extraNoLerp1	"lm590fingerspin"
+			extra2	"lm590fingeradjust"
+			speed	1
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			extraNoLerp1	"rm590fingerspin"
+			speed	1
+		}
+	}
+
+	anim
+	{
+		name	"done"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m590done"
+			speed	0.5
+
+			mp_speed	2
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lm590idle"
+			speed	0.5
+
+			mp_speed	2
+		}
+	}
+
+	anim
+	{
+		name	"ready"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m590ready"
+			speed	0.5
+
+			mp_speed	1.25
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lm590ready"
+			speed	0.5
+
+			mp_speed	1.25
+		}
+	}
+
+	anim
+	{
+		name	"fire"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m590fire"
+			speed	1
+
+			mp_speed 1.75
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lm590fire"
+			speed	1
+
+			mp_speed 1.75
+		}
+	}
+
+	anim
+	{
+		name	"altfire"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m590riflebutt"
+			speed	1
+
+			mp_speed	.8
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lm590riflebutt"
+			speed	1
+
+			mp_speed	.8
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"rm590riflebutt"
+			speed	1
+
+			mp_speed	.8
+		}
+	}
+
+	anim
+	{
+		name	"reload"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m590reload"
+			speed	0.5
+
+			mp_speed 1
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lm590reload"
+			speed	0.5
+
+			mp_speed 1
+		}
+	}
+
+	anim
+	{
+		name	"reloadbegin"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m590reloadstart"
+			speed	0.5
+
+			mp_speed 0.7
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lm590idle"
+			speed	0.5
+
+			mp_speed 0.7
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"rm590reloadstart"
+			speed	0.5
+
+			mp_speed 0.7
+		}
+	}
+
+	anim
+	{
+		name	"reloadshell"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim1	"m590loadshell01"
+			anim2	"m590loadshell02"
+			anim3	"m590loadshell03"
+			speed	0.5
+
+			mp_speed 1.1
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lm590idle"
+			speed	0.5
+
+			mp_speed 1.1
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"rm590loadshell"
+			speed	0.5
+
+			mp_speed 1.1
+		}
+	}
+
+	anim
+	{
+		name	"reloadend"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m590reloadend"
+			speed	.7
+
+			mp_speed 1.25
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lm590reloadend"
+			speed	.7
+
+			mp_speed 1.25
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"rm590reloadend"
+			speed	.7
+
+			mp_speed 1.25
+		}
+	}
+
+}
+
+weapon
+{
+	name		"MM1"
+	foreshorten	"0.6"
+
+	viewoffset
+	{
+		forward	"0"
+		right	"0"
+		up	"0"
+	}
+	sounds
+	{
+		fire
+		{
+			sound1		"sound/weapons/mm1/fire01"
+		}
+
+		ready
+		{
+			sound1		"sound/weapons/mm1/ready"
+		}
+
+		drum_open
+		{
+			sound1		"sound/weapons/mm1/open_chamber"
+		}
+
+		drum_close
+		{
+			sound1		"sound/weapons/mm1/close_chamber"
+		}
+		fingeradjust
+		{
+			sound1		"sound/weapons/idle/idle01"
+		}
+		tipup
+		{
+			sound1		"sound/weapons/idle/idle03"
+		}
+		reload
+		{
+			sound1		"sound/weapons/mm1/grenade_load"
+		}
+	}
+
+	forcefeedback
+	{
+		fire
+		{
+			force1		"fffx/weapons/mm1/fire"
+		}
+
+		ready
+		{
+			force1		"fffx/weapons/mm1/ready"
+		}
+
+		drum_open
+		{
+			force1		"fffx/weapons/mm1/drum_open"
+		}
+
+		drum_close
+		{
+			force1		"fffx/weapons/mm1/drum_close"
+		}
+		fingeradjust
+		{
+			force1		"fffx/weapons/idle/idle01"
+		}
+
+		tipup
+		{
+			force1		"fffx/weapons/idle/idle03"
+		}
+
+		reload
+		{
+			force1		"fffx/weapons/mm1/reload"
+		}
+	}
+
+	boltonActions
+	{
+		drumrotate1
+		{
+			bolton		"drum"
+			joint		"gun"
+			roll		5
+		}
+		drumrotate2
+		{
+			bolton		"drum"
+			joint		"gun"
+			roll		5
+		}
+		drumrotate3
+		{
+			bolton		"drum"
+			joint		"gun"
+			roll		5
+		}
+		drumrotate4
+		{
+			bolton		"drum"
+			joint		"gun"
+			roll		5
+		}
+		drumrotate5
+		{
+			bolton		"drum"
+			joint		"gun"
+			roll		5
+		}
+		drumrotate6
+		{
+			bolton		"drum"
+			joint		"gun"
+			roll		5
+		}
+	}
+
+	weaponmodel
+	{
+		name	"mainwpn"
+		model	"models/weapons/mm1/mm1.glm"
+		frames	"skeletons/weapons/mm1/mm1.frames"
+
+		buffer
+		{
+			name	"at buffer"
+			model	"models/weapons/buffer/at/buffer.glm"
+			bolttobone	"gun"
+			muzzle	"flash_mm1"
+		}
+
+		hands
+		{
+			left
+			{
+				bolttobone	"lhand_mm1"
+			}
+		}
+
+		bolton
+		{
+			name	"drum"
+			model	"models/weapons/mm1drum/mm1drum.glm"
+			frames	"skeletons/weapons/mm1drum/mm1drum.frames"
+			parent	"at buffer"
+			bolttobone	"drum_mm1"
+
+			rightside
+			{
+				surface1	"mm1bodyh"
+			}
+
+			joint
+			{
+				bone	"gun"
+				parentBone	"model_root"
+				fwd		"-y"
+				right	"-x"
+				up		"+z"
+			}
+		}
+	}
+
+	anim
+	{
+		name	"crawl"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"mm1crawl"
+			speed	"0.5"
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lmm1crawl"
+			speed	"0.5"
+			lodbias	2
+		}
+
+		info
+		{
+			type	"bolton"
+			name	"drum"
+			anim	"mm1drumbase"
+			speed	0.5
+		}
+	}
+
+	anim
+	{
+		name	"standtoprone"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"mm1standtoprone"
+			speed	"0.5"
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lmm1standtoprone"
+			speed	"0.5"
+			lodbias	2
+		}
+
+		info
+		{
+			type	"bolton"
+			name	"drum"
+			anim	"mm1drumbase"
+			speed	0.5
+		}
+	}
+
+	anim
+	{
+		name	"pronetostand"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"mm1pronetostand"
+			speed	"0.5"
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lmm1pronetostand"
+			speed	"0.5"
+			lodbias	2
+		}
+
+		info
+		{
+			type	"bolton"
+			name	"drum"
+			anim	"mm1drumbase"
+			speed	0.5
+		}
+	}
+
+	anim
+	{
+		name	"idle"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"mm1idle"
+			extra1	"mm1fingeradjust"
+			extra2	"mm1fingertipup"
+			speed	0.5
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lmm1idle"
+			extra1	"lmm1fingeradjust"
+			extra2	"lmm1fingertipup"
+			speed	0.5
+		}
+		
+		info
+		{
+			type	"bolton"
+			name	"drum"
+			anim	"mm1drumbase"
+			speed	0.5
+		}
+	}
+	anim
+	{
+		name	"ready"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"mm1ready"
+			speed	0.5
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lmm1idle"
+			speed	0.5
+		}
+		
+		info
+		{
+			type	"bolton"
+			name	"drum"
+			anim	"mm1drumbase"
+			speed	0.5
+		}
+	}
+	anim
+	{
+		name	"fire"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim1	"mm1fire"
+			anim2	"mm1fire2"
+			anim3	"mm1fire3"
+			speed	0.5
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lmm1idle"
+			speed	0.5
+		}
+		
+		info
+		{
+			type	"bolton"
+			name	"drum"
+			anim	"mm1drumbase"
+			speed	0.5
+		}
+	}
+
+	anim
+	{
+		name	"reload"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"mm1reload"
+			speed	0.5
+
+			mp_speed	0.4
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lmm1reload"
+			speed	0.5
+
+			mp_speed	0.4
+		}
+		
+		info
+		{
+			type	"bolton"
+			name	"drum"
+			anim	"mm1drumbase"
+			speed	0.5
+
+			mp_speed	0.4
+		}
+	}
+
+	anim
+	{
+		name	"reloadbegin"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"mm1reloadstart"
+			speed	0.5
+
+			mp_speed	0.4
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lmm1reloadstart"
+			speed	0.5
+
+			mp_speed	0.4
+		}
+		
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"rmm1reloadstart"
+			speed	0.5
+
+			mp_speed	0.4
+		}
+		
+		info
+		{
+			type	"bolton"
+			name	"drum"
+			anim	"mm1drumbase"
+			speed	0.5
+
+			mp_speed	0.4
+		}
+	}
+
+	anim
+	{
+		name	"reloadshell"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim1	"mm1reloadshell01"
+			anim2	"mm1reloadshell02"
+			anim3	"mm1reloadshell03"
+			speed	0.5
+
+			mp_speed	0.4
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lmm1idle"
+			speed	0.5
+
+			mp_speed	0.4
+		}
+
+		info
+		{
+			type	"bolton"
+			name	"drum"
+			anim	"mm1drumbase"
+			speed	0.5
+
+			mp_speed	0.4
+		}
+	}
+
+	anim
+	{
+		name	"reloadend"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"mm1reloadend"
+			speed	0.5
+
+			mp_speed	0.4
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lmm1idle"
+			speed	0.5
+
+			mp_speed	0.4
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"rmm1reloadend"
+			speed	0.5
+
+			mp_speed	0.4
+		}
+
+		info
+		{
+			type	"bolton"
+			name	"drum"
+			anim	"mm1drumbase"
+			speed	0.5
+
+			mp_speed	0.4
+		}
+	}
+
+	anim
+	{
+		name	"done"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"mm1done"
+			speed	0.5
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lmm1idle"
+			speed	0.5
+		}
+		
+		info
+		{
+			type	"bolton"
+			name	"drum"
+			anim	"mm1drumbase"
+			speed	0.5
+		}
+	}
+}
+
+weapon
+{
+	name		"RPG7"
+	foreshorten	"0.6"
+
+	viewoffset
+	{
+		forward	"0"
+		right	"0"
+		up	"0"
+	}
+	sounds
+	{
+		fire
+		{
+			sound1		"sound/weapons/rpg7/fire01"
+		}
+
+		ready
+		{
+			sound1		"sound/weapons/rpg7/ready"
+		}
+		fingeradjust
+		{
+			sound1		"sound/weapons/idle/idle01"
+		}		
+	}
+
+	forcefeedback
+	{
+		fire
+		{
+			force1		"fffx/weapons/rpg7/fire"
+		}
+
+		ready
+		{
+			force1		"fffx/weapons/rpg7/ready"
+		}
+		fingeradjust
+		{
+			force1		"fffx/weapons/idle/idle01"
+		}
+	}
+
+	surfaces
+	{
+		rocketoff
+		{
+			rockethead	off
+			rockettail	off
+		}
+
+		rocketon
+		{
+			rockethead	on
+			rockettail	on
+		}
+	}
+
+	weaponmodel
+	{
+		name	"mainwpn"
+		model	"models/weapons/rpg7/rpg7.glm"
+		frames	"skeletons/weapons/rpg7/rpg7.frames"
+
+		buffer
+		{
+			name	"at buffer"
+			model	"models/weapons/buffer/at/buffer.glm"
+			bolttobone	"gun"
+			muzzle	"flash_rpg7"
+		}
+
+		hands
+		{
+			left
+			{
+				bolttobone	"lhand_rpg7"
+			}
+			right
+			{
+				bolttobone	"rhand_rpg7"
+			}
+		}
+	}
+
+	anim
+	{
+		name	"crawl"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"rpg7crawl"
+			speed	"0.5"
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lrpg7crawl"
+			speed	"0.5"
+			lodbias	2
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"rrpg7idle"
+			speed	0.5
+			lodbias	2
+		}	
+	}
+
+	anim
+	{
+		name	"standtoprone"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"rpg7standtoprone"
+			speed	"0.5"
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"rrpg7idle"
+			speed	0.5
+		}	
+	}
+
+	anim
+	{
+		name	"pronetostand"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"rpg7pronetostand"
+			speed	"0.5"
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"rrpg7idle"
+			speed	0.5
+		}
+	}
+
+	anim
+	{
+		name	"idle"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"rpg7idle"
+			extra1	"rpg7fingeradjust"
+			speed	0.5
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"rrpg7idle"
+			extra1	"rrpg7fingeradjust"
+			speed	0.5
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			extra1	"lrpg7fingeradjust"
+			speed	0.5
+		}
+	}
+	anim
+	{
+		name	"ready"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"rpg7ready"
+			speed	0.5
+
+			mp_speed	1
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"rrpg7idle"
+			speed	0.5
+
+			mp_speed	1
+		}		
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lrpg7ready"
+			speed	0.5
+
+			mp_speed	1
+		}
+	}
+	anim
+	{
+		name	"fire"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"rpg7fire"
+			speed	0.5
+
+			mp_speed	1
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"rrpg7idle"
+			speed	0.5
+
+			mp_speed	1
+		}
+	}
+	anim
+	{
+		name	"reload"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"rpg7reload"
+			speed	0.5
+
+			mp_speed	1
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"rrpg7idle"
+			speed	0.5
+
+			mp_speed	1
+		}
+	}
+	anim
+	{
+		name	"done"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"rpg7done"
+			speed	0.5
+
+			mp_speed	1.25
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"rrpg7idle"
+			speed	0.5
+
+			mp_speed	1.25
+		}
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lrpg7done"
+			speed	0.5
+
+			mp_speed	1.25
+		}
+	}
+}
+
+weapon
+{
+	name		"OICW"
+	foreshorten	"0.6"
+
+	viewoffset
+	{
+		forward	"0"
+		right	"0"
+		up	"0"
+	}
+	sounds
+	{
+		fire
+		{
+			sound1		"sound/weapons/oicw/fire01"
+			sound2		"sound/weapons/oicw/fire02"
+		}
+
+		ready
+		{
+			sound1		"sound/weapons/oicw/ready"
+		}
+		
+		altfire
+		{
+			sound1		"sound/weapons/m4/glaunch"
+		}
+
+		clipin
+		{
+			sound1		"sound/weapons/oicw/clipin"
+		}
+
+		clipout
+		{
+			sound1		"sound/weapons/oicw/clipout"
+		}
+
+		bolt
+		{
+			sound1		"sound/weapons/oicw/bolt"
+		}
+
+		bolt_forward
+		{
+			sound1		"sound/weapons/oicw/bolt_forward"
+		}
+		knob_adjust
+		{
+			sound1		"sound/weapons/oicw/adjust"
+		}
+		knob_adjust2
+		{
+			sound1		"sound/weapons/oicw/adjust"
+		}
+		altclipin
+		{
+			sound1		"sound/weapons/usas12/snapin"
+		}
+		altclipout
+		{
+			sound1		"sound/weapons/usas12/snapout"
+		}
+	}
+
+	forcefeedback
+	{
+		fire
+		{
+			force1		"fffx/weapons/oicw/fire"
+		}
+
+		ready
+		{
+			force1		"fffx/weapons/oicw/ready"
+		}
+
+		clipin
+		{
+			force1		"fffx/weapons/oicw/clipin"
+		}
+
+		clipout
+		{
+			force1		"fffx/weapons/oicw/clipout"
+		}
+
+		bolt
+		{
+			force1		"fffx/weapons/oicw/bolt"
+		}
+
+		bolt_forward
+		{
+			force1		"fffx/weapons/oicw/bolt_forward"
+		}
+		knob_adjust
+		{
+			force1		"fffx/weapons/oicw/adjust"
+		}
+
+		knob_adjust2
+		{
+			force1		"fffx/weapons/oicw/adjust"
+		}
+		altclipin
+		{
+			force1		"fffx/weapons/usas12/snapin"
+		}
+		altclipout
+		{
+			force1		"fffx/weapons/usas12/snapout"
+		}
+	}
+
+	weaponmodel
+	{
+		name	"mainwpn"
+		model	"models/weapons/oicw/oicw.glm"
+		frames	"skeletons/weapons/oicw/oicw.frames"
+
+		buffer
+		{
+			name	"rifle buffer"
+			model	"models/weapons/buffer/rifle/buffer.glm"
+			bolttobone	"gun"
+			muzzle	"flashtop_oicw"
+		}
+
+		hands
+		{
+			left
+			{
+				bolttobone	"lhand_oicw"
+			}
+		}
+
+	}
+
+	anim
+	{
+		name	"crawl"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"oicwcrawl"
+			speed	"0.5"
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"loicwcrawl"
+			speed	"0.5"
+			lodbias	2
+		}
+	}
+
+	anim
+	{
+		name	"standtoprone"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"oicwstandtoprone"
+			speed	"0.5"
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"loicwstandtoprone"
+			speed	"0.5"
+			lodbias	2
+		}
+	}
+
+	anim
+	{
+		name	"pronetostand"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"oicwpronetostand"
+			speed	"0.5"
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"loicwpronetostand"
+			speed	"0.5"
+			lodbias	2
+		}
+	}
+
+	anim
+	{
+		name	"idle"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"oicwidle"
+			extra1	"oicwfingeradjust"
+			extra2	"oicwfingerknobs"
+			speed	0.5
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"loicwidle"
+			extra1	"loicwfingeradjust"
+			extra2	"loicwfingerknobs"
+			speed	0.5
+		}
+	}
+	anim
+	{
+		name	"ready"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"oicwready"
+			speed	0.5
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"loicwready"
+			speed	0.5
+		}
+	}
+	anim
+	{
+		name	"done"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"oicwdone"
+			speed	0.5
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"loicwidle"
+			speed	0.5
+		}
+	}
+	anim
+	{
+		name	"fire"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim1	"oicwfire"
+			anim2	"oicwfire2"
+			anim3	"oicwfire3"
+			anim4	"oicwfire4"
+			speed	1
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"loicwidle"
+			speed	1
+		}
+	}
+	anim
+	{
+		name	"reload"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"oicwreload"
+			speed	0.5
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"loicwreload"
+			speed	0.5
+		}
+	}
+	anim
+	{
+		name	"altreload"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"oicwaltreload"
+			speed	0.5
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"loicwaltreload"
+			speed	0.5
+		}
+	}
+
+	anim
+	{
+		name	"altfire"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"oicwaltfire"
+			speed	0.5
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"loicwidle"
+			speed	0.5
+		}
+	}
+	anim
+	{
+		name	"zoomin"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"oicwzoomin"
+			speed	0.5
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"loicwzoomin"
+			speed	0.5
+		}
+	}
+
+	anim
+	{
+		name	"zoomout"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"oicwzoomout"
+			speed	0.5
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"loicwzoomout"
+			speed	0.5
+		}
+	}
+}
+
+weapon
+{
+	name		"M1911A1"
+	foreshorten	"0.6"
+
+	viewoffset
+	{
+		forward	"0"
+		right	"0"
+		up	"0"
+	}
+	sounds
+	{
+		fire
+		{
+			
+			
+			sound1	"sound/weapons/m1911a1/fire01"
+			sound2	"sound/weapons/m1911a1/fire02"
+		
+		}
+		altfire
+		{
+			sound1	"sound/weapons/m1911a1/swing01"
+			sound2	"sound/weapons/m1911a1/swing02"
+		}
+		hammerback
+		{
+			sound1	"sound/weapons/m1911a1/hammerback"
+		}
+		clipout
+		{
+			sound1	"sound/weapons/m1911a1/clipout"
+		}	
+		clipin
+		{
+			sound1	"sound/weapons/m1911a1/clipin"
+		}	
+		slide
+		{
+			sound1	"sound/weapons/m1911a1/slide"
+		}	
+		spin
+		{
+			sound	"sound/weapons/ussocom/spin"
+		}
+		gunup
+		{
+			sound	"sound/weapons/idle/idle03"
+		}
+	}
+
+	forcefeedback
+	{
+		fire
+		{
+			force1	"fffx/weapons/m1911a1/fire"
+		}
+		altfire
+		{
+			force1	"fffx/weapons/m1911a1/swing01"
+			force2	"fffx/weapons/m1911a1/swing02"
+		}
+		hammerback
+		{
+			force1	"fffx/weapons/m1911a1/hammerback"
+		}
+		clipout
+		{
+			force1	"fffx/weapons/m1911a1/clipout"
+		}
+		clipin
+		{
+			force1	"fffx/weapons/m1911a1/clipin"
+		}
+		slide
+		{
+			force1	"fffx/weapons/m1911a1/slide"
+		}
+		spin
+		{
+			force1	"fffx/weapons/ussocom/spin"
+		}
+		gunup
+		{
+			force1	"fffx/weapons/idle/idle03"
+		}
+	}
+
+	surfaces
+	{
+		spinsurfacesoff
+		{
+			bodyf	off
+			slidef	off
+			clipf	off
+		}
+
+		spinsurfaceson
+		{
+			bodyf	on
+			slidef	on
+			clipf	on
+		}
+	}
+
+	weaponmodel
+	{
+		name	"mainwpn"
+		model	"models/weapons/m1911a1/m1911a1.glm"
+		frames	"skeletons/weapons/m1911a1/m1911a1.frames"
+
+		buffer
+		{
+			name	"pistol buffer"
+			model	"models/weapons/buffer/pistol/buffer.glm"
+			bolttobone	"gun"
+			muzzle	"flash_m1911"
+		}
+
+		hands
+		{
+			left
+			{
+				bolttobone	"lhand_m1911"
+			}
+			right
+			{
+				bolttobone	"rhand_m1911"
+			}
+		}
+
+		optionalpart
+		{
+			name	"slide_fwd"
+
+			surface1	"slide"
+			surface2	"slidef"
+			surface3	"slidel"
+			surface4	"slider"
+			surface5	"slideb"
+		}
+
+		optionalpart
+		{
+			name	"slide_back"
+
+			surface1	"slide_off"
+			surface2	"slidef_off"
+			surface3	"slidel_off"
+			surface4	"slider_off"
+			surface5	"slideb_off"
+		}
+
+	}
+
+	anim
+	{
+		name	"crawl"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m1911a1rcrawl"
+			speed	"0.5"
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lm1911a1rcrawl"
+			speed	"0.5"
+			lodbias	2
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"rm1911a1ridle"
+			speed	0.5
+		}
+	}
+
+	anim
+	{
+		name	"rightcrawl"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m1911a1rcrawl"
+			speed	"0.5"
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"rm1911a1ridle"
+			speed	"0.5"
+			lodbias	2
+		}
+	}
+
+	anim
+	{
+		name	"leftcrawl"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m1911a1lcrawl"
+			speed	"0.5"
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lm1911a1lcrawl"
+			speed	"0.5"
+			lodbias	2
+		}
+	}
+
+	anim
+	{
+		name	"standtoprone"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m1911a1rstandtoprone"
+			speed	"0.5"
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"rm1911a1rstandtoprone"
+			speed	"0.5"
+			lodbias	2
+		}
+	}
+
+	anim
+	{
+		name	"leftstandtoprone"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m1911a1lstandtoprone"
+			speed	"0.5"
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lm1911a1lstandtoprone"
+			speed	"0.5"
+			lodbias	2
+		}
+	}
+
+	anim
+	{
+		name	"pronetostand"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m1911a1rpronetostand"
+			speed	"1.0"
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"rm1911a1rpronetostand"
+			speed	"1.0"
+			lodbias	2
+		}
+	}
+
+	anim
+	{
+		name	"leftpronetostand"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m1911a1lpronetostand"
+			speed	"1.0"
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lm1911a1lready"
+			speed	"1.0"
+			lodbias	2
+		}
+	}
+
+	anim
+	{
+		name	"ready"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m1911a1rready"
+			speed	0.5
+
+			mp_speed	1.5
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"rm1911a1rready"
+			speed	0.5
+
+			mp_speed	1.5
+		}
+	}
+
+	anim
+	{
+		name	"dualready"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m1911a1raltready"
+			speed	1
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"rm1911a1ridle"
+			speed	1
+		}
+	}
+
+	anim
+	{
+		name	"idle"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m1911a1ridle"
+			extra1	"m1911a1rfingeradjust"
+			extra2	"m1911a1rfingergunup"
+			extra3	"m1911a1rfingerspin01"
+			speed	1
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"rm1911a1ridle"
+			extra1	"rm1911a1rfingeradjust"
+			extra2	"rm1911a1rfingergunup"
+			extra3	"rm1911a1rfingerspin01"
+			speed	1
+		}
+	}
+
+	anim
+	{
+		name	"fire"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m1911a1rfire"
+			speed	0.8
+
+			mp_speed	1.2
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"rm1911a1rfire"
+			speed	0.8
+
+			mp_speed	1.2
+		}
+	}
+
+	anim
+	{
+		name	"dryfire"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m1911a1rdryfire"
+			speed	0.8
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"rm1911a1rdryfire"
+			speed	0.8
+		}
+	}
+
+	anim
+	{
+		name	"altfire"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m1911a1rpistolwhip"
+			speed	0.5
+
+			mp_speed	1.5
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"rm1911a1rpistolwhip"
+			speed	0.5
+
+			mp_speed	1.5
+		}
+	}
+
+	anim
+	{
+		name	"leftaltfire"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m1911a1lhandrpistolwhip"
+			speed	"0.5"
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lm1911a1lidle"
+			speed	"0.5"
+			lodbias	2
+		}
+	}
+
+	anim
+	{
+		name	"reload"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m1911a1rfullreload"
+			speed	0.7
+
+			mp_speed	1.5
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"rm1911a1rfullreload"
+			speed	0.7
+
+			mp_speed	1.5
+		}
+	}
+
+	anim
+	{
+		name	"emptyreload"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m1911a1rreload"
+			speed	0.7
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"rm1911a1rreload"
+			speed	0.7
+		}
+	}
+
+	anim
+	{
+		name	"done"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m1911a1rdone"
+			speed	1
+
+			mp_speed	1.5
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"rm1911a1rdone"
+			speed	1
+
+			mp_speed	1.5
+		}
+	}
+
+	anim
+	{
+		name	"leftready"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m1911a1laltready"
+			speed	1
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lm1911a1lidle"
+			speed	1
+		}
+	}
+
+	anim
+	{
+		name	"leftidle"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m1911a1lidle"
+			extra1	"m1911a1lfingeradjust"
+			extra2	"m1911a1lfingergunup"
+			extra3	"m1911a1lfingerspin01"
+			speed	1
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lm1911a1lidle"
+			extra1	"lm1911a1lfingeradjust"
+			extra2	"lm1911a1lfingergunup"
+			extra3	"lm1911a1lfingerspin01"
+			speed	1
+		}
+	}
+
+	anim
+	{
+		name	"leftdone"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m1911a1ldone"
+			speed	1
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lm1911a1ldone"
+			speed	1
+		}
+	}
+
+	anim
+	{
+		name	"leftfire"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m1911a1lfire"
+			speed	0.8
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lm1911a1lfire"
+			speed	0.8
+		}
+	}
+
+	anim
+	{
+		name	"leftreload"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m1911a1lfullreload"
+			speed	0.7
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lm1911a1lfullreload"
+			speed	0.7
+		}
+	}
+
+	anim
+	{
+		name	"leftemptyreload"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m1911a1lreload"
+			speed	0.7
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lm1911a1lreload"
+			speed	0.7
+		}
+	}
+}
+
+
+weapon
+{
+	name		"M3A1"
+	foreshorten	"0.6"
+
+	viewoffset
+	{
+		forward	"0"
+		right	"0"
+		up	"0"
+	}
+	sounds
+	{
+		fire
+		{
+			sound1		"sound/weapons/m3a1/fire01"
+			sound2		"sound/weapons/m3a1/fire02"
+		}
+
+		ready
+		{
+			sound1		"sound/weapons/m3a1/ready"
+		}
+
+		cover_down
+		{
+			sound1		"sound/weapons/m3a1/cover_down"
+		}
+		
+		cover_up
+		{
+			sound1		"sound/weapons/m3a1/cover_up"
+		}
+
+		clip_out
+		{
+			sound1		"sound/weapons/m3a1/clip_out"
+		}
+
+		clip_in
+		{
+			sound1		"sound/weapons/m3a1/clip_in"
+		}
+
+		bolt_back
+		{
+			sound1		"sound/weapons/m3a1/bolt_back"
+		}
+
+		bolt_forward
+		{
+			sound1		"sound/weapons/m3a1/bolt_forward"
+		}
+	}
+
+	forcefeedback
+	{
+		fire
+		{
+			force1		"fffx/weapons/m3a1/fire"
+		}
+
+		ready
+		{
+			force1		"fffx/weapons/m3a1/ready"
+		}
+
+		cover_down
+		{
+			force1		"fffx/weapons/m3a1/cover_down"
+		}
+
+		cover_up
+		{
+			force1		"fffx/weapons/m3a1/cover_up"
+		}
+
+		clip_out
+		{
+			force1		"fffx/weapons/m3a1/clip_out"
+		}
+
+		clip_in
+		{
+			force1		"fffx/weapons/m3a1/clip_in"
+		}
+
+		bolt_back
+		{
+			force1		"fffx/weapons/m3a1/bolt_back"
+		}
+
+		bolt_forward
+		{
+			force1		"fffx/weapons/m3a1/bolt_forward"
+		}
+	}
+
+	weaponmodel
+	{
+		name	"mainwpn"
+		model	"models/weapons/m3a1/m3a1.glm"
+		frames	"skeletons/weapons/m3a1/m3a1.frames"
+
+		buffer
+		{
+			name	"rifle buffer"
+			model	"models/weapons/buffer/rifle/buffer.glm"
+			bolttobone	"gun"
+			muzzle	"flash_m3a1"
+		}
+
+		hands
+		{
+			left
+			{
+				bolttobone	"lhand_m3a1"
+			}			
+			right
+			{
+				bolttobone	"rhand_m3a1"
+			}
+		}
+
+	}
+
+	anim
+	{
+		name	"crawl"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m3a1crawl"
+			speed	"0.5"
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lm3a1crawl"
+			speed	"0.5"
+			lodbias	2
+		}
+	}
+
+	anim
+	{
+		name	"standtoprone"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m3a1standtoprone"
+			speed	"0.5"
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lm3a1standtoprone"
+			speed	"0.5"
+			lodbias	2
+		}
+	}
+
+	anim
+	{
+		name	"pronetostand"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m3a1pronetostand"
+			speed	"1.0"
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lm3a1pronetostand"
+			speed	"1.0"
+			lodbias	2
+		}
+	}
+
+	anim
+	{
+		name	"idle"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m3a1idle"
+			extra1	"m3a1fingeradjust01"
+			extra2	"m3a1fingeradjust02"
+			speed	0.5
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lm3a1idle"
+			extra1	"lm3a1fingeradjust01"
+			extra2	"lm3a1fingeradjust02"
+			speed	0.5
+		}
+	}
+	anim
+	{
+		name	"fire"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			animNoLerp1	"m3a1fire"
+			animNoLerp2	"m3a1fire2"
+			animNoLerp3	"m3a1fire3"
+			animNoLerp4	"m3a1fire4"
+			speed	0.5
+
+			mp_speed	0.625
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lm3a1idle"
+			speed	0.5
+
+			mp_speed	0.625
+		}
+	}
+	anim
+	{
+		name	"ready"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m3a1ready"
+			speed	0.5
+
+			mp_speed	0.6
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lm3a1idle"
+			speed	0.5
+
+			mp_speed	0.6
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"rm3a1ready"
+			speed	0.5
+
+			mp_speed	0.6
+		}
+	}
+	anim
+	{
+		name	"done"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m3a1done"
+			speed	0.5
+
+			mp_speed	0.7
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lm3a1done"
+			speed	0.5
+
+			mp_speed	0.7
+		}
+	}
+	anim
+	{
+		name	"reload"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m3a1reload"
+			speed	0.5
+
+			mp_speed	0.3
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lm3a1reload"
+			speed	0.5
+
+			mp_speed	0.3
+		}
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"rm3a1reload"
+			speed	0.5
+
+			mp_speed	0.3
+		}
+	}
+}
+
+weapon
+{
+	name		"M84"
+	foreshorten	"0.6"
+
+	viewoffset
+	{
+		forward	"0"
+		right	"0"
+		up	"0"
+	}
+
+	sounds
+	{
+		m67_pin_ting
+		{
+			sound1		"sound/weapons/frag_grenade/pin_rattle"
+		}
+		m67_pin_pull
+		{
+			sound1		"sound/weapons/frag_grenade/pin_pull"
+		}
+		m67_handle_release
+		{
+			sound1		"sound/weapons/frag_grenade/handle_release"
+		}
+		toss
+		{
+			sound1		"sound/weapons/frag_grenade/throw_idle"
+		}
+	}
+
+	forcefeedback
+	{
+		m67_pin_ting
+		{
+			force1		"fffx/weapons/m67/pin_ting"
+		}
+		m67_pin_pull
+		{
+			force1		"fffx/weapons/m67/pin_pull"
+		}
+		m67_handle_release
+		{
+			force1		"fffx/weapons/m67/handle_release"
+		}
+	}
+
+	weaponmodel
+	{
+		name	"mainwpn"
+		model	"models/weapons/m84/m84.glm"
+		frames	"skeletons/weapons/m67/m67.frames"
+
+		buffer
+		{
+			name	"gren"
+			model	"models/weapons/buffer/gren/buffer.glm"
+			bolttobone	"gun"
+			muzzle	"flash"
+		}
+
+		hands
+		{
+			left
+			{
+				bolttobone	"lhand_m67"
+			}
+			right
+			{
+				bolttobone	"rhand_m67"
+			}
+		}
+
+	}
+
+	anim
+	{
+		name	"crawl"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m67crawl"
+			speed	"0.5"
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lm67crawl"
+			speed	"0.5"
+			lodbias	2
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"rm84idle"
+			speed	"0.5"
+			lodbias	2
+		}
+	}
+
+	anim
+	{
+		name	"standtoprone"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m67standtoprone"
+			speed	"0.5"
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"rm84idle"
+			speed	"0.5"
+			lodbias	2
+		}
+	}
+
+	anim
+	{
+		name	"pronetostand"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m67pronetostand"
+			speed	"1.0"
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"rm84idle"
+			speed	"1.0"
+			lodbias	2
+		}
+	}
+
+	anim
+	{
+		name	"idle"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m67idle"
+			extra1	"m67fingertoss"
+			extra2	"m67fingeradjust"
+			speed	1
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"rm84idle"
+			extra1	"rm84fingertoss"
+			extra2	"rm84fingeradjust"
+			speed	1
+		}
+	}
+
+	anim
+	{
+		name	"fire"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m67fire"
+			speed	0.5
+			lodbias	1
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lm84fire"
+			speed	0.5
+			lodbias	1
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"rm84fire"
+			speed	0.5
+			lodbias	1
+		}
+	}
+
+	anim
+	{
+		name	"altfire"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m67altfire"
+			speed	0.5
+			lodbias	1
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lm84altfire"
+			speed	0.5
+			lodbias	1
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"rm84altfire"
+			speed	0.5
+			lodbias	1
+		}
+	}
+
+	anim
+	{
+		name	"throwbegin"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m67throw_start"
+			speed	0.5
+			lodbias	1
+
+			mp_speed	0.4
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lm84throw_start"
+			speed	0.5
+			lodbias	1
+
+			mp_speed	1
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"rm84throw_start"
+			speed	0.5
+			lodbias	1
+
+			mp_speed	0.4
+		}
+	}
+
+	anim
+	{
+		name	"throwend"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m67throw_end"
+			speed	0.5
+			lodbias	1
+
+			mp_speed	0.5
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"rm84throw_end"
+			speed	0.5
+			lodbias	1
+
+			mp_speed	0.5
+		}
+	}
+
+	anim
+	{
+		name	"altthrowbegin"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m67altthrow_start"
+			speed	0.5
+			lodbias	1
+
+			mp_speed	0.4
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lm84altthrow_start"
+			speed	0.5
+			lodbias	1
+
+			mp_speed	1.0
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"rm84altthrow_start"
+			speed	0.5
+			lodbias	1
+
+			mp_speed	0.4
+		}
+	}
+
+	anim
+	{
+		name	"altthrowend"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m67altthrow_end"
+			speed	0.5
+			lodbias	1
+
+			mp_speed	0.5
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"rm84altthrow_end"
+			speed	0.5
+			lodbias	1
+
+			mp_speed	0.5
+		}
+	}
+
+	anim
+	{
+		name	"reload"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m67ready"
+			speed	0.5
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"rm84idle"
+			speed	0.5
+		}
+	}
+
+	anim
+	{
+		name	"ready"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m67ready"
+			speed	0.5
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"rm84idle"
+			speed	0.5
+		}
+	}
+
+	anim
+	{
+		name	"done"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m67done"
+			speed	0.5
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"rm84idle"
+			speed	0.5
+		}
+	}
+}
+
+weapon
+{
+	name		"ANM14"
+	foreshorten	"0.6"
+
+	viewoffset
+	{
+		forward	"0"
+		right	"0"
+		up	"0"
+	}
+
+	sounds
+	{
+		m67_pin_ting
+		{
+			sound1		"sound/weapons/frag_grenade/pin_rattle"
+		}
+		m67_pin_pull
+		{
+			sound1		"sound/weapons/frag_grenade/pin_pull"
+		}
+		m67_handle_release
+		{
+			sound1		"sound/weapons/frag_grenade/handle_release"
+		}
+		toss
+		{
+			sound1		"sound/weapons/frag_grenade/throw_idle"
+		}
+	}
+
+	forcefeedback
+	{
+		m67_pin_ting
+		{
+			force1		"fffx/weapons/m67/pin_ting"
+		}
+		m67_pin_pull
+		{
+			force1		"fffx/weapons/m67/pin_pull"
+		}
+		m67_handle_release
+		{
+			force1		"fffx/weapons/m67/handle_release"
+		}
+		toss
+		{
+			force1		"fffx/weapons/m67/throw_idle"
+		}
+	}
+
+	weaponmodel
+	{
+		name	"mainwpn"
+		model	"models/weapons/anm14/anm14.glm"
+		frames	"skeletons/weapons/m67/m67.frames"
+
+		buffer
+		{
+			name	"gren"
+			model	"models/weapons/buffer/gren/buffer.glm"
+			bolttobone	"gun"
+			muzzle	"flash"
+		}
+
+		hands
+		{
+			left
+			{
+				bolttobone	"lhand_m67"
+			}
+			right
+			{
+				bolttobone	"rhand_m67"
+			}
+		}
+
+	}
+	
+	anim
+	{
+		name	"crawl"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m67crawl"
+			speed	"0.5"
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lm67crawl"
+			speed	"0.5"
+			lodbias	2
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"rmdn11idle"
+			speed	"0.5"
+			lodbias	2
+		}
+	}
+
+	anim
+	{
+		name	"standtoprone"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m67standtoprone"
+			speed	"0.5"
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"rmdn11idle"
+			speed	"0.5"
+			lodbias	2
+		}
+	}
+
+	anim
+	{
+		name	"pronetostand"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m67pronetostand"
+			speed	"1.0"
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"rmdn11idle"
+			speed	"1.0"
+			lodbias	2
+		}
+	}
+
+	anim
+	{
+		name	"idle"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m67idle"
+			extra1	"m67fingertoss"
+			extra2	"m67fingeradjust"
+			speed	1
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"rmdn11idle"
+			extra1	"rmdn11fingertoss"
+			extra2	"rmdn11fingeradjust"
+			speed	1
+		}
+	}
+
+	anim
+	{
+		name	"fire"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m67fire"
+			speed	0.5
+			lodbias	1
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lmdn11fire"
+			speed	0.5
+			lodbias	1
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"rmdn11fire"
+			speed	0.5
+			lodbias	1
+		}
+	}
+
+	anim
+	{
+		name	"altfire"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m67altfire"
+			speed	0.5
+			lodbias	1
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lmdn11altfire"
+			speed	0.5
+			lodbias	1
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"rmdn11altfire"
+			speed	0.5
+			lodbias	1
+		}
+	}
+
+	anim
+	{
+		name	"throwbegin"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m67throw_start"
+			speed	0.5
+			lodbias	1
+
+			mp_speed	0.4
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lmdn11throw_start"
+			speed	0.5
+			lodbias	1
+
+			mp_speed	1
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"rmdn11throw_start"
+			speed	0.5
+			lodbias	1
+
+			mp_speed	0.4
+		}
+	}
+
+	anim
+	{
+		name	"throwend"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m67throw_end"
+			speed	0.5
+			lodbias	1
+
+			mp_speed	0.5
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"rmdn11throw_end"
+			speed	0.5
+			lodbias	1
+
+			mp_speed	0.5
+		}
+	}
+
+	anim
+	{
+		name	"altthrowbegin"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m67altthrow_start"
+			speed	0.5
+			lodbias	1
+
+			mp_speed	0.4
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lmdn11altthrow_start"
+			speed	0.5
+			lodbias	1
+
+			mp_speed	1
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"rmdn11altthrow_start"
+			speed	0.5
+			lodbias	1
+
+			mp_speed	0.4
+		}
+	}
+
+	anim
+	{
+		name	"altthrowend"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m67altthrow_end"
+			speed	0.5
+			lodbias	1
+
+			mp_speed	0.5
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"rmdn11altthrow_end"
+			speed	0.5
+			lodbias	1
+
+			mp_speed	0.5
+		}
+	}
+
+	anim
+	{
+		name	"reload"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m67ready"
+			speed	0.5
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"rmdn11idle"
+			speed	0.5
+		}
+	}
+
+	anim
+	{
+		name	"ready"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m67ready"
+			speed	0.5
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"rmdn11idle"
+			speed	0.5
+		}
+	}
+
+	anim
+	{
+		name	"done"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m67done"
+			speed	0.5
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"rmdn11idle"
+			speed	0.5
+		}
+	}
+}
+
+weapon
+{
+	name		"F1"
+	foreshorten	"0.6"
+
+	viewoffset
+	{
+		forward	"0"
+		right	"0"
+		up	"0"
+	}
+
+	sounds
+	{
+		m67_pin_ting
+		{
+			sound1		"sound/weapons/frag_grenade/pin_rattle"
+		}
+		m67_pin_pull
+		{
+			sound1		"sound/weapons/frag_grenade/pin_pull"
+		}
+		m67_handle_release
+		{
+			sound1		"sound/weapons/frag_grenade/handle_release"
+		}
+		toss
+		{
+			sound1		"sound/weapons/frag_grenade/throw_idle"
+		}
+	}
+
+	forcefeedback
+	{
+		m67_pin_ting
+		{
+			force1		"fffx/weapons/m67/pin_ting"
+		}
+		m67_pin_pull
+		{
+			force1		"fffx/weapons/m67/pin_pull"
+		}
+		m67_handle_release
+		{
+			force1		"fffx/weapons/m67/handle_release"
+		}
+	}
+
+	weaponmodel
+	{
+		name	"mainwpn"
+		model	"models/weapons/f1/f1.glm"
+		frames	"skeletons/weapons/m67/m67.frames"
+
+		buffer
+		{
+			name	"gren"
+			model	"models/weapons/buffer/gren/buffer.glm"
+			bolttobone	"gun"
+			muzzle	"flash"
+		}
+
+		hands
+		{
+			left
+			{
+				bolttobone	"lhand_m67"
+			}
+			right
+			{
+				bolttobone	"rhand_m67"
+			}
+		}
+
+	}
+
+	anim
+	{
+		name	"crawl"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m67crawl"
+			speed	"0.5"
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lm67crawl"
+			speed	"0.5"
+			lodbias	2
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"rm84idle"
+			speed	"0.5"
+			lodbias	2
+		}
+	}
+
+	anim
+	{
+		name	"standtoprone"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m67standtoprone"
+			speed	"0.5"
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"rm84idle"
+			speed	"0.5"
+			lodbias	2
+		}
+	}
+
+	anim
+	{
+		name	"pronetostand"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m67pronetostand"
+			speed	"1.0"
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"rm84idle"
+			speed	"1.0"
+			lodbias	2
+		}
+	}
+
+	anim
+	{
+		name	"idle"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m67idle"
+			extra1	"m67fingertoss"
+			extra2	"m67fingeradjust"
+			speed	1
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"rm84idle"
+			extra1	"rm84fingertoss"
+			extra2	"rm84fingeradjust"
+			speed	1
+		}
+	}
+
+	anim
+	{
+		name	"fire"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m67fire"
+			speed	0.5
+			lodbias	1
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lf1fire"
+			speed	0.5
+			lodbias	1
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"rf1fire"
+			speed	0.5
+			lodbias	1
+		}
+	}
+
+	anim
+	{
+		name	"altfire"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m67altfire"
+			speed	0.5
+			lodbias	1
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lf1altfire"
+			speed	0.5
+			lodbias	1
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"rf1altfire"
+			speed	0.5
+			lodbias	1
+		}
+	}
+
+	anim
+	{
+		name	"throwbegin"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m67throw_start"
+			speed	0.5
+			lodbias	1
+
+			mp_speed	0.4
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lf1throw_start"
+			speed	0.5
+			lodbias	1
+
+			mp_speed	1
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"rf1throw_start"
+			speed	0.5
+			lodbias	1
+
+			mp_speed	0.4
+		}
+	}
+
+	anim
+	{
+		name	"throwend"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m67throw_end"
+			speed	0.5
+			lodbias	1
+
+			mp_speed	0.5
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"rf1throw_end"
+			speed	0.5
+			lodbias	1
+
+			mp_speed	0.5
+		}
+	}
+
+	anim
+	{
+		name	"altthrowbegin"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m67altthrow_start"
+			speed	0.5
+			lodbias	1
+
+			mp_speed	0.4
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lf1altthrow_start"
+			speed	0.5
+			lodbias	1
+
+			mp_speed	1
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"rf1altthrow_start"
+			speed	0.5
+			lodbias	1
+
+			mp_speed	0.4
+		}
+	}
+
+	anim
+	{
+		name	"altthrowend"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m67altthrow_end"
+			speed	0.5
+			lodbias	1
+
+			mp_speed	0.5
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"rf1altthrow_end"
+			speed	0.5
+			lodbias	1
+
+			mp_speed	0.5
+		}
+	}
+
+	anim
+	{
+		name	"reload"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m67ready"
+			speed	0.5
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"rm84idle"
+			speed	0.5
+		}
+	}
+
+	anim
+	{
+		name	"ready"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m67ready"
+			speed	0.5
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"rm84idle"
+			speed	0.5
+		}
+	}
+
+	anim
+	{
+		name	"done"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m67done"
+			speed	0.5
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"rm84idle"
+			speed	0.5
+		}
+	}
+}
+
+weapon
+{
+	name		"L2A2"
+	foreshorten	"0.6"
+
+	viewoffset
+	{
+		forward	"0"
+		right	"0"
+		up	"0"
+	}
+
+	sounds
+	{
+		m67_pin_ting
+		{
+			sound1		"sound/weapons/frag_grenade/pin_rattle"
+		}
+		m67_pin_pull
+		{
+			sound1		"sound/weapons/frag_grenade/pin_pull"
+		}
+		m67_handle_release
+		{
+			sound1		"sound/weapons/frag_grenade/handle_release"
+		}
+		toss
+		{
+			sound1		"sound/weapons/frag_grenade/throw_idle"
+		}
+	}
+
+	forcefeedback
+	{
+		m67_pin_ting
+		{
+			force1		"fffx/weapons/m67/pin_ting"
+		}
+		m67_pin_pull
+		{
+			force1		"fffx/weapons/m67/pin_pull"
+		}
+		m67_handle_release
+		{
+			force1		"fffx/weapons/m67/handle_release"
+		}
+	}
+
+	weaponmodel
+	{
+		name	"mainwpn"
+		model	"models/weapons/l2a2/l2a2.glm"
+		frames	"skeletons/weapons/m67/m67.frames"
+
+		buffer
+		{
+			name	"gren"
+			model	"models/weapons/buffer/gren/buffer.glm"
+			bolttobone	"gun"
+			muzzle	"flash"
+		}
+
+		hands
+		{
+			left
+			{
+				bolttobone	"lhand_m67"
+			}
+			right
+			{
+				bolttobone	"rhand_m67"
+			}
+		}
+
+	}
+
+	anim
+	{
+		name	"crawl"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m67crawl"
+			speed	"0.5"
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lm67crawl"
+			speed	"0.5"
+			lodbias	2
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"rmdn11idle"
+			speed	"0.5"
+			lodbias	2
+		}
+	}
+
+	anim
+	{
+		name	"standtoprone"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m67standtoprone"
+			speed	"0.5"
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"rmdn11idle"
+			speed	"0.5"
+			lodbias	2
+		}
+	}
+
+	anim
+	{
+		name	"pronetostand"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m67pronetostand"
+			speed	"1.0"
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"rmdn11idle"
+			speed	"1.0"
+			lodbias	2
+		}
+	}
+
+	anim
+	{
+		name	"idle"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m67idle"
+			extra1	"m67fingertoss"
+			extra2	"m67fingeradjust"
+			speed	1
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"rmdn11idle"
+			extra1	"rmdn11fingertoss"
+			extra2	"rmdn11fingeradjust"
+			speed	1
+		}
+	}
+
+	anim
+	{
+		name	"fire"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m67fire"
+			speed	0.5
+			lodbias	1
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"ll2a2fire"
+			speed	0.5
+			lodbias	1
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"rl2a2fire"
+			speed	0.5
+			lodbias	1
+		}
+	}
+
+	anim
+	{
+		name	"altfire"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m67altfire"
+			speed	0.5
+			lodbias	1
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"ll2a2altfire"
+			speed	0.5
+			lodbias	1
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"rl2a2altfire"
+			speed	0.5
+			lodbias	1
+		}
+	}
+
+	anim
+	{
+		name	"throwbegin"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m67throw_start"
+			speed	0.5
+			lodbias	1
+
+			mp_speed	0.4
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"ll2a2throw_start"
+			speed	0.5
+			lodbias	1
+
+			mp_speed	1
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"rl2a2throw_start"
+			speed	0.5
+			lodbias	1
+
+			mp_speed	0.4
+		}
+	}
+
+	anim
+	{
+		name	"throwend"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m67throw_end"
+			speed	0.5
+			lodbias	1
+
+			mp_speed	0.5
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"rl2a2throw_end"
+			speed	0.5
+			lodbias	1
+
+			mp_speed	0.5
+		}
+	}
+
+	anim
+	{
+		name	"altthrowbegin"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m67altthrow_start"
+			speed	0.5
+			lodbias	1
+
+			mp_speed	0.4
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"ll2a2altthrow_start"
+			speed	0.5
+			lodbias	1
+
+			mp_speed	1
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"rl2a2altthrow_start"
+			speed	0.5
+			lodbias	1
+
+			mp_speed	0.4
+		}
+	}
+
+	anim
+	{
+		name	"altthrowend"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m67altthrow_end"
+			speed	0.5
+			lodbias	1
+
+			mp_speed	0.5
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"rl2a2altthrow_end"
+			speed	0.5
+			lodbias	1
+
+			mp_speed	0.5
+		}
+	}
+
+	anim
+	{
+		name	"reload"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m67ready"
+			speed	0.5
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"rmdn11idle"
+			speed	0.5
+		}
+	}
+
+	anim
+	{
+		name	"ready"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m67ready"
+			speed	0.5
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"rmdn11idle"
+			speed	0.5
+		}
+	}
+
+	anim
+	{
+		name	"done"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m67done"
+			speed	0.5
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"rmdn11idle"
+			speed	0.5
+		}
+	}
+}
+
+weapon
+{
+	name		"M15"
+	foreshorten	"0.6"
+
+	viewoffset
+	{
+		forward	"0"
+		right	"0"
+		up	"0"
+	}
+
+	sounds
+	{
+		m67_pin_ting
+		{
+			sound1		"sound/weapons/frag_grenade/pin_rattle"
+		}
+		m67_pin_pull
+		{
+			sound1		"sound/weapons/frag_grenade/pin_pull"
+		}
+		m67_handle_release
+		{
+			sound1		"sound/weapons/frag_grenade/handle_release"
+		}
+		toss
+		{
+			sound1		"sound/weapons/frag_grenade/throw_idle"
+		}
+	}
+
+	forcefeedback
+	{
+		m67_pin_ting
+		{
+			force1		"fffx/weapons/m67/pin_ting"
+		}
+		m67_pin_pull
+		{
+			force1		"fffx/weapons/m67/pin_pull"
+		}
+		m67_handle_release
+		{
+			force1		"fffx/weapons/m67/handle_release"
+		}
+	}
+
+	weaponmodel
+	{
+		name	"mainwpn"
+		model	"models/weapons/m15/m15.glm"
+		frames	"skeletons/weapons/m67/m67.frames"
+
+		buffer
+		{
+			name	"gren"
+			model	"models/weapons/buffer/gren/buffer.glm"
+			bolttobone	"gun"
+			muzzle	"flash"
+		}
+
+		hands
+		{
+			left
+			{
+				bolttobone	"lhand_m67"
+			}
+			right
+			{
+				bolttobone	"rhand_m67"
+			}
+		}
+
+	}
+
+	anim
+	{
+		name	"crawl"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m67crawl"
+			speed	"0.5"
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lm67crawl"
+			speed	"0.5"
+			lodbias	2
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"rmdn11idle"
+			speed	"0.5"
+			lodbias	2
+		}
+	}
+
+	anim
+	{
+		name	"standtoprone"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m67standtoprone"
+			speed	"0.5"
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"rmdn11idle"
+			speed	"0.5"
+			lodbias	2
+		}
+	}
+
+	anim
+	{
+		name	"pronetostand"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m67pronetostand"
+			speed	"1.0"
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"rmdn11idle"
+			speed	"1.0"
+			lodbias	2
+		}
+	}
+
+	anim
+	{
+		name	"idle"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m67idle"
+			extra1	"m67fingertoss"
+			extra2	"m67fingeradjust"
+			speed	1
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"rmdn11idle"
+			extra1	"rmdn11fingertoss"
+			extra2	"rmdn11fingeradjust"
+			speed	1
+		}
+	}
+
+	anim
+	{
+		name	"fire"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m67fire"
+			speed	0.5
+			lodbias	1
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lanm14fire"
+			speed	0.5
+			lodbias	1
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"ranm14fire"
+			speed	0.5
+			lodbias	1
+		}
+	}
+
+	anim
+	{
+		name	"altfire"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m67altfire"
+			speed	0.5
+			lodbias	1
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lanm14altfire"
+			speed	0.5
+			lodbias	1
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"ranm14altfire"
+			speed	0.5
+			lodbias	1
+		}
+	}
+
+	anim
+	{
+		name	"throwbegin"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m67throw_start"
+			speed	0.5
+			lodbias	1
+
+			mp_speed	0.4
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lanm14throw_start"
+			speed	0.5
+			lodbias	1
+
+			mp_speed	1
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"ranm14throw_start"
+			speed	0.5
+			lodbias	1
+
+			mp_speed	1
+		}
+	}
+
+	anim
+	{
+		name	"throwend"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m67throw_end"
+			speed	0.5
+			lodbias	1
+
+			mp_speed	0.5
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"ranm14throw_end"
+			speed	0.5
+			lodbias	1
+
+			mp_speed	0.5
+		}
+	}
+
+	anim
+	{
+		name	"altthrowbegin"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m67altthrow_start"
+			speed	0.5
+			lodbias	1
+
+			mp_speed	0.4
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lanm14altthrow_start"
+			speed	0.5
+			lodbias	1
+
+			mp_speed	1
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"ranm14altthrow_start"
+			speed	0.5
+			lodbias	1
+
+			mp_speed	1
+		}
+	}
+
+	anim
+	{
+		name	"altthrowend"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m67altthrow_end"
+			speed	0.5
+			lodbias	1
+
+			mp_speed	0.5
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"ranm14altthrow_end"
+			speed	0.5
+			lodbias	1
+
+			mp_speed	0.5
+		}
+	}
+
+	anim
+	{
+		name	"reload"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m67ready"
+			speed	0.5
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"rmdn11idle"
+			speed	0.5
+		}
+	}
+
+	anim
+	{
+		name	"ready"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m67ready"
+			speed	0.5
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"rmdn11idle"
+			speed	0.5
+		}
+	}
+
+	anim
+	{
+		name	"done"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m67done"
+			speed	0.5
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"rmdn11idle"
+			speed	0.5
+		}
+	}
+}
+
+weapon
+{
+	name		"MDN11"
+	foreshorten	"0.6"
+
+	viewoffset
+	{
+		forward	"0"
+		right	"0"
+		up	"0"
+	}
+
+	sounds
+	{
+		m67_pin_ting
+		{
+			sound1		"sound/weapons/frag_grenade/pin_rattle"
+		}
+		m67_pin_pull
+		{
+			sound1		"sound/weapons/frag_grenade/pin_pull"
+		}
+		m67_handle_release
+		{
+			sound1		"sound/weapons/frag_grenade/handle_release"
+		}
+		toss
+		{
+			sound1		"sound/weapons/frag_grenade/throw_idle"
+		}
+	}
+
+	forcefeedback
+	{
+		m67_pin_ting
+		{
+			force1		"fffx/weapons/m67/pin_ting"
+		}
+		m67_pin_pull
+		{
+			force1		"fffx/weapons/m67/pin_pull"
+		}
+		m67_handle_release
+		{
+			force1		"fffx/weapons/m67/handle_release"
+		}
+	}
+
+	weaponmodel
+	{
+		name	"mainwpn"
+		model	"models/weapons/mdn11/mdn11.glm"
+		frames	"skeletons/weapons/m67/m67.frames"
+
+		buffer
+		{
+			name	"gren"
+			model	"models/weapons/buffer/gren/buffer.glm"
+			bolttobone	"gun"
+			muzzle	"flash"
+		}
+
+		hands
+		{
+			left
+			{
+				bolttobone	"lhand_m67"
+			}
+			right
+			{
+				bolttobone	"rhand_m67"
+			}
+		}
+
+	}
+
+	anim
+	{
+		name	"crawl"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m67crawl"
+			speed	"0.5"
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lm67crawl"
+			speed	"0.5"
+			lodbias	2
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"rmdn11idle"
+			speed	"0.5"
+			lodbias	2
+		}
+	}
+
+	anim
+	{
+		name	"standtoprone"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m67standtoprone"
+			speed	"0.5"
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"rmdn11idle"
+			speed	"0.5"
+			lodbias	2
+		}
+	}
+
+	anim
+	{
+		name	"pronetostand"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m67pronetostand"
+			speed	"1.0"
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"rmdn11idle"
+			speed	"1.0"
+			lodbias	2
+		}
+	}
+
+	anim
+	{
+		name	"idle"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m67idle"
+			extra1	"m67fingertoss"
+			extra2	"m67fingeradjust"
+			speed	1
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"rmdn11idle"
+			extra1	"rmdn11fingertoss"
+			extra2	"rmdn11fingeradjust"
+			speed	1
+		}
+	}
+
+	anim
+	{
+		name	"fire"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m67fire"
+			speed	0.5
+			lodbias	1
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lmdn11fire"
+			speed	0.5
+			lodbias	1
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"rmdn11fire"
+			speed	0.5
+			lodbias	1
+		}
+	}
+
+	anim
+	{
+		name	"altfire"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m67altfire"
+			speed	0.5
+			lodbias	1
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lmdn11altfire"
+			speed	0.5
+			lodbias	1
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"rmdn11altfire"
+			speed	0.5
+			lodbias	1
+		}
+	}
+
+	anim
+	{
+		name	"throwbegin"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m67throw_start"
+			speed	0.5
+			lodbias	1
+
+			mp_speed	0.4
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lmdn11throw_start"
+			speed	0.5
+			lodbias	1
+
+			mp_speed	1
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"rmdn11throw_start"
+			speed	0.5
+			lodbias	1
+
+			mp_speed	0.4
+		}
+	}
+
+	anim
+	{
+		name	"throwend"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m67throw_end"
+			speed	0.5
+			lodbias	1
+
+			mp_speed	0.5
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"rmdn11throw_end"
+			speed	0.5
+			lodbias	1
+
+			mp_speed	0.5
+		}
+	}
+
+	anim
+	{
+		name	"altthrowbegin"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m67altthrow_start"
+			speed	0.5
+			lodbias	1
+
+			mp_speed	0.4
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lmdn11altthrow_start"
+			speed	0.5
+			lodbias	1
+
+			mp_speed	1
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"rmdn11altthrow_start"
+			speed	0.5
+			lodbias	1
+
+			mp_speed	0.4
+		}
+	}
+
+	anim
+	{
+		name	"altthrowend"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m67altthrow_end"
+			speed	0.5
+			lodbias	1
+
+			mp_speed	0.5
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"rmdn11altthrow_end"
+			speed	0.5
+			lodbias	1
+
+			mp_speed	0.5
+		}
+	}
+
+	anim
+	{
+		name	"reload"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m67ready"
+			speed	0.5
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"rmdn11idle"
+			speed	0.5
+		}
+	}
+
+	anim
+	{
+		name	"ready"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m67ready"
+			speed	0.5
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"rmdn11idle"
+			speed	0.5
+		}
+	}
+
+	anim
+	{
+		name	"done"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m67done"
+			speed	0.5
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"rmdn11idle"
+			speed	0.5
+		}
+	}
+}
+
+weapon
+{
+	name		"SMOHG92"
+	foreshorten	"0.6"
+
+	viewoffset
+	{
+		forward	"0"
+		right	"0"
+		up	"0"
+	}
+
+	sounds
+	{
+		m67_pin_ting
+		{
+			sound1		"sound/weapons/frag_grenade/pin_rattle"
+		}
+		m67_pin_pull
+		{
+			sound1		"sound/weapons/frag_grenade/pin_pull"
+		}
+		m67_handle_release
+		{
+			sound1		"sound/weapons/frag_grenade/handle_release"
+		}
+		toss
+		{
+			sound1		"sound/weapons/frag_grenade/throw_idle"
+		}
+	}
+
+	forcefeedback
+	{
+		m67_pin_ting
+		{
+			force1		"fffx/weapons/m67/pin_ting"
+		}
+		m67_pin_pull
+		{
+			force1		"fffx/weapons/m67/pin_pull"
+		}
+		m67_handle_release
+		{
+			force1		"fffx/weapons/m67/handle_release"
+		}
+	}
+
+	weaponmodel
+	{
+		name	"mainwpn"
+		model	"models/weapons/smohg92/smohg92.glm"
+		frames	"skeletons/weapons/m67/m67.frames"
+
+		buffer
+		{
+			name	"gren"
+			model	"models/weapons/buffer/gren/buffer.glm"
+			bolttobone	"gun"
+			muzzle	"flash"
+		}
+
+		hands
+		{
+			left
+			{
+				bolttobone	"lhand_m67"
+			}
+			right
+			{
+				bolttobone	"rhand_m67"
+			}
+		}
+
+	}
+
+	anim
+	{
+		name	"crawl"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m67crawl"
+			speed	"0.5"
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lm67crawl"
+			speed	"0.5"
+			lodbias	2
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"rmdn11idle"
+			speed	"0.5"
+			lodbias	2
+		}
+	}
+
+	anim
+	{
+		name	"standtoprone"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m67standtoprone"
+			speed	"0.5"
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"rmdn11idle"
+			speed	"0.5"
+			lodbias	2
+		}
+	}
+
+	anim
+	{
+		name	"pronetostand"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m67pronetostand"
+			speed	"1.0"
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"rmdn11idle"
+			speed	"1.0"
+			lodbias	2
+		}
+	}
+
+	anim
+	{
+		name	"idle"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m67idle"
+			extra1	"m67fingertoss"
+			extra2	"m67fingeradjust"
+			speed	1
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"rmdn11idle"
+			extra1	"rmdn11fingertoss"
+			extra2	"rmdn11fingeradjust"
+			speed	1
+		}
+	}
+
+	anim
+	{
+		name	"fire"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m67fire"
+			speed	0.5
+			lodbias	1
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lmdn11fire"
+			speed	0.5
+			lodbias	1
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"rmdn11fire"
+			speed	0.5
+			lodbias	1
+		}
+	}
+
+	anim
+	{
+		name	"altfire"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m67altfire"
+			speed	0.5
+			lodbias	1
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lmdn11altfire"
+			speed	0.5
+			lodbias	1
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"rmdn11altfire"
+			speed	0.5
+			lodbias	1
+		}
+	}
+
+	anim
+	{
+		name	"throwbegin"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m67throw_start"
+			speed	0.5
+			lodbias	1
+
+			mp_speed	0.4
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lmdn11throw_start"
+			speed	0.5
+			lodbias	1
+
+			mp_speed	1
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"rmdn11throw_start"
+			speed	0.5
+			lodbias	1
+
+			mp_speed	0.4
+		}
+	}
+
+	anim
+	{
+		name	"throwend"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m67throw_end"
+			speed	0.5
+			lodbias	1
+
+			mp_speed	0.5
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"rmdn11throw_end"
+			speed	0.5
+			lodbias	1
+
+			mp_speed	0.5
+		}
+	}
+
+	anim
+	{
+		name	"altthrowbegin"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m67altthrow_start"
+			speed	0.5
+			lodbias	1
+
+			mp_speed	0.4
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lmdn11altthrow_start"
+			speed	0.5
+			lodbias	1
+
+			mp_speed	1
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"rmdn11altthrow_start"
+			speed	0.5
+			lodbias	1
+
+			mp_speed	0.4
+		}
+	}
+
+	anim
+	{
+		name	"altthrowend"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m67altthrow_end"
+			speed	0.5
+			lodbias	1
+
+			mp_speed	0.5
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"rmdn11altthrow_end"
+			speed	0.5
+			lodbias	1
+
+			mp_speed	0.5
+		}
+	}
+
+	anim
+	{
+		name	"reload"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m67ready"
+			speed	0.5
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"rmdn11idle"
+			speed	0.5
+		}
+	}
+
+	anim
+	{
+		name	"ready"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m67ready"
+			speed	0.5
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"rmdn11idle"
+			speed	0.5
+		}
+	}
+
+	anim
+	{
+		name	"done"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m67done"
+			speed	0.5
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"rmdn11idle"
+			speed	0.5
+		}
+	}
+}
+
+weapon
+{
+	name		"Binoculars"
+	foreshorten	"0.6"
+
+	viewoffset
+	{
+		forward	"0"
+		right	"0"
+		up	"0"
+	}
+
+	sounds
+	{
+	}
+
+	weaponmodel
+	{
+		name	"mainwpn"
+		model	"models/items/binoculars/binoculars.glm"
+		frames	"skeletons/items/binoculars/binoculars.frames"
+
+		buffer
+		{
+			name	"acc"
+			model	"models/weapons/buffer/acc/buffer.glm"
+			bolttobone	"handle"
+			muzzle	"flash_binoculars"
+		}
+
+		hands
+		{
+			left
+			{
+				bolttobone	"lhand_binoculars"
+			}
+			right
+			{
+				bolttobone	"rhand_binoculars"
+			}
+		}
+
+	}
+
+	anim
+	{
+		name	"idle"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"binocularsidle"
+			extra1	"binocularsfingeradjust"
+			speed	0.5
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lbinocularsidle"
+			extra1	"lbinocularsfingeradjust"
+			speed	0.5
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"rbinocularsidle"
+			extra1	"rbinocularsfingeradjust"
+			speed	0.5
+		}
+	}
+
+	anim
+	{
+		name	"ready"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"binocularsready"
+			speed	0.5
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lbinocularsidle"
+			speed	0.5
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"rbinocularsidle"
+			speed	0.5
+		}
+	}
+
+	anim
+	{
+		name	"done"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"binocularsdone"
+			speed	0.5
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lbinocularsidle"
+			speed	0.5
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"rbinocularsidle"
+			speed	0.5
+		}
+	}
+
+	anim
+	{
+		name	"crawl"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"binocularscrawl"
+			speed	0.5
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lbinocularscrawl"
+			speed	0.5
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"rbinocularscrawl"
+			speed	0.5
+		}
+	}
+
+	anim
+	{
+		name	"pronetostand"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"binocularspronetostand"
+			speed	1.0
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lbinocularspronetostand"
+			speed	1.0
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"rbinocularspronetostand"
+			speed	1.0
+		}
+	}
+
+	anim
+	{
+		name	"standtoprone"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"binocularsstandtoprone"
+			speed	0.5
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lbinocularsstandtoprone"
+			speed	0.5
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"rbinocularsstandtoprone"
+			speed	0.5
+		}
+	}
+
+	anim
+	{
+		name	"zoomin"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"binocularszoomin"
+			speed	0.5
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lbinocularsidle"
+			speed	0.5
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"rbinocularsidle"
+			speed	0.5
+		}
+	}
+
+	anim
+	{
+		name	"zoomout"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"binocularszoomout"
+			speed	0.5
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lbinocularsidle"
+			speed	0.5
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"rbinocularsidle"
+			speed	0.5
+		}
+	}
+
+}
+
+
+weapon
+{
+	name		"Body"
+	foreshorten	"0"
+
+	viewoffset
+	{
+		forward	"23.5224"
+		right	"14.1952"
+		up	"-7"
+	}
+
+	sounds
+	{
+		pickup
+		{
+			sound1		"sound/player/pickup/body_pickup.mp3"
+		}
+
+		drop_body
+		{
+			sound1		"sound/player/jumps/concrete"
+		}
+	}
+
+	weaponmodel
+	{
+		name	"mainwpn"
+		model	"models/characters/average_sleeves/average_sleeves.glm"
+		frames	"skeletons/characters/average_sleeves/average_sleeves.frames"
+
+		buffer
+		{
+			name	"pistol buffer"
+			model	"models/weapons/buffer/pistol/buffer.glm"
+			bolttobone	"model_root"
+			muzzle	"flash_USSOCOM"
+		}
+
+		hands
+		{
+			left
+			{
+				bolttobone	"lhand_USSOCOM"
+			}
+			right
+			{
+				bolttobone	"handle_USSOCOM"
+			}
+		}
+
+	}
+
+	anim
+	{
+		name	"idle"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"bodycarryidle"
+			speed	0.5
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lhandbodyidle"
+			speed	0.5
+		}
+	}
+
+	anim
+	{
+		name	"ready"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"bodycarryready"
+			speed	0.5
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lhandbodyready"
+			speed	0.5
+		}
+	}
+
+	anim
+	{
+		name	"done"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"bodycarrydone"
+			speed	0.5
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lhandbodydone"
+			speed	0.5
+		}
+	}
+}
+
+weapon
+{
+	name		"Emplaced RPD"
+	foreshorten	"0.0"
+
+	viewoffset
+	{
+		forward	"21.39"
+		right	"4"  //negated
+		up	"-8.98"
+	}
+
+	sounds
+	{
+		fire
+		{
+			sound1		"sound/weapons/m60/m60fire01"
+			sound2		"sound/weapons/m60/m60fire02"
+			sound3		"sound/weapons/m60/m60fire03"
+		}
+	}
+
+	forcefeedback
+	{
+		fire
+		{
+			force1		"fffx/weapons/m60/fire"
+		}
+	}
+
+	weaponmodel
+	{
+		name	"mainwpn"
+		model	"models/weapons/rpd/rpd.glm"
+		frames	"skeletons/weapons/rpd/rpd.frames"
+
+		buffer
+		{
+			name	"mg buffer"
+			model	"models/weapons/buffer/mg/buffer.glm"
+			bolttobone	"gun"
+			muzzle	"flash_m60"
+		}
+
+		hands
+		{
+			right
+			{
+				bolttobone	"rhand_m60"
+			}
+		}
+
+	}
+
+	anim
+	{
+		name	"idle"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"rpdipidle"
+			speed	1.0
+		}
+	}
+
+	anim
+	{
+		name	"fire"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"rpdipfire"
+			speed	1.5
+		}
+	}
+
+	anim
+	{
+		name	"reload"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"rpdipidle"
+			speed	1.0
+		}
+	}
+
+	anim
+	{
+		name	"ready"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"rpdipidle"
+			speed	1.0
+		}
+	}
+
+	anim
+	{
+		name	"done"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"rpdipidle"
+			speed	1.0
+		}
+	}
+}
+
+weapon
+{
+	name		"SAM"
+}
+
+weapon
+{
+	name		"SON OF SAM"
+}
+
+weapon
+{
+	name		"Thermal Vision"
+}
+
+weapon
+{
+	name		"Night Vision"
+}
+
+
+
+
+
+weapon
+{
+	name		"MP5"
+	foreshorten	"0.6"
+
+	viewoffset
+	{
+		forward	"0"
+		right	"0"
+		up	"0"
+	}
+	sounds
+	{
+		fire
+		{
+			sound1		"sound/weapons/mp5/mp5_fire"
+			sound2		"sound/weapons/mp5/mp5_fire"
+			sound3		"sound/weapons/mp5/mp5_fire"
+		}
+		ready
+		{
+			sound1		"sound/weapons/mp5/pull_lever"
+		}
+		clipout
+		{	
+			sound1		"sound/weapons/mp5/clipout"
+		}
+		clipin
+		{
+			sound1		"sound/weapons/mp5/clipin"
+		}
+		bolt
+		{
+			sound1		"sound/weapons/mp5/pull_lever"
+		}
+		gunup01
+		{
+			sound1		"sound/weapons/idle/idle03"
+		}
+		gunup02
+		{
+			sound1		"sound/weapons/idle/idle04"
+		}
+		fingeradjust
+		{
+			sound1		"sound/weapons/idle/idle01"
+		}
+		
+	}
+
+	forcefeedback
+	{
+		fire
+		{
+			force1		"fffx/weapons/micro_uzi/fire"
+		}
+		ready
+		{
+			force1		"fffx/weapons/micro_uzi/ready"
+		}
+		clipout
+		{	
+			force1		"fffx/weapons/micro_uzi/clipout"
+		}
+		clipin
+		{
+			force1		"fffx/weapons/micro_uzi/clipin"
+		}
+		bolt
+		{
+			force1		"fffx/weapons/micro_uzi/bolt"
+		}
+		gunup01
+		{
+			force1		"fffx/weapons/idle/idle03"
+		}
+		gunup02
+		{
+			force1		"fffx/weapons/idle/idle04"
+		}
+		fingeradjust
+		{
+			force1		"fffx/weapons/idle/idle01"
+		}
+		
+	}
+
+	weaponmodel
+	{
+		name	"mainwpn"
+		model	"models/weapons/mp5/mp5.glm"
+		frames	"skeletons/weapons/mp5/mp5.frames"
+
+		buffer
+		{
+			name	"golda buffer"
+			model	"models/weapons/buffer/golda/buffer.glm"
+			bolttobone	"gun"
+			muzzle	"flash_mp5"
+		}
+
+		hands
+		{
+			left
+			{
+				bolttobone	"lhand_mp5"
+			}
+			right
+			{
+				bolttobone	"rhand_mp5"
+			}
+		}
+
+		rightside
+		{
+			surface1	"mp5bodyh"
+			surface2	"cliph"
+			surface3	"silencerh"
+		}
+	}
+
+	anim
+	{
+		name	"idle"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"mp5idle"
+			speed	1
+
+			mp_speed	1
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lmp5idle"
+			speed	1
+
+			mp_speed	1
+		}
+	}
+
+	anim
+	{
+		name	"ready"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"mp5ready"
+			speed	0.5
+
+			mp_speed	0.6
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lmp5ready"
+			speed	0.5
+
+			mp_speed	0.6
+		}
+	}
+
+	anim
+	{
+		name	"done"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"mp5done"
+			speed	0.5
+
+			mp_speed	1
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lmp5idle"
+			speed	0.5
+
+			mp_speed	1
+		}
+	}
+
+	anim
+	{
+		name	"fire"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			animNoLerp1	"mp5fire"
+			speed	1
+
+			mp_speed	.8
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lmp5idle"
+			speed	1
+
+			mp_speed	.8
+		}
+	}
+
+	anim
+	{
+		name	"reload"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"mp5reload"
+			speed	0.7
+
+			mp_speed	0.5
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lmp5reload"
+			speed	0.7
+
+			mp_speed	0.5
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"rmp5reload"
+			speed	0.7
+
+			mp_speed	0.5
+		}
+	}
+}
+
+
+weapon
+{
+	name		"Silver Talon"
+	foreshorten	"0.6"
+
+	viewoffset
+	{
+		forward	"0"
+		right	"0"
+		up	"0"
+	}
+	sounds
+	{
+		fire
+		{
+			sound1	"sound/weapons/silver_talon/fire"
+			sound2	"sound/weapons/silver_talon/firetempcrack"
+		
+		}
+		altfire
+		{
+			sound1	"sound/weapons/m1911a1/swing01"
+			sound2	"sound/weapons/m1911a1/swing02"
+		}
+		hammerback
+		{
+			sound1	"sound/weapons/silver_talon/cock"
+		}
+		clipout
+		{
+			sound1	"sound/weapons/silver_talon/pullout"
+		}	
+		clipin
+		{
+			sound1	"sound/weapons/silver_talon/putin"
+		}	
+		slide
+		{
+			sound1	"sound/weapons/m1911a1/slide"
+		}	
+		spin
+		{
+			sound	"sound/weapons/ussocom/spin"
+		}
+		gunup
+		{
+			sound	"sound/weapons/idle/idle03"
+		}
+	}
+
+	forcefeedback
+	{
+		fire
+		{
+			force1	"fffx/weapons/m1911a1/fire"
+		}
+		altfire
+		{
+			force1	"fffx/weapons/m1911a1/swing01"
+			force2	"fffx/weapons/m1911a1/swing02"
+		}
+		hammerback
+		{
+			force1	"fffx/weapons/m1911a1/hammerback"
+		}
+		clipout
+		{
+			force1	"fffx/weapons/m1911a1/clipout"
+		}
+		clipin
+		{
+			force1	"fffx/weapons/m1911a1/clipin"
+		}
+		slide
+		{
+			force1	"fffx/weapons/m1911a1/slide"
+		}
+		spin
+		{
+			force1	"fffx/weapons/ussocom/spin"
+		}
+		gunup
+		{
+			force1	"fffx/weapons/idle/idle03"
+		}
+	}
+
+	surfaces
+	{
+		spinsurfacesoff
+		{
+			bodyfb	off
+			slidefb	off
+			clipfb	off
+		}
+
+		spinsurfaceson
+		{
+			bodyfb	on
+			slidefb	on
+			clipfb	on
+		}
+
+		rightside
+		{
+			surface1	"bodyr"
+			surface2	"slider"
+			surface3	"clipr"
+		}
+
+		leftside
+		{
+			surface1	"bodyl"
+			surface2	"slidel"
+			surface3	"clipl"
+		}
+
+		front
+		{
+			surface1	"bodyfb"
+			surface2	"slidefb"
+			surface3	"clipfb"
+		}
+	}
+
+	weaponmodel
+	{
+		name	"mainwpn"
+		model	"models/weapons/silver_talon/silver_talon.glm"
+		frames	"skeletons/weapons/silver_talon/silver_talon.frames"
+
+		buffer
+		{
+			name	"pistol buffer"
+			model	"models/weapons/buffer/golda/buffer.glm"
+			bolttobone	"gun"
+			muzzle	"flash_m1911"
+		}
+
+		hands
+		{
+			left
+			{
+				bolttobone	"lhand_m1911"
+			}
+			right
+			{
+				bolttobone	"rhand_m1911"
+			}
+		}
+
+		optionalpart
+		{
+			name	"slide_fwd"
+
+			surface1	"slide"
+			surface2	"slidefb"
+			surface3	"slidel"
+			surface4	"slider"
+		}
+
+		optionalpart
+		{
+			name	"slide_back"
+
+			surface1	"slide_off"
+			surface2	"slidefb_off"
+			surface3	"slidel_off"
+			surface4	"slider_off"
+		}
+
+	}
+
+	anim
+	{
+		name	"crawl"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m1911a1rcrawl"
+			speed	"0.5"
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lm1911a1rcrawl"
+			speed	"0.5"
+			lodbias	2
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"rm1911a1ridle"
+			speed	0.5
+		}
+	}
+
+	anim
+	{
+		name	"rightcrawl"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m1911a1rcrawl"
+			speed	"0.5"
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"rm1911a1ridle"
+			speed	"0.5"
+			lodbias	2
+		}
+	}
+
+	anim
+	{
+		name	"leftcrawl"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m1911a1lcrawl"
+			speed	"0.5"
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lm1911a1lcrawl"
+			speed	"0.5"
+			lodbias	2
+		}
+	}
+
+	anim
+	{
+		name	"standtoprone"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m1911a1rstandtoprone"
+			speed	"0.5"
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"rm1911a1rstandtoprone"
+			speed	"0.5"
+			lodbias	2
+		}
+	}
+
+	anim
+	{
+		name	"leftstandtoprone"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m1911a1lstandtoprone"
+			speed	"0.5"
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lm1911a1lstandtoprone"
+			speed	"0.5"
+			lodbias	2
+		}
+	}
+
+	anim
+	{
+		name	"pronetostand"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m1911a1rpronetostand"
+			speed	"1.0"
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"rm1911a1rpronetostand"
+			speed	"1.0"
+			lodbias	2
+		}
+	}
+
+	anim
+	{
+		name	"leftpronetostand"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m1911a1lpronetostand"
+			speed	"1.0"
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lm1911a1lready"
+			speed	"1.0"
+			lodbias	2
+		}
+	}
+
+	anim
+	{
+		name	"ready"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m1911a1rready"
+			speed	0.5
+
+			mp_speed	1.5
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"rm1911a1rready"
+			speed	0.5
+
+			mp_speed	1.5
+		}
+	}
+
+	anim
+	{
+		name	"dualready"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m1911a1raltready"
+			speed	1
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"rm1911a1ridle"
+			speed	1
+		}
+	}
+
+	anim
+	{
+		name	"idle"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m1911a1ridle"
+			extra1	"m1911a1rfingeradjust"
+			extra2	"m1911a1rfingergunup"
+			extra3	"m1911a1rfingerspin01"
+			speed	1
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"rm1911a1ridle"
+			extra1	"rm1911a1rfingeradjust"
+			extra2	"rm1911a1rfingergunup"
+			extra3	"rm1911a1rfingerspin01"
+			speed	1
+		}
+	}
+
+	anim
+	{
+		name	"fire"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m1911a1rfire"
+			speed	0.8
+
+			mp_speed	1.1
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"rm1911a1rfire"
+			speed	0.8
+
+			mp_speed	1.1
+		}
+	}
+
+	anim
+	{
+		name	"dryfire"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m1911a1rdryfire"
+			speed	0.8
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"rm1911a1rdryfire"
+			speed	0.8
+		}
+	}
+
+	anim
+	{
+		name	"altfire"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m1911a1rpistolwhip"
+			speed	0.5
+
+			mp_speed	1.5
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"rm1911a1rpistolwhip"
+			speed	0.5
+
+			mp_speed	1.5
+		}
+	}
+
+	anim
+	{
+		name	"leftaltfire"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m1911a1lhandrpistolwhip"
+			speed	"0.5"
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lm1911a1lidle"
+			speed	"0.5"
+			lodbias	2
+		}
+	}
+
+	anim
+	{
+		name	"reload"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m1911a1rfullreload"
+			speed	0.7
+
+			mp_speed	1.5
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"rm1911a1rfullreload"
+			speed	0.7
+
+			mp_speed	1.5
+		}
+	}
+
+	anim
+	{
+		name	"emptyreload"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m1911a1rreload"
+			speed	0.7
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"rm1911a1rreload"
+			speed	0.7
+		}
+	}
+
+	anim
+	{
+		name	"done"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"silver_talonremptydone"
+			speed	1
+
+			mp_speed	1.5
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"rm1911a1rdone"
+			speed	1
+
+			mp_speed	1.5
+		}
+	}
+
+	anim
+	{
+		name	"leftready"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m1911a1laltready"
+			speed	1
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lm1911a1lidle"
+			speed	1
+		}
+	}
+
+	anim
+	{
+		name	"leftidle"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m1911a1lidle"
+			extra1	"m1911a1lfingeradjust"
+			extra2	"m1911a1lfingergunup"
+			extra3	"m1911a1lfingerspin01"
+			speed	1
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lm1911a1lidle"
+			extra1	"lm1911a1lfingeradjust"
+			extra2	"lm1911a1lfingergunup"
+			extra3	"lm1911a1lfingerspin01"
+			speed	1
+		}
+	}
+
+	anim
+	{
+		name	"leftdone"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"silver_talonlemptydone"
+			speed	1
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lm1911a1ldone"
+			speed	1
+		}
+	}
+
+	anim
+	{
+		name	"leftfire"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m1911a1lfire"
+			speed	0.8
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lm1911a1lfire"
+			speed	0.8
+		}
+	}
+
+	anim
+	{
+		name	"leftreload"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m1911a1lfullreload"
+			speed	0.7
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lm1911a1lfullreload"
+			speed	0.7
+		}
+	}
+
+	anim
+	{
+		name	"leftemptyreload"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"m1911a1lreload"
+			speed	0.7
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lm1911a1lreload"
+			speed	0.7
+		}
+	}
+}
+
+weapon
+{
+	name		"Sig 551"
+	foreshorten	"0.6"
+
+	viewoffset
+	{
+		forward	"0"
+		right	"0"
+		up	"0"
+	}
+
+	sounds
+	{
+		fire
+		{
+			sound1		"sound/weapons/sig551/fire01"
+			sound2		"sound/weapons/sig551/fire02"
+			sound3		"sound/weapons/sig551/fire03"
+		}
+		altfire
+		{
+			sound1		"sound/weapons/sig551/swing01"
+			sound2		"sound/weapons/sig551/swing02"	
+		}
+		slap
+		{
+			sound1		"sound/weapons/sig551/slap"
+		}
+		slide_release1
+		{
+			sound1		"sound/weapons/sig551/slide_release"
+		}
+		clip_out
+		{
+			sound1		"sound/weapons/sig551/eject_clip"
+		}
+		new_clip
+		{
+			sound1		"sound/weapons/sig551/new_clip"
+		}
+		slide_release2
+		{
+			sound1		"sound/weapons/sig551/slide_release"
+		}
+		fingercheck
+		{
+			sound1		"sound/weapons/idle/idle03"
+		}
+		nextzoom
+		{
+			sound1		"sound/weapons/sig551/scope_zoom"
+		}
+		finalzoom
+		{
+			sound1		"sound/weapons/sig551/final_zoom"
+		}
+		first_zoom
+		{
+			sound1		"sound/weapons/sig551/first_zoom"
+		}
+	}
+
+	forcefeedback
+	{
+		fire
+		{
+			force1		"fffx/weapons/ak74/fire"
+		}
+		altfire
+		{
+			force1		"fffx/weapons/ak74/altfire"
+		}
+		slap
+		{
+			force1		"fffx/weapons/ak74/slap"
+		}
+		slide_release1
+		{
+			force1		"fffx/weapons/ak74/slide_release"
+		}
+		clip_out
+		{
+			force1		"fffx/weapons/ak74/clip_out"
+		}
+		new_clip
+		{
+			force1		"fffx/weapons/ak74/new_clip"
+		}
+		slide_release2
+		{
+			force1		"fffx/weapons/ak74/slide_release"
+		}
+		fingercheck
+		{
+			force1		"fffx/weapons/idle/idle03"
+		}
+		nextzoom
+		{
+			force1		"fffx/weapons/sniper/nextzoom"
+		}
+		finalzoom
+		{
+			force1		"fffx/weapons/sniper/finalzoom"
+		}
+		first_zoom
+		{
+			force1		"fffx/weapons/sniper/firstzoom"
+		}
+	}
+
+	weaponmodel
+	{
+		name	"mainwpn"
+		model	"models/weapons/sig551/sig551.glm"
+		frames	"skeletons/weapons/sig551/sig551.frames"
+
+		buffer
+		{
+			name	"golda buffer"
+			model	"models/weapons/buffer/golda/buffer.glm"
+			bolttobone	"gun"
+			muzzle	"flash_sig551"
+		}
+
+		hands
+		{
+			left
+			{
+				bolttobone	"lhand_sig551"
+			}
+			right
+			{
+				bolttobone	"handle_sig551"
+			}
+		}
+
+		rightside
+		{
+			surface1	"sig551stockh"
+			surface2	"sig551barrelh"
+			surface3	"scopeh"
+		}
+	}
+
+	anim
+	{
+		name	"idle"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"sig551idle"
+			speed	1
+
+			mp_speed	0.4
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lsig551idle"
+			speed	1
+
+			mp_speed	0.4
+		}
+	}
+
+	anim
+	{
+		name	"fire"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			animNoLerp1	"sig551fire"
+			speed	1.0
+
+			mp_speed	0.6
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lsig551idle"
+			speed	1.0
+
+			mp_speed	0.6
+		}
+	}
+
+	anim
+	{
+		name	"reload"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"sig551reload"
+			speed	0.5
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lsig551reload"
+			speed	0.5
+
+		}
+
+	}
+
+	anim
+	{
+		name	"ready"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"sig551ready"
+			speed	0.5
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lsig551ready"
+			speed	0.5
+
+		}
+
+		info
+		{
+			type	"hands"
+			name	"right"
+			anim	"rsig551ready"
+			speed	0.5
+
+		}
+	}
+
+	anim
+	{
+		name	"done"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"sig551done"
+			speed	0.5
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lsig551idle"
+			speed	0.5
+		}
+	}
+
+	anim
+	{
+		name	"zoomin"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"sig551zoomin"
+			speed	0.5
+
+			mp_speed	0.6
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lsig551idle"
+			speed	0.5
+
+			mp_speed	0.6
+		}
+	}
+
+	anim
+	{
+		name	"zoomout"
+
+		info
+		{
+			type	"weaponmodel"
+			name	"mainwpn"
+			anim	"sig551zoomout"
+			speed	0.5
+
+			mp_speed	0.6
+		}
+
+		info
+		{
+			type	"hands"
+			name	"left"
+			anim	"lsig551idle"
+			speed	0.5
+
+			mp_speed	0.6
+		}
+	}
+
+}

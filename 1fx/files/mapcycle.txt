@@ -1,0 +1,29 @@
+mapcycle
+{
+	map0
+	{
+		command "map mp_shop"
+		cvars
+		{
+			g_gametype "hns"
+			g_motd "^mN^;e^rx^Lt ^LM^ a^7p is mp_kam1 ^3[^7H&S^3]"
+			g_followEnemy "1"
+			g_anticamp "0"
+			g_weaponFile "wpndata/hns.wpn"
+			g_speed "300"
+			g_gravity "800"
+			scorelimit "0"
+			timelimit "10"
+			g_roundTimeLimit "2"
+			hideSeek_roundstartdelay "5"
+			g_knockback "700"
+			g_available "200020000020200000000000"
+			hideSeek_Nades "1000"
+			hideSeek_Extra "000100"
+			dmflags "8"
+			g_inviewFile "wpndata/SOF2.inview"
+			hideSeek_Weapons "00000"
+		}
+	}
+	
+}

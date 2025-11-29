@@ -1,0 +1,3538 @@
+// Part of 1fx. Mod version 0.82 and higher.
+// Base MVCHAT file. This file contains the basic sounds
+// as present in legacy versions of 1fx. Mod.
+
+// No extra soundpacks are required client-side to use this MVCHAT file.
+// The sounds defined in this file are 1 up to 110.
+
+1
+{
+	number		"1"
+	text		"Call for reinforcements"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/enemy/english/male/call_for_reinforcements.mp3"
+		}
+
+		female
+		{
+			sound		"sound/enemy/english/fmale/call_for_reinforcements.mp3"
+		}
+	}
+
+	es
+	{
+		male
+		{
+			sound		"sound/enemy/spanish/soldier/call_for_reinforcements.mp3"
+		}
+	}
+
+	cn
+	{
+		male
+		{
+			sound		"sound/enemy/cantonese/male/call_for_reinforcements.mp3"
+		}
+
+		female
+		{
+			sound		"sound/enemy/cantonese/fmale/call_for_reinforcements.mp3"
+		}
+	}
+
+	ru
+	{
+		male
+		{
+			sound		"sound/enemy/russian/soldier/call_for_reinforcements.mp3"
+		}
+	}
+}
+
+2
+{
+	number		"2"
+	text		"Advance"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/enemy/english/male/advance.mp3"
+		}
+
+		female
+		{
+			sound		"sound/enemy/english/fmale/advance.mp3"
+		}
+	}
+
+	es
+	{
+		male
+		{
+			sound		"sound/enemy/spanish/soldier/advance.mp3"
+		}
+	}
+
+	cn
+	{
+		male
+		{
+			sound		"sound/enemy/cantonese/male/advance.mp3"
+		}
+
+		female
+		{
+			sound		"sound/enemy/cantonese/fmale/advance.mp3"
+		}
+	}
+
+	ru
+	{
+		male
+		{
+			sound		"sound/enemy/russian/soldier/advance.mp3"
+		}
+	}
+}
+
+3
+{
+	number		"3"
+	text		"Awaiting orders"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/enemy/english/male/awaiting_orders.mp3"
+		}
+
+		female
+		{
+			sound		"sound/enemy/english/fmale/awaiting_orders.mp3"
+		}
+	}
+
+	es
+	{
+		male
+		{
+			sound		"sound/enemy/spanish/soldier/awaiting_orders.mp3"
+		}
+	}
+
+	cn
+	{
+		male
+		{
+			sound		"sound/enemy/cantonese/male/awaiting_orders.mp3"
+		}
+
+		female
+		{
+			sound		"sound/enemy/cantonese/fmale/awaiting_orders.mp3"
+		}
+	}
+
+	ru
+	{
+		male
+		{
+			sound		"sound/enemy/russian/soldier/awaiting_orders.mp3"
+		}
+	}
+}
+
+4
+{
+	number		"4"
+	text		"Check the perimiter"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/enemy/english/male/check_peri.mp3"
+		}
+
+		female
+		{
+			sound		"sound/enemy/english/fmale/check_peri.mp3"
+		}
+	}
+
+	es
+	{
+		male
+		{
+			sound		"sound/enemy/spanish/soldier/check_peri.mp3"
+		}
+	}
+
+	cn
+	{
+		male
+		{
+			sound		"sound/enemy/cantonese/male/check_peri.mp3"
+		}
+
+		female
+		{
+			sound		"sound/enemy/cantonese/fmale/check_peri.mp3"
+		}
+	}
+}
+
+5
+{
+	number		"5"
+	text		"Go check that out"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/enemy/english/male/check_that_out.mp3"
+		}
+
+		female
+		{
+			sound		"sound/enemy/english/fmale/check_that_out.mp3"
+		}
+	}
+
+	es
+	{
+		male
+		{
+			sound		"sound/enemy/spanish/soldier/check_that_out.mp3"
+		}
+	}
+
+	cn
+	{
+		male
+		{
+			sound		"sound/enemy/cantonese/male/check_that_out.mp3"
+		}
+
+		female
+		{
+			sound		"sound/enemy/cantonese/fmale/check_that_out.mp3"
+		}
+	}
+
+	ru
+	{
+		male
+		{
+			sound		"sound/enemy/russian/soldier/check_that_out.mp3"
+		}
+	}
+}
+
+6
+{
+	number		"6"
+	text		"He's dangerous"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/enemy/english/male/dangerous.mp3"
+		}
+
+		female
+		{
+			sound		"sound/enemy/english/fmale/dangerous.mp3"
+		}
+	}
+
+	cn
+	{
+		male
+		{
+			sound		"sound/enemy/cantonese/male/dangerous.mp3"
+		}
+
+		female
+		{
+			sound		"sound/enemy/cantonese/fmale/dangerous.mp3"
+		}
+	}
+}
+
+7
+{
+	number		"7"
+	text		"Did you hear that"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/enemy/english/male/did_you_hear.mp3"
+		}
+
+		female
+		{
+			sound		"sound/enemy/english/fmale/did_you_hear.mp3"
+		}
+	}
+
+	es
+	{
+		male
+		{
+			sound		"sound/enemy/spanish/soldier/did_you_hear.mp3"
+		}
+	}
+
+	cn
+	{
+		male
+		{
+			sound		"sound/enemy/cantonese/male/did_you_hear.mp3"
+		}
+
+		female
+		{
+			sound		"sound/enemy/cantonese/fmale/did_you_hear.mp3"
+		}
+	}
+
+	ru
+	{
+		male
+		{
+			sound		"sound/enemy/russian/soldier/did_you_hear.mp3"
+		}
+	}
+}
+
+8
+{
+	number		"8"
+	text		"He's disappeared"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/enemy/english/male/disappeared.mp3"
+		}
+
+		female
+		{
+			sound		"sound/enemy/english/fmale/disappeared.mp3"
+		}
+	}
+
+	es
+	{
+		male
+		{
+			sound		"sound/enemy/spanish/soldier/disappeared.mp3"
+		}
+	}
+
+	cn
+	{
+		male
+		{
+			sound		"sound/enemy/cantonese/male/disappeared.mp3"
+		}
+
+		female
+		{
+			sound		"sound/enemy/cantonese/fmale/disappeared.mp3"
+		}
+	}
+
+	ru
+	{
+		male
+		{
+			sound		"sound/enemy/russian/soldier/disappeared.mp3"
+		}
+	}
+}
+
+9
+{
+	number		"9"
+	text		"Drop your weapon"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/enemy/english/male/drop_your_weapon.mp3"
+		}
+
+		female
+		{
+			sound		"sound/enemy/english/fmale/drop_your_weapon.mp3"
+		}
+	}
+
+	es
+	{
+		male
+		{
+			sound		"sound/enemy/spanish/soldier/drop_your_weapon.mp3"
+		}
+	}
+
+	cn
+	{
+		male
+		{
+			sound		"sound/enemy/cantonese/male/drop_your_weapon.mp3"
+		}
+
+		female
+		{
+			sound		"sound/enemy/cantonese/fmale/drop_your_weapon.mp3"
+		}
+	}
+
+	ru
+	{
+		male
+		{
+			sound		"sound/enemy/russian/soldier/drop_your_weapon.mp3"
+		}
+	}
+}
+
+10
+{
+	number		"10"
+	text		"Eliminate target"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/enemy/english/male/eliminate.mp3"
+		}
+
+		female
+		{
+			sound		"sound/enemy/english/fmale/eliminate_target.mp3"
+		}
+	}
+
+	es
+	{
+		male
+		{
+			sound		"sound/enemy/spanish/soldier/eliminate_target.mp3"
+		}
+	}
+
+	ru
+	{
+		male
+		{
+			sound		"sound/enemy/russian/soldier/eliminate_target.mp3"
+		}
+	}
+}
+
+11
+{
+	number		"11"
+	text		"GET HIM"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/enemy/english/male/get_him.mp3"
+		}
+
+		female
+		{
+			sound		"sound/enemy/english/fmale/get_him.mp3"
+		}
+	}
+
+	es
+	{
+		male
+		{
+			sound		"sound/enemy/spanish/soldier/get_him.mp3"
+		}
+	}
+
+	cn
+	{
+		male
+		{
+			sound		"sound/enemy/cantonese/male/get_him.mp3"
+		}
+
+		female
+		{
+			sound		"sound/enemy/cantonese/fmale/get_him.mp3"
+		}
+	}
+}
+
+12
+{
+	number		"12"
+	text		"I got that bastard"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/enemy/english/male/got_bastard.mp3"
+		}
+	}
+}
+
+13
+{
+	number		"13"
+	text		"Hold here"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/enemy/english/male/hold_here.mp3"
+		}
+
+		female
+		{
+			sound		"sound/enemy/english/fmale/hold_here.mp3"
+		}
+	}
+
+	es
+	{
+		male
+		{
+			sound		"sound/enemy/spanish/soldier/hold_here.mp3"
+		}
+	}
+
+	cn
+	{
+		male
+		{
+			sound		"sound/enemy/cantonese/male/hold_here.mp3"
+		}
+	}
+
+	ru
+	{
+		male
+		{
+			sound		"sound/enemy/russian/soldier/hold_here.mp3"
+		}
+	}
+}
+
+14
+{
+	number		"14"
+	text		"Hurry"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/enemy/english/male/hurry.mp3"
+		}
+	}
+
+	es
+	{
+		male
+		{
+			sound		"sound/enemy/spanish/soldier/hurry.mp3"
+		}
+	}
+
+	ru
+	{
+		male
+		{
+			sound		"sound/enemy/russian/soldier/hurry.mp3"
+		}
+	}
+}
+
+15
+{
+	number		"15"
+	text		"I'm hit"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/npc/col8/blakely/imhit.mp3"
+		}
+
+		female
+		{
+			sound		"sound/enemy/english/fmale/im_hit.mp3"
+		}
+	}
+
+	es
+	{
+		male
+		{
+			sound		"sound/enemy/spanish/soldier/im_hit.mp3"
+		}
+	}
+
+	cn
+	{
+		male
+		{
+			sound		"sound/enemy/cantonese/male/im_hit.mp3"
+		}
+
+		female
+		{
+			sound		"sound/enemy/cantonese/fmale/im_hit.mp3"
+		}
+	}
+
+	ru
+	{
+		male
+		{
+			sound		"sound/enemy/russian/soldier/im_hit.mp3"
+		}
+	}
+}
+
+16
+{
+	number		"16"
+	text		"Investigate that area"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/enemy/english/male/investigate_area.mp3"
+		}
+
+		female
+		{
+			sound		"sound/enemy/english/fmale/investigate_area.mp3"
+		}
+	}
+
+	es
+	{
+		male
+		{
+			sound		"sound/enemy/spanish/soldier/investigate_area.mp3"
+		}
+	}
+
+	cn
+	{
+		male
+		{
+			sound		"sound/enemy/cantonese/male/investigate_area.mp3"
+		}
+
+		female
+		{
+			sound		"sound/enemy/cantonese/fmale/investigate_area.mp3"
+		}
+	}
+
+	ru
+	{
+		male
+		{
+			sound		"sound/enemy/russian/soldier/investigate_area.mp3"
+		}
+	}
+}
+
+17
+{
+	number		"17"
+	text		"Keep looking"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/enemy/english/male/keep_looking.mp3"
+		}
+
+		female
+		{
+			sound		"sound/enemy/english/fmale/keep_looking.mp3"
+		}
+	}
+
+	cn
+	{
+		male
+		{
+			sound		"sound/enemy/cantonese/male/keep_looking.mp3"
+		}
+
+		female
+		{
+			sound		"sound/enemy/cantonese/fmale/keep_looking.mp3"
+		}
+	}
+}
+
+18
+{
+	number		"18"
+	text		"KILL HIM"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/enemy/english/male/kill_him.mp3"
+		}
+
+		female
+		{
+			sound		"sound/enemy/english/fmale/kill_him.mp3"
+		}
+	}
+
+	cn
+	{
+		male
+		{
+			sound		"sound/enemy/cantonese/male/kill_him.mp3"
+		}
+
+		female
+		{
+			sound		"sound/enemy/cantonese/fmale/kill_him.mp3"
+		}
+	}
+}
+
+19
+{
+	number		"19"
+	text		"I killed him"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/enemy/english/male/killed_him.mp3"
+		}
+
+		female
+		{
+			sound		"sound/enemy/english/fmale/killed_him.mp3"
+		}
+	}
+
+	cn
+	{
+		male
+		{
+			sound		"sound/enemy/cantonese/male/killed_him.mp3"
+		}
+
+		female
+		{
+			sound		"sound/enemy/cantonese/fmale/killed_him.mp3"
+		}
+	}
+}
+
+20
+{
+	number		"20"
+	text		"I lost him"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/enemy/english/male/lost_him.mp3"
+		}
+
+		female
+		{
+			sound		"sound/enemy/english/fmale/lost_him.mp3"
+		}
+	}
+
+	es
+	{
+		male
+		{
+			sound		"sound/enemy/spanish/soldier/lost_him.mp3"
+		}
+	}
+
+	cn
+	{
+		male
+		{
+			sound		"sound/enemy/cantonese/male/lost_him.mp3"
+		}
+
+		female
+		{
+			sound		"sound/enemy/cantonese/fmale/lost_him.mp3"
+		}
+	}
+
+	ru
+	{
+		male
+		{
+			sound		"sound/enemy/russian/soldier/lost_him.mp3"
+		}
+	}
+}
+
+21
+{
+	number		"21"
+	text		"TAKING SERIOUS CASUALTIES"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/enemy/english/male/man_down03.mp3"
+		}
+
+		female
+		{
+			sound		"sound/enemy/english/fmale/man_down03.mp3"
+		}
+	}
+
+	es
+	{
+		male
+		{
+			sound		"sound/enemy/spanish/soldier/man_down03.mp3"
+		}
+	}
+
+	cn
+	{
+		male
+		{
+			sound		"sound/enemy/cantonese/male/man_down03.mp3"
+		}
+
+		female
+		{
+			sound		"sound/enemy/cantonese/fmale/man_down03.mp3"
+		}
+	}
+
+	ru
+	{
+		male
+		{
+			sound		"sound/enemy/russian/soldier/man_down03.mp3"
+		}
+	}
+}
+
+22
+{
+	number		"22"
+	text		"I need help here"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/enemy/english/male/need_help.mp3"
+		}
+	}
+}
+
+23
+{
+	number		"23"
+	text		"Medic Medic"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/enemy/english/male/medic_medic.mp3"
+		}
+
+		female
+		{
+			sound		"sound/enemy/english/fmale/medic_medic.mp3"
+		}
+	}
+
+	es
+	{
+		male
+		{
+			sound		"sound/enemy/spanish/soldier/medic_medic.mp3"
+		}
+	}
+
+	cn
+	{
+		male
+		{
+			sound		"sound/enemy/cantonese/male/medic_medic.mp3"
+		}
+
+		female
+		{
+			sound		"sound/enemy/cantonese/fmale/medic_medic.mp3"
+		}
+	}
+}
+
+24
+{
+	number		"24"
+	text		"Open Fire"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/enemy/english/male/open_fire.mp3"
+		}
+
+		female
+		{
+			sound		"sound/enemy/english/fmale/open_fire.mp3"
+		}
+	}
+
+	es
+	{
+		male
+		{
+			sound		"sound/enemy/spanish/soldier/open_fire.mp3"
+		}
+	}
+
+	cn
+	{
+		male
+		{
+			sound		"sound/enemy/cantonese/male/open_fire.mp3"
+		}
+
+		female
+		{
+			sound		"sound/enemy/cantonese/fmale/open_fire.mp3"
+		}
+	}
+}
+
+25
+{
+	number		"25"
+	text		"I'm out of Ammo"
+
+	en
+	{
+		default		"yes"
+
+		female
+		{
+			sound		"sound/enemy/english/fmale/out_ammo.mp3"
+		}
+	}
+
+	cn
+	{
+		male
+		{
+			sound		"sound/enemy/cantonese/male/out_ammo.mp3"
+		}
+
+		female
+		{
+			sound		"sound/enemy/cantonese/fmale/out_ammo.mp3"
+		}
+	}
+}
+
+26
+{
+	number		"26"
+	text		"He's over here"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/enemy/english/male/over_here.mp3"
+		}
+
+		female
+		{
+			sound		"sound/enemy/english/fmale/over_here.mp3"
+		}
+	}
+
+	es
+	{
+		male
+		{
+			sound		"sound/enemy/spanish/soldier/over_here.mp3"
+		}
+	}
+
+	cn
+	{
+		male
+		{
+			sound		"sound/enemy/cantonese/male/over_here.mp3"
+		}
+
+		female
+		{
+			sound		"sound/enemy/cantonese/fmale/over_here.mp3"
+		}
+	}
+
+	ru
+	{
+		male
+		{
+			sound		"sound/enemy/russian/soldier/over_here.mp3"
+		}
+	}
+}
+
+27
+{
+	number		"27"
+	text		"Over there"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/enemy/english/male/over_there.mp3"
+		}
+
+		female
+		{
+			sound		"sound/enemy/english/fmale/over_there.mp3"
+		}
+	}
+
+	cn
+	{
+		male
+		{
+			sound		"sound/enemy/cantonese/male/over_there.mp3"
+		}
+	}
+}
+
+28
+{
+	number		"28"
+	text		"Plug him"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/enemy/english/male/plug_him.mp3"
+		}
+
+		female
+		{
+			sound		"sound/enemy/english/fmale/plug_him.mp3"
+		}
+	}
+
+	cn
+	{
+		male
+		{
+			sound		"sound/enemy/cantonese/male/plug_him.mp3"
+		}
+	}
+}
+
+29
+{
+	number		"29"
+	text		"Position reached"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/enemy/english/male/pos_reached.mp3"
+		}
+
+		female
+		{
+			sound		"sound/enemy/english/fmale/pos_reached.mp3"
+		}
+	}
+
+	es
+	{
+		male
+		{
+			sound		"sound/enemy/spanish/soldier/pos_reached.mp3"
+		}
+	}
+
+	cn
+	{
+		male
+		{
+			sound		"sound/enemy/cantonese/male/pos_reached.mp3"
+		}
+
+		female
+		{
+			sound		"sound/enemy/cantonese/fmale/pos_reached.mp3"
+		}
+	}
+
+	ru
+	{
+		male
+		{
+			sound		"sound/enemy/russian/soldier/pos_reached.mp3"
+		}
+	}
+}
+
+30
+{
+	number		"30"
+	text		"Secure the area"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/enemy/english/male/secure_the_area.mp3"
+		}
+
+		female
+		{
+			sound		"sound/enemy/english/fmale/secure_the_area.mp3"
+		}
+	}
+
+	es
+	{
+		male
+		{
+			sound		"sound/enemy/spanish/soldier/secure_the_area.mp3"
+		}
+	}
+
+	cn
+	{
+		male
+		{
+			sound		"sound/enemy/cantonese/male/secure_the_area.mp3"
+		}
+
+		female
+		{
+			sound		"sound/enemy/cantonese/fmale/secure_the_area.mp3"
+		}
+	}
+}
+
+31
+{
+	number		"31"
+	text		"We're getting slaughtered"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/enemy/english/male/slaughtered.mp3"
+		}
+	}
+}
+
+32
+{
+	number		"32"
+	text		"Somethings not right here"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/enemy/english/male/something_not_right.mp3"
+		}
+
+		female
+		{
+			sound		"sound/enemy/english/fmale/something_not_right.mp3"
+		}
+	}
+
+	es
+	{
+		male
+		{
+			sound		"sound/enemy/spanish/soldier/something_not_right.mp3"
+		}
+	}
+
+	cn
+	{
+		male
+		{
+			sound		"sound/enemy/cantonese/male/something_not_right.mp3"
+		}
+
+		female
+		{
+			sound		"sound/enemy/cantonese/fmale/something_not_right.mp3"
+		}
+	}
+
+	ru
+	{
+		male
+		{
+			sound		"sound/enemy/russian/soldier/something_not_right.mp3"
+		}
+	}
+}
+
+33
+{
+	number		"33"
+	text		"Spread out"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/enemy/english/male/spread_out.mp3"
+		}
+
+		female
+		{
+			sound		"sound/enemy/english/fmale/spread_out.mp3"
+		}
+	}
+
+	cn
+	{
+		male
+		{
+			sound		"sound/enemy/cantonese/male/spread_out.mp3"
+		}
+
+		female
+		{
+			sound		"sound/enemy/cantonese/fmale/spread_out.mp3"
+		}
+	}
+}
+
+34
+{
+	number		"34"
+	text		"Surround him"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/enemy/english/male/surround_him.mp3"
+		}
+
+		female
+		{
+			sound		"sound/enemy/english/fmale/surroundhim.mp3"
+		}
+	}
+
+	cn
+	{
+		male
+		{
+			sound		"sound/enemy/cantonese/male/surroundhim.mp3"
+		}
+	}
+}
+
+35
+{
+	number		"35"
+	text		"Take cover"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/enemy/english/male/take_cover2.mp3"
+		}
+
+		female
+		{
+			sound		"sound/enemy/english/fmale/take_cover.mp3"
+		}
+	}
+
+	es
+	{
+		male
+		{
+			sound		"sound/enemy/spanish/soldier/take_cover.mp3"
+		}
+	}
+
+	cn
+	{
+		male
+		{
+			sound		"sound/enemy/cantonese/male/take_cover.mp3"
+		}
+
+		female
+		{
+			sound		"sound/enemy/cantonese/fmale/take_cover.mp3"
+		}
+	}
+
+	ru
+	{
+		male
+		{
+			sound		"sound/enemy/russian/soldier/take_cover.mp3"
+		}
+	}
+}
+
+36
+{
+	number		"36"
+	text		"Take him out"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/enemy/english/male/take_him_out.mp3"
+		}
+	}
+
+	es
+	{
+		male
+		{
+			sound		"sound/enemy/spanish/soldier/take_him_out.mp3"
+		}
+	}
+}
+
+37
+{
+	number		"37"
+	text		"Take Position"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/enemy/english/male/take_position.mp3"
+		}
+
+		female
+		{
+			sound		"sound/enemy/english/fmale/take_position.mp3"
+		}
+	}
+
+	es
+	{
+		male
+		{
+			sound		"sound/enemy/spanish/soldier/take_position.mp3"
+		}
+	}
+
+	cn
+	{
+		male
+		{
+			sound		"sound/enemy/cantonese/male/take_position.mp3"
+		}
+
+		female
+		{
+			sound		"sound/enemy/cantonese/fmale/take_position.mp3"
+		}
+	}
+
+	ru
+	{
+		male
+		{
+			sound		"sound/enemy/russian/soldier/take_position.mp3"
+		}
+	}
+}
+
+38
+{
+	number		"38"
+	text		"Take them out"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/enemy/english/male/take_them_out.mp3"
+		}
+
+		female
+		{
+			sound		"sound/enemy/english/fmale/take_them_out.mp3"
+		}
+	}
+
+	es
+	{
+		male
+		{
+			sound		"sound/enemy/spanish/soldier/take_them_out.mp3"
+		}
+	}
+
+	cn
+	{
+		male
+		{
+			sound		"sound/enemy/cantonese/male/take_them_out.mp3"
+		}
+	}
+}
+
+39
+{
+	number		"39"
+	text		"Target has been eliminated"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/enemy/english/male/target_eliminate.mp3"
+		}
+
+		female
+		{
+			sound		"sound/enemy/english/fmale/target_eliminate.mp3"
+		}
+	}
+
+	es
+	{
+		male
+		{
+			sound		"sound/enemy/spanish/soldier/target_eliminate.mp3"
+		}
+	}
+
+	cn
+	{
+		male
+		{
+			sound		"sound/enemy/cantonese/male/target_eliminate.mp3"
+		}
+
+		female
+		{
+			sound		"sound/enemy/cantonese/fmale/target_eliminate.mp3"
+		}
+	}
+
+	ru
+	{
+		male
+		{
+			sound		"sound/enemy/russian/soldier/target_eliminate.mp3"
+		}
+	}
+}
+
+40
+{
+	number		"40"
+	text		"There he is"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/enemy/english/male/there_he_is.mp3"
+		}
+
+		female
+		{
+			sound		"sound/enemy/english/fmale/there_he_is.mp3"
+		}
+	}
+
+	es
+	{
+		male
+		{
+			sound		"sound/enemy/spanish/soldier/there_he_is.mp3"
+		}
+	}
+
+	cn
+	{
+		male
+		{
+			sound		"sound/enemy/cantonese/male/there_he_is.mp3"
+		}
+
+		female
+		{
+			sound		"sound/enemy/cantonese/fmale/there_he_is.mp3"
+		}
+	}
+
+	ru
+	{
+		male
+		{
+			sound		"sound/enemy/russian/soldier/there_he_is.mp3"
+		}
+	}
+}
+
+41
+{
+	number		"41"
+	text		"Taking alot of fire"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/enemy/english/male/underfire03.mp3"
+		}
+
+		female
+		{
+			sound		"sound/enemy/english/fmale/underfire03.mp3"
+		}
+	}
+
+	es
+	{
+		male
+		{
+			sound		"sound/enemy/spanish/soldier/underfire03.mp3"
+		}
+	}
+
+	cn
+	{
+		male
+		{
+			sound		"sound/enemy/cantonese/male/underfire03.mp3"
+		}
+
+		female
+		{
+			sound		"sound/enemy/cantonese/fmale/underfire03.mp3"
+		}
+	}
+
+	ru
+	{
+		male
+		{
+			sound		"sound/enemy/russian/soldier/underfire03.mp3"
+		}
+	}
+}
+
+42
+{
+	number		"42"
+	text		"WATCH OUT"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/enemy/english/male/watch_out.mp3"
+		}
+
+		female
+		{
+			sound		"sound/enemy/english/fmale/watch_out.mp3"
+		}
+	}
+
+	es
+	{
+		male
+		{
+			sound		"sound/enemy/spanish/soldier/watch_out.mp3"
+		}
+	}
+
+	cn
+	{
+		male
+		{
+			sound		"sound/enemy/cantonese/male/watch_out.mp3"
+		}
+
+		female
+		{
+			sound		"sound/enemy/cantonese/fmale/watch_out.mp3"
+		}
+	}
+
+	ru
+	{
+		male
+		{
+			sound		"sound/enemy/russian/soldier/watch_out.mp3"
+		}
+	}
+}
+
+43
+{
+	number		"43"
+	text		"What are you doing here"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/enemy/english/male/what_are_you_doing.mp3"
+		}
+
+		female
+		{
+			sound		"sound/enemy/english/fmale/what_are_you_doing.mp3"
+		}
+	}
+
+	es
+	{
+		male
+		{
+			sound		"sound/enemy/spanish/soldier/what_are_you_doing.mp3"
+		}
+	}
+
+	cn
+	{
+		male
+		{
+			sound		"sound/enemy/cantonese/male/what_are_you_doing.mp3"
+		}
+
+		female
+		{
+			sound		"sound/enemy/cantonese/fmale/what_are_you_doing.mp3"
+		}
+	}
+
+	ru
+	{
+		male
+		{
+			sound		"sound/enemy/russian/soldier/what_are_you_doing.mp3"
+		}
+	}
+}
+
+44
+{
+	number		"44"
+	text		"What the..."
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/enemy/english/male/what_the.mp3"
+		}
+
+		female
+		{
+			sound		"sound/enemy/english/fmale/what_the.mp3"
+		}
+	}
+
+	es
+	{
+		male
+		{
+			sound		"sound/enemy/spanish/soldier/what_the.mp3"
+		}
+	}
+
+	cn
+	{
+		male
+		{
+			sound		"sound/enemy/cantonese/male/what_the.mp3"
+		}
+
+		female
+		{
+			sound		"sound/enemy/cantonese/fmale/what_the.mp3"
+		}
+	}
+
+	ru
+	{
+		male
+		{
+			sound		"sound/enemy/russian/soldier/what_the.mp3"
+		}
+	}
+}
+
+45
+{
+	number		"45"
+	text		"What was that"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/enemy/english/male/what_was_that.mp3"
+		}
+
+		female
+		{
+			sound		"sound/enemy/english/fmale/what_was_that.mp3"
+		}
+	}
+
+	es
+	{
+		male
+		{
+			sound		"sound/enemy/spanish/soldier/what_was_that.mp3"
+		}
+	}
+
+	cn
+	{
+		male
+		{
+			sound		"sound/enemy/cantonese/male/what_was_that.mp3"
+		}
+
+		female
+		{
+			sound		"sound/enemy/cantonese/fmale/what_was_that.mp3"
+		}
+	}
+
+	ru
+	{
+		male
+		{
+			sound		"sound/enemy/russian/soldier/what_was_that.mp3"
+		}
+	}
+}
+
+46
+{
+	number		"46"
+	text		"Whats happening here"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/enemy/english/male/whats_happening_here.mp3"
+		}
+
+		female
+		{
+			sound		"sound/enemy/english/fmale/whats_happening_here.mp3"
+		}
+	}
+
+	es
+	{
+		male
+		{
+			sound		"sound/enemy/spanish/soldier/whats_happening_here.mp3"
+		}
+	}
+
+	cn
+	{
+		male
+		{
+			sound		"sound/enemy/cantonese/male/whats_happening_here.mp3"
+		}
+
+		female
+		{
+			sound		"sound/enemy/cantonese/fmale/whats_happening_here.mp3"
+		}
+	}
+
+	ru
+	{
+		male
+		{
+			sound		"sound/enemy/russian/soldier/whats_happening_here.mp3"
+		}
+	}
+}
+
+47
+{
+	number		"47"
+	text		"Who are you"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/enemy/english/male/who_are_you.mp3"
+		}
+
+		female
+		{
+			sound		"sound/enemy/english/fmale/who_are_you.mp3"
+		}
+	}
+
+	es
+	{
+		male
+		{
+			sound		"sound/enemy/spanish/soldier/who_are_you.mp3"
+		}
+	}
+
+	cn
+	{
+		male
+		{
+			sound		"sound/enemy/cantonese/male/who_are_you.mp3"
+		}
+
+		female
+		{
+			sound		"sound/enemy/cantonese/fmale/who_are_you.mp3"
+		}
+	}
+
+	ru
+	{
+		male
+		{
+			sound		"sound/enemy/russian/soldier/who_are_you.mp3"
+		}
+	}
+}
+
+48
+{
+	number		"48"
+	text		"You're not supposed to be here"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/enemy/english/male/youre_not_supposed.mp3"
+		}
+
+		female
+		{
+			sound		"sound/enemy/english/fmale/youre_not_supposed.mp3"
+		}
+	}
+
+	es
+	{
+		male
+		{
+			sound		"sound/enemy/spanish/soldier/youre_not_supposed.mp3"
+		}
+	}
+
+	cn
+	{
+		male
+		{
+			sound		"sound/enemy/cantonese/male/youre_not_supposed.mp3"
+		}
+
+		female
+		{
+			sound		"sound/enemy/cantonese/fmale/youre_not_supposed.mp3"
+		}
+	}
+
+	ru
+	{
+		male
+		{
+			sound		"sound/enemy/russian/soldier/youre_not_supposed.mp3"
+		}
+	}
+}
+
+49
+{
+	number		"49"
+	text		"Hey did you see that guy, He wet his pants ha haha ha ha.."
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/npc/air1/guard01/01wetpants.mp3"
+		}
+	}
+}
+
+50
+{
+	number		"50"
+	text		"Hey honey.."
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/npc/air1/guard05/01honey.mp3"
+		}
+	}
+}
+
+51
+{
+	number		"51"
+	text		"Huh I think i can help you"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/npc/gladstone/arm1/03canhelp.mp3"
+		}
+	}
+}
+
+52
+{
+	number		"52"
+	text		"If you look at me 1 more time, I swear I'll BLOW YOUR HEAD OFF"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/npc/air1/terrorists/blowheadoff.mp3"
+		}
+	}
+}
+
+53
+{
+	number		"53"
+	text		"How bout we see if you can dodge a BULLET"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/npc/air1/terrorists/dodgebullet.mp3"
+		}
+	}
+}
+
+54
+{
+	number		"54"
+	text		"That was a close one"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/npc/fritsch/closeone.mp3"
+		}
+	}
+}
+
+55
+{
+	number		"55"
+	text		"What are you lookin at"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/npc/air1/terrorists/lookingat.mp3"
+		}
+
+		female
+		{
+			sound		"sound/npc/civ/english/fmale/looking_at.mp3"
+		}
+	}
+}
+
+56
+{
+	number		"56"
+	text		"You scared?, You should be"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/npc/air1/terrorists/scared02.mp3"
+		}
+	}
+}
+
+57
+{
+	number		"57"
+	text		"Leave me alone"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/npc/civ/english/male/leave_me.mp3"
+		}
+
+		female
+		{
+			sound		"sound/npc/air1/woman01/01leaveme.mp3"
+		}
+	}
+
+	cn
+	{
+		male
+		{
+			sound		"sound/npc/civ/hk/male/leave_me.mp3"
+		}
+
+		female
+		{
+			sound		"sound/npc/civ/hk/fmale/leave_me.mp3"
+		}
+	}
+
+	ru
+	{
+		male
+		{
+			sound		"sound/npc/civ/pra/male/leave_me.mp3"
+		}
+	}
+}
+
+58
+{
+	number		"58"
+	text		"Please just leave me be.."
+
+	en
+	{
+		default		"yes"
+
+		female
+		{
+			sound		"sound/npc/air1/woman01/02please.mp3"
+		}
+	}
+}
+
+59
+{
+	number		"59"
+	text		"What? Please explain.. over"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/npc/air4/hansen/04what.mp3"
+		}
+	}
+}
+
+60
+{
+	number		"60"
+	text		"Attention"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/npc/cem1/comm/01attention.mp3"
+		}
+	}
+}
+
+61
+{
+	number		"61"
+	text		"Someone call 911"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/npc/civ/english/male/call_911.mp3"
+		}
+	}
+}
+
+62
+{
+	number		"62"
+	text		"Call the police"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/npc/civ/english/male/callpolice.mp3"
+		}
+
+		female
+		{
+			sound		"sound/npc/civ/english/fmale/callpolice.mp3"
+		}
+	}
+
+	cn
+	{
+		male
+		{
+			sound		"sound/npc/civ/hk/male/callpolice.mp3"
+		}
+
+		female
+		{
+			sound		"sound/npc/civ/hk/fmale/callpolice.mp3"
+		}
+	}
+
+	de
+	{
+		male
+		{
+			sound		"sound/npc/civ/air/male/callpolice.mp3"
+		}
+
+		female
+		{
+			sound		"sound/npc/civ/air/fmale/callpolice.mp3"
+		}
+	}
+
+	ru
+	{
+		male
+		{
+			sound		"sound/npc/civ/pra/male/call_police.mp3"
+		}
+	}
+}
+
+63
+{
+	number		"63"
+	text		"Comin thru.."
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/npc/civ/english/male/coming_thru.mp3"
+		}
+
+		female
+		{
+			sound		"sound/npc/civ/english/fmale/coming_thru.mp3"
+		}
+	}
+
+	cn
+	{
+		male
+		{
+			sound		"sound/npc/civ/hk/male/coming_thru.mp3"
+		}
+
+		female
+		{
+			sound		"sound/npc/civ/hk/fmale/coming_thru.mp3"
+		}
+	}
+
+	ru
+	{
+		male
+		{
+			sound		"sound/npc/civ/pra/male/coming_thru.mp3"
+		}
+	}
+}
+
+64
+{
+	number		"64"
+	text		"NICE SHOT"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/npc/col8/washington/niceshot.mp3"
+		}
+	}
+}
+
+65
+{
+	number		"65"
+	text		"Excuse me"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/npc/civ/english/male/excuse_me.mp3"
+		}
+
+		female
+		{
+			sound		"sound/npc/civ/english/fmale/excuse_me.mp3"
+		}
+	}
+
+	cn
+	{
+		male
+		{
+			sound		"sound/npc/civ/hk/male/excuse_me.mp3"
+		}
+
+		female
+		{
+			sound		"sound/npc/civ/hk/fmale/excuse_me.mp3"
+		}
+	}
+
+	ru
+	{
+		male
+		{
+			sound		"sound/npc/civ/pra/male/excuse_me.mp3"
+		}
+	}
+}
+
+66
+{
+	number		"66"
+	text		"Don't hurt me"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/npc/civ/english/male/dont_hurt.mp3"
+		}
+
+		female
+		{
+			sound		"sound/npc/civ/english/fmale/dont_hurt.mp3"
+		}
+	}
+
+	cn
+	{
+		male
+		{
+			sound		"sound/npc/civ/hk/male/dont_hurt.mp3"
+		}
+
+		female
+		{
+			sound		"sound/npc/civ/hk/fmale/dont_hurt.mp3"
+		}
+	}
+
+	de
+	{
+		male
+		{
+			sound		"sound/npc/civ/air/male/dont_hurt.mp3"
+		}
+
+		female
+		{
+			sound		"sound/npc/civ/air/fmale/dont_hurt.mp3"
+		}
+	}
+
+	ru
+	{
+		male
+		{
+			sound		"sound/npc/civ/pra/male/dont_hurt.mp3"
+		}
+	}
+}
+
+67
+{
+	number		"67"
+	text		"I don't understand"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/npc/civ/english/male/dont_understand.mp3"
+		}
+
+		female
+		{
+			sound		"sound/npc/civ/english/fmale/dont_understand.mp3"
+		}
+	}
+
+	cn
+	{
+		male
+		{
+			sound		"sound/npc/civ/hk/male/dont_understand.mp3"
+		}
+
+		female
+		{
+			sound		"sound/npc/civ/hk/fmale/dont_understand.mp3"
+		}
+	}
+
+	ru
+	{
+		male
+		{
+			sound		"sound/npc/civ/pra/male/dont_understand.mp3"
+		}
+	}
+}
+
+68
+{
+	number		"68"
+	text		"I don't have any money"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/npc/civ/english/male/no_money.mp3"
+		}
+
+		female
+		{
+			sound		"sound/npc/civ/english/fmale/no_money.mp3"
+		}
+	}
+
+	cn
+	{
+		male
+		{
+			sound		"sound/npc/civ/hk/male/no_money.mp3"
+		}
+
+		female
+		{
+			sound		"sound/npc/civ/hk/fmale/no_money.mp3"
+		}
+	}
+}
+
+69
+{
+	number		"69"
+	text		"Those men have guns"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/npc/civ/english/male/thosemen.mp3"
+		}
+
+		female
+		{
+			sound		"sound/npc/civ/english/fmale/thosemen.mp3"
+		}
+	}
+
+	cn
+	{
+		male
+		{
+			sound		"sound/npc/civ/hk/male/thosemen.mp3"
+		}
+
+		female
+		{
+			sound		"sound/npc/civ/hk/fmale/thosemen.mp3"
+		}
+	}
+
+	de
+	{
+		male
+		{
+			sound		"sound/npc/civ/air/male/thosemen.mp3"
+		}
+
+		female
+		{
+			sound		"sound/npc/civ/air/fmale/thosemen.mp3"
+		}
+	}
+
+	ru
+	{
+		male
+		{
+			sound		"sound/npc/civ/pra/male/those_men_guns.mp3"
+		}
+	}
+}
+
+70
+{
+	number		"70"
+	text		"Take my wallet, Just don't hurt me"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/npc/civ/english/male/wallet.mp3"
+		}
+
+		female
+		{
+			sound		"sound/npc/civ/english/fmale/wallet.mp3"
+		}
+	}
+
+	cn
+	{
+		male
+		{
+			sound		"sound/npc/civ/hk/male/wallet.mp3"
+		}
+
+		female
+		{
+			sound		"sound/npc/civ/hk/fmale/wallet.mp3"
+		}
+	}
+
+	ru
+	{
+		male
+		{
+			sound		"sound/npc/civ/pra/male/take_wallet.mp3"
+		}
+	}
+}
+
+71
+{
+	number		"71"
+	text		"I'm unarmed"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/npc/civ/english/male/unarmed.mp3"
+		}
+
+		female
+		{
+			sound		"sound/npc/civ/english/fmale/unarmed.mp3"
+		}
+	}
+
+	cn
+	{
+		male
+		{
+			sound		"sound/npc/civ/hk/male/unarmed.mp3"
+		}
+
+		female
+		{
+			sound		"sound/npc/civ/hk/fmale/unarmed.mp3"
+		}
+	}
+
+	de
+	{
+		male
+		{
+			sound		"sound/npc/civ/air/male/unarmed.mp3"
+		}
+
+		female
+		{
+			sound		"sound/npc/civ/air/fmale/unarmed.mp3"
+		}
+	}
+
+	ru
+	{
+		male
+		{
+			sound		"sound/npc/civ/pra/male/unarmed.mp3"
+		}
+	}
+}
+
+72
+{
+	number		"72"
+	text		"Watchout"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/npc/civ/english/male/watchout.mp3"
+		}
+
+		female
+		{
+			sound		"sound/npc/civ/english/fmale/watchout.mp3"
+		}
+	}
+
+	cn
+	{
+		male
+		{
+			sound		"sound/npc/civ/hk/male/watchout.mp3"
+		}
+
+		female
+		{
+			sound		"sound/npc/civ/hk/fmale/watchout.mp3"
+		}
+	}
+
+	de
+	{
+		male
+		{
+			sound		"sound/npc/civ/air/male/watchout.mp3"
+		}
+
+		female
+		{
+			sound		"sound/npc/civ/air/fmale/watchout.mp3"
+		}
+	}
+
+	ru
+	{
+		male
+		{
+			sound		"sound/npc/civ/pra/male/watchout.mp3"
+		}
+	}
+}
+
+73
+{
+	number		"73"
+	text		"Pairup"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/npc/col2/butch/pairup.mp3"
+		}
+	}
+}
+
+74
+{
+	number		"74"
+	text		"Fanout"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/npc/col2/butch/fanout.mp3"
+		}
+	}
+}
+
+75
+{
+	number		"75"
+	text		"We got company, Take cover"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/npc/col3/peterson/12company.mp3"
+		}
+	}
+}
+
+76
+{
+	number		"76"
+	text		"Enemy has been neutralized, base camp is secure. over"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/npc/col3/radio/02enemy.mp3"
+		}
+	}
+}
+
+77
+{
+	number		"77"
+	text		"BANG! Your dead"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/npc/col8/blakely/bang.mp3"
+		}
+	}
+}
+
+78
+{
+	number		"78"
+	text		"DAMN! that was close"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/npc/col8/blakely/close.mp3"
+		}
+	}
+}
+
+79
+{
+	number		"79"
+	text		"GET DOWN"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/npc/col8/blakely/getdown.mp3"
+		}
+	}
+}
+
+80
+{
+	number		"80"
+	text		"Come get some"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/npc/col8/blakely/getsome.mp3"
+		}
+	}
+}
+
+81
+{
+	number		"81"
+	text		"Incoming"
+
+	en
+	{
+		default		"yes"
+		next		"yes"
+
+		male
+		{
+			sound		"sound/npc/col8/blakely/incoming.mp3"
+		}
+	}
+}
+
+82
+{
+	number		"82"
+	text		"Go cry to mama"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/npc/col8/blakely/mama.mp3"
+		}
+	}
+}
+
+83
+{
+	number		"83"
+	text		"We showed them"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/npc/col8/blakely/showed.mp3"
+		}
+	}
+}
+
+84
+{
+	number		"84"
+	text		"Take that"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/npc/col8/blakely/takethat.mp3"
+		}
+	}
+}
+
+85
+{
+	number		"85"
+	text		"That did it"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/npc/col8/blakely/thatdidit.mp3"
+		}
+	}
+}
+
+86
+{
+	number		"86"
+	text		"You want some of this"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/npc/col8/blakely/wantsome.mp3"
+		}
+	}
+}
+
+87
+{
+	number		"87"
+	text		"Yeah"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/npc/col8/blakely/yeah.mp3"
+		}
+	}
+}
+
+88
+{
+	number		"88"
+	text		"WOOOO"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/npc/col8/blakely/woo.mp3"
+		}
+	}
+}
+
+89
+{
+	number		"89"
+	text		"Don't worry girls it'll all be over soon"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/npc/col8/peterson/01girls.mp3"
+		}
+	}
+}
+
+90
+{
+	number		"90"
+	text		"Cover my left"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/npc/col8/peterson/coverleft.mp3"
+		}
+	}
+}
+
+91
+{
+	number		"91"
+	text		"Cover my right"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/npc/col8/peterson/coverright.mp3"
+		}
+	}
+}
+
+92
+{
+	number		"92"
+	text		"Keep your eyes open boys"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/npc/col8/peterson/eyesopen.mp3"
+		}
+	}
+}
+
+93
+{
+	number		"93"
+	text		"Get moving"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/npc/col8/peterson/getmoving02.mp3"
+		}
+	}
+}
+
+94
+{
+	number		"94"
+	text		"Shudd-up man"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/npc/col8/washington/02shuddup.mp3"
+		}
+	}
+}
+
+95
+{
+	number		"95"
+	text		"Eat lead sukka"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/npc/col8/washington/eatlead.mp3"
+		}
+	}
+}
+
+96
+{
+	number		"96"
+	text		"Kickin ass, and takin names"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/npc/col8/washington/takingnames.mp3"
+		}
+	}
+}
+
+97
+{
+	number		"97"
+	text		"How'd you like that"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/npc/col8/washington/youlike.mp3"
+		}
+	}
+}
+
+98
+{
+	number		"98"
+	text		"WoOoOo"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/npc/col8/washington/woo.mp3"
+		}
+	}
+}
+
+99
+{
+	number		"99"
+	text		"O.K, lets do it"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/npc/col9/pilot/03letsdoit.mp3"
+		}
+	}
+}
+
+100
+{
+	number		"100"
+	text		"We can't take much more of this"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/npc/col9/pilot/canttake.mp3"
+		}
+	}
+}
+
+101
+{
+	number		"101"
+	text		"Ya Ya Ya just just Wait"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/npc/air1/guard04/02wait.mp3"
+		}
+	}
+}
+
+102
+{
+	number		"102"
+	text		"go away!"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/npc/civ/english/male/go_away.mp3"
+		}
+
+		female
+		{
+			sound		"sound/npc/civ/english/fmale/go_away.mp3"
+		}
+	}
+
+	cn
+	{
+		male
+		{
+			sound		"sound/npc/civ/hk/male/go_away.mp3"
+		}
+
+		female
+		{
+			sound		"sound/npc/civ/hk/fmale/go_away.mp3"
+		}
+	}
+
+	ru
+	{
+		male
+		{
+			sound		"sound/npc/civ/pra/male/go_away.mp3"
+		}
+	}
+}
+
+103
+{
+	number		"103"
+	text		"dude whats going on"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/npc/civ/english/male/goingon.mp3"
+		}
+
+		female
+		{
+			sound		"sound/npc/civ/english/fmale/goingon.mp3"
+		}
+	}
+
+	cn
+	{
+		male
+		{
+			sound		"sound/npc/civ/hk/male/goingon.mp3"
+		}
+
+		female
+		{
+			sound		"sound/npc/civ/hk/fmale/goingon.mp3"
+		}
+	}
+
+	de
+	{
+		male
+		{
+			sound		"sound/npc/civ/air/male/going_on.mp3"
+		}
+
+		female
+		{
+			sound		"sound/npc/civ/air/fmale/going_on.mp3"
+		}
+	}
+
+	ru
+	{
+		male
+		{
+			sound		"sound/npc/civ/pra/male/goingon.mp3"
+		}
+	}
+}
+
+104
+{
+	number		"104"
+	text		"HELP!"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/npc/civ/english/male/help.mp3"
+		}
+
+		female
+		{
+			sound		"sound/npc/civ/english/fmale/help.mp3"
+		}
+	}
+
+	cn
+	{
+		male
+		{
+			sound		"sound/npc/civ/hk/male/help.mp3"
+		}
+
+		female
+		{
+			sound		"sound/npc/civ/hk/fmale/help.mp3"
+		}
+	}
+
+	de
+	{
+		male
+		{
+			sound		"sound/npc/civ/air/male/help.mp3"
+		}
+
+		female
+		{
+			sound		"sound/npc/civ/air/fmale/help.mp3"
+		}
+	}
+
+	ru
+	{
+		male
+		{
+			sound		"sound/npc/civ/pra/male/help.mp3"
+		}
+	}
+}
+
+105
+{
+	number		"105"
+	text		"no, NOOOO"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/npc/civ/english/male/no.mp3"
+		}
+	}
+
+	de
+	{
+		male
+		{
+			sound		"sound/npc/civ/air/male/no.mp3"
+		}
+
+		female
+		{
+			sound		"sound/npc/civ/air/fmale/no.mp3"
+		}
+	}
+
+	ru
+	{
+		male
+		{
+			sound		"sound/npc/civ/pra/male/no.mp3"
+		}
+	}
+}
+
+106
+{
+	number		"106"
+	text		"RUN"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/npc/civ/english/male/run.mp3"
+		}
+
+		female
+		{
+			sound		"sound/npc/civ/english/fmale/run.mp3"
+		}
+	}
+
+	cn
+	{
+		male
+		{
+			sound		"sound/npc/civ/hk/male/run.mp3"
+		}
+
+		female
+		{
+			sound		"sound/npc/civ/hk/fmale/run.mp3"
+		}
+	}
+
+	de
+	{
+		male
+		{
+			sound		"sound/npc/civ/air/male/run.mp3"
+		}
+
+		female
+		{
+			sound		"sound/npc/civ/air/fmale/run.mp3"
+		}
+	}
+
+	ru
+	{
+		male
+		{
+			sound		"sound/npc/civ/pra/male/run.mp3"
+		}
+	}
+}
+
+107
+{
+	number		"107"
+	text		"lol"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/npc/col10/scientist02/02laugh.mp3"
+		}
+	}
+}
+
+108
+{
+	number		"108"
+	text		"hello"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/npc/civ/english/male/hello.mp3"
+		}
+	}
+
+	ru
+	{
+		male
+		{
+			sound		"sound/npc/civ/pra/male/hello.mp3"
+		}
+	}
+}
+
+109
+{
+	number		"109"
+	text		"Ha great shot"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/npc/col9/pilot/greatshot.mp3"
+		}
+	}
+}
+
+110
+{
+	number		"110"
+	text		"behind you"
+
+	en
+	{
+		default		"yes"
+
+		male
+		{
+			sound		"sound/npc/fritsch/behindyou.mp3"
+		}
+	}
+}

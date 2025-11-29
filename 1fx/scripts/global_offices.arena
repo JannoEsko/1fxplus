@@ -1,0 +1,5 @@
+{
+	map "global_offices"
+	longname "global_offices"
+	type "hns inf elim ctf tdm dm hnz mm gg csinf"
+}

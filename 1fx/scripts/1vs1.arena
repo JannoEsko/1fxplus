@@ -1,0 +1,5 @@
+{
+	map "1vs1"
+	longname "1vs1"
+	type "h&s inf elim ctf tdm dm h&z mm csinf"
+}

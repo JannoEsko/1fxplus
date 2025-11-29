@@ -1,0 +1,5 @@
+{
+	map "mp_crazyxmas"
+	longname "mp_crazyxmas"
+	type "hns inf elim ctf tdm dm hnz mm gg csinf"
+}

@@ -1,0 +1,5 @@
+{
+	map "mp_dep1"
+	longname "mp_dep1"
+	type "hns inf elim ctf tdm dm hnz mm gg csinf"
+}

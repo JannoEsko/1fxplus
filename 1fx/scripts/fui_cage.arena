@@ -1,0 +1,5 @@
+{
+	map "fui_cage"
+	longname "fui_cage"
+	type "h&s inf elim ctf tdm dm h&z mm gg csinf"
+}

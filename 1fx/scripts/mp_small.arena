@@ -1,0 +1,5 @@
+{	
+map			"mp_small"
+longname	"mp_small"
+type		"dm tdm elim ctf inf h&s"
+}

@@ -1,0 +1,5 @@
+{
+	map "shop5"
+	longname "shop5"
+	type "h&s inf elim ctf tdm dm h&z mm csinf"
+}

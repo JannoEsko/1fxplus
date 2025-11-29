@@ -1,0 +1,5 @@
+{
+	map "shop7"
+	longname "^7Shop after attack"
+	type "dm tdm elim ctf inf h&s"
+}

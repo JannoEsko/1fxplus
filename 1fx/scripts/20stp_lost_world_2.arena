@@ -1,0 +1,5 @@
+{
+	map "20stp_lost_world_2"
+	longname "20stp_lost_world_2"
+	type "h&s inf elim ctf tdm dm h&z mm gg csinf"
+}

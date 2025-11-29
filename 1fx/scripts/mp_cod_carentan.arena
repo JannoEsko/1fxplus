@@ -1,0 +1,5 @@
+{
+	map "mp_cod_carentan"
+	longname "mp_cod_carentan"
+	type "h&s inf elim ctf tdm dm h&z mm gg csinf"
+}

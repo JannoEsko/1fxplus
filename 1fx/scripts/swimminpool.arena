@@ -1,0 +1,5 @@
+{
+	map "swimminpool"
+	longname "swimminpool"
+	type "h&s inf elim ctf tdm dm h&z mm csinf"
+}

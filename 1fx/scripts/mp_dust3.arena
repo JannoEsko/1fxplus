@@ -1,0 +1,5 @@
+{
+	map "mp_dust3"
+	longname "mp_dust3"
+	type "h&s inf elim ctf tdm dm h&z mm gg csinf"
+}

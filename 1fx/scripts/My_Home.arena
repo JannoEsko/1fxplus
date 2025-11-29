@@ -1,0 +1,5 @@
+{
+	map "My_home"
+	longname "home"
+	type "dm tdm ctf inf elim h&s"
+}

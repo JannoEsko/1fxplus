@@ -1,0 +1,5 @@
+{
+	map "air4"
+	longname "air4"
+	type "h&s inf elim ctf tdm dm h&z mm gg csinf"
+}
