@@ -124,7 +124,7 @@ jobs:
           mkdir -p build && cd build
           FLAGS=""
           [ "${{ matrix.arch }}" = "x86" ] && FLAGS="-DFORCE_32BIT=ON -DCMAKE_C_FLAGS=-m32 -DCMAKE_CXX_FLAGS=-m32 -DCMAKE_EXE_LINKER_FLAGS=-m32"
-          cmake .. -G Ninja -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} $FLAGS -DCMAKE_LIBRARY_OUTPUT_DIRECTORY=$(pwd)/../artifacts
+          cmake .. -G Ninja -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} $FLAGS -DCMAKE_LIBRARY_OUTPUT_DIRECTORY=$(pwd)/../artifacts/1fx/
           cmake --build . --parallel
 
       - name: Build (CMake - MinGW)
@@ -134,7 +134,7 @@ jobs:
           mkdir -p build && cd build
           FLAGS=""
           [ "${{ matrix.arch }}" = "x86" ] && FLAGS="-DFORCE_32BIT=ON -DCMAKE_C_FLAGS=-m32 -DCMAKE_CXX_FLAGS=-m32 -DCMAKE_EXE_LINKER_FLAGS=-m32"
-          cmake .. -G Ninja -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} $FLAGS -DCMAKE_LIBRARY_OUTPUT_DIRECTORY=$(pwd)/../artifacts
+          cmake .. -G Ninja -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} $FLAGS -DCMAKE_LIBRARY_OUTPUT_DIRECTORY=$(pwd)/../artifacts/1fx/
           cmake --build . --parallel
 
       - name: Build (MSVC)
@@ -148,29 +148,30 @@ jobs:
         if: always() && matrix.compiler == 'msvc'
         shell: pwsh
         run: |
-          mkdir artifacts
-          Copy-Item "1fx" "artifacts/1fx" -Recurse -Force
-          $dir = "build/${{ matrix.arch }}-${{ matrix.build_type }}"
-          Copy-Item "$dir/*.dll" artifacts/1fx/
-          
+          mkdir -Force artifacts/1fx
+          Copy-Item -Path 1fx/* -Destination artifacts/1fx/ -Recurse -Force
+          cd build
+          Get-ChildItem -Recurse -Filter "*.dll" | Copy-Item -Destination ../artifacts/1fx/
           if ("${{ matrix.build_type }}" -eq "Debug") {
-            Copy-Item "$dir/*.pdb" artifacts/1fx/ -ErrorAction SilentlyContinue
+            Get-ChildItem -Recurse -Filter "*.pdb" | Copy-Item -Destination ../artifacts/1fx/ -ErrorAction SilentlyContinue
           }
 
       - name: Collect MinGW artifacts
         if: always() && matrix.compiler == 'mingw'
         run: |
-          mkdir -p artifacts
-          cp -R 1fx artifacts/
-          find . \(-name "*.so" -o -name "*.dll" \) -exec mv {} artifacts/1fx/ \; 2>/dev/null || true
+          mkdir -p artifacts/1fx
+          cp -r 1fx/* artifacts/1fx/ || true
+          find . -name "*.dll" -exec cp {} artifacts/1fx/ \; 2>/dev/null || true
+          if [ "${{ matrix.build_type }}" = "Debug" ]; then
+            find . -name "game*.pdb" -exec cp {} artifacts/1fx/ \; 2>/dev/null || true
+          fi
 
       - name: Collect GCC artifacts
         if: always() && matrix.compiler == 'gcc'
         run: |
-          mkdir -p artifacts
-          cp -R 1fx artifacts/
-          cd build
-          find . -name "*.dll" -exec mv {} ../artifacts/1fx/ \;
+          mkdir -p artifacts/1fx
+          cp -r 1fx/* artifacts/1fx/ || true
+          find build -name "*.so" -exec cp {} artifacts/1fx/ \; 2>/dev/null || true
 
       - name: Archive (Linux)
         if: always() && matrix.os == 'ubuntu-latest'
@@ -183,7 +184,7 @@ jobs:
         shell: pwsh
         run: |
           cd artifacts
-          Compress-Archive -Path * -DestinationPath "../1fxplus-windows-${{ matrix.arch }}-${{ matrix.build_type }}-${{ matrix.compiler }}.zip" -Force
+          Compress-Archive -Path 1fx -DestinationPath "../1fxplus-windows-${{ matrix.arch }}-${{ matrix.build_type }}-${{ matrix.compiler }}.zip" -Force
 
       - name: Upload
         if: always()
