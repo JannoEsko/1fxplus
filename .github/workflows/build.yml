@@ -149,24 +149,28 @@ jobs:
         shell: pwsh
         run: |
           mkdir artifacts
+          Copy-Item "1fx" "artifacts/1fx" -Recurse -Force
           $dir = "build/${{ matrix.arch }}-${{ matrix.build_type }}"
-          Copy-Item "$dir/*.dll" artifacts/
+          Copy-Item "$dir/*.dll" artifacts/1fx/
+          
           if ("${{ matrix.build_type }}" -eq "Debug") {
-            Copy-Item "$dir/*.pdb" artifacts/ -ErrorAction SilentlyContinue
+            Copy-Item "$dir/*.pdb" artifacts/1fx/ -ErrorAction SilentlyContinue
           }
 
       - name: Collect MinGW artifacts
         if: always() && matrix.compiler == 'mingw'
         run: |
           mkdir -p artifacts
-          find . -name "*.so" -o -name "*.dll" -exec mv {} artifacts/ \; 2>/dev/null || true
+          cp -R 1fx artifacts/
+          find . \(-name "*.so" -o -name "*.dll" \) -exec mv {} artifacts/1fx/ \; 2>/dev/null || true
 
       - name: Collect GCC artifacts
         if: always() && matrix.compiler == 'gcc'
         run: |
           mkdir -p artifacts
+          cp -R 1fx artifacts/
           cd build
-          find . \( -name "*.so" -o -name "*.dll" \) -exec mv {} ../artifacts/ \;
+          find . \( -name "*.so" -o -name "*.dll" \) -exec mv {} ../artifacts/1fx/ \;
 
       - name: Archive (Linux)
         if: always() && matrix.os == 'ubuntu-latest'
