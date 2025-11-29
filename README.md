@@ -63,7 +63,7 @@ Same command — just use `.exe` as the extension
 
 ### Recommended Config
 
-We have provided a configuration file which gives you all the information how to properly set up a 1fxplus + sof2plus server. [You can find the configuration file here: /1fx/s2pconfig.cfg](https://github.com/JannoEsko/1fxplus/blob/master/1fx/s2pconfig.cfg)
+We have provided a configuration file which gives you all the information how to properly set up a 1fxplus + sof2plus server. [You can find the configuration file here: /1fx/s2pserver.cfg](https://github.com/JannoEsko/1fxplus/blob/master/1fx/s2pserver.cfg)
 
 
 ## 🛠 Building
