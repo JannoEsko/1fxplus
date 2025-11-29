@@ -170,13 +170,13 @@ jobs:
           mkdir -p artifacts
           cp -R 1fx artifacts/
           cd build
-          find . \( -name "*.so" -o -name "*.dll" \) -exec mv {} ../artifacts/1fx/ \;
+          find . -name "*.dll" -exec mv {} ../artifacts/1fx/ \;
 
       - name: Archive (Linux)
         if: always() && matrix.os == 'ubuntu-latest'
         run: |
           cd artifacts
-          tar -czf "../1fxplus-linux-${{ matrix.arch }}-${{ matrix.build_type }}-gcc.tar.gz" *.so
+          tar -czf "../1fxplus-linux-${{ matrix.arch }}-${{ matrix.build_type }}-gcc.tar.gz" 1fx
 
       - name: Archive (Windows)
         if: always() && matrix.os == 'windows-latest'
