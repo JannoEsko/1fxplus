@@ -64,14 +64,35 @@ jobs:
             compiler: msvc
             arch: x86
             build_type: Debug
+          - os: debian-11
+            compiler: gcc
+            arch: x86_64
+            build_type: Release
+          - os: debian-11
+            compiler: gcc
+            arch: x86_64
+            build_type: Debug
+          - os: debian-11
+            compiler: gcc
+            arch: x86
+            build_type: Release
+          - os: debian-11
+            compiler: gcc
+            arch: x86
+            build_type: Debug
 
     runs-on: ${{ matrix.os }}
+    container: ${{ matrix.os == 'debian-11' && 'debian:11' || '' }}
 
     defaults:
       run:
         shell: bash
 
     steps:
+      - name: Install Git and sudo (Debian Docker image)
+        if: matrix.os == 'debian-11'
+        run: apt update && apt install -y git ca-certificates sudo
+
       - name: Checkout
         uses: actions/checkout@v4
         with:
