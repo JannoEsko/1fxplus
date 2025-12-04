@@ -204,7 +204,7 @@ jobs:
         if: always() && matrix.os == 'debian-11'
         run: |
           cd artifacts
-          tar -czf "../1fxplus-debian-${{ matrix.arch }}-${{ matrix.build_type }}-gcc.tar.gz" 1fx
+          tar -czf "../1fxplus-debian11-${{ matrix.arch }}-${{ matrix.build_type }}-gcc.tar.gz" 1fx
 
       - name: Archive (Windows)
         if: always() && matrix.os == 'windows-latest'
@@ -213,12 +213,19 @@ jobs:
           cd artifacts
           Compress-Archive -Path 1fx -DestinationPath "../1fxplus-windows-${{ matrix.arch }}-${{ matrix.build_type }}-${{ matrix.compiler }}.zip" -Force
 
-      - name: Upload
-        if: always()
+      - name: Upload (Windows)
+        if: always() && matrix.os == 'windows-latest'
         uses: actions/upload-artifact@v4
         with:
           name: 1fxplus-${{ matrix.arch }}-${{ matrix.build_type }}-${{ matrix.compiler }}
-          path: ${{ matrix.os == 'windows-latest' && '1fxplus-windows-*.zip' || '1fxplus-linux-*.tar.gz' }}
+          path: '1fxplus-windows-*.zip'
+
+      - name: Upload (Linux)
+        if: always() && matrix.compiler == 'gcc'
+        uses: actions/upload-artifact@v4
+        with:
+          name: 1fxplus-${{ matrix.os }}-${{ matrix.arch }}-${{ matrix.build_type }}-${{ matrix.compiler }}
+          path: ${{ matrix.os == 'debian-11' && '1fxplus-debian11-*.tar.gz' || '1fxplus-linux-*.tar.gz' }}
 
   release:
     needs: build
