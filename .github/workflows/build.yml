@@ -81,7 +81,7 @@ jobs:
             arch: x86
             build_type: Debug
 
-    runs-on: ${{ matrix.os }}
+    runs-on: ${{ matrix.os == 'debian-11' && 'ubuntu-latest' || matrix.os }}
     container: ${{ matrix.os == 'debian-11' && 'debian:11' || '' }}
 
     defaults:
