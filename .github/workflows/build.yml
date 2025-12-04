@@ -195,7 +195,7 @@ jobs:
           find build -name "*.so" -exec cp {} artifacts/1fx/ \; 2>/dev/null || true
 
       - name: Archive (Linux)
-        if: always() && matrix.os == 'ubuntu-latest'
+        if: always() && (matrix.os == 'ubuntu-latest' || matrix.os == 'debian-11')
         run: |
           cd artifacts
           tar -czf "../1fxplus-linux-${{ matrix.arch }}-${{ matrix.build_type }}-gcc.tar.gz" 1fx
@@ -212,7 +212,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: 1fxplus-${{ matrix.arch }}-${{ matrix.build_type }}-${{ matrix.compiler }}
-          path: ${{ matrix.os == 'ubuntu-latest' && '1fxplus-linux-*.tar.gz' || '1fxplus-windows-*.zip' }}
+          path: ${{ matrix.os == 'windows-latest' && '1fxplus-windows-*.zip' || '1fxplus-linux-*.tar.gz' }}
 
   release:
     needs: build
