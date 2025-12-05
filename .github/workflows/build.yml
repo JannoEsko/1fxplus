@@ -80,6 +80,14 @@ jobs:
             compiler: gcc
             arch: x86
             build_type: Debug
+          - os: ubuntu-24.04-arm
+            compiler: gcc
+            arch: arm64
+            build_type: Debug
+          - os: ubuntu-24.04-arm
+            compiler: gcc
+            arch: arm64
+            build_type: Release
 
     runs-on: ${{ matrix.os == 'debian-11' && 'ubuntu-latest' || matrix.os }}
     container: ${{ matrix.os == 'debian-11' && 'debian:11' || '' }}
@@ -139,6 +147,13 @@ jobs:
           sudo apt-get update -qq
           sudo apt-get install -y build-essential cmake ninja-build libsdl2-dev libjpeg-dev libpng-dev zlib1g-dev:i386 gcc-multilib g++-multilib libcurl4-openssl-dev:i386
 
+      - name: Install Linux deps (ARM64)
+        if: matrix.compiler == 'gcc' && matrix.arch == 'arm64'
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y build-essential cmake ninja-build libsdl2-dev libjpeg-dev libpng-dev zlib1g-dev libcurl4-openssl-dev
+
+
       - name: Build (CMake - GCC)
         if: matrix.compiler == 'gcc'
         run: |
@@ -195,7 +210,7 @@ jobs:
           find build -name "*.so" -exec cp {} artifacts/1fx/ \; 2>/dev/null || true
 
       - name: Archive (Ubuntu)
-        if: always() && matrix.os == 'ubuntu-latest'
+        if: always() && (matrix.os == 'ubuntu-latest' || matrix.os == 'ubuntu-24.04-arm')
         run: |
           cd artifacts
           tar -czf "../1fxplus-linux-${{ matrix.arch }}-${{ matrix.build_type }}-gcc.tar.gz" 1fx
