@@ -4,7 +4,7 @@ if(NOT APPLE)
     return()
 endif()
 
-option(BUILD_MACOS_APP "Deploy as a macOS .app" ON)
+option(BUILD_MACOS_APP "Deploy as a macOS .app" OFF)
 
 enable_language(OBJC)
 
@@ -102,15 +102,17 @@ if(NOT "$ENV{APPLE_CERTIFICATE_ID}" STREQUAL "")
     endfunction()
 endif()
 
-set(CPACK_GENERATOR "DragNDrop")
+if(BUILD_MACOS_APP)
+    set(CPACK_GENERATOR "DragNDrop")
 
-set(CPACK_DMG_VOLUME_NAME "${PROJECT_NAME} Installer")
-set(CPACK_DMG_BACKGROUND_IMAGE "${CMAKE_SOURCE_DIR}/misc/macos-dmg-background.png")
+    set(CPACK_DMG_VOLUME_NAME "${PROJECT_NAME} Installer")
+    set(CPACK_DMG_BACKGROUND_IMAGE "${CMAKE_SOURCE_DIR}/misc/macos-dmg-background.png")
 
-configure_file(
-  "${CMAKE_SOURCE_DIR}/misc/macos-dmg-setup.applescript.in"
-  "${CMAKE_BINARY_DIR}/macos-dmg-setup.applescript"
-  @ONLY
-)
+    configure_file(
+      "${CMAKE_SOURCE_DIR}/misc/macos-dmg-setup.applescript.in"
+      "${CMAKE_BINARY_DIR}/macos-dmg-setup.applescript"
+      @ONLY
+    )
 
-set(CPACK_DMG_DS_STORE_SETUP_SCRIPT "${CMAKE_BINARY_DIR}/macos-dmg-setup.applescript")
+    set(CPACK_DMG_DS_STORE_SETUP_SCRIPT "${CMAKE_BINARY_DIR}/macos-dmg-setup.applescript")
+endif()

@@ -1,11 +1,18 @@
 #include "../g_local.h"
-#include "../../ext/jsmn/jsmn.h"
+#include "../../ext/yyjson/yyjson.h"
 
 #ifdef _WIN32
 #include <winsock2.h>
-#elif defined __linux__
+#elif defined __linux__ || defined __APPLE__
 #include <sys/socket.h>
+#include <netinet/in.h>
 #include <arpa/inet.h>
+#include <errno.h>
+#include <fcntl.h>
+#endif
+
+#ifndef INVALID_SOCKET
+#define INVALID_SOCKET -1
 #endif
 
 
@@ -19,7 +26,13 @@ CURL* curl;
 int sockhandle;
 struct sockaddr_in svaddr;
 
-qboolean socketStatus = qfalse;
+typedef enum sockStatus_e {
+    SOCKSTATUS_CLOSED,
+    SOCKSTATUS_CONNECTING,
+    SOCKSTATUS_CONNECTED
+} sockStatus_t;
+
+sockStatus_t socketStatus = SOCKSTATUS_CLOSED;
 int socketRetries = 0;
 int nextRetry = 0;
 
@@ -38,7 +51,7 @@ static void cleanupQueue(queueNode** head) {
 // both in and out will have a mutex on both write and read as we expect to NULL the values after they're used.
 // which can cause a crash if one call is about to write to the queue, which another call just NULL's.
 
-#ifdef __linux__
+#if defined __linux__ || defined __APPLE__
 
 #include <pthread.h>
 #include <unistd.h>
@@ -179,7 +192,7 @@ void closeThread() {
 
 #endif
 
-int enqueueInbound(int action, int playerId, char* message, int sizeOfMessage) {
+int enqueueInbound(int action, char* message, int sizeOfMessage) {
 
     if (killThread) {
         return THREADRESPONSE_THREAD_STOPPED;
@@ -200,7 +213,6 @@ int enqueueInbound(int action, int playerId, char* message, int sizeOfMessage) {
 
     Q_strncpyz(tmp->message, message, sizeOfMessage);
     tmp->action = action;
-    tmp->playerId = playerId;
     tmp->next = NULL;
 
     acquireInboundMutex();
@@ -218,7 +230,7 @@ int enqueueInbound(int action, int playerId, char* message, int sizeOfMessage) {
     return THREADRESPONSE_SUCCESS;
 }
 
-int enqueueOutbound(int action, int playerId, char* message, int sizeOfMessage) {
+int enqueueOutbound(int action, char* message, int sizeOfMessage) {
 
     if (killThread) {
         return THREADRESPONSE_THREAD_STOPPED;
@@ -239,7 +251,6 @@ int enqueueOutbound(int action, int playerId, char* message, int sizeOfMessage) 
 
     Q_strncpyz(tmp->message, message, sizeOfMessage);
     tmp->action = action;
-    tmp->playerId = playerId;
     tmp->next = NULL;
 
     acquireOutboundMutex();
@@ -257,7 +268,7 @@ int enqueueOutbound(int action, int playerId, char* message, int sizeOfMessage) 
     return THREADRESPONSE_SUCCESS;
 }
 
-int dequeueInbound(int* action, int* playerId, char* message, int sizeOfMessage) {
+int dequeueInbound(int* action, char* message, int sizeOfMessage) {
 
     if (killThread) {
         return THREADRESPONSE_THREAD_STOPPED;
@@ -274,7 +285,6 @@ int dequeueInbound(int* action, int* playerId, char* message, int sizeOfMessage)
 
     Q_strncpyz(message, inboundHead->message, sizeOfMessage);
     *action = inboundHead->action;
-    *playerId = inboundHead->playerId;
 
     tmp = inboundHead;
     inboundHead = inboundHead->next;
@@ -293,7 +303,7 @@ int dequeueInbound(int* action, int* playerId, char* message, int sizeOfMessage)
 
 }
 
-int dequeueOutbound(int* action, int* playerId, char* message, int sizeOfMessage) {
+int dequeueOutbound(int* action, char* message, int sizeOfMessage) {
 
     if (killThread) {
         return THREADRESPONSE_THREAD_STOPPED;
@@ -310,7 +320,6 @@ int dequeueOutbound(int* action, int* playerId, char* message, int sizeOfMessage
 
     Q_strncpyz(message, outboundHead->message, sizeOfMessage);
     *action = outboundHead->action;
-    *playerId = outboundHead->playerId;
 
     tmp = outboundHead;
     outboundHead = outboundHead->next;
@@ -331,12 +340,20 @@ int dequeueOutbound(int* action, int* playerId, char* message, int sizeOfMessage
 
 void shutdownThread() {
     curl_global_cleanup();
+#ifdef _WIN32
+    shutdown(sockhandle, SD_BOTH);
+    closesocket(sockhandle);
+#elif defined __linux__ || defined __APPLE__
+    shutdown(sockhandle, SHUT_RDWR);
+    close(sockhandle);
+#endif
+    socketStatus = qfalse;
 }
 
 // this looks ugly, but because the inside of this function is exactly the same no matter what platform we're on, this is fine.
 // this function dequeues from outbound queue and enqueues into inbound queue
 static 
-#ifdef __linux__
+#if defined __linux__ || defined __APPLE__
 void* 
 #elif defined _WIN32
 unsigned int WINAPI 
@@ -347,13 +364,130 @@ runThread(void* data) {
     // as-is, we want to query IPHub for country and VPN check
 
     char message[THREAD_CURL_BIGBUF], curlOutput[THREAD_CURL_BIGBUF];
-    int action = -1, playerId = -1;
+    int action = -1;
 
     struct curl_slist* iphubCustomHeaders = NULL;
 
 
     while (!killThread) {
-        int response = dequeueOutbound(&action, &playerId, message, sizeof(message));
+
+        // full new approach:
+        // we will ALWAYS recv, remove blocking states. If nothing to recv, just continue.
+        // That means expectResponse is now useless and should be removed. 
+        // Still need an idea on how to handle responses which previously were "expected".
+
+        // First setup the socket if we need to.
+
+        if (g_useSockets.integer) {
+            if (socketStatus == SOCKSTATUS_CLOSED && (level.time >= nextRetry || !nextRetry)) {
+                nextRetry = level.time + 3000;
+                if (socketRetries <= 20) {
+                    socketRetries++;
+
+#ifdef _WIN32
+                    sockhandle = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+#elif defined __linux__ || defined __APPLE__
+                    sockhandle = socket(AF_INET, SOCK_STREAM, 0);
+#endif
+                    if (sockhandle >= 0) {
+                        Com_Memset(&svaddr, 0, sizeof(svaddr));
+                        svaddr.sin_family = AF_INET;
+                        svaddr.sin_port = htons(g_sockPort.integer);
+                        inet_pton(AF_INET, g_sockIp.string, &svaddr.sin_addr);
+#ifdef _WIN32
+                        u_long mode = 1;
+                        ioctlsocket(sockhandle, FIONBIO, &mode); // Set the socket to be non-blocking
+#elif defined(__linux__) || defined(__APPLE__)
+                        int flags = fcntl(sockhandle, F_GETFL, 0);
+                        fcntl(sockhandle, F_SETFL, flags | O_NONBLOCK);
+#endif
+                        int r = connect(sockhandle, (struct sockaddr*)&svaddr, sizeof(svaddr));
+#ifdef _WIN32
+                        if (r < 0) {
+                            int err = WSAGetLastError();
+                            if (err != WSAEWOULDBLOCK && err != WSAEINPROGRESS) {
+                                closesocket(sockhandle);
+                                sockhandle = INVALID_SOCKET;
+                                socketStatus = SOCKSTATUS_CLOSED;
+                            }
+                        }
+#elif defined(__linux__) || defined(__APPLE__)
+                        if (r < 0 && errno != EINPROGRESS) {
+                            close(sockhandle);
+                            sockhandle = INVALID_SOCKET;
+                            socketStatus = SOCKSTATUS_CLOSED;
+                        }
+#endif
+                        // NB - the connection might not yet be ready.
+                        socketStatus = SOCKSTATUS_CONNECTING;
+                        socketRetries = 0; // reset retries on success
+                    }
+                }
+            }
+
+            if (socketStatus == SOCKSTATUS_CONNECTING) {
+                // Check if the socket is now connected.
+
+                fd_set writefds, exceptfds;
+                struct timeval tv = { 0, 0 };
+                FD_ZERO(&writefds);
+                FD_ZERO(&exceptfds);
+                FD_SET(sockhandle, &writefds);
+                FD_SET(sockhandle, &exceptfds);
+
+                int sel = select(sockhandle + 1, NULL, &writefds, &exceptfds, &tv);
+
+                if (sel > 0) {
+                    if (FD_ISSET(sockhandle, &exceptfds)) {
+#ifdef _WIN32
+                        shutdown(sockhandle, SD_BOTH);
+                        closesocket(sockhandle);
+#elif defined __linux__ || defined __APPLE__
+                        shutdown(sockhandle, SHUT_RDWR);
+                        close(sockhandle);
+#endif
+                        socketStatus = SOCKSTATUS_CLOSED;
+                        sockhandle = INVALID_SOCKET;
+                    } else if (FD_ISSET(sockhandle, &writefds)) {
+
+                        int err = 0;
+                        socklen_t len = sizeof(err);
+                        if (getsockopt(sockhandle, SOL_SOCKET, SO_ERROR, &err, &len) < 0 || err != 0) {
+#ifdef _WIN32
+                            shutdown(sockhandle, SD_BOTH);
+                            closesocket(sockhandle);
+#elif defined __linux__ || defined __APPLE__
+                            shutdown(sockhandle, SHUT_RDWR);
+                            close(sockhandle);
+#endif
+                            socketStatus = SOCKSTATUS_CLOSED;
+                            sockhandle = INVALID_SOCKET;
+                        }
+                        else {
+                            socketStatus = SOCKSTATUS_CONNECTED;
+                        }
+                    }
+                }
+                else if (sel < 0) {
+#ifdef _WIN32
+                    shutdown(sockhandle, SD_BOTH);
+                    closesocket(sockhandle);
+#elif defined __linux__ || defined __APPLE__
+                    shutdown(sockhandle, SHUT_RDWR);
+                    close(sockhandle);
+#endif
+                    socketStatus = SOCKSTATUS_CLOSED;
+                    sockhandle = INVALID_SOCKET;
+                }
+            }
+
+        }
+
+        // Outbound part remains largely the same. We just don't expect a synchronous response any more.
+
+        int response = dequeueOutbound(&action, message, sizeof(message));
+        qboolean shutdownSocket = qfalse;
+        // If we have something in the queue, process, if not, recv.
 
         if (response == THREADRESPONSE_SUCCESS) {
             if (action == THREADACTION_IPHUB_DATA_REQUEST) {
@@ -367,83 +501,160 @@ runThread(void* data) {
                     qboolean curlResp = performCurlRequest(va("%s%s", IPHUB_API_ENDPOINT, message), iphubCustomHeaders, qfalse, curlOutput);
 
                     if (curlResp) {
-                        jsmn_parser jsonParser;
-                        jsmntok_t jsonTokens[50];
 
-                        jsmn_init(&jsonParser);
+                        yyjson_doc* doc = yyjson_read(curlOutput, strlen(curlOutput), 0);
+                        if (doc) {
 
-                        int response = jsmn_parse(&jsonParser, curlOutput, strlen(curlOutput), jsonTokens, 50);
+                            yyjson_val* root = yyjson_doc_get_root(doc);
 
-                        if (response) {
-                            char countryCode[MAX_COUNTRYCODE], countryName[MAX_COUNTRYNAME], blockLevel[10];
-                            Com_Memset(countryCode, 0, sizeof(countryCode));
-                            Com_Memset(countryName, 0, sizeof(countryName));
-                            Com_Memset(blockLevel, 0, sizeof(blockLevel));
-                            for (int i = 1; i < response; i++) {
+                            if (yyjson_is_obj(root)) {
 
-                                if (jsoneq(curlOutput, &jsonTokens[i], "countryCode") == 0) {
-                                    snprintf(countryCode, sizeof(countryCode), "%.*s", jsonTokens[i + 1].end - jsonTokens[i + 1].start, curlOutput + jsonTokens[i + 1].start);
+                                char countryCode[MAX_COUNTRYCODE], countryName[MAX_COUNTRYNAME], blockLevel[10], cleanCountry[MAX_COUNTRYNAME], ipAddr[MAX_IP];
+                                Com_Memset(countryCode, 0, sizeof(countryCode));
+                                Com_Memset(countryName, 0, sizeof(countryName));
+                                Com_Memset(blockLevel, 0, sizeof(blockLevel));
+                                Com_Memset(cleanCountry, 0, sizeof(cleanCountry));
+                                Com_Memset(ipAddr, 0, sizeof(ipAddr));
+
+                                yyjson_val* ctryVal = yyjson_obj_get(root, "countryCode");
+                                yyjson_val* ctryNameVal = yyjson_obj_get(root, "countryName");
+                                yyjson_val* blockVal = yyjson_obj_get(root, "block");
+                                yyjson_val* ipVal = yyjson_obj_get(root, "ip");
+
+                                if (yyjson_is_str(ctryVal)) {
+                                    Q_strncpyz(countryCode, yyjson_get_str(ctryVal), sizeof(countryCode));
                                 }
-                                else if (jsoneq(curlOutput, &jsonTokens[i], "countryName") == 0) {
-                                    snprintf(countryName, sizeof(countryName), "%.*s", jsonTokens[i + 1].end - jsonTokens[i + 1].start, curlOutput + jsonTokens[i + 1].start);
+
+                                if (yyjson_is_str(ctryNameVal)) {
+                                    Q_strncpyz(countryName, yyjson_get_str(ctryNameVal), sizeof(countryName));
                                 }
-                                else if (jsoneq(curlOutput, &jsonTokens[i], "block") == 0) {
-                                    snprintf(blockLevel, sizeof(blockLevel), "%.*s", jsonTokens[i + 1].end - jsonTokens[i + 1].start, curlOutput + jsonTokens[i + 1].start);
+
+                                if (yyjson_is_str(blockVal)) {
+                                    Q_strncpyz(blockLevel, yyjson_get_str(blockVal), sizeof(blockLevel));
                                 }
+                                else if (yyjson_is_int(blockVal)) {
+                                    int blockInt = (int)yyjson_get_int(blockVal);
+                                    Com_sprintf(blockLevel, sizeof(blockLevel), "%d", blockInt);
+                                }
+
+                                if (yyjson_is_str(ipVal)) {
+                                    Q_strncpyz(ipAddr, yyjson_get_str(ipVal), sizeof(ipAddr));
+                                }
+
+                                if (strlen(countryCode) > 0 && strlen(countryName) > 0 && strlen(blockLevel) > 0 && strlen(ipVal) > 0) {
+                                    // got everything I need.
+                                    char outputString[MAX_THREAD_OUTPUT];
+                                    char* ctryPtr = countryName;
+                                    char* cleanPtr = cleanCountry;
+                                    char* cleanEnd = cleanCountry + sizeof(cleanCountry) - 1;
+
+                                    while (*ctryPtr && cleanPtr < cleanEnd) {
+                                        if (*ctryPtr != '\\') {
+                                            *cleanPtr++ = *ctryPtr;
+                                        }
+                                        ctryPtr++;
+                                    }
+                                    *cleanPtr = '\0';
+
+                                    Q_strncpyz(outputString, va("countryCode\\%s\\countryName\\%s\\blockLevel\\%s\\ipaddr\\%s", countryCode, cleanCountry, blockLevel, ipAddr), sizeof(outputString));
+                                    enqueueInbound(THREADACTION_IPHUB_DATA_RESPONSE, outputString, sizeof(outputString));
+                                }
+
                             }
 
-                            if (strlen(countryCode) > 0 && strlen(countryName) > 0 && strlen(blockLevel) > 0) {
-                                // got everything I need.
-                                char outputString[MAX_THREAD_OUTPUT];
-                                Q_strncpyz(outputString, va("countryCode\\%s\\countryName\\%s\\blockLevel\\%s", countryCode, countryName, blockLevel), sizeof(outputString));
-                                enqueueInbound(THREADACTION_IPHUB_DATA_RESPONSE, playerId, outputString, sizeof(outputString));
-                            }
+                            yyjson_doc_free(doc);
 
                         }
                     }
                 }
             }
-            else if (action == THREADACTION_LOG_VIA_SOCKET && g_logThroughSocket.integer) {
-                if (!socketStatus && level.time >= nextRetry || !nextRetry) {
-                    nextRetry = level.time + 3000;
-                    if (socketRetries <= 20) {
-                        socketRetries++;
+            else if (action == THREADACTION_LOG_VIA_SOCKET) {
 
-#ifdef _WIN32
-                        sockhandle = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-#elif defined __linux__
-                        sockhandle = socket(AF_INET, SOCK_STREAM, 0);
-#endif
-                        if (sockhandle >= 0) {
-                            // Valid handle. Connect to it.
-                            Com_Memset(&svaddr, 0, sizeof(svaddr));
-                            svaddr.sin_family = AF_INET;
-                            svaddr.sin_port = htons(g_sockPort.integer);
-                            inet_pton(AF_INET, g_sockIp.string, &svaddr.sin_addr);
-                            if (connect(sockhandle, (struct sockaddr*)&svaddr, sizeof(svaddr)) >= 0) {
-                                socketStatus = qtrue;
+                if (g_useSockets.integer && g_logThroughSocket.integer) {
+
+                    if (socketStatus != SOCKSTATUS_CONNECTED || sockhandle <= 0) {
+                        // Can't log via socket if not connected. Because dequeue is effectively a pop, push it back.
+                        enqueueOutbound(action, message, strlen(message));
+                    }
+                    else {
+                        size_t msgLen = strlen(message) + 1; // include terminating \0 which caused issues in the previous version
+                        size_t sent = 0;
+                        while (sent < msgLen) {
+                            int n = send(sockhandle, message + sent, (int)(msgLen - sent), 0);
+                            if (n <= 0) {
+                                shutdownSocket = qtrue;
+                                break;
                             }
+                            sent += n;
                         }
                     }
 
                 }
-
-                if (socketStatus) {
-                    if (send(sockhandle, message, strlen(message), 0) < 0) {
-#ifdef _WIN32
-                        shutdown(sockhandle, SD_SEND);
-                        closesocket(sockhandle);
-#elif defined __linux__
-                        shutdown(sockhandle, SHUT_WR);
-                        close(sockhandle);
-#endif
-                        socketStatus = qfalse;
-                    }
-                }
-
             }
         }
-#ifdef __linux__
+
+        // recv part
+
+        if (g_useSockets.integer && socketStatus == SOCKSTATUS_CONNECTED && sockhandle >= 0 && !shutdownSocket) {
+            static char recvBuffer[THREAD_CURL_BIGBUF];
+            static size_t recvLen = 0;
+
+            if (recvLen >= sizeof(recvBuffer) - 1) {
+                // Should not happen, but just in case, reset buffer, this will in effect drop the message.
+                recvLen = 0;
+            }
+
+            int n = recv(sockhandle, recvBuffer + recvLen, (int)(sizeof(recvBuffer) - 1 - recvLen), 0);
+            if (n == 0) {
+                shutdownSocket = qtrue;
+            }
+            else if (n < 0) {
+#ifdef _WIN32
+                int err = WSAGetLastError();
+                if (err != WSAEWOULDBLOCK) {
+                    
+#elif defined __linux__ || defined __APPLE__
+                if (errno != EWOULDBLOCK && errno != EAGAIN) {
+#endif
+                    // Assume an actual issue.
+                    shutdownSocket = qtrue;
+                }
+            }
+            else {
+
+                recvLen += n;
+
+                size_t i = 0;
+                while (i < recvLen) {
+                    size_t msgEnd = i;
+                    while (msgEnd < recvLen && recvBuffer[msgEnd] != '\0') msgEnd++; // find null terminator, fixes partial reads. NB - Server ALWAYS HAS TO SEND \0 in the end
+
+                    if (msgEnd == recvLen) break;
+
+                    enqueueInbound(THREADACTION_SOCKET_RESPONSE, recvBuffer + i, (int)(msgEnd - i));
+
+                    if (msgEnd + 1 < recvLen) {
+                        memmove(recvBuffer, recvBuffer + msgEnd + 1, recvLen - (msgEnd + 1));
+                    }
+                    recvLen -= (msgEnd + 1);
+                    i = 0;
+                }
+            }
+        }
+
+        if (shutdownSocket) {
+#ifdef _WIN32
+            shutdown(sockhandle, SD_BOTH);
+            closesocket(sockhandle);
+#elif defined __linux__ || defined __APPLE__
+            shutdown(sockhandle, SHUT_RDWR);
+            close(sockhandle);
+#endif
+            socketStatus = SOCKSTATUS_CLOSED;
+            sockhandle = INVALID_SOCKET;
+        }
+
+#if defined __linux__ || defined __APPLE__
         usleep((unsigned int)THREAD_SLEEP_DURATION);
 #elif defined _WIN32
         Sleep(THREAD_SLEEP_DURATION);
@@ -455,7 +666,7 @@ runThread(void* data) {
     }
 
     shutdownThread();
-#ifdef __linux__
+#if defined __linux__ || defined __APPLE__
     return NULL;
 #elif defined _WIN32
     return 0;

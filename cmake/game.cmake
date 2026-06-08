@@ -41,6 +41,7 @@ set(GAME_SOURCES
     ${SOURCE_DIR}/game/g_weapon.c
     
     ${SOURCE_DIR}/ext/sqlite/sqlite3.c
+    ${SOURCE_DIR}/ext/yyjson/yyjson.c
     
     ${SOURCE_DIR}/qcommon/q_shared.c
     ${SOURCE_DIR}/qcommon/q_math.c

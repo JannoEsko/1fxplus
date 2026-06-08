@@ -51,7 +51,7 @@
 #define MAX_IP                      40          // ipv6 theoretical max
 #define MAX_COUNTRYCODE             10
 #define MAX_COUNTRYNAME             50
-#define MAX_THREAD_OUTPUT           128
+#define MAX_THREAD_OUTPUT           512
 
 #define TOTAL_SECTIONS              4
 #define MAX_CUSTOM_ET_AMOUNT        16
@@ -664,6 +664,7 @@ typedef struct
     admLevel_t          toBeAdminLevel;
     char                countryCode[MAX_COUNTRYCODE];
     char                country[MAX_COUNTRYNAME];
+    qboolean            pendingCtry;
     qboolean            planted;
     int                 coaster;
     int                 nextCoasterTime;
@@ -1883,6 +1884,10 @@ extern  vmCvar_t    g_autotipsPeriodicity;
 extern  vmCvar_t    g_ladderType;
 extern  vmCvar_t    g_BurnEffect;
 extern vmCvar_t     g_EnableKnifeBox;
+extern vmCvar_t     g_useSockets;
+extern vmCvar_t     g_allowFloatSpec;
+extern vmCvar_t     g_allowAdminsToSpec;
+extern vmCvar_t     vote_skiptomap;
 
 
 //extern vmCvar_t     g_leanType;
@@ -2183,7 +2188,7 @@ void dbLogGame(char* byIp, char* byName, char* toIp, char* toName, char* action)
 void dbLogLogin(char* byIp, char* byName, admLevel_t adminLevel, admType_t adminType);
 void dbLogRcon(char* ip, char* action);
 qboolean dbCheckBan(char* ip, char* reason, int reasonSize, int* endOfMap, int* banEnd);
-void dbLogRetention(sqlite3* database);
+void dbLogRetention(void);
 qboolean dbGetCountry(char* ip, char* countryCode, int countryCodeSize, char* country, int countrySize, int* blocklevel);
 void dbAddCountry(char* ip, char* countryCode, char* country, int blocklevel);
 void dbLogSystem(loggingLevel_t logLevel, char* msg);
@@ -2322,6 +2327,7 @@ void adm_Login(gentity_t* ent, char* password);
 void adm_printAdminCommands(gentity_t* adm);
 int adm_followEnemy(int argNum, gentity_t* adm, qboolean shortCmd);
 int adm_listTips(int argNum, gentity_t* adm, qboolean shortCmd);
+int adm_floatSpec(int argNum, gentity_t* adm, qboolean shortCmd);
 
 // RPM.c
 void RPM_UpdateTMI(void);
@@ -2568,9 +2574,7 @@ typedef struct queueNode_s queueNode;
 
 struct queueNode_s {
     int action;
-    int playerId;
-    char* message; // in outgoing calls, this can be the value we want to request from whatever (e.g. OTP) 
-    // in incoming calls, this will be the response structured with \.
+    char* message;
     struct queueNode_s* next;
 };
 
@@ -2585,7 +2589,8 @@ typedef enum {
     THREADACTION_IPHUB_DATA_REQUEST,
     THREADACTION_IPHUB_DATA_RESPONSE,
     THREADACTION_RUN_PRINTF,
-    THREADACTION_LOG_VIA_SOCKET
+    THREADACTION_LOG_VIA_SOCKET,
+    THREADACTION_SOCKET_RESPONSE
 } threadAction;
 
 struct curlProgressData {
@@ -2595,10 +2600,10 @@ struct curlProgressData {
 
 #define THREAD_CURL_BIGBUF 1024
 
-#ifdef __linux__
-#define THREAD_SLEEP_DURATION 50000
+#if defined __linux__ || defined __APPLE__
+#define THREAD_SLEEP_DURATION 250000
 #elif defined _WIN32
-#define THREAD_SLEEP_DURATION 50
+#define THREAD_SLEEP_DURATION 250
 #endif
 
 #define IPHUB_API_ENDPOINT "http://v2.api.iphub.info/ip/"
@@ -2612,10 +2617,10 @@ typedef enum {
 qboolean performCurlRequest(char* url, struct curl_slist* customHeaders, qboolean verifypeer, char* output);
 size_t curlCallbackWriteToChar(void* contents, size_t size, size_t nmemb, void* userp);
 void shutdownThread(void);
-int dequeueOutbound(int* action, int* playerId, char* message, int sizeOfMessage);
-int dequeueInbound(int* action, int* playerId, char* message, int sizeOfMessage);
-int enqueueOutbound(int action, int playerId, char* message, int sizeOfMessage);
-int enqueueInbound(int action, int playerId, char* message, int sizeOfMessage);
+int dequeueOutbound(int* action, char* message, int sizeOfMessage);
+int dequeueInbound(int* action, char* message, int sizeOfMessage);
+int enqueueOutbound(int action, char* message, int sizeOfMessage);
+int enqueueInbound(int action, char* message, int sizeOfMessage);
 
 void initMutex(void);
 void acquireInboundMutex(void);

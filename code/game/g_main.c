@@ -2,6 +2,7 @@
 //
 
 #include "g_local.h"
+#include "../ext/yyjson/yyjson.h"
 
 level_locals_t  level;
 
@@ -303,6 +304,10 @@ vmCvar_t    g_sockIp;
 vmCvar_t    g_sockPort;
 vmCvar_t    g_sockIdentifier;
 vmCvar_t    g_logThroughSocket;
+vmCvar_t    g_useSockets;
+vmCvar_t    g_allowFloatSpec;
+vmCvar_t    g_allowAdminsToSpec;
+vmCvar_t    vote_skiptomap;
 
 vmCvar_t    g_colorlessRedName;
 vmCvar_t    g_colorlessBlueName;
@@ -657,6 +662,10 @@ static cvarTable_t gameCvarTable[] =
     { &g_ladderType, "g_ladderType", "0", CVAR_ARCHIVE, 0.0f, 0.0f, 0, qfalse },
     { &g_BurnEffect, "g_BurnEffect", "0", CVAR_ARCHIVE, 0.0f, 0.0f, 0, qfalse },
     { &g_EnableKnifeBox, "g_EnableKnifeBox", "1", CVAR_ARCHIVE, 0.0f, 0.0f, 0, qfalse },
+    { &g_useSockets, "g_useSockets", "0", CVAR_ARCHIVE | CVAR_LATCH, 0.0f, 0.0f, 0, qfalse },
+    { &g_allowFloatSpec, "g_allowFloatSpec", "0", CVAR_ARCHIVE, 0.0f, 0.0f, 0, qfalse },
+    { &g_allowAdminsToSpec, "g_allowAdminsToSpec", "1", CVAR_ARCHIVE, 0.0f, 0.0f, 0, qfalse },
+    { &vote_skiptomap, "vote_skiptomap", "3", CVAR_ARCHIVE, 0.0f, 0.0f, 0, qfalse },
 };
 
 // bk001129 - made static to avoid aliasing
@@ -1558,10 +1567,10 @@ void G_InitGame( int levelTime, int randomSeed, int restart )
     Com_Printf("Starting threads...\n");
     startThread();
     
-    if (g_logThroughSocket.integer) {
+    if (g_useSockets.integer) {
         char heartbeat[MAX_QPATH];
-        Q_strncpyz(heartbeat, va("heartbeat\\%s", g_sockIdentifier.string), sizeof(heartbeat));
-        enqueueOutbound(THREADACTION_LOG_VIA_SOCKET, -1, heartbeat, strlen(heartbeat));
+        Q_strncpyz(heartbeat, va("{\"socketAction\": \"heartbeat\", \"socketIdentifier\": \"%s\"}", g_sockIdentifier.string), sizeof(heartbeat));
+        enqueueOutbound(THREADACTION_LOG_VIA_SOCKET, heartbeat, strlen(heartbeat));
     }
 
     if (cm_state.integer) {
@@ -2989,7 +2998,7 @@ void G_RunFrame( int levelTime )
 
                 }
 
-                if (G_IsClientDead(ent->client) && ent->client->ps.stats[STAT_FROZEN] && isCurrentGametypeInList((gameTypes_t[]) { GT_HNS, GT_HNZ, GT_MAX })) {
+                if ((G_IsClientDead(ent->client) || ent->client->sess.team == TEAM_SPECTATOR) && ent->client->ps.stats[STAT_FROZEN] && isCurrentGametypeInList((gameTypes_t[]) { GT_HNS, GT_HNZ, GT_MAX })) {
                     ent->client->ps.stats[STAT_FROZEN] = 0;
                 }
 
@@ -3156,38 +3165,107 @@ void G_RunFrame( int levelTime )
         backupInMemoryDatabases();
     }
 
-    if (g_useCountryAPI.integer) {
+    if (g_useCountryAPI.integer || g_useSockets.integer) {
 
-        int threadAction, threadPlayerId;
+        int threadAction;
         char threadMsg[MAX_THREAD_OUTPUT];
 
-        int threadResponse = dequeueInbound(&threadAction, &threadPlayerId, threadMsg, sizeof(threadMsg));
+        int threadResponse = dequeueInbound(&threadAction, threadMsg, sizeof(threadMsg));
 
         if (threadResponse == THREADRESPONSE_SUCCESS) {
 
             int blockLevel = 0;
-            gentity_t* tent = &g_entities[threadPlayerId];
 
-            if (tent && tent->client) {
+            switch (threadAction) {
+                case THREADACTION_IPHUB_DATA_RESPONSE: {
+                    // Write the values first to db.
+                    char tmpCtryCode[MAX_COUNTRYCODE], tmpCtryName[MAX_COUNTRYNAME], tmpIpAddr[MAX_IP];
+                    int blockLvl = 0;
+                    Q_strncpyz(tmpCtryCode, Info_ValueForKey(threadMsg, "countryCode"), sizeof(tmpCtryCode));
+                    Q_strncpyz(tmpCtryName, Info_ValueForKey(threadMsg, "countryName"), sizeof(tmpCtryName));
+                    blockLvl = atoi(Info_ValueForKey(threadMsg, "blockLevel"));
+                    Q_strncpyz(tmpIpAddr, Info_ValueForKey(threadMsg, "ipaddr"), sizeof(tmpIpAddr));
+                    dbAddCountry(tmpIpAddr, tmpCtryCode, tmpCtryName, blockLvl);
 
-                switch (threadAction) {
-                case THREADACTION_IPHUB_DATA_RESPONSE:
+                    for (int tmpPlayer = 0; tmpPlayer < level.numConnectedClients; tmpPlayer++) {
+                        gentity_t* tent = &g_entities[level.sortedClients[tmpPlayer]];
 
-                    Q_strncpyz(tent->client->sess.countryCode, Info_ValueForKey(threadMsg, "countryCode"), sizeof(tent->client->sess.countryCode));
-                    Q_strncpyz(tent->client->sess.country, Info_ValueForKey(threadMsg, "countryName"), sizeof(tent->client->sess.country));
-                    blockLevel = atoi(Info_ValueForKey(threadMsg, "blockLevel"));
-                    dbAddCountry(tent->client->pers.ip, tent->client->sess.countryCode, tent->client->sess.country, blockLevel);
-
-                    if (g_vpnAutoKick.integer && blockLevel == IPHUBBLOCK_VPN) {
-                        trap_DropClient(threadPlayerId, "VPN Detected");
+                        if (tent && tent->client && tent->client->sess.pendingCtry && !Q_stricmp(tent->client->pers.ip, tmpIpAddr)) {
+                            Q_strncpyz(tent->client->sess.countryCode, tmpCtryCode, sizeof(tent->client->sess.countryCode));
+                            Q_strncpyz(tent->client->sess.country, tmpCtryName, sizeof(tent->client->sess.country));
+                            tent->client->sess.pendingCtry = qfalse;
+                            if (g_vpnAutoKick.integer && blockLvl == IPHUBBLOCK_VPN) {
+                                trap_DropClient(tent - g_entities, "VPN Detected");
+                            }
+                        }
                     }
 
                     break;
+                }
 
                 case THREADACTION_RUN_PRINTF:
                     Com_Printf(threadMsg);
                     break;
+
+                case THREADACTION_SOCKET_RESPONSE: {
+                    // Entire messaging chain is now JSON-based, so we need to parse the response from JSON.
+
+                    yyjson_doc* doc = yyjson_read(threadMsg, strlen(threadMsg), 0);
+                    if (doc) {
+
+                        yyjson_val* root = yyjson_doc_get_root(doc);
+                        if (yyjson_is_obj(root)) {
+
+                            yyjson_val* sockAction = yyjson_obj_get(root, "socketAction");
+
+                            if (sockAction && yyjson_is_str(sockAction)) {
+                                const char* actionStr = yyjson_get_str(sockAction);
+                                if (!Q_stricmp(actionStr, "grantAdmin")) {
+                                    yyjson_val* admLvlVal = yyjson_obj_get(root, "adminLevel");
+                                    yyjson_val* playerIdVal = yyjson_obj_get(root, "playerId");
+
+                                    if (admLvlVal && yyjson_is_int(admLvlVal) && playerIdVal && yyjson_is_int(playerIdVal)) {
+                                        int admLvl = (int)yyjson_get_int(admLvlVal);
+                                        gentity_t* tent = &g_entities[(int)yyjson_get_int(playerIdVal)];
+
+                                        if (tent && tent->client) {
+                                            if (admLvl) {
+                                                if (admLvl >= ADMLVL_BADMIN && admLvl <= ADMLVL_HADMIN) {
+                                                    char adminLevelName[MAX_NETNAME];
+                                                    tent->client->sess.adminLevel = admLvl;
+                                                    tent->client->sess.adminType = ADMTYPE_OTP;
+                                                    tent->client->sess.setAdminPassword = qfalse;
+                                                    getCleanAdminNameByAdminLevel(admLvl, adminLevelName, sizeof(adminLevelName));
+                                                    G_printInfoMessageToAll("%s has been granted %s.", tent->client->pers.cleanName, adminLevelName);
+                                                    Q_strncpyz(tent->client->sess.adminName, tent->client->pers.cleanName, sizeof(tent->client->sess.adminName));
+                                                    logLogin(tent);
+                                                }
+                                            }
+                                            else {
+                                                G_printInfoMessage(tent, "Incorrect password entered, please try again or authenticate again.");
+                                            }
+                                        }
+                                    }
+                                }
+                                else if (!Q_stricmp(actionStr, "testprint")) {
+                                    yyjson_val* messageVal = yyjson_obj_get(root, "message");
+                                    if (messageVal && yyjson_is_str(messageVal)) {
+                                        const char* messageStr = yyjson_get_str(messageVal);
+                                        Com_Printf("Socket testprint: %s\n", messageStr);
+                                    }
+                                }
+                            }
+
+                        }
+
+                        yyjson_doc_free(doc);
+                    }
+                    break;
                 }
+
+                default:
+                    Com_Printf("Unknown thread action: %d\n", threadAction);
+                    break;
             }
         }
     }

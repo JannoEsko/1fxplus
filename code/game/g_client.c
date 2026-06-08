@@ -1442,7 +1442,8 @@ char *ClientConnect( int clientNum, qboolean firstTime, qboolean isBot )
         qboolean hasCountry = dbGetCountry(ip, ent->client->sess.countryCode, sizeof(ent->client->sess.countryCode), ent->client->sess.country, sizeof(ent->client->sess.country), &blockLevel);
         if (!hasCountry) {
             if (g_useCountryAPI.integer && strlen(g_iphubAPIKey.string) > 0) {
-                int enqueue = enqueueOutbound(THREADACTION_IPHUB_DATA_REQUEST, clientNum, ent->client->pers.ip, sizeof(ent->client->pers.ip));
+                int enqueue = enqueueOutbound(THREADACTION_IPHUB_DATA_REQUEST, ent->client->pers.ip, sizeof(ent->client->pers.ip));
+                ent->client->sess.pendingCtry = qtrue;
 
                 if (enqueue == THREADRESPONSE_ENQUEUE_COULDNT_MALLOC) {
                     logSystem(LOGLEVEL_WARN, "Couldn't malloc in thread!");

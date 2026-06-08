@@ -297,7 +297,7 @@ void loadDatabases(void) {
 #elif _MSC_VER
         mkdir(".\\1fx\\databases");
 #endif
-#elif __linux__
+#elif defined __linux__ || defined __APPLE__
         mkdir("./1fx/databases", 0755);
 #endif
     }
@@ -400,11 +400,9 @@ void loadDatabases(void) {
         Com_Printf("    logsDb is up to date!\n");
     }
 
-    dbLogRetention(db);
+    logsDb = db;
 
-    sqlite3_close(db); // logs DB can get too large to run just in memory, therefore we're opening / closing it every time when it's needed.
-    // can have a performance implication, but haven't seen any lag due to it in 3D which already runs the same logic.
-    // FIXME if server gets weird lagouts every second or so, then look here.
+    dbLogRetention();
     
     // We should only open country.db for migration checks IF the user wants us to use it.
     if (g_useCountryDb.integer) {
@@ -750,7 +748,17 @@ void dbPrintAdminlist(gentity_t* ent, admType_t adminType, int page) {
     qboolean isRcon = ent && ent->client ? qfalse : qtrue;
 
     Com_Memset(buf, 0, sizeof(buf));
-    char* query = va("SELECT ROWID, adminname, adminlevel, addedby, DATE(addedwhen)%s FROM admin%slist %s", adminType == ADMTYPE_IP ? ", ip" : (adminType == ADMTYPE_GUID ? ", acguid" : ""), adminType == ADMTYPE_PASS ? "pass" : (adminType == ADMTYPE_GUID ? "guid" : ""), !isRcon ? "WHERE ROWID BETWEEN ? AND ?" : "");
+    // ROW_NUMBER() ensures pagination works correctly when filtering by type.
+    // Using ROWID BETWEEN would skip rows if e.g. all GUID admins are past row 100.
+    char* query = va(
+        "SELECT rn, adminname, adminlevel, addedby, DATE(addedwhen)%s FROM ("
+            "SELECT ROWID, adminname, adminlevel, addedby, addedwhen%s, "
+            "ROW_NUMBER() OVER (ORDER BY ROWID) AS rn FROM admin%slist"
+        ") %s",
+        adminType == ADMTYPE_IP ? ", ip" : (adminType == ADMTYPE_GUID ? ", acguid" : ""),
+        adminType == ADMTYPE_IP ? ", ip" : (adminType == ADMTYPE_GUID ? ", acguid" : ""),
+        adminType == ADMTYPE_PASS ? "pass" : (adminType == ADMTYPE_GUID ? "guid" : ""),
+        !isRcon ? "WHERE rn BETWEEN ? AND ?" : "");
     int rc = sqlite3_prepare_v2(db, query, -1, &stmt, 0);
     if (rc != SQLITE_OK) {
         logSystem(LOGLEVEL_WARN, "sqlite3_prepare_v2 failed on gameDb. Error: %s", sqlite3_errmsg(db));
@@ -764,7 +772,7 @@ void dbPrintAdminlist(gentity_t* ent, admType_t adminType, int page) {
     else {
         if (page > 0) page--;
         Q_strcat(buf, sizeof(buf), va("\n[^3Page %d^7]\n\n^3 %-5s%-5s%-16s %-16s %-16s Date\n^7-----------------------------------------------------------------------------\n", page + 1, "#", "Lvl", "IP (GUID)", "Name", "By"));
-        sqlite3_bind_int(stmt, 1, page * 100);
+        sqlite3_bind_int(stmt, 1, page * 100 + 1);
         sqlite3_bind_int(stmt, 2, (page + 1) * 100);
     }
 
@@ -1032,23 +1040,18 @@ int dbRemoveBan(qboolean subnet, int rowId) {
 
 void dbLogAdmin(char* byIp, char* byName, char* toIp, char* toName, char* action, char* reason, admLevel_t adminLevel, char* adminName, admType_t adminType) {
 
-    sqlite3* db;
+    sqlite3* db = logsDb;
     sqlite3_stmt* stmt;
 
-    int rc = sqlite3_open_v2("./1fx/databases/logs.db", &db, SQLITE_OPEN_READWRITE, NULL);
+    if (!db) return;
 
-    if (rc) {
-        logSystem(LOGLEVEL_WARN, "Failed to open logs.db file to log admin. Error: %s\n", sqlite3_errmsg(db));
-        return;
-    }
-
+    int rc;
     char* query = "INSERT INTO adminlog (byip, byname, toip, toname, action, reason, adminlevel, adminname, admintype) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
     rc = sqlite3_prepare_v2(db, query, -1, &stmt, 0);
 
     if (rc != SQLITE_OK) {
         logSystem(LOGLEVEL_WARN, "logAdmin prepare failed: %s", sqlite3_errmsg(db));
-        sqlite3_close(db);
         return;
     }
 
@@ -1067,29 +1070,22 @@ void dbLogAdmin(char* byIp, char* byName, char* toIp, char* toName, char* action
         logSystem(LOGLEVEL_WARN, "logAdmin step error: %s", sqlite3_errmsg(db));
     }
     sqlite3_finalize(stmt);
-
-    sqlite3_close(db);
 }
 
 void dbLogGame(char* byIp, char* byName, char* toIp, char* toName, char* action) {
 
-    sqlite3* db;
+    sqlite3* db = logsDb;
     sqlite3_stmt* stmt;
 
-    int rc = sqlite3_open_v2("./1fx/databases/logs.db", &db, SQLITE_OPEN_READWRITE, NULL);
+    if (!db) return;
 
-    if (rc) {
-        logSystem(LOGLEVEL_WARN, "Failed to open logs.db file to log game. Error: %s\n", sqlite3_errmsg(db));
-        return;
-    }
-
+    int rc;
     char* query = "INSERT INTO gameslog (byip, byname, toip, toname, action) VALUES (?, ?, ?, ?, ?)";
 
     rc = sqlite3_prepare_v2(db, query, -1, &stmt, 0);
 
     if (rc != SQLITE_OK) {
         logSystem(LOGLEVEL_WARN, "logGame prepare failed: %s", sqlite3_errmsg(db));
-        sqlite3_close(db);
         return;
     }
 
@@ -1104,29 +1100,22 @@ void dbLogGame(char* byIp, char* byName, char* toIp, char* toName, char* action)
         logSystem(LOGLEVEL_WARN, "logGame step error: %s", sqlite3_errmsg(db));
     }
     sqlite3_finalize(stmt);
-
-    sqlite3_close(db);
 }
 
 void dbLogLogin(char* byIp, char* byName, admLevel_t adminLevel, admType_t adminType) {
 
-    sqlite3* db;
+    sqlite3* db = logsDb;
     sqlite3_stmt* stmt;
 
-    int rc = sqlite3_open_v2("./1fx/databases/logs.db", &db, SQLITE_OPEN_READWRITE, NULL);
+    if (!db) return;
 
-    if (rc) {
-        logSystem(LOGLEVEL_WARN, "Failed to open logs.db file to log login. Error: %s\n", sqlite3_errmsg(db));
-        return;
-    }
-
+    int rc;
     char* query = "INSERT INTO loginlog (byip, byname, adminlevel, admintype) VALUES (?, ?, ?, ?)";
 
     rc = sqlite3_prepare_v2(db, query, -1, &stmt, 0);
 
     if (rc != SQLITE_OK) {
         logSystem(LOGLEVEL_WARN, "logLogin prepare failed: %s", sqlite3_errmsg(db));
-        sqlite3_close(db);
         return;
     }
 
@@ -1140,29 +1129,22 @@ void dbLogLogin(char* byIp, char* byName, admLevel_t adminLevel, admType_t admin
         logSystem(LOGLEVEL_WARN, "loginLog step error: %s", sqlite3_errmsg(db));
     }
     sqlite3_finalize(stmt);
-
-    sqlite3_close(db);
 }
 
 void dbLogRcon(char* ip, char* action) {
 
-    sqlite3* db;
+    sqlite3* db = logsDb;
     sqlite3_stmt* stmt;
 
-    int rc = sqlite3_open_v2("./1fx/databases/logs.db", &db, SQLITE_OPEN_READWRITE, NULL);
+    if (!db) return;
 
-    if (rc) {
-        logSystem(LOGLEVEL_WARN, "Failed to open logs.db file to log RCON. Error: %s\n", sqlite3_errmsg(db));
-        return;
-    }
-
+    int rc;
     char* query = "INSERT INTO rconlog (ip, action) VALUES (?, ?)";
 
     rc = sqlite3_prepare_v2(db, query, -1, &stmt, 0);
 
     if (rc != SQLITE_OK) {
         logSystem(LOGLEVEL_WARN, "logRcon prepare failed: %s", sqlite3_errmsg(db));
-        sqlite3_close(db);
         return;
     }
 
@@ -1176,31 +1158,24 @@ void dbLogRcon(char* ip, char* action) {
     }
 
     sqlite3_finalize(stmt);
-
-    sqlite3_close(db);
 }
 
 void dbLogSystem(loggingLevel_t logLevel, char* msg) {
 
     if (logLevel == LOGLEVEL_FATAL_DB) return;
 
-    sqlite3* db;
+    sqlite3* db = logsDb;
     sqlite3_stmt* stmt;
 
-    int rc = sqlite3_open_v2("./1fx/databases/logs.db", &db, SQLITE_OPEN_READWRITE, NULL);
+    if (!db) return;
 
-    if (rc) {
-        logSystem(LOGLEVEL_WARN, "Failed to open logs.db file to log system. Error: %s\n", sqlite3_errmsg(db));
-        return;
-    }
-
+    int rc;
     char* query = "INSERT INTO systemlog (loglevel, logmsg) VALUES (?, ?)";
 
     rc = sqlite3_prepare_v2(db, query, -1, &stmt, 0);
 
     if (rc != SQLITE_OK) {
         Com_PrintWarn("Failed to logSystem, db error: %s\n", sqlite3_errmsg(db));
-        sqlite3_close(db);
         return;
     }
 
@@ -1214,85 +1189,37 @@ void dbLogSystem(loggingLevel_t logLevel, char* msg) {
     }
 
     sqlite3_finalize(stmt);
-
-    sqlite3_close(db);
-
 }
 
-void dbLogRetention(sqlite3* database) {
+void dbLogRetention(void) {
 
-    sqlite3* db;
+    sqlite3* db = logsDb;
     sqlite3_stmt* stmt;
     int rc;
-    qboolean locallyOpenedDatabase = qfalse;
 
     if (!g_dbLogRetention.integer) {
         return; // Not a good idea to have NO retention, but it's up to the server owners in the end.
     }
 
-    if (!database) {
-        rc = sqlite3_open_v2("./1fx/databases/logs.db", &db, SQLITE_OPEN_READWRITE, NULL);
+    if (!db) return;
 
-        if (rc) {
-            logSystem(LOGLEVEL_WARN, "Failed to open logs.db file to run retention. Error: %s\n", sqlite3_errmsg(db));
-            return;
+    const char* tables[] = { "adminlog", "gameslog", "loginlog", "rconlog", "systemlog" };
+    int numTables = sizeof(tables) / sizeof(tables[0]);
+
+    sqlite3_exec(db, "BEGIN", NULL, NULL, NULL);
+
+    for (int i = 0; i < numTables; i++) {
+        char query[128];
+        Com_sprintf(query, sizeof(query), "DELETE FROM %s WHERE dt < DATETIME('now', '-' || ? || ' days')", tables[i]);
+        rc = sqlite3_prepare_v2(db, query, -1, &stmt, 0);
+        if (rc == SQLITE_OK) {
+            sqlite3_bind_int(stmt, 1, g_dbLogRetention.integer);
+            sqlite3_step(stmt);
+            sqlite3_finalize(stmt);
         }
-        locallyOpenedDatabase = qtrue;
-    }
-    else {
-        db = database;
     }
 
-    char* query = "DELETE FROM adminlog WHERE dt < DATETIME('now', '-' || ? || ' days')";
-
-    rc = sqlite3_prepare_v2(db, query, -1, &stmt, 0);
-    if (rc == SQLITE_OK) {
-        sqlite3_bind_int(stmt, 1, g_dbLogRetention.integer);
-        sqlite3_step(stmt);
-        sqlite3_finalize(stmt);
-    }
-
-    query = "DELETE FROM gameslog WHERE dt < DATETIME('now', '-' || ? || ' days')";
-
-    rc = sqlite3_prepare_v2(db, query, -1, &stmt, 0);
-    if (rc == SQLITE_OK) {
-        sqlite3_bind_int(stmt, 1, g_dbLogRetention.integer);
-        sqlite3_step(stmt);
-        sqlite3_finalize(stmt);
-    }
-
-    query = "DELETE FROM loginlog WHERE dt < DATETIME('now', '-' || ? || ' days')";
-
-    rc = sqlite3_prepare_v2(db, query, -1, &stmt, 0);
-    if (rc == SQLITE_OK) {
-        sqlite3_bind_int(stmt, 1, g_dbLogRetention.integer);
-        sqlite3_step(stmt);
-        sqlite3_finalize(stmt);
-    }
-
-    query = "DELETE FROM rconlog WHERE dt < DATETIME('now', '-' || ? || ' days')";
-
-    rc = sqlite3_prepare_v2(db, query, -1, &stmt, 0);
-    if (rc == SQLITE_OK) {
-        sqlite3_bind_int(stmt, 1, g_dbLogRetention.integer);
-        sqlite3_step(stmt);
-        sqlite3_finalize(stmt);
-    }
-
-    query = "DELETE FROM systemlog WHERE dt < DATETIME('now', '-' || ? || ' days')";
-
-    rc = sqlite3_prepare_v2(db, query, -1, &stmt, 0);
-
-    if (rc == SQLITE_OK) {
-        sqlite3_bind_int(stmt, 1, g_dbLogRetention.integer);
-        sqlite3_step(stmt);
-        sqlite3_finalize(stmt);
-    }
-    
-    if (locallyOpenedDatabase) {
-        sqlite3_close(db);
-    }
-
+    sqlite3_exec(db, "COMMIT", NULL, NULL, NULL);
 }
 
 static qboolean dbQueryBan(char* ip, qboolean subnet, char* reason, int reasonSize, int* endOfMap, int* banEnd) {
@@ -1716,31 +1643,35 @@ void dbPrintClanlist(gentity_t* ent, clanType_t clanType, int page) {
     qboolean isRcon = ent && ent->client ? qfalse : qtrue;
 
     Com_Memset(buf, 0, sizeof(buf));
-    char* query = va("SELECT ROWID, membername, memberkey, membertype, addedby, DATE(addedwhen) FROM clanlist WHERE %s %s", isRcon ? "1=1" : "ROWID BETWEEN ? AND ?", clanType != CLANTYPE_NONE ? "AND membertype = ?" : "");
+    // ROW_NUMBER() so that pagination works correctly when filtering by membertype.
+    char* query = va(
+        "SELECT rn, membername, memberkey, membertype, addedby, DATE(addedwhen) FROM ("
+            "SELECT *, ROW_NUMBER() OVER (ORDER BY ROWID) AS rn FROM clanlist %s"
+        ") %s",
+        clanType != CLANTYPE_NONE ? "WHERE membertype = ?" : "",
+        !isRcon ? "WHERE rn BETWEEN ? AND ?" : "");
     int rc = sqlite3_prepare_v2(db, query, -1, &stmt, 0);
     if (rc != SQLITE_OK) {
         logSystem(LOGLEVEL_WARN, "sqlite3_prepare_v2 failed on gameDb. Error: %s", sqlite3_errmsg(db));
         return;
     }
 
+    int bindIdx = 1;
+
+    if (clanType != CLANTYPE_NONE) {
+        sqlite3_bind_int(stmt, bindIdx++, clanType);
+    }
+
     if (isRcon) {
         Com_Printf("\n^3 %-5s%-6s%-15s %-16s %-16s Date\n", "#", "Type", "IP (GUID)", "Name", "By");
         Com_Printf("^7-----------------------------------------------------------------------------\n");
-
-        if (clanType != CLANTYPE_NONE) {
-            sqlite3_bind_int(stmt, 1, clanType);
-        }
     }
     else {
         if (page > 0) page--;
         Q_strcat(buf, sizeof(buf), va("\n[^3Page %d^7]\n\n^3 %-5s%-6s%-15s %-16s %-16s Date\n^7-----------------------------------------------------------------------------\n", page + 1, "#", "Type", "IP (GUID)", "Name", "By"));
 
-        sqlite3_bind_int(stmt, 1, page * 100);
-        sqlite3_bind_int(stmt, 2, (page + 1) * 100);
-
-        if (clanType != CLANTYPE_NONE) {
-            sqlite3_bind_int(stmt, 3, clanType);
-        }
+        sqlite3_bind_int(stmt, bindIdx++, page * 100 + 1);
+        sqlite3_bind_int(stmt, bindIdx,   (page + 1) * 100);
     }
 
     while ((rc = sqlite3_step(stmt)) != SQLITE_DONE) {
@@ -1821,7 +1752,14 @@ void dbPrintBanlist(gentity_t* ent, qboolean subnet, int page) {
     qboolean isRcon = ent && ent->client ? qfalse : qtrue;
 
     Com_Memset(buf, 0, sizeof(buf));
-    char* query = va("SELECT ROWID, playername, ip, adminname, reason, ROUND((JULIANDAY(banneduntil) - JULIANDAY()) * 1440) AS timeleft, endofmap FROM %sbanlist %s", subnet ? "subnet" : "", ent && ent->client ? "WHERE ROWID BETWEEN ? AND ?" : "");
+    // ROW_NUMBER() for consistent pagination — banlist has no type filter but keeps the same pattern for consistency.
+    char* query = va(
+        "SELECT rn, playername, ip, adminname, reason, "
+            "ROUND((JULIANDAY(banneduntil) - JULIANDAY()) * 1440) AS timeleft, endofmap FROM ("
+            "SELECT *, ROW_NUMBER() OVER (ORDER BY ROWID) AS rn FROM %sbanlist"
+        ") %s",
+        subnet ? "subnet" : "",
+        !isRcon ? "WHERE rn BETWEEN ? AND ?" : "");
     int rc = sqlite3_prepare_v2(db, query, -1, &stmt, 0);
     if (rc != SQLITE_OK) {
         logSystem(LOGLEVEL_WARN, "sqlite3_prepare_v2 failed on gameDb. Error: %s", sqlite3_errmsg(db));
@@ -1831,16 +1769,13 @@ void dbPrintBanlist(gentity_t* ent, qboolean subnet, int page) {
     if (isRcon) {
         Com_Printf("\n^3 %-5s%-12.12s%-16.16s%-12.12s%-11.11s%-20.20s\n", "#", "Player", "IP", "Banned by", "Time left", "Reason");
         Com_Printf("^7-----------------------------------------------------------------------------\n");
-
-
     }
     else {
         if (page > 0) page--;
         Q_strcat(buf, sizeof(buf), va("\n[^3Page %d^7]\n\n^3 %-5s%-12.12s%-16.16s%-12.12s%-11.11s%-20.20s\n^7-----------------------------------------------------------------------------\n", page + 1, "#", "Player", "IP", "Banned by", "Time left", "Reason"));
 
-        sqlite3_bind_int(stmt, 1, page * 100);
+        sqlite3_bind_int(stmt, 1, page * 100 + 1);
         sqlite3_bind_int(stmt, 2, (page + 1) * 100);
-
     }
 
     while ((rc = sqlite3_step(stmt)) != SQLITE_DONE) {

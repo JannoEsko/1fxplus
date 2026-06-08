@@ -93,6 +93,7 @@ admCmd_t adminCommands[] = {
     {"!stm",    "skiptomap",        &a_mapswitch.integer,       &adm_skipToMap,                 "Skips to the specified map index", "<map num>",        NULL },
     {"!fe",    "followenemy",        &a_followEnemy.integer,       &adm_followEnemy,                 "Toggles followenemy", "",        NULL },
     {"!lt",    "listtips",        &minimumAdminLevel,       &adm_listTips,                 "Lists available tips", "",        NULL },
+    {"!fs",    "floatspec",       &a_compmode.integer,      &adm_floatSpec,                "Toggle floatspec",     "",        NULL},
 };
 
 int adminCommandsSize = sizeof(adminCommands) / sizeof(adminCommands[0]);
@@ -540,6 +541,10 @@ static void adm_toggleCVAR(int argNum, gentity_t* adm, qboolean shortCmd, qboole
     }
 }
 
+int adm_floatSpec(int argNum, gentity_t* adm, qboolean shortCmd) {
+    adm_toggleCVAR(argNum, adm, shortCmd, qtrue, "Floatspec", &g_allowFloatSpec, qfalse, NULL, NULL);
+    return -1;
+}
 
 int adm_followEnemy(int argNum, gentity_t* adm, qboolean shortCmd) {
     adm_toggleCVAR(argNum, adm, shortCmd, qtrue, "Follow Enemy", &g_followEnemy, qtrue, "Follow Enemy in Match", &match_followEnemy);
