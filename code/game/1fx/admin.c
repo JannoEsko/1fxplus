@@ -1381,33 +1381,49 @@ static void adm_removeIngameClanPowers(clanType_t clanType, char* clanName, gent
 
 int adm_removeClanMemberFromList(int argNum, gentity_t* adm, qboolean shortCmd) {
 
-    char arg[64];
+    char arg[64], rowArg[64];
+    clanType_t clanType = CLANTYPE_NONE;
     int rowId = 0;
 
     if (shortCmd && G_GetChatArgumentCount()) {
         Q_strncpyz(arg, G_GetChatArgument(argNum, qfalse), sizeof(arg));
+        Q_strncpyz(rowArg, G_GetChatArgument(argNum + 1, qfalse), sizeof(rowArg));
     }
     else {
         trap_Argv(argNum, arg, sizeof(arg));
+        trap_Argv(argNum + 1, rowArg, sizeof(rowArg));
     }
 
-    if (arg && strlen(arg)) {
+    // Optional type prefix mirrors !clanlist: "guid <n>", "pass <n>", "ip <n>", or just "<n>".
+    if (!Q_stricmp(arg, "guid")) {
+        clanType = CLANTYPE_GUID;
+        rowId = rowArg && strlen(rowArg) ? atoi(rowArg) : 0;
+    }
+    else if (!Q_stricmp(arg, "pass")) {
+        clanType = CLANTYPE_PASS;
+        rowId = rowArg && strlen(rowArg) ? atoi(rowArg) : 0;
+    }
+    else if (!Q_stricmp(arg, "ip")) {
+        clanType = CLANTYPE_IP;
+        rowId = rowArg && strlen(rowArg) ? atoi(rowArg) : 0;
+    }
+    else if (arg && strlen(arg)) {
         rowId = atoi(arg);
     }
 
     if (rowId) {
 
         char clanName[MAX_NETNAME];
-        clanType_t clanType = CLANTYPE_NONE;
+        clanType_t resolvedType = CLANTYPE_NONE;
 
-        qboolean success = dbGetClanDataByRowId(rowId, clanName, sizeof(clanName), &clanType);
+        qboolean success = dbGetClanDataByRowId(clanType, rowId, clanName, sizeof(clanName), &resolvedType);
 
         if (success) {
-            int rowsAffected = dbRemoveClanByRowId(rowId);
+            int rowsAffected = dbRemoveClanByRowId(clanType, rowId);
 
             if (rowsAffected) {
 
-                adm_removeIngameClanPowers(clanType, clanName, adm);
+                adm_removeIngameClanPowers(resolvedType, clanName, adm);
 
                 G_printCustomMessage(adm, "Admin Command", "Row %d was removed.", rowId);
                 logAdmin(adm, NULL, "removeclan", NULL);
@@ -1421,13 +1437,13 @@ int adm_removeClanMemberFromList(int argNum, gentity_t* adm, qboolean shortCmd) 
             G_printInfoMessage(adm, "Row %d was not found.", rowId);
         }
 
-        
+
     }
     else {
         G_printInfoMessage(adm, "Please enter a valid row ID");
     }
 
-    
+
     return -1;
 }
 

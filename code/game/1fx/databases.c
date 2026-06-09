@@ -660,7 +660,13 @@ qboolean dbGetAdminDataByRowId(admType_t adminType, int rowId, int* adminLevel, 
     sqlite3_stmt* stmt;
     qboolean success = qfalse;
 
-    char* query = va("SELECT adminname, adminlevel FROM admin%slist WHERE ROWID = ?", adminType == ADMTYPE_GUID ? "guid" : (adminType == ADMTYPE_PASS ? "pass" : ""));
+    // Use ROW_NUMBER() to resolve the user-visible row number to the correct row.
+    // WHERE ROWID = ? would break after deletions create gaps in the ROWID sequence.
+    char* query = va(
+        "SELECT adminname, adminlevel FROM ("
+            "SELECT ROWID AS rid, adminname, adminlevel, ROW_NUMBER() OVER (ORDER BY ROWID) AS rn FROM admin%slist"
+        ") WHERE rn = ?",
+        adminType == ADMTYPE_GUID ? "guid" : (adminType == ADMTYPE_PASS ? "pass" : ""));
 
     int rc = sqlite3_prepare_v2(db, query, -1, &stmt, 0);
 
@@ -688,7 +694,15 @@ int dbRemoveAdminByRowId(admType_t adminType, int rowId) {
     sqlite3_stmt* stmt;
     int rowsAffected = 0;
 
-    char* query = va("DELETE FROM admin%slist WHERE ROWID = ?", adminType == ADMTYPE_GUID ? "guid" : (adminType == ADMTYPE_PASS ? "pass" : ""));
+    // Delete by user-visible ROW_NUMBER, not internal ROWID (which has gaps after deletions).
+    char* query = va(
+        "DELETE FROM admin%slist WHERE ROWID = ("
+            "SELECT rid FROM ("
+                "SELECT ROWID AS rid, ROW_NUMBER() OVER (ORDER BY ROWID) AS rn FROM admin%slist"
+            ") WHERE rn = ?"
+        ")",
+        adminType == ADMTYPE_GUID ? "guid" : (adminType == ADMTYPE_PASS ? "pass" : ""),
+        adminType == ADMTYPE_GUID ? "guid" : (adminType == ADMTYPE_PASS ? "pass" : ""));
 
     int rc = sqlite3_prepare_v2(db, query, -1, &stmt, 0);
 
@@ -1018,7 +1032,15 @@ int dbRemoveBan(qboolean subnet, int rowId) {
 
     int rowsAffected = 0;
 
-    char* query = va("DELETE FROM %sbanlist WHERE ROWID = ?", subnet ? "subnet" : "");
+    // Delete by user-visible ROW_NUMBER, not internal ROWID.
+    char* query = va(
+        "DELETE FROM %sbanlist WHERE ROWID = ("
+            "SELECT rid FROM ("
+                "SELECT ROWID AS rid, ROW_NUMBER() OVER (ORDER BY ROWID) AS rn FROM %sbanlist"
+            ") WHERE rn = ?"
+        ")",
+        subnet ? "subnet" : "",
+        subnet ? "subnet" : "");
     int rc = sqlite3_prepare_v2(db, query, -1, &stmt, 0);
 
     if (rc != SQLITE_OK) {
@@ -1505,13 +1527,20 @@ int dbRemoveClanByGentity(gentity_t* ent) {
 
 }
 
-int dbRemoveClanByRowId(int rowId) {
+int dbRemoveClanByRowId(clanType_t clanType, int rowId) {
 
     sqlite3* db = gameDb;
     sqlite3_stmt* stmt;
     int rowsAffected = 0;
 
-    char* query = "DELETE FROM clanlist WHERE ROWID = ?";
+    // Delete by user-visible ROW_NUMBER with the same optional type filter as dbPrintClanlist.
+    char* query = va(
+        "DELETE FROM clanlist WHERE ROWID = ("
+            "SELECT rid FROM ("
+                "SELECT ROWID AS rid, ROW_NUMBER() OVER (ORDER BY ROWID) AS rn FROM clanlist%s"
+            ") WHERE rn = ?"
+        ")",
+        clanType != CLANTYPE_NONE ? " WHERE membertype = ?" : "");
 
     int rc = sqlite3_prepare_v2(db, query, -1, &stmt, 0);
 
@@ -1520,7 +1549,11 @@ int dbRemoveClanByRowId(int rowId) {
         return rowsAffected;
     }
 
-    sqlite3_bind_int(stmt, 1, rowId);
+    int bindIdx = 1;
+    if (clanType != CLANTYPE_NONE) {
+        sqlite3_bind_int(stmt, bindIdx++, clanType);
+    }
+    sqlite3_bind_int(stmt, bindIdx, rowId);
 
     rc = sqlite3_step(stmt);
     if (rc != SQLITE_DONE) {
@@ -1610,13 +1643,19 @@ qboolean dbGetClan(clanType_t clanType, gentity_t* ent, char* password) {
     return returnable;
 }
 
-qboolean dbGetClanDataByRowId(int rowId, char* memberName, int memberNameSize, int* memberType) {
+qboolean dbGetClanDataByRowId(clanType_t clanType, int rowId, char* memberName, int memberNameSize, int* memberType) {
 
     sqlite3* db = gameDb;
     sqlite3_stmt* stmt;
     qboolean success = qfalse;
 
-    char* query = "SELECT membername, membertype FROM clanlist WHERE ROWID = ?";
+    // Use ROW_NUMBER() with the same optional type filter used in dbPrintClanlist,
+    // so the row number the user sees matches what we look up and delete.
+    char* query = va(
+        "SELECT membername, membertype FROM ("
+            "SELECT ROWID AS rid, membername, membertype, ROW_NUMBER() OVER (ORDER BY ROWID) AS rn FROM clanlist%s"
+        ") WHERE rn = ?",
+        clanType != CLANTYPE_NONE ? " WHERE membertype = ?" : "");
 
     int rc = sqlite3_prepare_v2(db, query, -1, &stmt, 0);
 
@@ -1625,7 +1664,11 @@ qboolean dbGetClanDataByRowId(int rowId, char* memberName, int memberNameSize, i
         return success;
     }
 
-    sqlite3_bind_int(stmt, 1, rowId);
+    int bindIdx = 1;
+    if (clanType != CLANTYPE_NONE) {
+        sqlite3_bind_int(stmt, bindIdx++, clanType);
+    }
+    sqlite3_bind_int(stmt, bindIdx, rowId);
 
     if (sqlite3_step(stmt) == SQLITE_ROW) {
         success = qtrue;
@@ -1726,7 +1769,12 @@ qboolean dbGetBanDetailsByRowID(qboolean subnet, int rowId, char* outputPlayer, 
     sqlite3_stmt* stmt;
     qboolean success = qfalse;
 
-    char* query = va("SELECT playername, ip FROM %sbanlist WHERE ROWID = ?", subnet ? "subnet" : "");
+    // Use ROW_NUMBER() to resolve the user-visible row number, not internal ROWID.
+    char* query = va(
+        "SELECT playername, ip FROM ("
+            "SELECT ROWID AS rid, playername, ip, ROW_NUMBER() OVER (ORDER BY ROWID) AS rn FROM %sbanlist"
+        ") WHERE rn = ?",
+        subnet ? "subnet" : "");
 
     int rc = sqlite3_prepare_v2(db, query, -1, &stmt, 0);
     if (rc != SQLITE_OK) {
@@ -1739,7 +1787,7 @@ qboolean dbGetBanDetailsByRowID(qboolean subnet, int rowId, char* outputPlayer, 
     if (sqlite3_step(stmt) == SQLITE_ROW) {
         success = qtrue;
         Q_strncpyz(outputPlayer, sqlite3_column_text(stmt, 0), outputPlayerSize);
-        Q_strncpyz(outputIp, sqlite3_column_text(stmt, 0), outputIpSize);
+        Q_strncpyz(outputIp, sqlite3_column_text(stmt, 1), outputIpSize);
     }
 
     sqlite3_finalize(stmt);
