@@ -456,6 +456,10 @@ void unloadInMemoryDatabases(void) {
     backupInMemoryDatabases();
     sqlite3_exec(gameDb, "DETACH DATABASE game", NULL, NULL, NULL);
     sqlite3_close(gameDb);
+    if (logsDb) {
+        sqlite3_close(logsDb);
+        logsDb = NULL;
+    }
 }
 
 void backupInMemoryDatabases(void) {
