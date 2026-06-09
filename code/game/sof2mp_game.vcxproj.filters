@@ -31,8 +31,11 @@
     <Filter Include="Source Files\1fx\clientmods">
       <UniqueIdentifier>{6831af0b-7516-41c4-8708-daab398a2dd7}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Header Files\ext\jsmn">
-      <UniqueIdentifier>{baa0755b-9fd3-4158-ae90-1352b483007c}</UniqueIdentifier>
+    <Filter Include="Header Files\ext\yyjson">
+      <UniqueIdentifier>{3ce4f00e-b3df-4507-999b-c4ec3ee1bc7e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\ext\yyjson">
+      <UniqueIdentifier>{7470fdec-2baf-4737-a59c-3bd79a251fc0}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -165,6 +168,9 @@
     <ClCompile Include="1fx\vote.c">
       <Filter>Source Files\1fx</Filter>
     </ClCompile>
+    <ClCompile Include="..\ext\yyjson\yyjson.c">
+      <Filter>Source Files\ext\yyjson</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ai_main.h">
@@ -245,8 +251,8 @@
     <ClInclude Include="..\ext\sqlite\sqlite3.h">
       <Filter>Header Files\ext\sqlite</Filter>
     </ClInclude>
-    <ClInclude Include="..\ext\jsmn\jsmn.h">
-      <Filter>Header Files\ext\jsmn</Filter>
+    <ClInclude Include="..\ext\yyjson\yyjson.h">
+      <Filter>Header Files\ext\yyjson</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
