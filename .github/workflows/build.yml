@@ -64,22 +64,6 @@ jobs:
             compiler: msvc
             arch: x86
             build_type: Debug
-          - os: debian-11
-            compiler: gcc
-            arch: x86_64
-            build_type: Release
-          - os: debian-11
-            compiler: gcc
-            arch: x86_64
-            build_type: Debug
-          - os: debian-11
-            compiler: gcc
-            arch: x86
-            build_type: Release
-          - os: debian-11
-            compiler: gcc
-            arch: x86
-            build_type: Debug
           - os: ubuntu-24.04-arm
             compiler: gcc
             arch: arm64
@@ -89,18 +73,13 @@ jobs:
             arch: arm64
             build_type: Release
 
-    runs-on: ${{ matrix.os == 'debian-11' && 'ubuntu-latest' || matrix.os }}
-    container: ${{ matrix.os == 'debian-11' && 'debian:11' || '' }}
+    runs-on: ${{ matrix.os }}
 
     defaults:
       run:
         shell: bash
 
     steps:
-      - name: Install Git and sudo (Debian Docker image)
-        if: matrix.os == 'debian-11'
-        run: apt update && apt install -y git ca-certificates sudo
-
       - name: Checkout
         uses: actions/checkout@v4
         with:
@@ -160,7 +139,7 @@ jobs:
           mkdir -p build && cd build
           FLAGS=""
           [ "${{ matrix.arch }}" = "x86" ] && FLAGS="-DFORCE_32BIT=ON -DCMAKE_C_FLAGS=-m32 -DCMAKE_CXX_FLAGS=-m32 -DCMAKE_EXE_LINKER_FLAGS=-m32"
-          cmake .. -G Ninja -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} $FLAGS -DCMAKE_LIBRARY_OUTPUT_DIRECTORY=$(pwd)/../artifacts/1fx/
+          cmake .. -G Ninja -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} $FLAGS -D_SOF2_BOTS=ON -DCMAKE_LIBRARY_OUTPUT_DIRECTORY=$(pwd)/../artifacts/1fx/
           cmake --build . --parallel
 
       - name: Build (CMake - MinGW)
@@ -170,7 +149,7 @@ jobs:
           mkdir -p build && cd build
           FLAGS=""
           [ "${{ matrix.arch }}" = "x86" ] && FLAGS="-DFORCE_32BIT=ON -DCMAKE_C_FLAGS=-m32 -DCMAKE_CXX_FLAGS=-m32 -DCMAKE_EXE_LINKER_FLAGS=-m32"
-          cmake .. -G Ninja -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} $FLAGS -DCMAKE_LIBRARY_OUTPUT_DIRECTORY=$(pwd)/../artifacts/1fx/
+          cmake .. -G Ninja -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} $FLAGS -D_SOF2_BOTS=ON -DCMAKE_LIBRARY_OUTPUT_DIRECTORY=$(pwd)/../artifacts/1fx/
           cmake --build . --parallel
 
       - name: Build (MSVC)
@@ -214,12 +193,6 @@ jobs:
         run: |
           cd artifacts
           tar -czf "../1fxplus-linux-${{ matrix.arch }}-${{ matrix.build_type }}-gcc.tar.gz" 1fx
-
-      - name: Archive (Debian 11)
-        if: always() && matrix.os == 'debian-11'
-        run: |
-          cd artifacts
-          tar -czf "../1fxplus-debian11-${{ matrix.arch }}-${{ matrix.build_type }}-gcc.tar.gz" 1fx
 
       - name: Archive (Windows)
         if: always() && matrix.os == 'windows-latest'

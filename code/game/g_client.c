@@ -1411,7 +1411,6 @@ char *ClientConnect( int clientNum, qboolean firstTime, qboolean isBot )
 
     client->sess.team = TEAM_SPECTATOR;
 
-    client->sess.commProto = trap_GetClientProtocol(clientNum);
     // read or initialize the session data
     if ( firstTime || level.newSession )
     {
@@ -1428,6 +1427,10 @@ char *ClientConnect( int clientNum, qboolean firstTime, qboolean isBot )
         {
             return "BotConnectfailed";
         }
+        client->sess.commProto = COMMPROTO_GOLD;
+    }
+    else {
+        client->sess.commProto = trap_GetClientProtocol(clientNum);
     }
 
     // get and distribute relevent paramters
