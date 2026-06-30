@@ -23,7 +23,7 @@ queueNode* inboundTail;
 
 int killThread;
 CURL* curl;
-int sockhandle;
+int sockhandle = INVALID_SOCKET;
 struct sockaddr_in svaddr;
 
 typedef enum sockStatus_e {
@@ -88,6 +88,8 @@ void startThread() {
     initMutex();
     outboundHead = outboundTail = NULL;
     inboundHead = inboundTail = NULL;
+    sockhandle = INVALID_SOCKET;
+    socketStatus = SOCKSTATUS_CLOSED;
     pthread_create(&thread, NULL, &runThread, NULL);
     pthread_detach(thread);
 }
@@ -108,9 +110,11 @@ void closeThread() {
         pthread_mutex_destroy(&inboundMutex);
         pthread_mutex_destroy(&outboundMutex);
 
-        if (socketStatus) {
+        if (sockhandle != INVALID_SOCKET) {
             shutdown(sockhandle, SHUT_WR);
             close(sockhandle);
+            sockhandle = INVALID_SOCKET;
+            socketStatus = SOCKSTATUS_CLOSED;
         }
 
     }
@@ -154,6 +158,8 @@ void startThread() {
     killThread = 0;
     outboundHead = outboundTail = NULL;
     inboundHead = inboundTail = NULL;
+    sockhandle = INVALID_SOCKET;
+    socketStatus = SOCKSTATUS_CLOSED;
     initMutex();
     WSADATA wsaData;
     if (!WSAStartup(MAKEWORD(2, 2), &wsaData)) {
@@ -180,9 +186,11 @@ void closeThread() {
         CloseHandle(outboundMutex);
         CloseHandle(thread);
 
-        if (socketStatus) {
+        if (sockhandle != INVALID_SOCKET) {
             shutdown(sockhandle, SD_SEND);
             closesocket(sockhandle);
+            sockhandle = INVALID_SOCKET;
+            socketStatus = SOCKSTATUS_CLOSED;
         }
 
         WSACleanup();
@@ -340,14 +348,19 @@ int dequeueOutbound(int* action, char* message, int sizeOfMessage) {
 
 void shutdownThread() {
     curl_global_cleanup();
+
+    if (sockhandle != INVALID_SOCKET) {
+
 #ifdef _WIN32
-    shutdown(sockhandle, SD_BOTH);
-    closesocket(sockhandle);
+        shutdown(sockhandle, SD_BOTH);
+        closesocket(sockhandle);
 #elif defined __linux__ || defined __APPLE__
-    shutdown(sockhandle, SHUT_RDWR);
-    close(sockhandle);
+        shutdown(sockhandle, SHUT_RDWR);
+        close(sockhandle);
 #endif
-    socketStatus = qfalse;
+    }
+    sockhandle = INVALID_SOCKET;
+    socketStatus = SOCKSTATUS_CLOSED;
 }
 
 // this looks ugly, but because the inside of this function is exactly the same no matter what platform we're on, this is fine.
