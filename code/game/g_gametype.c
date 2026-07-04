@@ -209,17 +209,11 @@ void SP_gametype_item ( gentity_t* ent )
             if (strstr(ent->targetname, "-")) {
                 ent->targetname = strchr(ent->targetname, '-') + 1;
             }
-            else {
-                Q_strncpyz(ent->targetname, ent->targetname, sizeof(ent->targetname));
-            }
         }
 
         if (ent->target && ent->target[0]) {
             if (strstr(ent->target, "-")) {
                 ent->target = strchr(ent->target, '-') + 1;
-            }
-            else {
-                Q_strncpyz(ent->target, ent->target, sizeof(ent->target));
             }
         }
     }
