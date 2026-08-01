@@ -1724,7 +1724,7 @@ gspawn_t* G_SelectClientSpawnPoint ( gentity_t* ent )
             // Spawn at any deathmatch spawn, telefrag if needed
             if ( !spawnPoint )
             {
-                spawnPoint = G_SelectRandomSpawnPoint ( TEAM_FREE );
+                spawnPoint = G_SelectRandomSpawnPoint ( TEAM_FREE, ent->client );
             }
 
             // Spawn at any gametype spawn, telefrag if needed
