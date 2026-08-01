@@ -275,7 +275,7 @@ void trigger_teleporter_touch (gentity_t *self, gentity_t *other, trace_t *trace
         return;
     }
     // Spectators only?
-    if ( ( self->spawnflags & 1 ) && !G_IsClientSpectating ( other->client ) )
+    if ( ( self->spawnflags & 1 ) && !G_IsClientSpectating ( other->client ) && !other->client->sess.deadMonkey )
     {
         return;
     }
@@ -717,7 +717,7 @@ void SP_accelerator_touch(gentity_t* self, gentity_t* other, trace_t* trace) {
     }
 
     if (self->team2 != TEAM_FREE) {
-        if (other->client->sess.team != self->team2) {
+        if (other->client->sess.team != self->team2 && !other->client->sess.deadMonkey) {
             if (level.time >= other->client->sess.lastmsg) {
                 if (self->team2 == TEAM_RED) {
                     G_Broadcast(BROADCAST_GAME, other, qfalse, "Accelerator is for %s only!", g_customRedName.string);
@@ -986,7 +986,7 @@ void trigger_NewTeleporter_touch(gentity_t* self, gentity_t* other, trace_t* tra
     }
 
     if (self->team2 != TEAM_FREE) {
-        if (other->client->sess.team != self->team2) {
+        if (other->client->sess.team != self->team2 && !other->client->sess.deadMonkey) {
             if (level.time >= other->client->sess.lastmsg) {
                 if (self->team2 == TEAM_RED) {
                     G_Broadcast(BROADCAST_GAME, other, qfalse, "Teleporter is for %s only!", g_customRedName.string); // JANFIXME let gametype report back the currently used team prefixes to the game module.
@@ -1182,7 +1182,7 @@ void trigger_booster_touch(gentity_t* self, gentity_t* other, trace_t* trace) {
     }
 
     if (self->team2 != TEAM_FREE) {
-        if (other->client->sess.team != self->team2) {
+        if (other->client->sess.team != self->team2 && !other->client->sess.deadMonkey) {
             if (level.time >= other->client->sess.lastmsg) {
                 if (self->team2 == TEAM_RED) {
                     G_Broadcast(BROADCAST_GAME, other, qfalse, "Booster is for %s only!", g_customRedName.string);
