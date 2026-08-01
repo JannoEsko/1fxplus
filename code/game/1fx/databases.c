@@ -2201,9 +2201,6 @@ void dbClearHnsStats(void) {
     if (rc != SQLITE_OK) {
         logSystem(LOGLEVEL_WARN, "gameDb clear scores error: %s", sqlite3_errmsg(db));
     }
-    
-    // Instantly update the loaded struct in memory so the scores disappear right away
-    dbWriteHnsBestPlayersIntoHnsStruct();
 }
 
 void dbWriteHnsBestPlayersIntoHnsStruct() {
