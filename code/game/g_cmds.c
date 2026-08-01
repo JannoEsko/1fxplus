@@ -51,12 +51,7 @@ void DeathmatchScoreboardMessage( gentity_t *ent )
             ping = cl->ps.ping < 999 ? cl->ps.ping : 999;
         }
 
-        ghost = cl->sess.ghost;
-#ifdef _3DServer
-        if (!ghost && cl->sess.deadMonkey) {
-            ghost = qtrue;
-        }
-#endif // _3DServer
+        ghost = G_IsClientDead(cl);
 
         
         
