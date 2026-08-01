@@ -313,7 +313,11 @@ void player_die(
         // We write the death time into the sess struct GIVEN that the gametype has started.
 
         if (level.customGameStarted && self->client->sess.team == TEAM_RED && !level.hns.roundOver && level.customGameWeaponsDistributed) {
-            self->client->sess.hsTimeOfDeath = level.time;
+            if (!self->client->sess.deadMonkeyDie) {
+                self->client->sess.hsTimeOfDeath = level.time;
+            } else {
+                self->client->sess.deadMonkeyDie = qfalse;
+            }
         }
 
         if (attacker && attacker->client && level.customGameStarted && attacker->client->sess.team == TEAM_BLUE && self && self->client && self->client->sess.team == TEAM_RED) {
@@ -818,6 +822,15 @@ void player_die(
     self->die = body_die;
 
     trap_LinkEntity (self);
+
+    // check if player should be a monkey.
+    if (isCurrentGametype(GT_HNS) && g_deadMonkey.integer && level.hns.monkeySpawnCount && !level.hns.cagefight
+        && !self->client->sess.monkeyPreferGhost && self->client->sess.team == TEAM_RED && mod != MOD_TEAMCHANGE
+        && level.customGameStarted)
+    {
+        self->client->sess.deadMonkey = level.time;
+        ClientSpawn(self);
+    }
 }
 
 /*

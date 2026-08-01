@@ -1951,7 +1951,7 @@ void checkRoof(gentity_t* ent)
     }
 
     // Boe!Man 6/3/12: He must be alive.
-    if (G_IsClientDead(ent->client)) {
+    if (G_IsClientDead(ent->client) || ent->client->sess.deadMonkey) {
         if (ent->client->sess.isOnRoof) { // Well, since he's dead now, reset this..
             ent->client->sess.isOnRoof = qfalse;
             ent->client->sess.isOnRoofTime = 0;

@@ -287,6 +287,7 @@ vmCvar_t    g_anticampTime;
 vmCvar_t    hnz_rewards;   
 vmCvar_t    hnz_airstrikeAttempts; 
 vmCvar_t    hnz_airstrikeAmmo; 
+vmCvar_t    g_deadMonkey;
 
 // Vote cvars. These control the allowed votes in the server. The integer value defines the admin level required to call this vote (0 being allowed by everyone, 5 being allowed by noone)
 vmCvar_t    vote_map;
@@ -641,6 +642,7 @@ static cvarTable_t gameCvarTable[] =
     { &hnz_rewards, "hnz_rewards", "11",   CVAR_ARCHIVE | CVAR_LATCH,    0.0,    0.0,  0, qfalse },
     { &hnz_airstrikeAttempts, "hnz_airstrikeAttempts", "3",   CVAR_ARCHIVE | CVAR_LATCH,    0.0,    0.0,  0, qfalse }, 
     { &hnz_airstrikeAmmo, "hnz_airstrikeAmmo", "1",   CVAR_ARCHIVE | CVAR_LATCH,    0.0,    0.0,  0, qfalse }, 
+    { &g_deadMonkey, "g_deadMonkey", "0",   CVAR_ARCHIVE | CVAR_LATCH,    0.0,    0.0,  0, qfalse }, 
     
     { &vote_successThreshold, "vote_successThreshold", "55", CVAR_ARCHIVE | CVAR_LOCK_RANGE, 51.0f, 100.0f, 0, qfalse },
     { &g_sockIp, "g_sockIp", "127.0.0.1", CVAR_ARCHIVE | CVAR_LATCH, 0.0f, 0.0f, 0, qfalse },

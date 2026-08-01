@@ -358,6 +358,9 @@ void Touch_Item (gentity_t *ent, gentity_t *other, trace_t *trace)
     if (other->health < 1)
         return;
 
+    if (other->client->sess.deadMonkey)
+        return;
+
     // See if teh item can be picked up
     if( ent->s.eFlags & EF_NOPICKUP )
     {

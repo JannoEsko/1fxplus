@@ -1128,8 +1128,10 @@ void SetTeam( gentity_t *ent, char *s, const char* identity, qboolean forced )
     // If a ghost, enforce it
     if ( ghost )
     {
-        // Make them a ghost again
-        if ( team != TEAM_SPECTATOR )
+        if (isCurrentGametype(GT_HNS) && g_deadMonkey.integer && level.hns.monkeySpawnCount && !level.hns.cagefight && !client->sess.monkeyPreferGhost && team == TEAM_RED) {
+            client->sess.deadMonkey = level.time;
+            ghost = qfalse;
+        } else if ( team != TEAM_SPECTATOR )
         {
             G_StartGhosting ( ent );
 
@@ -2282,6 +2284,52 @@ void G_Voice( gentity_t *ent, gentity_t *target, int mode, const char *id, qbool
     }
 }
 
+void Cmd_Ghost_f(gentity_t *ent)
+{
+    if (!isCurrentGametype(GT_HNS)) {
+        G_printInfoMessage(ent, "This command only works in Hide&Seek!");
+        return;
+    }
+
+    if (!g_deadMonkey.integer) {
+        G_printInfoMessage(ent, "This feature is disabled on the server!");
+        return;
+    }
+
+    if (!level.hns.monkeySpawnCount) {
+        G_printInfoMessage(ent, "No monkey spawns available on the server, so this feature is disabled!");
+        return;
+    }
+
+    // check if the client wishes to become a ghost or prefers to "play" instead.
+    ent->client->sess.monkeyPreferGhost = !ent->client->sess.monkeyPreferGhost;
+
+    if (ent->client->sess.monkeyPreferGhost) {
+        // is the client dead already and in monkey mode? If so, respawn.
+        if (ent->client->sess.deadMonkey && ent->client->ps.pm_type == PM_NORMAL) {
+            // kill player, he won't be respawned next round.
+            ent->flags &= ~FL_GODMODE;
+            ent->client->ps.stats[STAT_HEALTH] = ent->health = -999;
+            ent->client->sess.deadMonkey = 0;
+            ent->client->sess.deadMonkeyDie = qtrue;
+            player_die(ent, ent, ent, 100000, MOD_SUICIDE, HL_NONE, vec3_origin);
+        }
+
+        G_printInfoMessage(ent, "You won't be respawned as dead player anymore.");
+    } else {
+        // is the client dead and in ghost mode? If so, respawn.
+        if ((ent->client->sess.ghost || ent->client->ps.stats[STAT_HEALTH] < 1) && !level.hns.cagefight && ent->client->sess.team == TEAM_RED) {
+            ent->client->sess.deadMonkey = level.time;
+            ent->client->sess.ghost = qfalse;
+            ClientSpawn(ent);
+        }
+
+        G_printInfoMessage(ent, "You will be respawned as a dead player from now on.");
+    }
+
+    G_printInfoMessage(ent, "Issue the ^3/ghost ^7command again to toggle the behavior.");
+}
+
 /*
 ==================
 Cmd_Voice_f
@@ -2405,6 +2453,11 @@ void ClientCommand( int clientNum ) {
 
     if (Q_stricmp (cmd, "say") == 0) {
         Cmd_Say_f (ent, SAY_ALL);
+        return;
+    } 
+
+    if (Q_stricmp (cmd, "ghost") == 0) {
+        Cmd_Ghost_f (ent);
         return;
     } 
     
