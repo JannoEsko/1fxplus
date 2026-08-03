@@ -206,20 +206,6 @@ qboolean ConsoleCommand( void )
         return qtrue;
     }
 
-    if (!Q_stricmp(cmd, "cleardb")) {
-        char arg[MAX_TOKEN_CHARS];
-        trap_Argv(1, arg, sizeof(arg));
-
-        if (!Q_stricmp(arg, "scores")) {
-            dbClearHnsStats();
-            Com_Printf("scores have been cleared from the database.\n");
-        }
-        else {
-            Com_Printf("Usage: cleardb scores\n");
-        }
-        return qtrue;
-    }
-
     if ( Q_stricmp (cmd, "entitylist") == 0 )
     {
         Svcmd_EntityList_f();

@@ -876,6 +876,9 @@ void dbRunTruncate(char* table) {
     else if (!Q_stricmp("tips", table)) {
         sqlite3_exec(db, "DELETE FROM tips", NULL, NULL, NULL);
     }
+    else if (!Q_stricmp("scores", table)) {
+        sqlite3_exec(db, "DELETE FROM hnsbestplayers", NULL, NULL, NULL);
+    }
     else {
         logSystem(LOGLEVEL_INFO, "No table \"%s\" found.", table);
         return;
@@ -2190,17 +2193,6 @@ void dbWriteHnsStats() {
     }
 
     sqlite3_finalize(stmt);
-}
-
-void dbClearHnsStats(void) {
-    sqlite3* db = gameDb;
-    int rc;
-
-    rc = sqlite3_exec(db, "DELETE FROM hnsbestplayers", 0, 0, 0);
-
-    if (rc != SQLITE_OK) {
-        logSystem(LOGLEVEL_WARN, "gameDb clear scores error: %s", sqlite3_errmsg(db));
-    }
 }
 
 void dbWriteHnsBestPlayersIntoHnsStruct() {

@@ -2461,7 +2461,6 @@ gentity_t* findClosestTeamPlayer(gentity_t* ent, qboolean bot);
 gentity_t* findClosestEnemyPlayer(gentity_t* ent, qboolean bot);
 void dbWriteHnsBestPlayersIntoHnsStruct(void);
 void dbWriteHnsStats(void);
-void dbClearHnsStats(void);
 void fillHnsStats(void);
 void setIdentityTeamForCustomGametype(TIdentity* ident);
 TIdentity* getRandomCustomTeamIdentity(team_t team);
