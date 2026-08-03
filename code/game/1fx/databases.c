@@ -876,6 +876,9 @@ void dbRunTruncate(char* table) {
     else if (!Q_stricmp("tips", table)) {
         sqlite3_exec(db, "DELETE FROM tips", NULL, NULL, NULL);
     }
+    else if (!Q_stricmp("scores", table)) {
+        sqlite3_exec(db, "DELETE FROM hnsbestplayers", NULL, NULL, NULL);
+    }
     else {
         logSystem(LOGLEVEL_INFO, "No table \"%s\" found.", table);
         return;
@@ -2112,15 +2115,15 @@ void dbWriteHnsStats() {
 
     // At the very first step, we check whether we can clear aged rows.
     if (g_hnsStatAging.integer) {
-        query = "DELETE FROM hnsbestplayers WHERE dt < DATETIME('now', '-' || ? || ' days')";
+        char delQuery[256];
+        Com_sprintf(delQuery, sizeof(delQuery), "DELETE FROM hnsbestplayers WHERE dt < DATETIME('now', '-%d days')", g_hnsStatAging.integer);
 
-        rc = sqlite3_prepare_v2(db, query, -1, &stmt, 0);
+        rc = sqlite3_prepare_v2(db, delQuery, -1, &stmt, 0);
 
         if (rc != SQLITE_OK) {
             logSystem(LOGLEVEL_WARN, "gameDb clearaging prepare error: %s", sqlite3_errmsg(db));
         }
 
-        sqlite3_bind_int(stmt, 1, g_hnsStatAging.integer);
         rc = sqlite3_step(stmt);
 
         if (rc != SQLITE_DONE) {

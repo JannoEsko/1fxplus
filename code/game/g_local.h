@@ -750,6 +750,10 @@ typedef struct
     int                 nextPunishmentMessage;
 
     int                 nextRefresh;
+
+    int                 deadMonkey;
+    qboolean            monkeyPreferGhost;
+    qboolean            deadMonkeyDie;
 } clientSession_t;
 
 //
@@ -990,6 +994,7 @@ typedef struct hnsLvl_s {
     char            cagewinner[MAX_NETNAME];
 
     int             monkeySpawnCount;
+    gspawn_t        monkeySpawns[MAX_SPAWNS];
     int             customETHiderAmount[MAX_CUSTOM_ET_AMOUNT];
     qboolean        cagefight;
     qboolean        secondBatchCustomWeaponsDistributed;
@@ -1483,11 +1488,11 @@ qboolean    G_SpotWouldTelefrag             ( gspawn_t* spawn );
 void        G_UpdateClientAnimations        ( gentity_t* ent );
 void        G_SetRespawnTimer               ( gentity_t* ent );
 gentity_t*  G_FindNearbyClient              ( vec3_t origin, team_t team, float radius, gentity_t* ignore );
-void        G_AddClientSpawn                ( gentity_t* ent, team_t team );
+void        G_AddClientSpawn                ( gentity_t* ent, team_t team, qboolean monkey );
 qboolean    G_IsClientChatIgnored           ( int ignorer, int ingnoree );
 void        G_IgnoreClientChat              ( int ignorer, int ignoree, qboolean ignore );
 void        G_UpdateOutfitting              ( int clientNum );
-gspawn_t* G_SelectRandomSpawnPoint(team_t team);
+gspawn_t* G_SelectRandomSpawnPoint(team_t team, gclient_t* client);
 
 //
 // g_svcmds.c
@@ -1530,7 +1535,7 @@ void        ClientUserinfoChanged               ( int clientNum );
 void        ClientDisconnect                    ( int clientNum );
 void        ClientBegin                         ( int clientNum, qboolean setTime );
 void        ClientCommand                       ( int clientNum );
-gspawn_t*   G_SelectRandomSpawnPoint            ( team_t team );
+gspawn_t*   G_SelectRandomSpawnPoint            ( team_t team, gclient_t* client );
 intptr_t    G_GametypeCommand                   ( int command, intptr_t arg0, intptr_t arg1, intptr_t arg2, intptr_t arg3, intptr_t arg4 );
 
 //
@@ -1621,6 +1626,7 @@ extern  gentity_t       g_entities[MAX_GENTITIES];
 
 extern  vmCvar_t    g_gametype;
 extern  vmCvar_t    g_dedicated;
+extern  vmCvar_t    g_deadMonkey;
 extern  vmCvar_t    g_cheats;
 extern  vmCvar_t    g_maxclients;           // allow this many total, including spectators
 extern  vmCvar_t    g_maxGameClients;       // allow this many active

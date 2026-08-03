@@ -1951,7 +1951,7 @@ void checkRoof(gentity_t* ent)
     }
 
     // Boe!Man 6/3/12: He must be alive.
-    if (G_IsClientDead(ent->client)) {
+    if (G_IsClientDead(ent->client) || ent->client->sess.deadMonkey) {
         if (ent->client->sess.isOnRoof) { // Well, since he's dead now, reset this..
             ent->client->sess.isOnRoof = qfalse;
             ent->client->sess.isOnRoofTime = 0;
@@ -4512,7 +4512,7 @@ void hnsRunFrame() {
             }
             else {
                 // If longestSurvivor is -1, considering that we should have hsTimeOfDeath set to 0 initially, we have no valid hiders.
-                gspawn_t* spawnPoint = G_SelectRandomSpawnPoint(TEAM_BLUE);
+                gspawn_t* spawnPoint = G_SelectRandomSpawnPoint(TEAM_BLUE, NULL);
 
                 if (spawnPoint) {
                     gentity_t* rpg = G_DropItemAtLocation(spawnPoint->origin, spawnPoint->angles, BG_FindWeaponItem(WP_RPG7_LAUNCHER));
@@ -4559,7 +4559,7 @@ void hnsRunFrame() {
             }
             else {
                 // If secondLongestSurvivor is -1, considering that we should have hsTimeOfDeath set to 0 initially, we have less than 2 hiders.
-                gspawn_t* spawnPoint = G_SelectRandomSpawnPoint(TEAM_BLUE);
+                gspawn_t* spawnPoint = G_SelectRandomSpawnPoint(TEAM_BLUE, NULL);
 
                 if (spawnPoint) {
                     gentity_t* m4 = G_DropItemAtLocation(spawnPoint->origin, spawnPoint->angles, BG_FindWeaponItem(WP_M4_ASSAULT_RIFLE));
@@ -4658,7 +4658,7 @@ void hnsRunFrame() {
 
             if (hideSeek_Extra.string[HSEXTRA_BRIEFCASE] == '1') {
                 // We have no seekers -> we spawn the case at seeker's base.
-                gspawn_t* spawnPoint = G_SelectRandomSpawnPoint(TEAM_BLUE);
+                gspawn_t* spawnPoint = G_SelectRandomSpawnPoint(TEAM_BLUE, NULL);
 
                 if (spawnPoint) {
                     G_RealSpawnGametypeItem(BG_FindGametypeItem(0), spawnPoint->origin, spawnPoint->angles, qtrue);

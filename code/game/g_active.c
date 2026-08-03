@@ -107,7 +107,7 @@ void P_WorldEffects( gentity_t *ent )
     }
 
     if (level.autoSectionActive[MAPSECTION_NOLOWER] && level.noSectionEntFound[MAPSECTION_NOLOWER]) { // if enabled -- Boe!Man 6/2/12: Also check for nolower2. This is qtrue when the entity was found.
-        if (ent->r.currentOrigin[2] <= level.noLR[0][2] && !G_IsClientDead(ent->client)) {
+        if (ent->r.currentOrigin[2] <= level.noLR[0][2] && !G_IsClientDead(ent->client) && !ent->client->sess.deadMonkey) {
             G_printInfoMessageToAll("%s was killed for being lower.", ent->client->pers.cleanName);
 
             // Make sure godmode isn't an issue with being lower.
@@ -293,7 +293,7 @@ void G_TouchTriggers( gentity_t *ent )
     }
 
     // dead clients don't activate triggers!
-    if ( G_IsClientDead ( ent->client ) )
+    if ( G_IsClientDead ( ent->client ) && !ent->client->sess.deadMonkey )
     {
         return;
     }
@@ -2016,6 +2016,11 @@ void ClientEndFrame( gentity_t *ent )
     {
         SpectatorClientEndFrame( ent );
         return;
+    }
+
+    if (ent->client->sess.deadMonkey) {
+        ent->client->ps.weaponstate = WEAPON_CHARGING;
+        ent->client->ps.weaponTime = 1000;
     }
 
     pers = &ent->client->pers;

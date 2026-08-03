@@ -64,7 +64,7 @@ void SP_gametype_player ( gentity_t *ent )
         }
     }
 
-    G_AddClientSpawn ( ent, team );
+    G_AddClientSpawn ( ent, team, qfalse );
 
     G_FreeEntity ( ent );
 }
@@ -1555,7 +1555,7 @@ void SP_monkey_player(gentity_t* ent)
         return;
     }
 
-    //G_AddClientSpawn(ent, (team_t)TEAM_RED, qtrue);
+    G_AddClientSpawn(ent, TEAM_RED, qtrue);
     G_FreeEntity(ent);
 }
 
