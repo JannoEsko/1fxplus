@@ -139,7 +139,7 @@ jobs:
           mkdir -p build && cd build
           FLAGS=""
           [ "${{ matrix.arch }}" = "x86" ] && FLAGS="-DFORCE_32BIT=ON -DCMAKE_C_FLAGS=-m32 -DCMAKE_CXX_FLAGS=-m32 -DCMAKE_EXE_LINKER_FLAGS=-m32"
-          cmake .. -G Ninja -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} $FLAGS -D_SOF2_BOTS=ON -DCMAKE_LIBRARY_OUTPUT_DIRECTORY=$(pwd)/../artifacts/1fx/
+          cmake .. -G Ninja -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} $FLAGS -DSOF2_BOTS=ON -DCMAKE_LIBRARY_OUTPUT_DIRECTORY=$(pwd)/../artifacts/1fx/
           cmake --build . --parallel
 
       - name: Build (CMake - MinGW)
@@ -149,7 +149,7 @@ jobs:
           mkdir -p build && cd build
           FLAGS=""
           [ "${{ matrix.arch }}" = "x86" ] && FLAGS="-DFORCE_32BIT=ON -DCMAKE_C_FLAGS=-m32 -DCMAKE_CXX_FLAGS=-m32 -DCMAKE_EXE_LINKER_FLAGS=-m32"
-          cmake .. -G Ninja -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} $FLAGS -D_SOF2_BOTS=ON -DCMAKE_LIBRARY_OUTPUT_DIRECTORY=$(pwd)/../artifacts/1fx/
+          cmake .. -G Ninja -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} $FLAGS -DSOF2_BOTS=ON -DCMAKE_LIBRARY_OUTPUT_DIRECTORY=$(pwd)/../artifacts/1fx/
           cmake --build . --parallel
 
       - name: Build (MSVC)

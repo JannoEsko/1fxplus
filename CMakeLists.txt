@@ -26,6 +26,7 @@ option(BUILD_GT_CSINF "Build CSINF gametype" ON)
 option(BUILD_GT_VIP "Build Kill the VIP gametype" ON)
 option(BUILD_GT_PROP "Build Prophunt gametype" ON)
 option(BUILD_GT_GUNGAME "Build Gungame gametype" ON)
+option(SOF2_BOTS "Include SoF2 bots" ON)
 
 
 # Release build by default, set externally if you want something else
@@ -61,6 +62,10 @@ add_compile_definitions(
         $<$<CONFIG:Debug>:_DEBUG>
         $<$<CONFIG:Release>:NDEBUG>
 )
+
+if(SOF2_BOTS)
+        add_compile_definitions(_SOF2_BOTS)
+endif()
 
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
