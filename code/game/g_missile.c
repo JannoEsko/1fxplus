@@ -88,11 +88,11 @@ void airstrike(vec3_t originFrom, vec3_t originTo, gentity_t* attacker){
         if (attacker->client->pers.hnz.airstrikeAttempts < hnz_airstrikeAttempts.integer){
             G_printInfoMessage(attacker, "Airstrike failed (%i/%i), can only be used outside!", ++attacker->client->pers.hnz.airstrikeAttempts, hnz_airstrikeAttempts.integer);
             // because of the delay, the client may no longer have the nades.
-            if (attacker->client->ps.clip[ATTACK_NORMAL][WP_M15_GRENADE]){
+            if (attacker->client->ps.stats[STAT_WEAPONS] & (1 << WP_M15_GRENADE)){
                 int ammoIdx = weaponData[WP_M15_GRENADE].attack[ATTACK_NORMAL].ammoIndex;
                 attacker->client->ps.ammo[ammoIdx] += 1;
             } else {
-                giveWeaponWithCustomAmmoToClient(attacker, WP_M15_GRENADE, qfalse, 1, -1, -1, -1);
+                giveWeaponWithCustomAmmoToClient(attacker, WP_M15_GRENADE, qfalse, 1, 0, -1, -1);
             }
         } else {
             G_printInfoMessage(attacker, "Airstrike failed too many times: not adding ammo");
