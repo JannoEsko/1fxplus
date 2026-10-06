@@ -1329,7 +1329,9 @@ void G_StopFollowing( gentity_t *ent )
 
     // If we were in fact following someone, then make the angles and origin nice for
     // when we stop
-    if ( ent->client->sess.spectatorClient != -1 )
+    // NOTE: spectatorClient can be -1 (follow1/none) or -2 (follow2 auto-follow),
+    // never dereference those sentinel values directly (see SpectatorClientEndFrame).
+    if ( ent->client->sess.spectatorClient >= 0 && ent->client->sess.spectatorClient < level.maxclients )
     {
         gclient_t* cl = &level.clients[ent->client->sess.spectatorClient];
 
