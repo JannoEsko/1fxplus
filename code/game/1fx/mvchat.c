@@ -851,6 +851,9 @@ void mvchat_listSounds(gentity_t* ent, int soundPage)
     //
     start = soundPage * 100 + 1;
     end = start + 100;
+    if (end > MVCHAT_MAX_SOUNDS) {
+        end = MVCHAT_MAX_SOUNDS;
+    }
 
     //
     // Print header.
