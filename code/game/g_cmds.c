@@ -473,10 +473,10 @@ void Cmd_Give_f (gentity_t *ent)
     int l;
 
     // Early exit if we're running multiprotocol.
-    if (level.multiprotocol) {
-        G_printInfoMessage(ent, "You cannot use 'give' command while the game runs in multiprotocol mode.");
-        return;
-    }
+    //if (level.multiprotocol) {
+    //    G_printInfoMessage(ent, "You cannot use 'give' command while the game runs in multiprotocol mode.");
+    //    return;
+    //}
 
     trap_Argv( 1, arg, sizeof( arg ) );
 
