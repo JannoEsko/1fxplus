@@ -1559,7 +1559,7 @@ void Cmd_FollowCycle_f( gentity_t *ent, int dir )
         clientnum = original = ent->client->sess.spectatorClient;
     }
 
-    if ( level.maxclients <= 0 || level.maxclients > MAX_CLIENTS )
+    if ( level.maxclients <= 0 )
     {
         return;
     }
