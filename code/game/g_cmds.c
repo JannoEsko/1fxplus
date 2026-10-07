@@ -1545,13 +1545,23 @@ void Cmd_FollowCycle_f( gentity_t *ent, int dir )
         return;
     }
 
-    if ( ent->client->sess.spectatorClient == -1 )
+    // spectatorClient can be -1 (follow1/none) or -2 (follow2 auto-follow).
+    // Never use those sentinels as start indexes - they make the
+    // cycle below either index clients[-2] or never terminate
+    // (original==-2 is never revisited). Start from self instead.
+    if ( ent->client->sess.spectatorClient < 0 ||
+        ent->client->sess.spectatorClient >= level.maxclients )
     {
         clientnum = original = ent->s.number;
     }
     else
     {
         clientnum = original = ent->client->sess.spectatorClient;
+    }
+
+    if ( level.maxclients <= 0 )
+    {
+        return;
     }
 
     deadclient = -1;
