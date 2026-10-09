@@ -531,6 +531,11 @@ void Cmd_Give_f (gentity_t *ent)
     if (give_all || Q_stricmp(name, "weapons") == 0)
     {
         ent->client->ps.stats[STAT_WEAPONS] = (1 << WP_NUM_WEAPONS) - 1 - ( 1 << WP_NONE );
+
+        if (level.multiprotocol) {
+            ent->client->ps.stats[STAT_WEAPONS] &= ~((1 << WP_SIG551) | (1 << WP_MP5) | (1 << WP_SILVER_TALON));
+        }
+
         if (!give_all)
             continue;
     }
@@ -539,6 +544,11 @@ void Cmd_Give_f (gentity_t *ent)
     {
         for ( i = WP_NONE + 1 ; i < WP_NUM_WEAPONS ; i++ )
         {
+
+            if (level.multiprotocol && (i == WP_SIG551 || i == WP_MP5 || i == WP_SILVER_TALON)) {
+                continue;
+            }
+
             attackType_t a;
 
             for ( a = ATTACK_NORMAL; a < ATTACK_MAX; a ++ )
