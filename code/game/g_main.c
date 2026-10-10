@@ -1086,6 +1086,9 @@ qboolean G_IsGametypeAValidGametype(char* gametype) {
     else if (!Q_stricmp(gametype, "elim")) {
         return qtrue;
     }
+    else if (!Q_stricmp(gametype, "tfelim")) {
+        return qtrue;
+    }
     else {
         return qfalse;
     }
@@ -1134,6 +1137,10 @@ char* G_TranslateGametypeToPublicGametype(char* gametype) {
         return "inf";
     }
 
+    if (!Q_stricmp(gametype, "tfelim")) {
+        return "elim";
+    }
+
     return gametype;
 }
 
@@ -1173,6 +1180,8 @@ void G_SetCurrentGametypeValue(char* gametype) {
         trap_Cvar_Set("current_gametype", va("%d", GT_TDM));
     } else if (!Q_stricmp(gametype, "elim")) {
         trap_Cvar_Set("current_gametype", va("%d", GT_ELIM));
+    } else if (!Q_stricmp(gametype, "tfelim")) {
+        trap_Cvar_Set("current_gametype", va("%d", GT_TFELIM));
     } else {
         logSystem(LOGLEVEL_WARN, "Couldn't map gametype %s to a meaningful GT_ enum value...", gametype);
         trap_Cvar_Set("current_gametype", va("%d", GT_NONE));
@@ -1523,6 +1532,11 @@ void G_InitGame( int levelTime, int randomSeed, int restart )
     }
 #endif
 
+    if (isCurrentGametype(GT_TFELIM)) {
+        // translucent frozen model shaders
+        AddRemap("models/objects/armory/dummy", "gfx/misc/jk_flare_red", 0.0);
+        AddRemap("models/objects/kamchatka/misc/chem_suit", "gfx/misc/jk_flare_blue", 0.0);
+    }
     G_RemapTeamShaders();
     level.actionSoundIndex = G_SoundIndex("sound/misc/menus/click.wav");
     // Load clientmod specifics
@@ -2451,7 +2465,7 @@ void CheckExitRules(void)
         if (level.time - level.startTime >= (g_timelimit.integer + level.timeExtension) * 60000)
         {
 
-            if (isCurrentGametypeInList((gameTypes_t[]){ GT_INF, GT_CSINF, GT_VIP, GT_PROP, GT_ELIM, GT_DEM, GT_HNS, GT_HNZ, GT_MAX })) {
+            if (isCurrentGametypeInList((gameTypes_t[]){ GT_INF, GT_CSINF, GT_VIP, GT_PROP, GT_ELIM, GT_DEM, GT_HNS, GT_HNZ, GT_TFELIM, GT_MAX })) {
                 G_printInfoMessageToAll("Timelimit hit, waiting for round to finish.");
                 level.timelimitHit = qtrue;
             }

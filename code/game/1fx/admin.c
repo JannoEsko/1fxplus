@@ -702,6 +702,16 @@ int adm_Respawn(int argNum, gentity_t* adm, qboolean shortCmd) {
         else {
             TossClientItems(ent);
         }
+        if(isCurrentGametype(GT_TFELIM)){
+            for(int i = 0; i < level.num_entities; i++) {
+                gentity_t* other = &g_entities[i];
+                if (other->inuse && !strcmp(other->classname, "frozen_player") && other->parent == ent) {
+                    G_FreeEntity(other);
+                }
+            }
+
+        }
+
 
         ent->client->sess.noTeamChange = qfalse;
         trap_UnlinkEntity(ent);

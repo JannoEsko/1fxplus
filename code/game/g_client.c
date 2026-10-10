@@ -2196,6 +2196,9 @@ void ClientDisconnect( int clientNum )
         if (isCurrentGametype(GT_PROP) && ent->client->pers.prop.isMovingModel) {
             freeProphuntProps(ent);
         }
+        if (isCurrentGametype(GT_TFELIM)) {
+            G_FreeEnitityChildren(ent);
+        }
 
         // Dont drop weapons
         if (!isCurrentGametypeInList((gameTypes_t[]) { GT_HNZ, GT_HNZ, GT_MAX })) {

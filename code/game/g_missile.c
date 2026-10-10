@@ -543,7 +543,7 @@ void G_MissileImpact( gentity_t *ent, trace_t *trace )
             Spawn_KnifeBox(ent->parent, trace->endpos);
         }
 
-        if((!Q_stricmp(ent->classname,"Knife") && !isCurrentGametype(GT_HNS)) || (isCurrentGametype(GT_HNZ) && createClaymore))
+        if((!Q_stricmp(ent->classname,"Knife") && !isCurrentGametypeInList((gameTypes_t[]) {GT_HNS, GT_TFELIM})) || (isCurrentGametype(GT_HNZ) && createClaymore))
         {
             // Create a pickup where we impacted.
             vec3_t      pickupPos;

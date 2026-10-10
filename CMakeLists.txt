@@ -26,6 +26,7 @@ option(BUILD_GT_CSINF "Build CSINF gametype" ON)
 option(BUILD_GT_VIP "Build Kill the VIP gametype" ON)
 option(BUILD_GT_PROP "Build Prophunt gametype" ON)
 option(BUILD_GT_GUNGAME "Build Gungame gametype" ON)
+option(BUILD_GT_TFELIM "Build Team Freeze Elimination gametype" ON)
 option(SOF2_BOTS "Include SoF2 bots" ON)
 
 

@@ -163,6 +163,117 @@ char *modNames[] =
     "MOD_TRIGGER_HURT_NOSUICIDE"
 };
 
+void frozenPlayerDeath( gentity_t *self, gentity_t *inflictor, gentity_t *attacker, int damage, int meansOfDeath, int hitLocation, vec3_t hitDir )
+{
+    gentity_t *revived = &g_entities[self->r.ownerNum];
+    attacker->client->pers.tfelim.revivesGiven++;
+
+    if (revived->client->sess.ghost) {
+        G_StopFollowing(revived);
+            revived->client->ps.pm_flags &= ~PMF_GHOST;
+            revived->client->ps.pm_type = PM_NORMAL;
+            revived->client->sess.ghost = qfalse;
+
+        revived->client->sess.noTeamChange = qfalse;
+        trap_UnlinkEntity(revived);
+    }
+
+    ClientSpawnAtLocation(revived, self->origin_to, self->r.currentAngles, qfalse, qfalse); 
+    revived->client->ps.stats[STAT_ARMOR] = 0;
+    revived->client->ps.stats[STAT_HEALTH] = revived->health = 25;
+    // play a glass shatter effect on the frozen player
+    gentity_t *te;
+    vec3_t dif;
+
+    dif[0] = (self->r.absmax[0]+self->r.absmin[0])/2;
+    dif[1] = (self->r.absmax[1]+self->r.absmin[1])/2;
+    dif[2] = (self->r.absmax[2]+self->r.absmin[2])/2;
+    te = G_TempEntity( dif, EV_GLASS_SHATTER );
+    te->s.eventParm = self->s.number;
+    VectorCopy(self->r.maxs, te->s.origin);
+    VectorCopy(self->r.mins, te->s.angles);
+
+    // Clear the frozen player entity
+    G_FreeEntity(self);
+
+    G_AddScore(attacker, 1);
+    revived->client->healthRegen = level.time + 2000;
+    revived->client->healthRegenInterval = 150;
+    // we want to alert the last player again
+    level.teamLastAliveSent[revived->client->sess.team] = qfalse;
+    return;
+}
+
+static vec3_t   playerMins = {-15, -15, -46};
+static vec3_t   playerMaxs = {15, 15, 48};
+
+void frozenPlayerEffect(gentity_t *ent){
+    if (ent->parent->client->sess.team == TEAM_BLUE){
+        G_PlayEffect(G_EffectIndex("misc/exclaimation"), ent->origin_to, ent->pos1);
+    } else {
+        G_PlayEffect(G_EffectIndex("misc/question"), ent->origin_to, ent->pos1);
+    }
+    ent->nextthink = level.time + 500;
+}
+
+void spawnFrozenPlayer(gentity_t *player){
+    trace_t     tr;
+    vec3_t      belowPlayer;
+    vec3_t      spawnPos;
+
+    // always spawn the player on a solid
+    VectorSet(belowPlayer, player->client->ps.origin[0], player->client->ps.origin[1], player->client->ps.origin[2] - 4096);
+    trap_Trace(&tr, player->client->ps.origin, playerMins, playerMaxs, belowPlayer, -1, MASK_DEADSOLID);
+
+    if (tr.fraction == 1.0) {
+        // TODO: drop warning that we can't freeze the player
+        Com_PrintWarn("Unable to find ground under player before freezing, freezing in place.");
+        VectorCopy(player->client->ps.origin, spawnPos);
+    } else {
+        VectorCopy(tr.endpos, spawnPos);
+    }
+    gentity_t* frozenPlayer = G_Spawn();
+    frozenPlayer->classname = "frozen_player";
+    int modelHeightOffset;
+    if (player->client->sess.team == TEAM_BLUE){
+        frozenPlayer->s.modelindex = G_ModelIndex("models/objects/Kamchatka/misc/chem_suit.md3");
+        modelHeightOffset = 60;
+    }else{
+        frozenPlayer->s.modelindex = G_ModelIndex("models/objects/Armory/dummy.md3");
+        modelHeightOffset = 0;
+    }
+    VectorCopy(spawnPos, frozenPlayer->origin_to); // Used as the respawn point. The entity itself may be offset.
+    spawnPos[2] += modelHeightOffset;
+
+    vec3_t angles;
+    VectorSet(angles, 0.0, player->client->ps.viewangles[1], 0.0);
+    angles[0] = 0.0;
+    angles[2] = 0.0;
+    G_SetOrigin(frozenPlayer, spawnPos);
+    G_SetAngles(frozenPlayer, angles);
+    frozenPlayer->r.ownerNum = player->s.number;
+    frozenPlayer->parent = player;
+    int frozenContents = 0;
+    if (player->client->sess.team == TEAM_BLUE){
+        frozenContents = CONTENTS_FROZEN_BLUE;
+    } else if (player->client->sess.team == TEAM_RED){
+        frozenContents = CONTENTS_FROZEN_RED;
+    }
+    frozenPlayer->r.contents = frozenContents;
+    frozenPlayer->clipmask = 0;
+    frozenPlayer->takedamage = qtrue;
+    frozenPlayer->health = 1;
+    frozenPlayer->die = frozenPlayerDeath;
+    frozenPlayer->think = frozenPlayerEffect;
+    frozenPlayer->nextthink = level.time + 500;
+
+    VectorCopy(playerMins, frozenPlayer->r.mins);
+    VectorCopy(playerMaxs, frozenPlayer->r.maxs);
+    frozenPlayer->r.mins[2] -= modelHeightOffset;
+    frozenPlayer->r.maxs[2] -= modelHeightOffset;
+    trap_LinkEntity(frozenPlayer);
+}
+
 /*
 ==================
 player_die
@@ -377,6 +488,18 @@ void player_die(
             trap_GT_SendEvent(GTEV_VIP_DIED, level.time, self->client->sess.team, attacker && attacker->client ? attacker->s.number : -1, 0, 0, 0);
         }
     }
+    else if (isCurrentGametype(GT_TFELIM) && self->client) {
+        self->client->pers.tfelim.timesFrozen++;
+        self->client->pers.tfelim.isFrozen = qtrue;
+
+
+        spawnFrozenPlayer(self);
+        // Save current loadout for re-use
+        self->client->pers.lastActiveWeapon = self->client->ps.weapon;
+        self->client->pers.lastWeapons = self->client->ps.stats[STAT_WEAPONS];
+        memcpy(self->client->pers.lastAmmo, self->client->ps.ammo, sizeof(self->client->pers.lastAmmo));
+        memcpy(self->client->pers.lastClip, self->client->ps.clip, sizeof(self->client->pers.lastClip));
+    }
 
     //Ryan april 22 2003
     //If they are planted unplant them before we kill them
@@ -533,15 +656,14 @@ void player_die(
 
     // If client is in a nodrop area, don't drop anything
     contents = trap_PointContents( self->r.currentOrigin, -1 );
-    if ( !( contents & CONTENTS_NODROP ) )
+    if ( !isCurrentGametype(GT_TFELIM) && !( contents & CONTENTS_NODROP ))
     {
         // People who kill themselves dont drop guns
-        if ( attacker == self && !isCurrentGametype(GT_HNS) )
+        if (  attacker != self || isCurrentGametype(GT_HNS))
         {
-            self->client->ps.stats[STAT_WEAPONS] = 0;
+            TossClientItems( self );
         }
 
-        TossClientItems( self );
     }
     else
     {
@@ -712,6 +834,11 @@ void player_die(
     }
     //Ryan
     
+    if (self->client->pers.tfelim.isFrozen){
+        // a frozen player does not leave a body
+        trap_UnlinkEntity(self);
+        return;
+    }
 
     switch ( hitLocation & (~HL_DISMEMBERBIT) )
     {
@@ -1382,12 +1509,18 @@ int G_Damage (
             // 1fxmod modified knife dmg here, we don't.
             // Expectation is that the weapon file is built correctly for HNZ.
             targ->client->pers.hnz.nextsuicide = level.time + 10000;
-            targ->client->pers.hnz.healthRegen = level.time + 2000;
+            targ->client->healthRegen = level.time + 2000;
         }
 
     }
     else if (isCurrentGametype(GT_PROP) && client && client->sess.team == TEAM_BLUE) {
         damage = 0;
+    }
+    else if (isCurrentGametype(GT_TFELIM) && client) {
+        // Stop any active health regen as soon as you are hit
+        client->healthRegen = 0;
+        client->healthRegenInterval = 0;
+
     }
 
     // check for completely getting out of the damage
@@ -2066,6 +2199,10 @@ qboolean G_RadiusDamage (
             int     weapon;
             vec3_t  hitdir;
             int     d;
+
+            if (ent->r.contents & (CONTENTS_FROZEN_BLUE | CONTENTS_FROZEN_RED)) {
+                return qfalse;
+            }
 
             VectorSubtract (ent->r.currentOrigin, origin, dir);
             // push the center of mass higher than the origin so players
