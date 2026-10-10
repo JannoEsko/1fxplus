@@ -3004,6 +3004,8 @@ void G_RunFrame( int levelTime )
                     ent->client->ps.stats[STAT_FROZEN] = 0;
                 }
 
+                int teamCountBlue = TeamCount(-1, TEAM_BLUE, NULL);
+
                 if (isCurrentGametype(GT_HNS)) {
 
                     
@@ -3063,7 +3065,6 @@ void G_RunFrame( int levelTime )
 
                     }
 
-                    int teamCountBlue = TeamCount(-1, TEAM_BLUE, NULL);
 
                     if (G_IsClientDead(ent->client)) {
                         if (ent->client->sess.team == TEAM_BLUE || (teamCountBlue == 0 && ent->client->sess.team == TEAM_RED)) {
@@ -3083,18 +3084,6 @@ void G_RunFrame( int levelTime )
                             ClientSpawn(ent);
                         }
                     }
-                    else if (ent->client->pers.hnz.healthRegen && ent->client->sess.team == TEAM_BLUE && level.time >= ent->client->pers.hnz.healthRegen) {
-                        ent->client->ps.stats[STAT_HEALTH]++;
-                        ent->health++;
-
-                        if (ent->client->ps.stats[STAT_HEALTH] >= MAX_HEALTH) {
-                            ent->client->pers.hnz.healthRegen = 0;
-                        }
-                        else {
-                            ent->client->pers.hnz.healthRegen = level.time + 50 + (150 / level.numPlayingClients * teamCountBlue);
-                        }
-                    }
-
                 }
                 else if (isCurrentGametype(GT_PROP)) {
 
@@ -3114,6 +3103,24 @@ void G_RunFrame( int levelTime )
                     }
 
                 }
+                if (ent->client->healthRegen && level.time >= ent->client->healthRegen) {
+                    ent->client->ps.stats[STAT_HEALTH]++;
+                    ent->health++;
+
+                    if (ent->client->ps.stats[STAT_HEALTH] >= MAX_HEALTH) {
+                        ent->client->healthRegen = 0;
+                        ent->client->healthRegenInterval = 0;
+                    }
+                    else {
+                        if (isCurrentGametype(GT_HNZ)){
+                            // Not touching the zombie logic, but health gen is generic enough that it should not be tied just to zombies.
+                            ent->client->healthRegen = level.time + 50 + (150 / level.numPlayingClients * teamCountBlue);
+                        } else {
+                            ent->client->healthRegen = level.time + ent->client->healthRegenInterval;
+                        }
+                    }
+                }
+
 
             }
 
