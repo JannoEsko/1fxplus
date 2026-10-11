@@ -329,6 +329,7 @@ vmCvar_t    g_autotipsPeriodicity;
 vmCvar_t    g_ladderType;
 vmCvar_t    g_BurnEffect;
 vmCvar_t    g_EnableKnifeBox;
+vmCvar_t    g_accessoriesStates;
 
 static cvarTable_t gameCvarTable[] =
 {
@@ -668,6 +669,10 @@ static cvarTable_t gameCvarTable[] =
     { &g_allowFloatSpec, "g_allowFloatSpec", "0", CVAR_ARCHIVE, 0.0f, 0.0f, 0, qfalse },
     { &g_allowAdminsToSpec, "g_allowAdminsToSpec", "1", CVAR_ARCHIVE, 0.0f, 0.0f, 0, qfalse },
     { &vote_skiptomap, "vote_skiptomap", "3", CVAR_ARCHIVE, 0.0f, 0.0f, 0, qfalse },
+
+    // Nightvision, armor and thermals adjustments - 1fxplus issue #27
+    // Allow multiple states - 0 => disabled, 1 => enabled, 2 => enforced (enabled even if client doesn't have it)
+    { &g_accessoriesStates, "g_accessoriesStates", "111", CVAR_ARCHIVE | CVAR_LATCH, 0.0f, 0.0f, 0, qfalse }, // 1st bit = armor, 2nd bit = thermals, 3rd bit = nightvision. 0 = disabled, 1 = enabled, 2 = enforced (enabled even if client doesn't have it)
 };
 
 // bk001129 - made static to avoid aliasing

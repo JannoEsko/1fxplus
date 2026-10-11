@@ -961,38 +961,135 @@ void G_UpdateOutfitting ( int clientNum )
 
     // Armor?
     //client->ps.stats[STAT_ARMOR]   = 0;
+    // Nightvision, armor and thermals adjustments - 1fxplus issue #27
     if (!isCurrentGametype(GT_CSINF)) {
+        int accessory;
+
+        accessory = bg_outfittingGroups[OUTFITTING_GROUP_ACCESSORY]
+            [client->pers.outfitting.items[OUTFITTING_GROUP_ACCESSORY]];
+
+        client->ps.stats[STAT_ARMOR] = 0;
         client->ps.stats[STAT_GOGGLES] = GOGGLES_NONE;
-        switch (bg_outfittingGroups[OUTFITTING_GROUP_ACCESSORY][client->pers.outfitting.items[OUTFITTING_GROUP_ACCESSORY]])
-        {
-        default:
-        case MODELINDEX_ARMOR:
-            // Boe!Man 9/16/12: Give them invisible goggles in H&S if they're enabled.
-            if (isCurrentGametype(GT_HNS) && hideSeek_Extra.string[HSEXTRA_GOGGLES] == '1' && ent->client->sess.team == TEAM_BLUE) {
-                client->ps.stats[STAT_GOGGLES] = GOGGLES_NIGHTVISION;
-                client->ps.stats[STAT_ARMOR] = MAX_ARMOR;
-            }
-            else {
-                client->ps.stats[STAT_ARMOR] = MAX_ARMOR;
-            }
-            break;
 
-        case MODELINDEX_THERMAL:
-            client->ps.stats[STAT_GOGGLES] = GOGGLES_INFRARED;
-            break;
-
-        case MODELINDEX_NIGHTVISION:
-            if (isCurrentGametype(GT_HNS)) {
-                if (hideSeek_Extra.string[HSEXTRA_GOGGLES] == '1' && ent->client->sess.team == TEAM_BLUE) {
+        if (isCurrentGametype(GT_HNS)) {
+            // Preserve the original Hide & Seek behavior.
+            switch (accessory) {
+            default:
+            case MODELINDEX_ARMOR:
+                if (hideSeek_Extra.string[HSEXTRA_GOGGLES] == '1'
+                    && ent->client->sess.team == TEAM_BLUE) {
+                    client->ps.stats[STAT_GOGGLES] = GOGGLES_NIGHTVISION;
                     client->ps.stats[STAT_ARMOR] = MAX_ARMOR;
                 }
-                // Boe!Man 9/16/12: Do give them goggles if the invisible goggles are disabled, they just don't have any effect. And hiders will get 'em as well.
+                else {
+                    client->ps.stats[STAT_ARMOR] = MAX_ARMOR;
+                }
+                break;
+
+            case MODELINDEX_THERMAL:
+                client->ps.stats[STAT_GOGGLES] = GOGGLES_INFRARED;
+                break;
+
+            case MODELINDEX_NIGHTVISION:
+                if (hideSeek_Extra.string[HSEXTRA_GOGGLES] == '1'
+                    && ent->client->sess.team == TEAM_BLUE) {
+                    client->ps.stats[STAT_ARMOR] = MAX_ARMOR;
+                }
+
                 client->ps.stats[STAT_GOGGLES] = GOGGLES_NIGHTVISION;
+                break;
+            }
+        }
+        else {
+            accessoryStates_t armorState = g_accessoriesStates.string[ACCESSORY_ARMOR];
+            accessoryStates_t thermalState = g_accessoriesStates.string[ACCESSORY_THERMALS];
+            accessoryStates_t nightvisionState = g_accessoriesStates.string[ACCESSORY_NIGHTVISION];
+
+            // Armor is independent of goggles.
+            if (armorState == ACCESSORY_ENFORCED
+                || (accessory == MODELINDEX_ARMOR && armorState == ACCESSORY_ENABLED)) {
+                client->ps.stats[STAT_ARMOR] = MAX_ARMOR;
+            }
+            else if (accessory == MODELINDEX_ARMOR) {
+                G_printInfoMessage(ent, "Armor is disabled by the server.");
+            }
+
+            // Enforced goggles: thermals take precedence only when both are enforced.
+            if (thermalState == ACCESSORY_ENFORCED
+                && nightvisionState == ACCESSORY_ENFORCED) {
+                client->ps.stats[STAT_GOGGLES] = GOGGLES_INFRARED;
             }
             else {
-                client->ps.stats[STAT_GOGGLES] = GOGGLES_NIGHTVISION;
+                switch (accessory) {
+                case MODELINDEX_THERMAL:
+                    if (thermalState != ACCESSORY_DISABLED) {
+                        client->ps.stats[STAT_GOGGLES] = GOGGLES_INFRARED;
+                    }
+                    else {
+                        G_printInfoMessage(ent, "Thermal goggles are disabled by the server.");
+                    }
+                    break;
+
+                case MODELINDEX_NIGHTVISION:
+                    if (nightvisionState != ACCESSORY_DISABLED) {
+                        client->ps.stats[STAT_GOGGLES] = GOGGLES_NIGHTVISION;
+                    }
+                    else {
+                        G_printInfoMessage(ent, "Nightvision goggles are disabled by the server.");
+                    }
+                    break;
+
+                default:
+                    break;
+                }
+
+                // Grant enforced goggles, or fall back when the selected accessory is disabled.
+                if (client->ps.stats[STAT_GOGGLES] == GOGGLES_NONE) {
+                    if (thermalState == ACCESSORY_ENFORCED) {
+                        client->ps.stats[STAT_GOGGLES] = GOGGLES_INFRARED;
+                    } else if (nightvisionState == ACCESSORY_ENFORCED) {
+                        client->ps.stats[STAT_GOGGLES] = GOGGLES_NIGHTVISION;
+                    } else {
+                        switch (accessory) {
+                        case MODELINDEX_ARMOR:
+                            if (armorState == ACCESSORY_DISABLED) {
+                                if (thermalState == ACCESSORY_ENABLED) {
+                                    client->ps.stats[STAT_GOGGLES] = GOGGLES_INFRARED;
+                                }
+                                else if (nightvisionState == ACCESSORY_ENABLED) {
+                                    client->ps.stats[STAT_GOGGLES] = GOGGLES_NIGHTVISION;
+                                }
+                            }
+                            break;
+
+                        case MODELINDEX_THERMAL:
+                            if (thermalState == ACCESSORY_DISABLED) {
+                                if (nightvisionState == ACCESSORY_ENABLED) {
+                                    client->ps.stats[STAT_GOGGLES] = GOGGLES_NIGHTVISION;
+                                }
+                                else if (armorState == ACCESSORY_ENABLED) {
+                                    client->ps.stats[STAT_ARMOR] = MAX_ARMOR;
+                                }
+                            }
+                            break;
+
+                        case MODELINDEX_NIGHTVISION:
+                            if (nightvisionState == ACCESSORY_DISABLED) {
+                                if (thermalState == ACCESSORY_ENABLED) {
+                                    client->ps.stats[STAT_GOGGLES] = GOGGLES_INFRARED;
+                                }
+                                else if (armorState == ACCESSORY_ENABLED) {
+                                    client->ps.stats[STAT_ARMOR] = MAX_ARMOR;
+                                }
+                            }
+                            break;
+
+                        default:
+                            break;
+                        }
+                    }
+                }
             }
-            break;
         }
     }
 

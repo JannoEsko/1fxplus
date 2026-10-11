@@ -1894,6 +1894,7 @@ extern vmCvar_t     g_useSockets;
 extern vmCvar_t     g_allowFloatSpec;
 extern vmCvar_t     g_allowAdminsToSpec;
 extern vmCvar_t     vote_skiptomap;
+extern vmCvar_t     g_accessoriesStates;
 
 
 //extern vmCvar_t     g_leanType;

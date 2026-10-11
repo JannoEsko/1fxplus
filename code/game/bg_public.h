@@ -452,6 +452,19 @@ typedef enum
 
 } goggleType_t;
 
+typedef enum accessoryStates_e {
+    ACCESSORY_DISABLED = '0',
+    ACCESSORY_ENABLED = '1',
+    ACCESSORY_ENFORCED = '2'
+} accessoryStates_t;
+
+typedef enum accessoryTypes_e {
+    ACCESSORY_ARMOR,
+    ACCESSORY_THERMALS,
+    ACCESSORY_NIGHTVISION
+} accessoryTypes_t;
+
+
 // entityState_t->eFlags
 #define EF_DEAD                 0x00000001      // don't draw a foe marker over players with EF_DEAD
 #define EF_EXPLODE              0x00000002      // ready to explode
