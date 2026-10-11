@@ -312,7 +312,7 @@ void G_AddRandomBot( int team )
                 continue;
             }
 
-            if ( !(g_entities[cl->ps.clientNum].r.svFlags & SVF_BOT) )
+            if ( !(g_entities[i].r.svFlags & SVF_BOT) )
             {
                 continue;
             }
@@ -348,7 +348,7 @@ void G_AddRandomBot( int team )
                 continue;
             }
 
-            if ( !(g_entities[cl->ps.clientNum].r.svFlags & SVF_BOT) )
+            if ( !(g_entities[i].r.svFlags & SVF_BOT) )
             {
                 continue;
             }
@@ -392,7 +392,6 @@ G_RemoveRandomBot
 int G_RemoveRandomBot( int team )
 {
     int         i;
-    char        netname[36];
     gclient_t   *cl;
 
     for ( i=0 ; i< g_maxclients.integer ; i++ )
@@ -404,7 +403,7 @@ int G_RemoveRandomBot( int team )
             continue;
         }
 
-        if ( !(g_entities[cl->ps.clientNum].r.svFlags & SVF_BOT) )
+        if ( !(g_entities[i].r.svFlags & SVF_BOT) )
         {
             continue;
         }
@@ -414,9 +413,9 @@ int G_RemoveRandomBot( int team )
             continue;
         }
 
-        strcpy(netname, cl->pers.netname);
-        Q_CleanStr(netname);
-        trap_SendConsoleCommand( EXEC_INSERT, va("kick \"%s\"\n", netname) );
+        // Drop it by client number. A "kick <name>" goes through a substring name lookup which
+        // fails (or can hit someone else) as soon as the name is not unique.
+        trap_DropClient( i, "was kicked" );
         return qtrue;
     }
 
@@ -443,7 +442,7 @@ int G_CountHumanPlayers( int team )
             continue;
         }
 
-        if ( g_entities[cl->ps.clientNum].r.svFlags & SVF_BOT )
+        if ( g_entities[i].r.svFlags & SVF_BOT )
         {
             continue;
         }
@@ -481,7 +480,7 @@ int G_CountBotPlayers( int team )
             continue;
         }
 
-        if ( !(g_entities[cl->ps.clientNum].r.svFlags & SVF_BOT) )
+        if ( !(g_entities[i].r.svFlags & SVF_BOT) )
         {
             continue;
         }
