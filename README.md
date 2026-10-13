@@ -38,6 +38,7 @@ Both work thanks to SoF2Plus **multiprotocol support**.
   - Prophunt
   - Kill the VIP
   - Gungame
+  - Team Freeze Elimination
 - 📥 Smart downloads
 - 🗄 SQLite logging
 - 🔌 Socket logging

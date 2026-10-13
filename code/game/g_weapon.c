@@ -292,7 +292,17 @@ void G_FireBullet ( gentity_t* ent, int weapon, int attack )
         BG_CalculateBulletEndpoint ( muzzlePoint, fireAngs, inaccuracy, attackDat->rV.range + 15, end, &seed );
 
         // Trace the bullet
-        G_TraceBullet ( weapon, &tr, G2Trace, muzzlePoint, end, ent->s.number, MASK_SHOT, detailed );
+        int mask = MASK_SHOT;
+        if ( weapon == WP_KNIFE || weapon == WP_AK74_ASSAULT_RIFLE && attack == ATTACK_ALTERNATE ) {
+            if (ent->client->sess.team == TEAM_RED) {
+                mask |= CONTENTS_FROZEN_RED;
+            }
+            else if (ent->client->sess.team == TEAM_BLUE) {
+                mask |= CONTENTS_FROZEN_BLUE;
+            }
+        
+        }
+        G_TraceBullet ( weapon, &tr, G2Trace, muzzlePoint, end, ent->s.number, mask, detailed );
 
         if ( (tr.surfaceFlags & SURF_NOIMPACT) || tr.entityNum == ENTITYNUM_NONE )
         {
@@ -773,6 +783,9 @@ gentity_t* G_FireProjectile ( gentity_t *ent, weapon_t weapon, attackType_t atta
     if ( weapon == WP_KNIFE )
     {
         missile->s.eFlags |= EF_ANGLE_OVERRIDE;
+        if (isCurrentGametype(GT_TFELIM)){
+            missile->clipmask |= (ent->client->sess.team == TEAM_BLUE ? CONTENTS_FROZEN_BLUE : CONTENTS_FROZEN_RED);
+        }
     }
 
     return missile;

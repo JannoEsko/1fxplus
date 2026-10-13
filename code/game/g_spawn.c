@@ -1054,6 +1054,19 @@ qboolean SP_bsp_worldspawn ( void )
 // Boe!Man 9/11/12: Function to preload effects in H&S/H&Z.
 static void Preload_Effects(void)
 {
+    if (isCurrentGametype(GT_TFELIM)){
+        AddSpawnField("classname", "fx_play_effect");
+        AddSpawnField("effect", "misc/exclaimation");
+        AddSpawnField("tempent", "1");
+        G_SpawnGEntityFromSpawnVars(qtrue);
+        G_FreeEntity(&g_entities[level.tempent]);
+
+        AddSpawnField("classname", "fx_play_effect");
+        AddSpawnField("effect", "misc/question");
+        AddSpawnField("tempent", "1");
+        G_SpawnGEntityFromSpawnVars(qtrue);
+        G_FreeEntity(&g_entities[level.tempent]);
+    }
     // Boe!Man 9/11/12: Handle H&S/H&Z stuff.
     if (isCurrentGametypeInList((gameTypes_t[]) { GT_HNS, GT_HNZ, GT_MAX })) {
         // We'll have to preload the non-map effects in order to use them.

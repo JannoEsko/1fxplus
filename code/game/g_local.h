@@ -116,6 +116,7 @@ typedef enum {
     GT_VIP,
     GT_PROP,
     GT_GUNGAME,
+    GT_TFELIM,
     GT_MAX
 } gameTypes_t;
 
@@ -572,7 +573,6 @@ typedef struct hnzSpecifics_s {
     int killsAsZombie;
     int killsAsHuman;
     int nextsuicide;
-    int healthRegen;
     int zombieBody;
     vec3_t spawnAngles;
     int lastForcefieldPush;
@@ -587,6 +587,12 @@ typedef struct propSpecifics_s {
     int                 nextModelState;
     int                 stateCooldownMessage;
 } propSpecifics_t;
+
+typedef struct tfelimSpecifics_s {
+    qboolean            isFrozen;
+    int                 timesFrozen;
+    int                 revivesGiven;
+} tfelimSpecifics_t;
 
 typedef enum vote_voted_s {
     VOTE_VOTED_NONE,
@@ -807,8 +813,16 @@ typedef struct
     qboolean            camperWarned;
     hnzSpecifics_t      hnz;
     propSpecifics_t     prop;
+    tfelimSpecifics_t   tfelim;
     qboolean            twisted;
     qboolean            gocrazy;
+
+
+    // Can be used to respawn a player with their last weapons and ammo
+    int lastActiveWeapon;
+    int lastWeapons;
+    int lastAmmo[MAX_AMMO];
+    int lastClip[ATTACK_MAX][MAX_WEAPONS]; 
 } clientPersistant_t;
 
 #define MAX_SERVER_FPS      40
@@ -922,6 +936,8 @@ struct gclient_s
     vec3_t          minSave;
 
     int             sunRespawnTimer;
+    int             healthRegen;
+    int             healthRegenInterval;
 };
 
 //
@@ -1480,6 +1496,7 @@ void        BeginIntermission               ( void);
 void        InitClientPersistant            ( gclient_t *client);
 void        InitClientResp                  ( gclient_t *client);
 void        ClientSpawn                     ( gentity_t *ent );
+void        ClientSpawnAtLocation           ( gentity_t *ent, vec3_t origin, vec3_t angles, qboolean refreshWeapons, qboolean shouldTelefrag);
 void        player_die                      ( gentity_t *self, gentity_t *inflictor, gentity_t *attacker, int damage, int mod, int hitLocation, vec3_t hitDir );
 void        G_InitBodyQueue                 ( void);
 void        G_AddScore                      ( gentity_t *ent, int score );

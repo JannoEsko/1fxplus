@@ -522,6 +522,15 @@ void G_ResetGametype ( qboolean fullRestart, qboolean cagefight )
         }
 
     }
+    else if (isCurrentGametype(GT_TFELIM)) {
+        for(int i = 0; i < level.num_entities; i++) {
+            gentity_t* ent = &g_entities[i];
+            if (ent->inuse && !strcmp(ent->classname, "frozen_player")) {
+                G_FreeEntity(ent);
+            }
+        }
+    }
+
 
     // Reset the gametype itself
     G_ResetGametypeEntities ( );
