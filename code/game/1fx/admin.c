@@ -391,11 +391,11 @@ static void addAdmin(int argNum, gentity_t* adm, qboolean shortCmd, admLevel_t a
 
             return;
         }
-        else if (!ent->client->sess.hasRoxAC) {
-            G_printInfoMessage(adm, "Client %s (%d) does not have Rox AC running or the verification failed / hasn't passed yet.", ent->client->pers.cleanName, idNum);
+		else if (!ent->client->sess.hasRoxAC && !ent->client->sess.hasch) {
+			G_printInfoMessage(adm, "Client %s (%d) does not have Rox AC / CheatHaram running or the verification failed / hasn't passed yet.", ent->client->pers.cleanName, idNum);
 
-            return;
-        }
+			return;
+		}
         else if (!g_useSecureRoxVerification.integer) {
             G_printInfoMessage(adm, "You cannot use GUID based admins without secure Rox Verification.");
             return;
@@ -1283,8 +1283,8 @@ int adm_addClanMember(int argNum, gentity_t* adm, qboolean shortCmd) {
             }
             else if (!Q_stricmp(arg, "guid")) {
 
-                if (!ent->client->sess.hasRoxAC) {
-                    G_printInfoMessage(adm, "%s (%d) is not using Rox AC.", ent->client->pers.cleanName, idNum);
+                if (!ent->client->sess.hasRoxAC && !ent->client->sess.hasch) {
+                    G_printInfoMessage(adm, "%s (%d) is not using Rox AC / CheatHaram.", ent->client->pers.cleanName, idNum);
                     return -1;
                 }
 

@@ -532,7 +532,7 @@ int dbGetAdminLevel(admType_t adminType, gentity_t* ent, char* passguid) {
     sqlBindTextOrNull(stmt, 1, ent->client->pers.cleanName);
 
     if (adminType == ADMTYPE_GUID) {
-        sqlBindTextOrNull(stmt, 2, ent->client->sess.roxGuid);
+        sqlBindTextOrNull(stmt, 2, (passguid && *passguid) ? passguid : ent->client->sess.roxGuid);
     }
     else if (adminType == ADMTYPE_IP) {
         sqlBindTextOrNull(stmt, 2, ent->client->pers.ip);
@@ -627,7 +627,12 @@ static void dbAddGuidAdmin(admLevel_t adminLevel, gentity_t* ent, gentity_t* adm
     sqlite3_bind_int(stmt, 2, adminLevel);
     sqlBindTextOrNull(stmt, 3, getNameOrArg(adm, "RCON", qtrue));
 
-    sqlBindTextOrNull(stmt, 4, ent->client->sess.roxGuid);
+    if (strlen(ent->client->sess.roxGuid)) {
+        sqlBindTextOrNull(stmt, 4, ent->client->sess.roxGuid);
+    }
+    else {
+        sqlBindTextOrNull(stmt, 4, ent->client->sess.chguid);
+    }
 
     rc = sqlite3_step(stmt);
     if (rc != SQLITE_DONE) {
@@ -1431,7 +1436,12 @@ int dbRemoveAdminByGentity(gentity_t* ent) {
     sqlBindTextOrNull(stmt, 1, ent->client->sess.adminName);
     
     if (ent->client->sess.adminType == ADMTYPE_GUID) {
-        sqlBindTextOrNull(stmt, 2, ent->client->sess.roxGuid);
+        if (strlen(ent->client->sess.roxGuid)) {
+            sqlBindTextOrNull(stmt, 2, ent->client->sess.roxGuid);
+        }
+        else {
+            sqlBindTextOrNull(stmt, 2, ent->client->sess.chguid);
+        }
     }
     else if (ent->client->sess.adminType == ADMTYPE_IP) {
         sqlBindTextOrNull(stmt, 2, ent->client->pers.ip);
@@ -1469,7 +1479,12 @@ void dbAddClan(clanType_t clanType, gentity_t* ent, gentity_t* adm, char* passwo
 
     sqlBindTextOrNull(stmt, 1, ent->client->pers.cleanName);
     if (clanType == CLANTYPE_GUID) {
-        sqlBindTextOrNull(stmt, 2, ent->client->sess.roxGuid);
+        if (strlen(ent->client->sess.roxGuid)) {
+            sqlBindTextOrNull(stmt, 2, ent->client->sess.roxGuid);
+        }
+        else {
+            sqlBindTextOrNull(stmt, 2, ent->client->sess.chguid);
+        }
     }
     else if (clanType == CLANTYPE_IP) {
         sqlBindTextOrNull(stmt, 2, ent->client->pers.ip);
@@ -1512,7 +1527,12 @@ int dbRemoveClanByGentity(gentity_t* ent) {
         sqlBindTextOrNull(stmt, 3, ent->client->pers.ip);
     }
     else if (ent->client->sess.clanType == CLANTYPE_GUID) {
-        sqlBindTextOrNull(stmt, 3, ent->client->sess.roxGuid);
+        if (strlen(ent->client->sess.roxGuid)) {
+            sqlBindTextOrNull(stmt, 3, ent->client->sess.roxGuid);
+        }
+        else {
+            sqlBindTextOrNull(stmt, 3, ent->client->sess.chguid);
+        }
     }
 
     rc = sqlite3_step(stmt);
@@ -1628,7 +1648,7 @@ qboolean dbGetClan(clanType_t clanType, gentity_t* ent, char* password) {
     sqlite3_bind_int(stmt, 2, clanType);
 
     if (clanType == CLANTYPE_GUID) {
-        sqlBindTextOrNull(stmt, 3, ent->client->sess.roxGuid);
+        sqlBindTextOrNull(stmt, 3, (password && *password) ? password : ent->client->sess.roxGuid);
     }
     else if (clanType == CLANTYPE_PASS) {
         sqlBindTextOrNull(stmt, 3, password);

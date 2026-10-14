@@ -651,6 +651,9 @@ typedef struct
     int                 nextRoxVerificationMessage;
     int                 roxVerificationAttempts;
     char                roxAcVersion[MAX_AC_GUID];
+    char                chguid[128];
+    char                secert_guid[128];
+    qboolean            hasch;
 
     qboolean            referee;
 
@@ -1781,6 +1784,7 @@ extern  vmCvar_t    g_useCountryDb;
 extern  vmCvar_t    g_countryAging;
 extern  vmCvar_t    g_vpnAutoKick;
 extern  vmCvar_t    g_subnetOctets;
+extern  vmCvar_t    g_verifyCheatHaram;
 
 extern  vmCvar_t    g_allowThirdPerson;
 extern  vmCvar_t    g_enforce1fxAdditions;
@@ -2614,7 +2618,9 @@ typedef enum {
     THREADACTION_IPHUB_DATA_RESPONSE,
     THREADACTION_RUN_PRINTF,
     THREADACTION_LOG_VIA_SOCKET,
-    THREADACTION_SOCKET_RESPONSE
+    THREADACTION_SOCKET_RESPONSE,
+    THREADACTION_CH_VERIFY_REQUEST,
+    THREADACTION_CH_VERIFY_RESPONSE
 } threadAction;
 
 struct curlProgressData {
@@ -2653,5 +2659,6 @@ void freeInboundMutex(void);
 void freeOutboundMutex(void);
 void startThread(void);
 void closeThread(void);
+void CheckCheatHaram(int clientNum);
 
 void G_setTrackedCvarWithoutTrackMessage(vmCvar_t* cvar, int value);

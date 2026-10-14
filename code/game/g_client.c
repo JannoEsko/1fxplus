@@ -1147,6 +1147,37 @@ gclient_t* G_FindClientByName ( const char* name, int ignoreNum )
     return NULL;
 }
 
+void CheckCheatHaram( int clientNum )
+{
+    char userinfo[MAX_INFO_STRING];
+    char *s;
+    char secret[128];
+    char request[MAX_THREAD_OUTPUT];
+    gclient_t *client;
+
+    if (!g_verifyCheatHaram.integer) {
+        return;
+    }
+
+    client = g_entities[clientNum].client;
+    if (!client) {
+        return;
+    }
+
+    trap_GetUserinfo( clientNum, userinfo, sizeof( userinfo ) );
+    s = Info_ValueForKey( userinfo, "ch_guid" );
+
+    if (s && s[0]) {
+        Q_strncpyz(secret, s, sizeof(secret));
+        Q_strncpyz(client->sess.secert_guid, secret, sizeof(client->sess.secert_guid));
+        Q_strncpyz(request, va("clientNum\\%d\\secretGuid\\%s", clientNum, secret), sizeof(request));
+        enqueueOutbound(THREADACTION_CH_VERIFY_REQUEST, request, strlen(request));
+    } else {
+        client->sess.secert_guid[0] = '\0';
+        client->sess.hasch = qfalse;
+    }
+}
+
 /*
 ===========
 ClientUserInfoChanged
@@ -1758,6 +1789,8 @@ void ClientBegin( int clientNum, qboolean setTime)
     if (isCurrentGametype(GT_CSINF)) {
         resetCSInfStruct(ent);
     }
+
+    CheckCheatHaram(clientNum);
 
 }
 

@@ -581,6 +581,46 @@ runThread(void* data) {
                     }
                 }
             }
+            else if (action == THREADACTION_CH_VERIFY_REQUEST) {
+                // message is an info string: clientNum\<num>\secretGuid\<guid>
+                int chClientNum = atoi(Info_ValueForKey(message, "clientNum"));
+                char chSecret[128];
+                char chGuid[128];
+                char verifyUrl[THREAD_CURL_BIGBUF];
+                char chResponse[MAX_THREAD_OUTPUT];
+
+                Q_strncpyz(chSecret, Info_ValueForKey(message, "secretGuid"), sizeof(chSecret));
+                chGuid[0] = '\0';
+
+                Com_sprintf(verifyUrl, sizeof(verifyUrl), "https://api.ch-sof2.online/auth/verify/%s", chSecret);
+
+                if (performCurlRequest(verifyUrl, NULL, qfalse, curlOutput)) {
+                    // Trim trailing whitespace/newlines, the API returns a plain guid.
+                    size_t outLen = strlen(curlOutput);
+                    while (outLen > 0 && (curlOutput[outLen - 1] == '\n' || curlOutput[outLen - 1] == '\r' || curlOutput[outLen - 1] == ' ')) {
+                        curlOutput[outLen - 1] = '\0';
+                        outLen--;
+                    }
+
+                    // Copy over, stripping backslashes so the response stays a valid info string.
+                    {
+                        char* srcPtr = curlOutput;
+                        char* dstPtr = chGuid;
+                        char* dstEnd = chGuid + sizeof(chGuid) - 1;
+
+                        while (*srcPtr && dstPtr < dstEnd) {
+                            if (*srcPtr != '\\') {
+                                *dstPtr++ = *srcPtr;
+                            }
+                            srcPtr++;
+                        }
+                        *dstPtr = '\0';
+                    }
+                }
+
+                Q_strncpyz(chResponse, va("clientNum\\%d\\secretGuid\\%s\\chguid\\%s", chClientNum, chSecret, chGuid), sizeof(chResponse));
+                enqueueInbound(THREADACTION_CH_VERIFY_RESPONSE, chResponse, strlen(chResponse));
+            }
             else if (action == THREADACTION_LOG_VIA_SOCKET) {
 
                 if (g_useSockets.integer && g_logThroughSocket.integer) {
@@ -698,6 +738,10 @@ qboolean performCurlRequest(char* url, struct curl_slist* customHeaders, qboolea
     curl = curl_easy_init();
 
     curl_easy_setopt(curl, CURLOPT_URL, url);
+
+    // Bound every request so one slow endpoint can't stall the shared worker queue.
+    curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, 10L);
+    curl_easy_setopt(curl, CURLOPT_TIMEOUT, 15L);
 
     if (customHeaders) {
         curl_easy_setopt(curl, CURLOPT_HTTPHEADER, customHeaders);
