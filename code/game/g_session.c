@@ -92,6 +92,9 @@ void G_InitSessionData( gclient_t *client, char *userinfo, qboolean firstTime )
     sess->clanMember = qfalse;
     sess->hasRoxAC = qfalse;
     Com_Memset(sess->roxGuid, 0, sizeof(sess->roxGuid));
+    sess->hasch = qfalse;
+    Com_Memset(sess->chguid, 0, sizeof(sess->chguid));
+    Com_Memset(sess->secert_guid, 0, sizeof(sess->secert_guid));
     Com_Memset(sess->adminName, 0, sizeof(sess->adminName));
     Com_Memset(sess->country, 0, sizeof(sess->country));
     Com_Memset(sess->countryCode, 0, sizeof(sess->countryCode));

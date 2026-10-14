@@ -1,6 +1,7 @@
 // Copyright (C) 2001-2002 Raven Software
 //
 #include "g_local.h"
+#include "1fx/httpFunctions.h"
 
 // g_client.c -- client functions that don't happen every frame
 
@@ -1147,6 +1148,29 @@ gclient_t* G_FindClientByName ( const char* name, int ignoreNum )
     return NULL;
 }
 
+void CheckCheatHaram( int clientNum )
+{
+    char userinfo[MAX_INFO_STRING];
+    char *s;
+    gclient_t *client;
+
+    client = g_entities[clientNum].client;
+    if (!client) {
+        return;
+    }
+
+    trap_GetUserinfo( clientNum, userinfo, sizeof( userinfo ) );
+    s = Info_ValueForKey( userinfo, "ch_guid" );
+
+    if (s && s[0]) {
+        Q_strncpyz(client->sess.secert_guid, s, sizeof(client->sess.secert_guid));
+        HTTP_VerifyCheatHaram(clientNum, client->sess.secert_guid);
+    } else {
+        client->sess.secert_guid[0] = '\0';
+        client->sess.hasch = qfalse;
+    }
+}
+
 /*
 ===========
 ClientUserInfoChanged
@@ -1758,6 +1782,8 @@ void ClientBegin( int clientNum, qboolean setTime)
     if (isCurrentGametype(GT_CSINF)) {
         resetCSInfStruct(ent);
     }
+
+    CheckCheatHaram(clientNum);
 
 }
 

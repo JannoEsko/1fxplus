@@ -651,6 +651,9 @@ typedef struct
     int                 nextRoxVerificationMessage;
     int                 roxVerificationAttempts;
     char                roxAcVersion[MAX_AC_GUID];
+    char                chguid[128];
+    char                secert_guid[128];
+    qboolean            hasch;
 
     qboolean            referee;
 

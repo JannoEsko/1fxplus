@@ -3,6 +3,7 @@
 
 #include "g_local.h"
 #include "../ext/yyjson/yyjson.h"
+#include "1fx/httpFunctions.h"
 
 level_locals_t  level;
 
@@ -1547,6 +1548,8 @@ void G_InitGame( int levelTime, int randomSeed, int restart )
     // Load clientmod specifics
     G_InitClientMod();
 
+    HTTP_Init();
+
     // Boe's magnificent mvchat system.
     mvchat_parseFiles();
 
@@ -1676,6 +1679,8 @@ void G_ShutdownGame( int restart )
     Com_PrintInfo("Unloading in-memory databases...\n");
     unloadInMemoryDatabases();
     closeThread();
+
+    HTTP_Shutdown();
 
     // Shutdown the gametype last.
     // Don't make any system calls beyond this point.
@@ -2769,6 +2774,8 @@ void G_RunFrame( int levelTime )
     level.previousTime = level.time;
     level.time = levelTime;
     msec = level.time - level.previousTime;
+
+    HTTP_Update();
 
     if (level.paused)
     {

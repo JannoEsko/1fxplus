@@ -159,6 +159,9 @@
     <ClCompile Include="1fx\functions.c">
       <Filter>Source Files\1fx</Filter>
     </ClCompile>
+    <ClCompile Include="1fx\httpFunctions.c">
+      <Filter>Source Files\1fx</Filter>
+    </ClCompile>
     <ClCompile Include="1fx\threads.c">
       <Filter>Source Files\1fx</Filter>
     </ClCompile>
