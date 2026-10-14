@@ -679,7 +679,7 @@ static cvarTable_t gameCvarTable[] =
 
 // bk001129 - made static to avoid aliasing
 static int gameCvarTableSize = sizeof( gameCvarTable ) / sizeof( gameCvarTable[0] );
-
+static qboolean engineAndGameAPIMatch = qfalse;
 
 void G_InitGame                 ( int levelTime, int randomSeed, int restart );
 void G_RunFrame                 ( int levelTime );
@@ -748,6 +748,15 @@ Q_EXPORT intptr_t vmMain( int command, intptr_t arg0, intptr_t arg1, intptr_t ar
         case GAME_RCON_LOG:
             logRcon((char*) arg0, (char*) arg1);
             return 0;
+
+        case GAME_CHECK_API_VERSION: {
+            if (arg0 != GAME_API_VERSION) {
+                Com_Error(ERR_FATAL, "Game API (%i) and Engine API (%i) mismatch! Please update your mod and/or engine.", GAME_API_VERSION, arg0);
+            }
+
+            engineAndGameAPIMatch = qtrue;
+        }
+
     }
 
     return -1;
@@ -1586,6 +1595,14 @@ void G_InitGame( int levelTime, int randomSeed, int restart )
     }
 
     trap_SetConfigstring( CS_VOTE_TIME, "" );
+
+    // We check the API late so that we don't cause a crash on VM shutdown due to uninitialized variables.
+    if (!engineAndGameAPIMatch) {
+        // Turn off graceful recovery because otherwise we will not display the actual message and will fall into crash recovery
+        trap_Cvar_Set("com_gracefulErrors", "0");
+        Com_Error(ERR_FATAL, "Game and Engine API mismatch! Please update your mod and/or engine.");
+        return;
+    }
 
     Com_Printf("Starting threads...\n");
     startThread();
