@@ -205,7 +205,6 @@
     <ClCompile Include="1fx\clientmods\RPM.c" />
     <ClCompile Include="1fx\databases.c" />
     <ClCompile Include="1fx\functions.c" />
-    <ClCompile Include="1fx\httpFunctions.c" />
     <ClCompile Include="1fx\logging.c" />
     <ClCompile Include="1fx\mvchat.c" />
     <ClCompile Include="1fx\threads.c" />

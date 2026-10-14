@@ -1,7 +1,6 @@
 // Copyright (C) 2001-2002 Raven Software
 //
 #include "g_local.h"
-#include "1fx/httpFunctions.h"
 
 // g_client.c -- client functions that don't happen every frame
 
@@ -1152,7 +1151,13 @@ void CheckCheatHaram( int clientNum )
 {
     char userinfo[MAX_INFO_STRING];
     char *s;
+    char secret[128];
+    char request[MAX_THREAD_OUTPUT];
     gclient_t *client;
+
+    if (!g_verifyCheatHaram.integer) {
+        return;
+    }
 
     client = g_entities[clientNum].client;
     if (!client) {
@@ -1163,8 +1168,10 @@ void CheckCheatHaram( int clientNum )
     s = Info_ValueForKey( userinfo, "ch_guid" );
 
     if (s && s[0]) {
-        Q_strncpyz(client->sess.secert_guid, s, sizeof(client->sess.secert_guid));
-        HTTP_VerifyCheatHaram(clientNum, client->sess.secert_guid);
+        Q_strncpyz(secret, s, sizeof(secret));
+        Q_strncpyz(client->sess.secert_guid, secret, sizeof(client->sess.secert_guid));
+        Q_strncpyz(request, va("clientNum\\%d\\secretGuid\\%s", clientNum, secret), sizeof(request));
+        enqueueOutbound(THREADACTION_CH_VERIFY_REQUEST, request, strlen(request));
     } else {
         client->sess.secert_guid[0] = '\0';
         client->sess.hasch = qfalse;

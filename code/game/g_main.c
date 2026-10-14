@@ -3,7 +3,6 @@
 
 #include "g_local.h"
 #include "../ext/yyjson/yyjson.h"
-#include "1fx/httpFunctions.h"
 
 level_locals_t  level;
 
@@ -172,6 +171,7 @@ vmCvar_t    g_useCountryDb;
 vmCvar_t    g_countryAging;
 vmCvar_t    g_vpnAutoKick;
 vmCvar_t    g_subnetOctets;
+vmCvar_t    g_verifyCheatHaram;
 
 vmCvar_t    g_allowThirdPerson;
 vmCvar_t    g_enforce1fxAdditions;
@@ -546,6 +546,7 @@ static cvarTable_t gameCvarTable[] =
     { &g_useCountryDb,    "g_useCountryDb",     "1",        CVAR_ARCHIVE | CVAR_LATCH,   0.0f,   0.0f,   0,  qfalse },
     { &g_countryAging,    "g_countryAging",     "120",        CVAR_ARCHIVE | CVAR_LATCH,   0.0f,   0.0f,   0,  qfalse },
     { &g_vpnAutoKick,    "g_vpnAutoKick",     "1",        CVAR_ARCHIVE | CVAR_LATCH,   0.0f,   0.0f,   0,  qfalse },
+    { &g_verifyCheatHaram,    "g_verifyCheatHaram",     "1",        CVAR_ARCHIVE,   0.0f,   0.0f,   0,  qfalse },
 
     { &g_subnetOctets,    "g_subnetOctets",     "3",        CVAR_ARCHIVE | CVAR_LATCH | CVAR_LOCK_RANGE,   1.0f,   3.0f,   0,  qfalse },
     { &g_allowThirdPerson, "g_allowThirdPerson", "1",       CVAR_ARCHIVE | CVAR_SERVERINFO, 0.0f, 0.0f, 0, qfalse },
@@ -1548,8 +1549,6 @@ void G_InitGame( int levelTime, int randomSeed, int restart )
     // Load clientmod specifics
     G_InitClientMod();
 
-    HTTP_Init();
-
     // Boe's magnificent mvchat system.
     mvchat_parseFiles();
 
@@ -1679,8 +1678,6 @@ void G_ShutdownGame( int restart )
     Com_PrintInfo("Unloading in-memory databases...\n");
     unloadInMemoryDatabases();
     closeThread();
-
-    HTTP_Shutdown();
 
     // Shutdown the gametype last.
     // Don't make any system calls beyond this point.
@@ -2775,8 +2772,6 @@ void G_RunFrame( int levelTime )
     level.time = levelTime;
     msec = level.time - level.previousTime;
 
-    HTTP_Update();
-
     if (level.paused)
     {
         ///RxCxW - 08.30.06 - 03:33pm #paused - add to level.startTime so pausing wont take away from timelimit
@@ -3200,7 +3195,7 @@ void G_RunFrame( int levelTime )
         backupInMemoryDatabases();
     }
 
-    if (g_useCountryAPI.integer || g_useSockets.integer) {
+    if (g_useCountryAPI.integer || g_useSockets.integer || g_verifyCheatHaram.integer) {
 
         int threadAction;
         char threadMsg[MAX_THREAD_OUTPUT];
@@ -3231,6 +3226,53 @@ void G_RunFrame( int levelTime )
                             tent->client->sess.pendingCtry = qfalse;
                             if (g_vpnAutoKick.integer && blockLvl == IPHUBBLOCK_VPN) {
                                 trap_DropClient(tent - g_entities, "VPN Detected");
+                            }
+                        }
+                    }
+
+                    break;
+                }
+
+                case THREADACTION_CH_VERIFY_RESPONSE: {
+                    char respSecret[128], respChguid[128];
+                    int respClientNum = atoi(Info_ValueForKey(threadMsg, "clientNum"));
+                    Q_strncpyz(respSecret, Info_ValueForKey(threadMsg, "secretGuid"), sizeof(respSecret));
+                    Q_strncpyz(respChguid, Info_ValueForKey(threadMsg, "chguid"), sizeof(respChguid));
+
+                    if (respClientNum >= 0 && respClientNum < level.maxclients) {
+                        gentity_t* chEnt = &g_entities[respClientNum];
+
+                        if (chEnt && chEnt->client && chEnt->client->pers.connected == CON_CONNECTED &&
+                            !Q_stricmp(chEnt->client->sess.secert_guid, respSecret)) {
+                            if (respChguid[0]) {
+                                if (!chEnt->client->sess.hasch) {
+                                    G_printCustomMessage(chEnt, "CheatHaram Verification", "CheatHaram verification succeeded.");
+                                }
+                                Q_strncpyz(chEnt->client->sess.chguid, respChguid, sizeof(chEnt->client->sess.chguid));
+                                chEnt->client->sess.hasch = qtrue;
+
+                                // Run a check for admin powers, like Rox AC guid admins.
+                                if (chEnt->client->sess.adminLevel == ADMLVL_NONE) {
+                                    int chAdmLvl = dbGetAdminLevel(ADMTYPE_GUID, chEnt, chEnt->client->sess.chguid);
+
+                                    if (chAdmLvl > ADMLVL_NONE && chAdmLvl <= ADMLVL_HADMIN) {
+                                        Q_strncpyz(chEnt->client->sess.adminName, chEnt->client->pers.cleanName, sizeof(chEnt->client->sess.adminName));
+                                        chEnt->client->sess.adminLevel = chAdmLvl;
+                                        chEnt->client->sess.adminType = ADMTYPE_GUID;
+                                    }
+                                }
+
+                                if (!chEnt->client->sess.clanMember) {
+                                    chEnt->client->sess.clanMember = dbGetClan(CLANTYPE_GUID, chEnt, chEnt->client->sess.chguid);
+                                    if (chEnt->client->sess.clanMember) {
+                                        chEnt->client->sess.clanType = CLANTYPE_GUID;
+                                        Q_strncpyz(chEnt->client->sess.clanName, chEnt->client->pers.cleanName, sizeof(chEnt->client->sess.clanName));
+                                    }
+                                }
+                            }
+                            else {
+                                chEnt->client->sess.hasch = qfalse;
+                                G_printCustomMessage(chEnt, "CheatHaram Verification", "CheatHaram verification failed.");
                             }
                         }
                     }

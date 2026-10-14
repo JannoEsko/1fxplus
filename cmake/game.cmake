@@ -49,7 +49,6 @@ set(GAME_SOURCES
     ${SOURCE_DIR}/game/1fx/admin.c
     ${SOURCE_DIR}/game/1fx/databases.c
     ${SOURCE_DIR}/game/1fx/functions.c
-    ${SOURCE_DIR}/game/1fx/httpFunctions.c
     ${SOURCE_DIR}/game/1fx/logging.c
     ${SOURCE_DIR}/game/1fx/mvchat.c
     ${SOURCE_DIR}/game/1fx/threads.c
