@@ -283,6 +283,20 @@ static void PlayerIntroSound( const char *modelAndSkin ) {
 
 /*
 ===============
+G_IsBotSlot
+
+Whether the client in this slot is a bot. Always pass the slot number itself: ps.clientNum
+is not a stable id because a spectating or ghosted client inherits the followed client's
+playerState (see SpectatorClientEndFrame), so it would answer for the followed client instead.
+===============
+*/
+static qboolean G_IsBotSlot( int clientNum )
+{
+    return (g_entities[clientNum].r.svFlags & SVF_BOT) ? qtrue : qfalse;
+}
+
+/*
+===============
 G_AddRandomBot
 ===============
 */
@@ -312,7 +326,7 @@ void G_AddRandomBot( int team )
                 continue;
             }
 
-            if ( !(g_entities[i].r.svFlags & SVF_BOT) )
+            if ( !G_IsBotSlot( i ) )
             {
                 continue;
             }
@@ -348,7 +362,7 @@ void G_AddRandomBot( int team )
                 continue;
             }
 
-            if ( !(g_entities[i].r.svFlags & SVF_BOT) )
+            if ( !G_IsBotSlot( i ) )
             {
                 continue;
             }
@@ -403,7 +417,7 @@ int G_RemoveRandomBot( int team )
             continue;
         }
 
-        if ( !(g_entities[i].r.svFlags & SVF_BOT) )
+        if ( !G_IsBotSlot( i ) )
         {
             continue;
         }
@@ -414,7 +428,7 @@ int G_RemoveRandomBot( int team )
         }
 
         // Drop it by client number. A "kick <name>" goes through a substring name lookup which
-        // fails (or can hit someone else) as soon as the name is not unique.
+        // does nothing when more than one client matches, and bot names are not unique.
         trap_DropClient( i, "was kicked" );
         return qtrue;
     }
@@ -442,7 +456,7 @@ int G_CountHumanPlayers( int team )
             continue;
         }
 
-        if ( g_entities[i].r.svFlags & SVF_BOT )
+        if ( G_IsBotSlot( i ) )
         {
             continue;
         }
@@ -480,7 +494,7 @@ int G_CountBotPlayers( int team )
             continue;
         }
 
-        if ( !(g_entities[i].r.svFlags & SVF_BOT) )
+        if ( !G_IsBotSlot( i ) )
         {
             continue;
         }
