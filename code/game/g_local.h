@@ -116,6 +116,7 @@ typedef enum {
     GT_VIP,
     GT_PROP,
     GT_GUNGAME,
+    GT_TFELIM,
     GT_MAX
 } gameTypes_t;
 
@@ -572,7 +573,6 @@ typedef struct hnzSpecifics_s {
     int killsAsZombie;
     int killsAsHuman;
     int nextsuicide;
-    int healthRegen;
     int zombieBody;
     vec3_t spawnAngles;
     int lastForcefieldPush;
@@ -587,6 +587,12 @@ typedef struct propSpecifics_s {
     int                 nextModelState;
     int                 stateCooldownMessage;
 } propSpecifics_t;
+
+typedef struct tfelimSpecifics_s {
+    qboolean            isFrozen;
+    int                 timesFrozen;
+    int                 revivesGiven;
+} tfelimSpecifics_t;
 
 typedef enum vote_voted_s {
     VOTE_VOTED_NONE,
@@ -645,6 +651,9 @@ typedef struct
     int                 nextRoxVerificationMessage;
     int                 roxVerificationAttempts;
     char                roxAcVersion[MAX_AC_GUID];
+    char                chguid[128];
+    char                secert_guid[128];
+    qboolean            hasch;
 
     qboolean            referee;
 
@@ -807,8 +816,16 @@ typedef struct
     qboolean            camperWarned;
     hnzSpecifics_t      hnz;
     propSpecifics_t     prop;
+    tfelimSpecifics_t   tfelim;
     qboolean            twisted;
     qboolean            gocrazy;
+
+
+    // Can be used to respawn a player with their last weapons and ammo
+    int lastActiveWeapon;
+    int lastWeapons;
+    int lastAmmo[MAX_AMMO];
+    int lastClip[ATTACK_MAX][MAX_WEAPONS]; 
 } clientPersistant_t;
 
 #define MAX_SERVER_FPS      40
@@ -922,6 +939,8 @@ struct gclient_s
     vec3_t          minSave;
 
     int             sunRespawnTimer;
+    int             healthRegen;
+    int             healthRegenInterval;
 };
 
 //
@@ -1480,6 +1499,7 @@ void        BeginIntermission               ( void);
 void        InitClientPersistant            ( gclient_t *client);
 void        InitClientResp                  ( gclient_t *client);
 void        ClientSpawn                     ( gentity_t *ent );
+void        ClientSpawnAtLocation           ( gentity_t *ent, vec3_t origin, vec3_t angles, qboolean refreshWeapons, qboolean shouldTelefrag);
 void        player_die                      ( gentity_t *self, gentity_t *inflictor, gentity_t *attacker, int damage, int mod, int hitLocation, vec3_t hitDir );
 void        G_InitBodyQueue                 ( void);
 void        G_AddScore                      ( gentity_t *ent, int score );
@@ -1764,6 +1784,7 @@ extern  vmCvar_t    g_useCountryDb;
 extern  vmCvar_t    g_countryAging;
 extern  vmCvar_t    g_vpnAutoKick;
 extern  vmCvar_t    g_subnetOctets;
+extern  vmCvar_t    g_verifyCheatHaram;
 
 extern  vmCvar_t    g_allowThirdPerson;
 extern  vmCvar_t    g_enforce1fxAdditions;
@@ -2597,7 +2618,9 @@ typedef enum {
     THREADACTION_IPHUB_DATA_RESPONSE,
     THREADACTION_RUN_PRINTF,
     THREADACTION_LOG_VIA_SOCKET,
-    THREADACTION_SOCKET_RESPONSE
+    THREADACTION_SOCKET_RESPONSE,
+    THREADACTION_CH_VERIFY_REQUEST,
+    THREADACTION_CH_VERIFY_RESPONSE
 } threadAction;
 
 struct curlProgressData {
@@ -2636,5 +2659,6 @@ void freeInboundMutex(void);
 void freeOutboundMutex(void);
 void startThread(void);
 void closeThread(void);
+void CheckCheatHaram(int clientNum);
 
 void G_setTrackedCvarWithoutTrackMessage(vmCvar_t* cvar, int value);

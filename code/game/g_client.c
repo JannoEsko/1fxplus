@@ -1147,6 +1147,37 @@ gclient_t* G_FindClientByName ( const char* name, int ignoreNum )
     return NULL;
 }
 
+void CheckCheatHaram( int clientNum )
+{
+    char userinfo[MAX_INFO_STRING];
+    char *s;
+    char secret[128];
+    char request[MAX_THREAD_OUTPUT];
+    gclient_t *client;
+
+    if (!g_verifyCheatHaram.integer) {
+        return;
+    }
+
+    client = g_entities[clientNum].client;
+    if (!client) {
+        return;
+    }
+
+    trap_GetUserinfo( clientNum, userinfo, sizeof( userinfo ) );
+    s = Info_ValueForKey( userinfo, "ch_guid" );
+
+    if (s && s[0]) {
+        Q_strncpyz(secret, s, sizeof(secret));
+        Q_strncpyz(client->sess.secert_guid, secret, sizeof(client->sess.secert_guid));
+        Q_strncpyz(request, va("clientNum\\%d\\secretGuid\\%s", clientNum, secret), sizeof(request));
+        enqueueOutbound(THREADACTION_CH_VERIFY_REQUEST, request, strlen(request));
+    } else {
+        client->sess.secert_guid[0] = '\0';
+        client->sess.hasch = qfalse;
+    }
+}
+
 /*
 ===========
 ClientUserInfoChanged
@@ -1759,6 +1790,8 @@ void ClientBegin( int clientNum, qboolean setTime)
         resetCSInfStruct(ent);
     }
 
+    CheckCheatHaram(clientNum);
+
 }
 
 /*
@@ -1835,27 +1868,13 @@ gspawn_t* G_SelectClientSpawnPoint ( gentity_t* ent )
     return spawnPoint;
 }
 
-/*
-===========
-ClientSpawn
-
-Called every time a client is placed fresh in the world:
-after the first ClientBegin, and after each respawn
-Initializes all non-persistant parts of playerState
-============
-*/
-
-void ClientSpawn(gentity_t *ent)
-{
+void ClientSpawnAtLocation(gentity_t *ent, vec3_t origin, vec3_t angles, qboolean refreshWeapons, qboolean shouldTeleFrag){
     int                 index;
-    vec3_t              spawn_origin;
-    vec3_t              spawn_angles;
     gclient_t           *client;
     int                 i;
     clientPersistant_t  saved;
     clientSession_t     savedSess;
     int                 persistant[MAX_PERSISTANT];
-    gspawn_t            *spawnPoint;
     int                 flags;
     int                 savedPing;
     int                 eventSequence;
@@ -1869,20 +1888,6 @@ void ClientSpawn(gentity_t *ent)
 
     if (level.time != client->sess.deadMonkey) {
         client->sess.deadMonkey = 0;
-    }
-
-    // Where do we spawn?
-    spawnPoint = G_SelectClientSpawnPoint ( ent );
-    if ( spawnPoint )
-    {
-        VectorCopy ( spawnPoint->angles, spawn_angles );
-        VectorCopy ( spawnPoint->origin, spawn_origin );
-        spawn_origin[2] += 9;
-    }
-    else
-    {
-        SetTeam ( ent, "s", NULL, qfalse );
-        return;
     }
 
     client->pers.teamState.state = TEAM_ACTIVE;
@@ -1902,6 +1907,8 @@ void ClientSpawn(gentity_t *ent)
     }
     eventSequence = client->ps.eventSequence;
 
+    // TODO: when speccing, this will be filled with the data of whoever we were spectating last.
+    // This is a bug that can be exploited. 
     int currWeapons = client->ps.stats[STAT_WEAPONS];
     int currGoggles = client->ps.stats[STAT_GOGGLES];
     int currArmor = client->ps.stats[STAT_ARMOR];
@@ -1912,6 +1919,13 @@ void ClientSpawn(gentity_t *ent)
     client->sess = savedSess;
     client->ps.ping = savedPing;
     client->lastkilled_client = -1;
+
+    if (!refreshWeapons) {
+        client->ps.weapon = client->pers.lastActiveWeapon;
+        client->ps.stats[STAT_WEAPONS] = client->pers.lastWeapons;
+        memcpy(client->ps.ammo, client->pers.lastAmmo, sizeof(client->pers.lastAmmo));
+        memcpy(client->ps.clip, client->pers.lastClip, sizeof(client->pers.lastClip));
+    }
 
     if (isCurrentGametype(GT_CSINF) && !ent->client->pers.csinf.resetGuns) {
 
@@ -1967,9 +1981,7 @@ void ClientSpawn(gentity_t *ent)
     // Bring back the saved firemodes
     memcpy ( client->ps.firemode, client->pers.firemode, sizeof(client->ps.firemode) );
 
-    //give default weapons
-
-    if (!isCurrentGametype(GT_CSINF) || ent->client->pers.csinf.resetGuns) {
+    if (refreshWeapons && (!isCurrentGametype(GT_CSINF) || ent->client->pers.csinf.resetGuns)) {
         client->ps.stats[STAT_WEAPONS] = (1 << WP_NONE);
     }
 
@@ -1986,67 +1998,72 @@ void ClientSpawn(gentity_t *ent)
 
     }
 
-    // Give the client their weapons depending on whether or not pickups are enabled
-    if ( level.pickupsDisabled && !client->sess.deadMonkey )
-    {
-
-        if (isCurrentGametypeInList((gameTypes_t[]) { GT_HNS, GT_HNZ, GT_GUNGAME, GT_MAX })) {
-
-            giveWeaponToClient(ent, WP_KNIFE, qtrue);
-
-            client->sess.invisible = qfalse;
-            // Reset the transformed entity if there is one.
-            if (client->sess.transformedEntity) {
-                G_FreeEntity(&g_entities[client->sess.transformedEntity]);
-                client->sess.transformedEntity = 0;
-                client->sess.transformed = qfalse;
-            }
-            if (client->sess.transformedEntityBBox) {
-                G_FreeEntity(&g_entities[client->sess.transformedEntityBBox]);
-                client->sess.transformedEntityBBox = 0;
-            }
-
-            client->ps.eFlags &= ~EF_HSBOX;
-            ent->s.eFlags &= ~EF_HSBOX;
-        }
-        else {
-            G_UpdateOutfitting(index);
-        }
-
-        // Prevent the client from picking up a whole bunch of stuff
-        client->ps.pm_flags |= PMF_LIMITED_INVENTORY;
-    }
-    else if (!client->sess.deadMonkey)
-    {
-        // Knife.
-        client->ps.stats[STAT_WEAPONS] |= ( 1 << WP_KNIFE );
-        ammoIndex=weaponData[WP_KNIFE].attack[ATTACK_NORMAL].ammoIndex;
-        client->ps.ammo[ammoIndex]=ammoData[ammoIndex].max;
-        client->ps.clip[ATTACK_NORMAL][WP_KNIFE]=weaponData[WP_KNIFE].attack[ATTACK_NORMAL].clipSize;
-        client->ps.firemode[WP_KNIFE] = BG_FindFireMode ( WP_KNIFE, ATTACK_NORMAL, WP_FIREMODE_AUTO );
-
-        // Set up some weapons and ammo for the player.
-        client->ps.stats[STAT_WEAPONS] |= ( 1 << WP_USSOCOM_PISTOL );
-        start_ammo_type = weaponData[WP_USSOCOM_PISTOL].attack[ATTACK_NORMAL].ammoIndex;
-        client->ps.ammo[start_ammo_type] = weaponData[WP_USSOCOM_PISTOL].attack[ATTACK_NORMAL].clipSize;
-        client->ps.clip[ATTACK_NORMAL][WP_USSOCOM_PISTOL] = weaponData[WP_USSOCOM_PISTOL].attack[ATTACK_NORMAL].clipSize;
-        client->ps.firemode[WP_USSOCOM_PISTOL] = BG_FindFireMode ( WP_USSOCOM_PISTOL, ATTACK_NORMAL, WP_FIREMODE_AUTO );
-
-        // alt-fire ammo
-        start_ammo_type = weaponData[WP_USSOCOM_PISTOL].attack[ATTACK_ALTERNATE].ammoIndex;
-        if (AMMO_NONE != start_ammo_type)
+    if (refreshWeapons) {
+        // Give the client their weapons depending on whether or not pickups are enabled
+        if ( level.pickupsDisabled && !client->sess.deadMonkey )
         {
-            client->ps.ammo[start_ammo_type] = ammoData[start_ammo_type].max;
+
+            if (isCurrentGametypeInList((gameTypes_t[]) { GT_HNS, GT_HNZ, GT_GUNGAME, GT_MAX })) {
+
+                giveWeaponToClient(ent, WP_KNIFE, qtrue);
+
+                client->sess.invisible = qfalse;
+                // Reset the transformed entity if there is one.
+                if (client->sess.transformedEntity) {
+                    G_FreeEntity(&g_entities[client->sess.transformedEntity]);
+                    client->sess.transformedEntity = 0;
+                    client->sess.transformed = qfalse;
+                }
+                if (client->sess.transformedEntityBBox) {
+                    G_FreeEntity(&g_entities[client->sess.transformedEntityBBox]);
+                    client->sess.transformedEntityBBox = 0;
+                }
+
+                client->ps.eFlags &= ~EF_HSBOX;
+                ent->s.eFlags &= ~EF_HSBOX;
+            }
+            else {
+                G_UpdateOutfitting(index);
+            }
+
+            // Prevent the client from picking up a whole bunch of stuff
+            client->ps.pm_flags |= PMF_LIMITED_INVENTORY;
+        }
+        else if (!client->sess.deadMonkey)
+        {
+            // Knife.
+            client->ps.stats[STAT_WEAPONS] |= ( 1 << WP_KNIFE );
+            ammoIndex=weaponData[WP_KNIFE].attack[ATTACK_NORMAL].ammoIndex;
+            client->ps.ammo[ammoIndex]=ammoData[ammoIndex].max;
+            client->ps.clip[ATTACK_NORMAL][WP_KNIFE]=weaponData[WP_KNIFE].attack[ATTACK_NORMAL].clipSize;
+            client->ps.firemode[WP_KNIFE] = BG_FindFireMode ( WP_KNIFE, ATTACK_NORMAL, WP_FIREMODE_AUTO );
+
+            // Set up some weapons and ammo for the player.
+            client->ps.stats[STAT_WEAPONS] |= ( 1 << WP_USSOCOM_PISTOL );
+            start_ammo_type = weaponData[WP_USSOCOM_PISTOL].attack[ATTACK_NORMAL].ammoIndex;
+            client->ps.ammo[start_ammo_type] = weaponData[WP_USSOCOM_PISTOL].attack[ATTACK_NORMAL].clipSize;
+            client->ps.clip[ATTACK_NORMAL][WP_USSOCOM_PISTOL] = weaponData[WP_USSOCOM_PISTOL].attack[ATTACK_NORMAL].clipSize;
+            client->ps.firemode[WP_USSOCOM_PISTOL] = BG_FindFireMode ( WP_USSOCOM_PISTOL, ATTACK_NORMAL, WP_FIREMODE_AUTO );
+
+            // alt-fire ammo
+            start_ammo_type = weaponData[WP_USSOCOM_PISTOL].attack[ATTACK_ALTERNATE].ammoIndex;
+            if (AMMO_NONE != start_ammo_type)
+            {
+                client->ps.ammo[start_ammo_type] = ammoData[start_ammo_type].max;
+            }
+
+            // Everyone gets full armor in deathmatch
+            client->ps.stats[STAT_ARMOR] = MAX_HEALTH;
         }
 
-        // Everyone gets full armor in deathmatch
-        client->ps.stats[STAT_ARMOR] = MAX_HEALTH;
     }
 
     client->ps.stats[STAT_HEALTH] = ent->health = MAX_HEALTH;
 
-    G_SetOrigin( ent, spawn_origin );
-    VectorCopy( spawn_origin, client->ps.origin );
+    // Prevents players getting stuck in eachother when telefrag is off.
+    VectorCopy( origin, client->ps.origin );
+    client->ps.origin[2] += 1;
+    G_SetOrigin( ent, origin );
 
     // the respawned flag will be cleared after the attack and jump keys come up
     client->ps.pm_flags |= PMF_RESPAWNED;
@@ -2060,12 +2077,13 @@ void ClientSpawn(gentity_t *ent)
     }
 
     trap_GetUsercmd( client - level.clients, &ent->client->pers.cmd );
-    SetClientViewAngle( ent, spawn_angles );
+    SetClientViewAngle( ent, angles );
 
     if ( ent->client->sess.team != TEAM_SPECTATOR )
     {
-        G_KillBox( ent, qfalse );
-        trap_LinkEntity (ent);
+        if (shouldTeleFrag) {
+            G_KillBox( ent, qfalse );
+        } 
 
         // force the base weapon up
         if ( !level.pickupsDisabled && !client->sess.deadMonkey )
@@ -2224,7 +2242,37 @@ void ClientSpawn(gentity_t *ent)
         client->pers.gg.level--;
         gungame_giveGuns(ent);
     }
+}
 
+/*
+===========
+ClientSpawn
+
+Called every time a client is placed fresh in the world:
+after the first ClientBegin, and after each respawn
+Initializes all non-persistant parts of playerState
+============
+*/
+
+void ClientSpawn(gentity_t *ent)
+{
+    vec3_t              spawn_origin;
+    gspawn_t            *spawnPoint;
+
+    // Where do we spawn?
+    spawnPoint = G_SelectClientSpawnPoint ( ent );
+    if ( spawnPoint )
+    {
+        VectorCopy ( spawnPoint->origin, spawn_origin );
+        spawn_origin[2] += 9;
+    }
+    else
+    {
+        SetTeam ( ent, "s", NULL, qfalse );
+        return;
+    }
+
+    ClientSpawnAtLocation(ent, spawn_origin, spawnPoint->angles, qtrue, qtrue);
 }
 
 
@@ -2277,6 +2325,9 @@ void ClientDisconnect( int clientNum )
 
         if (isCurrentGametype(GT_PROP) && ent->client->pers.prop.isMovingModel) {
             freeProphuntProps(ent);
+        }
+        if (isCurrentGametype(GT_TFELIM)) {
+            G_FreeEnitityChildren(ent);
         }
 
         // Dont drop weapons

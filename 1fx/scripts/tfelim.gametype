@@ -1,0 +1,10 @@
+gametype
+{
+	displayname		"Team Freeze Elimination"
+	respawn			"none"	
+	pickups			"no"
+	teams			"yes"
+	description		"Freeze the enemy team to win, revive your frozen teammates"
+	basegametype	"elim"
+	backpack 		"100"
+}

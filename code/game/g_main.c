@@ -171,6 +171,7 @@ vmCvar_t    g_useCountryDb;
 vmCvar_t    g_countryAging;
 vmCvar_t    g_vpnAutoKick;
 vmCvar_t    g_subnetOctets;
+vmCvar_t    g_verifyCheatHaram;
 
 vmCvar_t    g_allowThirdPerson;
 vmCvar_t    g_enforce1fxAdditions;
@@ -545,6 +546,7 @@ static cvarTable_t gameCvarTable[] =
     { &g_useCountryDb,    "g_useCountryDb",     "1",        CVAR_ARCHIVE | CVAR_LATCH,   0.0f,   0.0f,   0,  qfalse },
     { &g_countryAging,    "g_countryAging",     "120",        CVAR_ARCHIVE | CVAR_LATCH,   0.0f,   0.0f,   0,  qfalse },
     { &g_vpnAutoKick,    "g_vpnAutoKick",     "1",        CVAR_ARCHIVE | CVAR_LATCH,   0.0f,   0.0f,   0,  qfalse },
+    { &g_verifyCheatHaram,    "g_verifyCheatHaram",     "1",        CVAR_ARCHIVE,   0.0f,   0.0f,   0,  qfalse },
 
     { &g_subnetOctets,    "g_subnetOctets",     "3",        CVAR_ARCHIVE | CVAR_LATCH | CVAR_LOCK_RANGE,   1.0f,   3.0f,   0,  qfalse },
     { &g_allowThirdPerson, "g_allowThirdPerson", "1",       CVAR_ARCHIVE | CVAR_SERVERINFO, 0.0f, 0.0f, 0, qfalse },
@@ -677,7 +679,7 @@ static cvarTable_t gameCvarTable[] =
 
 // bk001129 - made static to avoid aliasing
 static int gameCvarTableSize = sizeof( gameCvarTable ) / sizeof( gameCvarTable[0] );
-
+static qboolean engineAndGameAPIMatch = qfalse;
 
 void G_InitGame                 ( int levelTime, int randomSeed, int restart );
 void G_RunFrame                 ( int levelTime );
@@ -746,6 +748,15 @@ Q_EXPORT intptr_t vmMain( int command, intptr_t arg0, intptr_t arg1, intptr_t ar
         case GAME_RCON_LOG:
             logRcon((char*) arg0, (char*) arg1);
             return 0;
+
+        case GAME_CHECK_API_VERSION: {
+            if (arg0 != GAME_API_VERSION) {
+                Com_Error(ERR_FATAL, "Game API (%i) and Engine API (%i) mismatch! Please update your mod and/or engine.", GAME_API_VERSION, arg0);
+            }
+
+            engineAndGameAPIMatch = qtrue;
+        }
+
     }
 
     return -1;
@@ -1091,6 +1102,9 @@ qboolean G_IsGametypeAValidGametype(char* gametype) {
     else if (!Q_stricmp(gametype, "elim")) {
         return qtrue;
     }
+    else if (!Q_stricmp(gametype, "tfelim")) {
+        return qtrue;
+    }
     else {
         return qfalse;
     }
@@ -1139,6 +1153,10 @@ char* G_TranslateGametypeToPublicGametype(char* gametype) {
         return "inf";
     }
 
+    if (!Q_stricmp(gametype, "tfelim")) {
+        return "elim";
+    }
+
     return gametype;
 }
 
@@ -1178,6 +1196,8 @@ void G_SetCurrentGametypeValue(char* gametype) {
         trap_Cvar_Set("current_gametype", va("%d", GT_TDM));
     } else if (!Q_stricmp(gametype, "elim")) {
         trap_Cvar_Set("current_gametype", va("%d", GT_ELIM));
+    } else if (!Q_stricmp(gametype, "tfelim")) {
+        trap_Cvar_Set("current_gametype", va("%d", GT_TFELIM));
     } else {
         logSystem(LOGLEVEL_WARN, "Couldn't map gametype %s to a meaningful GT_ enum value...", gametype);
         trap_Cvar_Set("current_gametype", va("%d", GT_NONE));
@@ -1528,6 +1548,11 @@ void G_InitGame( int levelTime, int randomSeed, int restart )
     }
 #endif
 
+    if (isCurrentGametype(GT_TFELIM)) {
+        // translucent frozen model shaders
+        AddRemap("models/objects/armory/dummy", "gfx/misc/jk_flare_red", 0.0);
+        AddRemap("models/objects/kamchatka/misc/chem_suit", "gfx/misc/jk_flare_blue", 0.0);
+    }
     G_RemapTeamShaders();
     level.actionSoundIndex = G_SoundIndex("sound/misc/menus/click.wav");
     // Load clientmod specifics
@@ -1570,6 +1595,14 @@ void G_InitGame( int levelTime, int randomSeed, int restart )
     }
 
     trap_SetConfigstring( CS_VOTE_TIME, "" );
+
+    // We check the API late so that we don't cause a crash on VM shutdown due to uninitialized variables.
+    if (!engineAndGameAPIMatch) {
+        // Turn off graceful recovery because otherwise we will not display the actual message and will fall into crash recovery
+        trap_Cvar_Set("com_gracefulErrors", "0");
+        Com_Error(ERR_FATAL, "Game and Engine API mismatch! Please update your mod and/or engine.");
+        return;
+    }
 
     Com_Printf("Starting threads...\n");
     startThread();
@@ -2456,7 +2489,7 @@ void CheckExitRules(void)
         if (level.time - level.startTime >= (g_timelimit.integer + level.timeExtension) * 60000)
         {
 
-            if (isCurrentGametypeInList((gameTypes_t[]){ GT_INF, GT_CSINF, GT_VIP, GT_PROP, GT_ELIM, GT_DEM, GT_HNS, GT_HNZ, GT_MAX })) {
+            if (isCurrentGametypeInList((gameTypes_t[]){ GT_INF, GT_CSINF, GT_VIP, GT_PROP, GT_ELIM, GT_DEM, GT_HNS, GT_HNZ, GT_TFELIM, GT_MAX })) {
                 G_printInfoMessageToAll("Timelimit hit, waiting for round to finish.");
                 level.timelimitHit = qtrue;
             }
@@ -3009,6 +3042,8 @@ void G_RunFrame( int levelTime )
                     ent->client->ps.stats[STAT_FROZEN] = 0;
                 }
 
+                int teamCountBlue = TeamCount(-1, TEAM_BLUE, NULL);
+
                 if (isCurrentGametype(GT_HNS)) {
 
                     
@@ -3068,7 +3103,6 @@ void G_RunFrame( int levelTime )
 
                     }
 
-                    int teamCountBlue = TeamCount(-1, TEAM_BLUE, NULL);
 
                     if (G_IsClientDead(ent->client)) {
                         if (ent->client->sess.team == TEAM_BLUE || (teamCountBlue == 0 && ent->client->sess.team == TEAM_RED)) {
@@ -3088,18 +3122,6 @@ void G_RunFrame( int levelTime )
                             ClientSpawn(ent);
                         }
                     }
-                    else if (ent->client->pers.hnz.healthRegen && ent->client->sess.team == TEAM_BLUE && level.time >= ent->client->pers.hnz.healthRegen) {
-                        ent->client->ps.stats[STAT_HEALTH]++;
-                        ent->health++;
-
-                        if (ent->client->ps.stats[STAT_HEALTH] >= MAX_HEALTH) {
-                            ent->client->pers.hnz.healthRegen = 0;
-                        }
-                        else {
-                            ent->client->pers.hnz.healthRegen = level.time + 50 + (150 / level.numPlayingClients * teamCountBlue);
-                        }
-                    }
-
                 }
                 else if (isCurrentGametype(GT_PROP)) {
 
@@ -3119,6 +3141,24 @@ void G_RunFrame( int levelTime )
                     }
 
                 }
+                if (ent->client->healthRegen && level.time >= ent->client->healthRegen) {
+                    ent->client->ps.stats[STAT_HEALTH]++;
+                    ent->health++;
+
+                    if (ent->client->ps.stats[STAT_HEALTH] >= MAX_HEALTH) {
+                        ent->client->healthRegen = 0;
+                        ent->client->healthRegenInterval = 0;
+                    }
+                    else {
+                        if (isCurrentGametype(GT_HNZ)){
+                            // Not touching the zombie logic, but health gen is generic enough that it should not be tied just to zombies.
+                            ent->client->healthRegen = level.time + 50 + (150 / level.numPlayingClients * teamCountBlue);
+                        } else {
+                            ent->client->healthRegen = level.time + ent->client->healthRegenInterval;
+                        }
+                    }
+                }
+
 
             }
 
@@ -3172,7 +3212,7 @@ void G_RunFrame( int levelTime )
         backupInMemoryDatabases();
     }
 
-    if (g_useCountryAPI.integer || g_useSockets.integer) {
+    if (g_useCountryAPI.integer || g_useSockets.integer || g_verifyCheatHaram.integer) {
 
         int threadAction;
         char threadMsg[MAX_THREAD_OUTPUT];
@@ -3203,6 +3243,53 @@ void G_RunFrame( int levelTime )
                             tent->client->sess.pendingCtry = qfalse;
                             if (g_vpnAutoKick.integer && blockLvl == IPHUBBLOCK_VPN) {
                                 trap_DropClient(tent - g_entities, "VPN Detected");
+                            }
+                        }
+                    }
+
+                    break;
+                }
+
+                case THREADACTION_CH_VERIFY_RESPONSE: {
+                    char respSecret[128], respChguid[128];
+                    int respClientNum = atoi(Info_ValueForKey(threadMsg, "clientNum"));
+                    Q_strncpyz(respSecret, Info_ValueForKey(threadMsg, "secretGuid"), sizeof(respSecret));
+                    Q_strncpyz(respChguid, Info_ValueForKey(threadMsg, "chguid"), sizeof(respChguid));
+
+                    if (respClientNum >= 0 && respClientNum < level.maxclients) {
+                        gentity_t* chEnt = &g_entities[respClientNum];
+
+                        if (chEnt && chEnt->client && chEnt->client->pers.connected == CON_CONNECTED &&
+                            !Q_stricmp(chEnt->client->sess.secert_guid, respSecret)) {
+                            if (respChguid[0]) {
+                                if (!chEnt->client->sess.hasch) {
+                                    G_printCustomMessage(chEnt, "CheatHaram Verification", "CheatHaram verification succeeded.");
+                                }
+                                Q_strncpyz(chEnt->client->sess.chguid, respChguid, sizeof(chEnt->client->sess.chguid));
+                                chEnt->client->sess.hasch = qtrue;
+
+                                // Run a check for admin powers, like Rox AC guid admins.
+                                if (chEnt->client->sess.adminLevel == ADMLVL_NONE) {
+                                    int chAdmLvl = dbGetAdminLevel(ADMTYPE_GUID, chEnt, chEnt->client->sess.chguid);
+
+                                    if (chAdmLvl > ADMLVL_NONE && chAdmLvl <= ADMLVL_HADMIN) {
+                                        Q_strncpyz(chEnt->client->sess.adminName, chEnt->client->pers.cleanName, sizeof(chEnt->client->sess.adminName));
+                                        chEnt->client->sess.adminLevel = chAdmLvl;
+                                        chEnt->client->sess.adminType = ADMTYPE_GUID;
+                                    }
+                                }
+
+                                if (!chEnt->client->sess.clanMember) {
+                                    chEnt->client->sess.clanMember = dbGetClan(CLANTYPE_GUID, chEnt, chEnt->client->sess.chguid);
+                                    if (chEnt->client->sess.clanMember) {
+                                        chEnt->client->sess.clanType = CLANTYPE_GUID;
+                                        Q_strncpyz(chEnt->client->sess.clanName, chEnt->client->pers.cleanName, sizeof(chEnt->client->sess.clanName));
+                                    }
+                                }
+                            }
+                            else {
+                                chEnt->client->sess.hasch = qfalse;
+                                G_printCustomMessage(chEnt, "CheatHaram Verification", "CheatHaram verification failed.");
                             }
                         }
                     }

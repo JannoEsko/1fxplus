@@ -48,6 +48,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #define CONTENTS_TELEPORTER     (0x00080000u)   // ""
 #define CONTENTS_ITEM           (0x00100000u)   // ""
 #define CONTENTS_DETAIL         (0x08000000u)   // brushes not used for the bsp
+#define CONTENTS_FROZEN_RED     (0x10000000u)   // can only be unfrozen by red team
+#define CONTENTS_FROZEN_BLUE    (0x20000000u)   // can only be onfrozen by blue team
 #define CONTENTS_TRANSLUCENT    (0x80000000u)   // don't consume surface fragments inside
 
 #define SURF_HINT               (0x00000100u)   // make a primary bsp splitter
