@@ -2150,6 +2150,8 @@ int trap_ValidateMapName(const char* mapName, char* output, int outputSize);
 int trap_MapcycleList(char* output, int sizeofOutput);
 void trap_SkipToMap(int skipTo);
 void trap_RemoveCommand(const char* cmdName);
+qboolean trap_StartDemoRecord(const char* filename, qboolean anonymous);
+void trap_StopDemoRecord();
 
 void G_UpdateClientAntiLag  ( gentity_t* ent );
 void G_UndoAntiLag          ( void );

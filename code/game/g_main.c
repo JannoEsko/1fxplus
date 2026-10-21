@@ -751,6 +751,7 @@ Q_EXPORT intptr_t vmMain( int command, intptr_t arg0, intptr_t arg1, intptr_t ar
 
         case GAME_CHECK_API_VERSION: {
             if (arg0 != GAME_API_VERSION) {
+                trap_Cvar_Set("com_gracefulErrors", "0");
                 Com_Error(ERR_FATAL, "Game API (%i) and Engine API (%i) mismatch! Please update your mod and/or engine.", GAME_API_VERSION, arg0);
             }
 

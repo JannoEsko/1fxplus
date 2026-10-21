@@ -1055,3 +1055,11 @@ void trap_SkipToMap(int skipTo) {
 void trap_RemoveCommand(const char* cmdName) {
     syscall(G_REMOVECOMMAND, cmdName);
 }
+
+qboolean trap_StartDemoRecord(const char* filename, qboolean anonymous) {
+    return (qboolean)syscall(G_STARTDEMORECORD, filename, anonymous);
+}
+
+void trap_StopDemoRecord(void) {
+    syscall(G_STOPDEMORECORD);
+}
