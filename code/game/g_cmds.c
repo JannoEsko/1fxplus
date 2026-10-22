@@ -1335,7 +1335,6 @@ void G_StopFollowing( gentity_t *ent )
     ent->client->ps.loopSound = 0;
     ent->client->ps.pm_flags &= ~(PMF_GOGGLES_ON|PMF_ZOOM_FLAGS);
     ent->client->ps.persistant[PERS_TEAM] = ent->client->sess.team;
-    ent->r.svFlags &= ~SVF_BOT;
 
     // If we were in fact following someone, then make the angles and origin nice for
     // when we stop
