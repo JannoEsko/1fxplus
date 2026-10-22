@@ -1272,8 +1272,9 @@ void ClientUserinfoChanged( int clientNum )
     // set max health
     health = atoi( Info_ValueForKey( userinfo, "handicap" ) );
 
-    // bots set their team a few frames later
-    if ( level.gametypeData->teams && (g_entities[clientNum].r.svFlags & SVF_BOT))
+    // bots set their team a few frames later. The userinfo "team" key only holds the team the bot was
+    // added with, so once it is on a team (sess.team is moved by !et, shuffle, admin and auto balance) that wins.
+    if ( level.gametypeData->teams && (g_entities[clientNum].r.svFlags & SVF_BOT) && client->sess.team == TEAM_SPECTATOR )
     {
         s = Info_ValueForKey( userinfo, "team" );
         if ( !Q_stricmp( s, "red" ) || !Q_stricmp( s, "r" ) )
