@@ -2,7 +2,7 @@
 //
 // g_public.h -- game module information visible to server
 
-#define GAME_API_VERSION    10
+#define GAME_API_VERSION    11
 
 // entity->svFlags
 // the server does not know how to interpret most of the values
@@ -442,7 +442,9 @@ typedef enum {
     G_VALIDATE_MAP_NAME,
     G_GET_MAPCYCLE_LIST,
     G_SKIP_TO_MAP,
-    G_REMOVECOMMAND
+    G_REMOVECOMMAND,
+    G_STARTDEMORECORD,
+    G_STOPDEMORECORD
 
 } gameImport_t;
 
