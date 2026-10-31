@@ -24,16 +24,16 @@ void logSystem(loggingLevel_t logLevel, const char* msg, ...) {
         return;
     }
     else if (logLevel == LOGLEVEL_INFO) {
-        Com_PrintInfo(va("%s\n", text));
+        Com_PrintInfo("%s\n", text);
     }
     else if (logLevel == LOGLEVEL_WARN) {
-        Com_PrintWarn(va("%s\n", text));
+        Com_PrintWarn("%s\n", text);
     }
     else if (logLevel == LOGLEVEL_TEXT) {
-        Com_PrintLog(va("%s\n", text));
+        Com_PrintLog("%s\n", text);
     }
     else {
-        Com_Printf(va("%s\n", text));
+        Com_Printf("%s\n", text);
     }
 
     if (g_logToDatabase.integer) {

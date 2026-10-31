@@ -1523,11 +1523,11 @@ char *ClientConnect( int clientNum, qboolean firstTime, qboolean isBot )
     trap_GetUserinfo( clientNum, userinfo, sizeof( userinfo ) );
 
     value = Info_ValueForKey (userinfo, "cl_guid");
-    Com_sprintf ( guid, sizeof(guid), value );
+    Com_sprintf ( guid, sizeof(guid), "%s", value );
 
     // check to see if they are on the banned IP list
     value = Info_ValueForKey (userinfo, "ip");
-    Com_sprintf ( ip, sizeof(ip), value );
+    Com_sprintf ( ip, sizeof(ip), "%s", value );
 
     // we don't check password for bots and local client
     // NOTE: local client <-> "ip" "localhost"

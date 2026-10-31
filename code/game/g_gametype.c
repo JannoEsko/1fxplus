@@ -1273,7 +1273,7 @@ intptr_t G_GametypeCommand(int command, intptr_t arg0, intptr_t arg1, intptr_t a
                 }
             }
 
-            G_Broadcast(BROADCAST_GAME, ent, (qboolean)arg2, (const char*) arg1);
+            G_Broadcast(BROADCAST_GAME, ent, (qboolean)arg2, "%s", (const char*) arg1);
             break;
         }
         case GT_RADIOMESSAGE:

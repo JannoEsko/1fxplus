@@ -3299,7 +3299,7 @@ void G_RunFrame( int levelTime )
                 }
 
                 case THREADACTION_RUN_PRINTF:
-                    Com_Printf(threadMsg);
+                    Com_Printf("%s", threadMsg);
                     break;
 
                 case THREADACTION_SOCKET_RESPONSE: {
@@ -3476,7 +3476,7 @@ void G_RunFrame( int levelTime )
             trap_Cvar_VariableStringBuffer(va("g_automsg%d", level.nextDisplayableAutoInfoMsg), autoMsg, sizeof(autoMsg));
 
             if (strlen(autoMsg) > 0) {
-                G_printChatInfoMessageToAll(autoMsg);
+                G_printChatInfoMessageToAll("%s", autoMsg);
             }
 
             if (level.nextDisplayableAutoInfoMsg == 6) {
@@ -3497,7 +3497,7 @@ void G_RunFrame( int levelTime )
             qboolean result = dbGetRandomTip(autoTip, sizeof(autoTip));
 
             if (result) {
-                G_printCustomChatMessageToAll("Tip", autoTip);
+                G_printCustomChatMessageToAll("Tip", "%s", autoTip);
             }
 
             level.nextAutoTipMsg = level.time + g_autotipsPeriodicity.integer * 60000;

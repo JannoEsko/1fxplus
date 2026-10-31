@@ -60,6 +60,12 @@ set(GAME_SOURCES
 
 add_library(${GAME_LIB} SHARED ${GAME_SOURCES})
 
+# Player and config text must never be used as a printf template (CWE-134):
+# pass it as Com_Printf("%s", text), not Com_Printf(text).
+if(CMAKE_C_COMPILER_ID STREQUAL "GNU" OR CMAKE_C_COMPILER_ID MATCHES "^(Apple)?Clang$")
+    target_compile_options(${GAME_LIB} PRIVATE -Werror=format-security)
+endif()
+
 target_link_libraries(${GAME_LIB} PRIVATE ${COMMON_LIBRARIES})
 
 file(MAKE_DIRECTORY "${CMAKE_LIBRARY_OUTPUT_DIRECTORY}")
