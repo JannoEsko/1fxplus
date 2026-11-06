@@ -1735,7 +1735,7 @@ int adm_Broadcast(int argNum, gentity_t* adm, qboolean shortCmd) {
         G_printInfoMessage(adm, "Please specify a message to broadcast.");
     }
     else {
-        G_Broadcast(BROADCAST_CMD, NULL, qfalse, va("Broadcast from %s\n%s", getNameOrArg(adm, "\\RCON", qfalse), msg));
+        G_Broadcast(BROADCAST_CMD, NULL, qfalse, "Broadcast from %s\n%s", getNameOrArg(adm, "\\RCON", qfalse), msg);
         G_GlobalSound(G_SoundIndex("sound/misc/menus/invalid.wav"));
         logAdmin(adm, NULL, "broadcast", msg);
         G_printCustomMessageToAll("Admin Action", "Broadcast by %s.", getNameOrArg(adm, "RCON", qtrue));
@@ -2039,7 +2039,7 @@ int adm_Map(int argNum, gentity_t* adm, qboolean shortCmd) {
                 trap_SendServerCommand(adm - g_entities, va("print \"%s\"", foundMaps));
             }
             else {
-                Com_Printf(foundMaps);
+                Com_Printf("%s", foundMaps);
             }
             
 

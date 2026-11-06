@@ -642,7 +642,7 @@ void QDECL G_printMessage(qboolean isChat, qboolean toAll, gentity_t* ent, char*
         trap_SendServerCommand(-1, text);
     }
     else {
-        Com_Printf(text);
+        Com_Printf("%s", text);
     }
 }
 
@@ -1876,13 +1876,13 @@ void checkEnts(gentity_t* ent) {
                     if (ent->r.linked) {
                         trap_UnlinkEntity(ent);
                         if (ent->message != NULL)
-                            G_Broadcast(BROADCAST_GAME, NULL, qfalse, ent->message);
+                            G_Broadcast(BROADCAST_GAME, NULL, qfalse, "%s", ent->message);
                     }
                 }
                 else if (!ent->r.linked) {
                     trap_LinkEntity(ent);
                     if (ent->message2 != NULL)
-                        G_Broadcast(BROADCAST_GAME, NULL, qfalse, ent->message2);
+                        G_Broadcast(BROADCAST_GAME, NULL, qfalse, "%s", ent->message2);
                 }
             }
             ///Non-Team Games
@@ -1890,13 +1890,13 @@ void checkEnts(gentity_t* ent) {
                 if (ent->r.linked) {
                     trap_UnlinkEntity(ent);
                     if (ent->message != NULL)
-                        G_Broadcast(BROADCAST_GAME, NULL, qfalse, ent->message);
+                        G_Broadcast(BROADCAST_GAME, NULL, qfalse, "%s", ent->message);
                 }
             }
             else if (!ent->r.linked) {
                 trap_LinkEntity(ent);
                 if (ent->message2 != NULL)
-                    G_Broadcast(BROADCAST_GAME, NULL, qfalse, ent->message2);
+                    G_Broadcast(BROADCAST_GAME, NULL, qfalse, "%s", ent->message2);
             }
         }
         return;
@@ -2576,7 +2576,7 @@ void showMotd(gentity_t* ent) {
     }
 
     *s = '\0';
-    G_Broadcast(BROADCAST_MOTD, ent, qfalse, motd);
+    G_Broadcast(BROADCAST_MOTD, ent, qfalse, "%s", motd);
 }
 
 qboolean weaponMod(weaponMod_t weaponMod, char* wpnModName) {

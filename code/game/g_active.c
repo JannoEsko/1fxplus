@@ -1814,8 +1814,8 @@ void G_CheckClientTeamkill ( gentity_t* ent )
     ent->client->sess.teamkillForgiveTime = 0;
 
     // Keep track of who was autokicked so we can display a list if need be
-    Com_sprintf ( level.autokickedIP[level.autokickedHead], sizeof(level.autokickedIP[0]), value );
-    Com_sprintf ( level.autokickedName[level.autokickedHead], sizeof(level.autokickedName[0]), ent->client->pers.netname );
+    Com_sprintf ( level.autokickedIP[level.autokickedHead], sizeof(level.autokickedIP[0]), "%s", value );
+    Com_sprintf ( level.autokickedName[level.autokickedHead], sizeof(level.autokickedName[0]), "%s", ent->client->pers.netname );
     level.autokickedCount++;
     if ( level.autokickedCount >= MAX_AUTOKICKLIST )
     {
