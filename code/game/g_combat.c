@@ -659,10 +659,11 @@ void player_die(
     if ( !isCurrentGametype(GT_TFELIM) && !( contents & CONTENTS_NODROP ))
     {
         // People who kill themselves dont drop guns
-        if (  attacker != self || isCurrentGametype(GT_HNS))
+        if (  attacker == self && !isCurrentGametype(GT_HNS))
         {
-            TossClientItems( self );
-        }
+            self->client->ps.stats[STAT_WEAPONS] = 0;
+        } 
+        TossClientItems( self );
 
     }
     else
